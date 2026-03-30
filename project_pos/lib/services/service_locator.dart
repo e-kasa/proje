@@ -1,0 +1,92 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/api/api_client.dart';
+import 'auth_service.dart';
+import 'product_service.dart';
+import 'category_service.dart';
+import 'company_category_service.dart';
+import 'customer_service.dart';
+import 'sales_service.dart';
+import 'stock_service.dart';
+import 'report_service.dart';
+import 'supplier_service.dart';
+import 'warehouse_service.dart';
+import 'store_service.dart';
+import 'purchase_service.dart';
+import 'brand_service.dart';
+import 'unit_service.dart';
+
+// API Client Provider
+final apiClientProvider = Provider<ApiClient>((ref) {
+  return ApiClient();
+});
+
+// Service Providers
+final authServiceProvider = Provider<AuthService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return AuthService(apiClient);
+});
+
+final productServiceProvider = Provider<ProductService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return ProductService(apiClient);
+});
+
+final categoryServiceProvider = Provider<CategoryService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return CategoryService(apiClient);
+});
+
+final companyCategoryServiceProvider = Provider<CompanyCategoryService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return CompanyCategoryService(apiClient);
+});
+
+final customerServiceProvider = Provider<CustomerService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return CustomerService(apiClient);
+});
+
+final salesServiceProvider = Provider<SalesService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return SalesService(apiClient);
+});
+
+final stockServiceProvider = Provider<StockService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return StockService(apiClient);
+});
+
+final reportServiceProvider = Provider<ReportService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return ReportService(apiClient);
+});
+
+final supplierServiceProvider = Provider<SupplierService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return SupplierService(apiClient);
+});
+
+final warehouseServiceProvider = Provider<WarehouseService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return WarehouseService(apiClient);
+});
+
+final storeServiceProvider = Provider<StoreService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return StoreService(apiClient);
+});
+
+final purchaseServiceProvider = Provider<PurchaseService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return PurchaseService(apiClient);
+});
+
+final brandServiceProvider = Provider<BrandService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return BrandService(apiClient);
+});
+
+final unitServiceProvider = Provider<UnitService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return UnitService(apiClient);
+});

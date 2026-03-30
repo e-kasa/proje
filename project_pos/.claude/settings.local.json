@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(wc -l /c/Users/Win11/Documents/project_pos/lib/screens/bulk_import/*.dart)",
+      "Bash(head -5 grep -n \"class SimpleMockData\" /c/Users/Win11/Documents/project_pos/lib/screens/bulk_import/simple_mock_data.dart /c/Users/Win11/Documents/project_pos/lib/screens/bulk_import/simple_mock_data_v2.dart grep -n \"product_list_screen\\\\|ProductListScreen\" /c/Users/Win11/Documents/project_pos/lib/core/utils/router.dart)",
+      "Bash(grep -rn import.*product_list_screen[^e] /c/Users/Win11/Documents/project_pos/lib/ 2)",
+      "Bash(/dev/null grep:*)",
+      "Bash(sort grep:*)",
+      "Bash(head -20 grep -rln \"InventoryScreen\\\\|inventory_screen\" /c/Users/Win11/Documents/project_pos/lib/)"
+    ]
+  }
+}

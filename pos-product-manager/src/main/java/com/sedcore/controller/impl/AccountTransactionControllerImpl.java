@@ -1,0 +1,120 @@
+package com.sedcore.controller.impl;
+
+import com.sedcore.controller.AccountTransactionController;
+import com.sedcore.enums.TransactionType;
+import com.sedcore.model.AccountTransactionResponse;
+import com.sedcore.se.ApiResponse;
+import com.sedcore.service.AccountTransactionService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Cari Hesap Hareketleri Controller
+ *
+ * GET  /product/api/v1/account-transactions/{id}                     → Tek hareket
+ * GET  /product/api/v1/account-transactions?supplierId=&type=        → Tedarikçi hareketleri
+ * GET  /product/api/v1/account-transactions?customerId=              → Müşteri hareketleri
+ * GET  /product/api/v1/account-transactions?purchaseId=              → Satın alma hareketleri
+ * PATCH /product/api/v1/account-transactions/{id}/cancel             → Hareket iptali
+ */
+@RestController
+@RequestMapping("api/v1/account-transactions")
+@RequiredArgsConstructor
+@Slf4j
+public class AccountTransactionControllerImpl implements AccountTransactionController {
+
+    private final AccountTransactionService accountTransactionService;
+
+    // GET /product/api/v1/account-transactions/{id}
+    @Override
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<AccountTransactionResponse>> getById(@PathVariable String id) {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(accountTransactionService.getTransaction(id)));
+        } catch (Exception e) {
+            log.error("Cari hareket getirme hatasi: id={}, {}", id, e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * Filtrelenmiş liste:
+     *   ?supplierId=xxx           → Tedarikçi hareketleri
+     *   ?supplierId=xxx&type=PURCHASE → Tipe göre filtreli
+     *   ?customerId=xxx           → Müşteri hareketleri
+     *   ?purchaseId=xxx           → Satın alma hareketleri
+     */
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<AccountTransactionResponse>>> list(
+            @RequestParam(required = false) String supplierId,
+            @RequestParam(required = false) String customerId,
+            @RequestParam(required = false) String purchaseId,
+            @RequestParam(required = false) TransactionType type
+    ) {
+        try {
+            if (supplierId != null && type != null) {
+                return ResponseEntity.ok(ApiResponse.success(
+                        accountTransactionService.getBySupplierAndType(supplierId, type)));
+            }
+            if (supplierId != null) {
+                return ResponseEntity.ok(ApiResponse.success(
+                        accountTransactionService.getBySupplier(supplierId)));
+            }
+            if (customerId != null) {
+                return ResponseEntity.ok(ApiResponse.success(
+                        accountTransactionService.getByCustomer(customerId)));
+            }
+            if (purchaseId != null) {
+                return ResponseEntity.ok(ApiResponse.success(
+                        accountTransactionService.getByPurchase(purchaseId)));
+            }
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error("supplierId, customerId veya purchaseId parametresi gerekli"));
+        } catch (Exception e) {
+            log.error("Cari hareket listesi hatasi: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    // GET (interface metodu — list() ile karşılanır, bu yüzden delegate et)
+    @Override
+    public ResponseEntity<ApiResponse<List<AccountTransactionResponse>>> listBySupplier(
+            String supplierId, TransactionType type) {
+        return list(supplierId, null, null, type);
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<List<AccountTransactionResponse>>> listByCustomer(
+            String customerId) {
+        return list(null, customerId, null, null);
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<List<AccountTransactionResponse>>> listByPurchase(
+            String purchaseId) {
+        return list(null, null, purchaseId, null);
+    }
+
+    // PATCH /product/api/v1/account-transactions/{id}/cancel
+    @Override
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<ApiResponse<AccountTransactionResponse>> cancel(
+            @PathVariable String id,
+            @RequestBody(required = false) Map<String, String> body) {
+        try {
+            String reason = body != null ? body.get("reason") : null;
+            return ResponseEntity.ok(ApiResponse.success(
+                    accountTransactionService.cancelTransaction(id, reason)));
+        } catch (Exception e) {
+            log.error("Cari hareket iptal hatasi: id={}, {}", id, e.getMessage());
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error("Iptal islemi basarisiz: " + e.getMessage()));
+        }
+    }
+
+}

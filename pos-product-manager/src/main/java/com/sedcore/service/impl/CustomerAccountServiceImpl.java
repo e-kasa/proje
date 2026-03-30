@@ -1,0 +1,94 @@
+package com.sedcore.service.impl;
+
+import com.sedcore.entity.Customer;
+import com.sedcore.entity.CustomerAccount;
+import com.sedcore.repository.CustomerAccountRepository;
+import com.sedcore.service.CustomerAccountService;
+import com.towpen.base.security.BaseDbServiceImp;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Service
+@Slf4j
+@Transactional
+public class CustomerAccountServiceImpl
+        extends BaseDbServiceImp<CustomerAccountRepository, CustomerAccount>
+        implements CustomerAccountService {
+
+    @Override
+    public Class<?> getDTOClassForService() {
+        return CustomerAccount.class;
+    }
+
+    // =========================================================================
+    // TEMEL İŞLEMLER
+    // =========================================================================
+
+    @Override
+    public CustomerAccount getOrCreate(Customer customer) {
+        return dao.findByCustomerId(customer.getId())
+                .orElseGet(() -> {
+                    log.info("Musteri hesabi olusturuluyor: customerId={}", customer.getId());
+                    return save(CustomerAccount.builder()
+                            .customer(customer)
+                            .currentBalance(BigDecimal.ZERO)
+                            .totalDebt(BigDecimal.ZERO)
+                            .totalCredit(BigDecimal.ZERO)
+                            .overdueAmount(BigDecimal.ZERO)
+                            .totalTransactionCount(0L)
+                            .build());
+                });
+    }
+
+    // =========================================================================
+    // BAKİYE İŞLEMLERİ
+    // =========================================================================
+
+    /** Müşteriden tahsilat: bakiye ↓, totalCredit ↑ */
+    @Override
+    public CustomerAccount applyCredit(Customer customer, BigDecimal amount) {
+        CustomerAccount acct = getOrCreate(customer);
+        acct.setCurrentBalance(acct.getCurrentBalance().subtract(amount));
+        acct.setTotalCredit(acct.getTotalCredit().add(amount));
+        acct.setLastPaymentDate(LocalDateTime.now());
+        acct.setLastTransactionDate(LocalDateTime.now());
+        acct.setTotalTransactionCount(acct.getTotalTransactionCount() + 1);
+        acct.updateCalculatedFields();
+        log.info("Musteri kredi uygulandi: customerId={}, amount={}, yeniBakiye={}",
+                customer.getId(), amount, acct.getCurrentBalance());
+        return save(acct);
+    }
+
+    /** Müşteriye satış: bakiye ↑, totalDebt ↑ */
+    @Override
+    public CustomerAccount applyDebit(Customer customer, BigDecimal amount) {
+        CustomerAccount acct = getOrCreate(customer);
+        acct.setCurrentBalance(acct.getCurrentBalance().add(amount));
+        acct.setTotalDebt(acct.getTotalDebt().add(amount));
+        acct.setLastSaleDate(LocalDateTime.now());
+        acct.setLastTransactionDate(LocalDateTime.now());
+        acct.setTotalTransactionCount(acct.getTotalTransactionCount() + 1);
+        acct.updateCalculatedFields();
+        log.info("Musteri borc uygulandi: customerId={}, amount={}, yeniBakiye={}",
+                customer.getId(), amount, acct.getCurrentBalance());
+        return save(acct);
+    }
+
+    /** Tahsilat iptali: bakiye ↑, totalCredit ↓ */
+    @Override
+    public CustomerAccount reverseCredit(Customer customer, BigDecimal amount) {
+        CustomerAccount acct = getOrCreate(customer);
+        acct.setCurrentBalance(acct.getCurrentBalance().add(amount));
+        acct.setTotalCredit(acct.getTotalCredit().subtract(amount));
+        acct.setLastTransactionDate(LocalDateTime.now());
+        acct.setTotalTransactionCount(acct.getTotalTransactionCount() + 1);
+        acct.updateCalculatedFields();
+        log.info("Musteri kredi ters kayit: customerId={}, amount={}",
+                customer.getId(), amount);
+        return save(acct);
+    }
+}

@@ -1,0 +1,95 @@
+/* src/assets/css/wizard.css */
+
+/* Progress Bar */
+.wizard-progress {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Steps */
+.wizard-steps {
+    display: flex;
+    justify-content: space-between;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.wizard-steps .step-item {
+    flex: 1;
+    text-align: center;
+    position: relative;
+}
+
+.wizard-steps .step-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #e9ecef;
+    color: #6c757d;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+.wizard-steps .step-item.active .step-icon {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    transform: scale(1.1);
+}
+
+.wizard-steps .step-item.completed .step-icon {
+    background: #28a745;
+    color: white;
+}
+
+.wizard-steps .step-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #6c757d;
+}
+
+.wizard-steps .step-item.active .step-title {
+    color: #667eea;
+    font-weight: 600;
+}
+
+.wizard-steps .step-item.completed .step-title {
+    color: #28a745;
+}
+
+/* Footer */
+.wizard-footer {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .wizard-steps {
+        flex-wrap: wrap;
+    }
+
+    .wizard-steps .step-item {
+        flex: 0 0 50%;
+        margin-bottom: 20px;
+    }
+
+    .wizard-steps .step-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+
+    .wizard-steps .step-title {
+        font-size: 12px;
+    }
+}

@@ -1,0 +1,15 @@
+package com.sedcore.repository;
+
+import com.sedcore.entity.Supplier;
+import com.towpen.base.db.repository.BaseDaoRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface SupplierRepository extends BaseDaoRepository<Supplier> {
+
+    Page<Supplier> findByIsActiveAndIsDeleted(Boolean isActive, Boolean isDeleted, Pageable pageable);
+
+    Page<Supplier> findByIsDeleted(Boolean isDeleted, Pageable pageable);
+}

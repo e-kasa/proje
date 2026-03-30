@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command \"\\(Get-Content src\\\\assets\\\\icons\\\\tabler-icons\\\\tabler-icons.min.css -Raw\\) -replace ''/\\\\*# sourceMappingURL=tabler-icons\\\\.min\\\\.css\\\\.map \\\\*/'', '''' | Set-Content src\\\\assets\\\\icons\\\\tabler-icons\\\\tabler-icons.min.css -NoNewline\")",
+      "Bash(node -e \"const rtk = require\\(''./node_modules/@reduxjs/toolkit/dist/redux-toolkit.cjs.development.js''\\); console.log\\(''PayloadAction exported:'', ''PayloadAction'' in rtk\\);\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npm --version)"
+    ]
+  }
+}

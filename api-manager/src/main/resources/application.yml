@@ -1,0 +1,88 @@
+server:
+  port: 8080
+
+# ── CORS ─────────────────────────────────────────────────────────────────────
+# allowedOriginPatterns kullanılır (allowedOrigins değil).
+# "http://localhost:*" → Flutter web, React dev, Vite gibi tüm localhost portlarını kapsar.
+# Wildcard, allowCredentials:true ile uyumludur (allowedOrigins("*") uyumlu değildir).
+cors:
+  allowed-origins: >-
+    http://localhost:*,
+    https://www.sedcore.com,
+    https://www.bertspot.com
+
+# ── JWT ───────────────────────────────────────────────────────────────────────
+# Bu değer security servisi (TokenService) ve api-manager (JwtDecoder) tarafından
+# ORTAK kullanılır. Her iki serviste de aynı değer olmalıdır.
+# Production'da environment variable ile ezin: JWT_SECRET=...
+jwt:
+  # Production'da JWT_SECRET environment variable ile ezi:
+  #   export JWT_SECRET=cokDahaGucluBirUretimSifresi...
+  # Environment variable yoksa aşağıdaki default kullanılır (sadece geliştirme için).
+  secret: "${JWT_SECRET:BuCokGizliVeUzunBirAnahtarOlmalidir12345!}"
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          globalcors:
+            add-to-simple-url-handler-mapping: true
+            cors-configurations:
+              "[/**]":
+                # allowedOriginPatterns: wildcard destekler, allowCredentials ile uyumludur.
+                # "http://localhost:*" → Flutter web rastgele port (:58978 gibi) dahil tüm localhost'lar.
+                allowedOriginPatterns:
+                  - "http://localhost:*"          # tüm localhost portları (dev)
+                  - "https://www.sedcore.com"     # SEDCOR production
+                  - "https://www.bertspot.com"    # BERTSPOT production
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - PATCH
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders: "*"
+                exposedHeaders:
+                  - "Authorization"
+                  - "X-User-Info"
+                  - "X-Company-Code"
+                allowCredentials: true
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+          routes:
+
+            # ── AUTH SERVICE ──────────────────────────────────────────────
+            - id: security-service
+              uri: http://localhost:8002
+              predicates:
+                - Path=/security/**
+
+            # ── PRODUCT SERVICE – PUBLIC (JWT yok, company code zorunlu) ──
+            # Ürün listeleme, kategori, tekil ürün — dışarıya açık endpoint'ler
+            - id: product-service-public
+              uri: http://localhost:8001
+              predicates:
+                - Path=/product/api/v1/public/**
+              # Bu route JWT filtreden muaf; CompanyResolutionFilter çalışır
+
+            # ── PRODUCT SERVICE – PRIVATE (JWT zorunlu) ───────────────────
+            - id: product-service-private
+              uri: http://localhost:8001
+              predicates:
+                - Path=/product/**
+
+# ── Company Domain Çözümleme Ayarları ────────────────────────────────────────
+company:
+  resolution:
+    # Security servisinin adresi (CompanyResolutionFilter bu adrese istek atar)
+    security-url: http://localhost:8002
+    # Hiçbir domain eşleşmezse kullanılacak fallback company_code.
+    # BOŞ bırakılırsa bilinmeyen domain'ler 403 Forbidden ile REDDEDİLİR.
+    # (Veri sızıntısını önlemek için boş değerle devam edilmez.)
+    # Geliştirme ortamında tüm isteklere izin vermek için doldurabilirsiniz.
+    fallback-company-code: ""

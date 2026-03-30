@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn install:*)",
+      "Bash(where mvn:*)",
+      "Read(//c/Users/Win11/**)",
+      "Bash(MVN=\"/c/Users/Win11/.m2/wrapper/dists/apache-maven-3.9.11-bin/6mqf5t809d9geo83kj4ttckcbc/apache-maven-3.9.11/bin/mvn\")",
+      "Bash(\"$MVN\" install:*)",
+      "Bash(\"/c/Users/Win11/.m2/wrapper/dists/apache-maven-3.9.11-bin/6mqf5t809d9geo83kj4ttckcbc/apache-maven-3.9.11/bin/mvn\" -version)",
+      "Bash(\"/c/Users/Win11/.m2/wrapper/dists/apache-maven-3.9.11-bin/6mqf5t809d9geo83kj4ttckcbc/apache-maven-3.9.11/bin/mvn\" install:*)",
+      "Bash(python3 -c \":*)",
+      "Bash(powershell.exe -File:*)"
+    ]
+  }
+}

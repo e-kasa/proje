@@ -1,0 +1,15 @@
+server:
+  port: 8001
+  
+spring:
+  jpa:
+    database: POSTGRESQL
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+  datasource:
+    platform: postgres
+    url: jdbc:postgresql://localhost:5432/citizix_db
+    username: citizix_user
+    password: S3cret
+    driverClassName: org.postgresql.Driver

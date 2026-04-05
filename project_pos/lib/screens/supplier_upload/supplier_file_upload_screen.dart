@@ -67,8 +67,16 @@ class _SupplierFileUploadScreenState extends State<SupplierFileUploadScreen> {
     });
 
     try {
-      // TODO: Backend'e dosya yükle
-      await Future.delayed(const Duration(seconds: 1)); // Simülasyon
+      // TODO: Uncomment when backend endpoint is ready
+      // final response = await ref.read(apiClientProvider).upload(
+      //   'product/api/v1/supplier-upload/file',
+      //   filePath: _selectedFile!.path,
+      //   fieldName: 'file',
+      // );
+      // Navigate to preview with response data
+
+      // For now, simulate upload
+      await Future.delayed(const Duration(seconds: 1));
 
       // Önizleme ekranına git
       if (mounted) {

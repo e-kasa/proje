@@ -1135,3 +1135,402 @@ VALUES
     ('unt-00001-0000-0000-0000-000000000007','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,'KUTU','Kutu','box','Sayılabilir',true),
     ('unt-00001-0000-0000-0000-000000000008','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,'PAKET','Paket','pkg','Sayılabilir',true)
 ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================
+-- PARCACI (OTO YEDEK PARCA) SEED DATA
+-- ============================================================
+
+-- ============================================================
+-- OTO YEDEK PARCA KATEGORILERI
+-- ============================================================
+INSERT INTO categories
+(id, create_user, create_time, last_modified_time,
+ name, slug, description, image_url, icon, sort_order, level, path,
+ is_deleted, status, metadata, meta_title, meta_description, meta_keywords)
+VALUES
+    ('cat-auto-0000-0000-0000-000000000001','SYSTEM',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Fren Sistemi','fren-sistemi','Fren balatalari, diskleri ve parcalari',NULL,'build',10,0,'/fren-sistemi',
+     false,'ACTIVE','{}'::jsonb,'Fren Sistemi','Fren sistem parcalari','fren,balata,disk,kampana'),
+    ('cat-auto-0000-0000-0000-000000000002','SYSTEM',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Suspan Sistemi','suspansiyon','Amortisör, rotil, bilyali baslik',NULL,'settings',11,0,'/suspansiyon',
+     false,'ACTIVE','{}'::jsonb,'Suspansiyon','Suspansiyon parcalari','amortisor,rotil,rot,salincak'),
+    ('cat-auto-0000-0000-0000-000000000003','SYSTEM',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Motor Parcalari','motor-parcalari','Motor ic parcalari ve contalar',NULL,'engineering',12,0,'/motor-parcalari',
+     false,'ACTIVE','{}'::jsonb,'Motor Parcalari','Motor parcalari','motor,conta,piston,supap'),
+    ('cat-auto-0000-0000-0000-000000000004','SYSTEM',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Filtreler','filtreler','Yag, hava, yakit ve kabin filtreleri',NULL,'filter_alt',13,0,'/filtreler',
+     false,'ACTIVE','{}'::jsonb,'Filtreler','Filtre cesitleri','filtre,yag,hava,yakit,kabin'),
+    ('cat-auto-0000-0000-0000-000000000005','SYSTEM',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Aydinlatma','aydinlatma','Far, stop, sinyal lambalari',NULL,'lightbulb',14,0,'/aydinlatma',
+     false,'ACTIVE','{}'::jsonb,'Aydinlatma','Aydinlatma parcalari','far,stop,sinyal,ampul'),
+    ('cat-auto-0000-0000-0000-000000000006','SYSTEM',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Elektrik ve Akü','elektrik-aku','Akü, alternator, marş motoru',NULL,'bolt',15,0,'/elektrik-aku',
+     false,'ACTIVE','{}'::jsonb,'Elektrik Aku','Elektrik ve aku parcalari','aku,alternator,mars,buji'),
+    ('cat-auto-0000-0000-0000-000000000007','SYSTEM',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Sogutma Sistemi','sogutma-sistemi','Radyator, termostat, pompa',NULL,'ac_unit',16,0,'/sogutma-sistemi',
+     false,'ACTIVE','{}'::jsonb,'Sogutma','Sogutma sistemi parcalari','radyator,termostat,devirdaim,antifriz'),
+    ('cat-auto-0000-0000-0000-000000000008','SYSTEM',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Egzoz Sistemi','egzoz-sistemi','Egzoz borusu, katalizor, susturucu',NULL,'air',17,0,'/egzoz-sistemi',
+     false,'ACTIVE','{}'::jsonb,'Egzoz','Egzoz sistemi parcalari','egzoz,katalizor,susturucu'),
+    ('cat-auto-0000-0000-0000-000000000009','SYSTEM',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Debriyaj ve Sanziman','debriyaj-sanziman','Debriyaj seti, volant, sanziman parcalari',NULL,'settings_applications',18,0,'/debriyaj-sanziman',
+     false,'ACTIVE','{}'::jsonb,'Debriyaj Sanziman','Debriyaj ve sanziman parcalari','debriyaj,volant,sanziman,vites'),
+    ('cat-auto-0000-0000-0000-000000000010','SYSTEM',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Kayis ve Gergi','kayis-gergi','Triger, V kayis, gergi rulmani',NULL,'sync',19,0,'/kayis-gergi',
+     false,'ACTIVE','{}'::jsonb,'Kayis Gergi','Kayis ve gergi parcalari','triger,kayis,gergi,rulman')
+ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================
+-- OTO YEDEK PARCA MARKALARI
+-- ============================================================
+INSERT INTO brands
+(id, create_user, company_code, create_time, last_modified_time, name, code, description, is_active)
+VALUES
+    ('brd-auto-0000-0000-0000-000000000001','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,'Bosch','BOSCH','Alman oto yedek parca üreticisi',true),
+    ('brd-auto-0000-0000-0000-000000000002','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,'TRW','TRW','Fren ve suspan parcalari',true),
+    ('brd-auto-0000-0000-0000-000000000003','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,'Valeo','VALEO','Debriyaj ve elektrik parcalari',true),
+    ('brd-auto-0000-0000-0000-000000000004','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,'Mann Filter','MANN','Filtre uzmani',true),
+    ('brd-auto-0000-0000-0000-000000000005','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,'Brembo','BREMBO','Italyan fren sistemi uzmani',true),
+    ('brd-auto-0000-0000-0000-000000000006','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,'Sachs','SACHS','Amortisor ve debriyaj',true),
+    ('brd-auto-0000-0000-0000-000000000007','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,'SKF','SKF','Rulman ve kayis sistemleri',true),
+    ('brd-auto-0000-0000-0000-000000000008','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,'Gates','GATES','Kayis ve hortum uzmani',true),
+    ('brd-auto-0000-0000-0000-000000000009','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,'Mahle','MAHLE','Motor parcalari ve filtreler',true),
+    ('brd-auto-0000-0000-0000-000000000010','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,'Delphi','DELPHI','Yakit sistemi ve elektrik',true)
+ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================
+-- ARACLAR (VEHICLES)
+-- ============================================================
+INSERT INTO vehicles
+(id, create_user, company_code, create_time, last_modified_time,
+ make, model, year_start, year_end, engine_type, fuel_type, body_type, platform_code, is_active)
+VALUES
+    ('veh-00001-0000-0000-0000-000000000001','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Toyota','Corolla',2013,2018,'1.6 Valvematic','Benzin','Sedan','E170',true),
+    ('veh-00001-0000-0000-0000-000000000002','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Toyota','Corolla',2019,2025,'1.8 Hybrid','Hybrid','Sedan','E210',true),
+    ('veh-00001-0000-0000-0000-000000000003','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Volkswagen','Golf',2013,2019,'1.6 TDI','Dizel','Hatchback','MK7',true),
+    ('veh-00001-0000-0000-0000-000000000004','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Volkswagen','Passat',2015,2023,'1.6 TDI','Dizel','Sedan','B8',true),
+    ('veh-00001-0000-0000-0000-000000000005','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Ford','Focus',2011,2018,'1.6 TDCi','Dizel','Hatchback','MK3',true),
+    ('veh-00001-0000-0000-0000-000000000006','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Renault','Megane',2016,2023,'1.5 dCi','Dizel','Sedan','IV',true),
+    ('veh-00001-0000-0000-0000-000000000007','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Hyundai','Tucson',2015,2020,'1.6 CRDi','Dizel','SUV','TL',true),
+    ('veh-00001-0000-0000-0000-000000000008','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Fiat','Egea',2016,2025,'1.3 MultiJet','Dizel','Sedan','356',true),
+    ('veh-00001-0000-0000-0000-000000000009','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'BMW','3 Serisi',2012,2018,'2.0d','Dizel','Sedan','F30',true),
+    ('veh-00001-0000-0000-0000-000000000010','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Mercedes','C Serisi',2014,2021,'1.6d','Dizel','Sedan','W205',true)
+ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================
+-- TEDARIKCILER (Oto Yedek Parca)
+-- ============================================================
+INSERT INTO supplier
+(id, create_user, company_code, create_time, last_modified_time,
+ name, contact_name, phone, email, address, notes, customer_type, tax_number, tax_office,
+ credit_limit, payment_term_days, risk_status, is_active, is_deleted)
+VALUES
+    ('sup-auto-0000-0000-0000-000000000001','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Bosch Turkiye','Ahmet Yilmaz','0212 335 00 00','satis@bosch.com.tr','Bursa Organize Sanayi','Ana Bosch distribütörü','CORPORATE','1234567890','Bursa',
+     500000.00,60,'NORMAL',true,false),
+    ('sup-auto-0000-0000-0000-000000000002','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Otopar Yedek Parca','Mehmet Demir','0212 612 00 00','info@otopar.com.tr','Istanbul Perpa Ticaret Merkezi','Genel oto yedek parca toptancisi','CORPORATE','9876543210','Istanbul',
+     200000.00,30,'NORMAL',true,false)
+ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================
+-- MUSTERILER (Oto Yedek Parca)
+-- ============================================================
+INSERT INTO customer
+(id, create_user, company_code, create_time, last_modified_time,
+ name, phone, email, address, notes, customer_type, tax_number, tax_office,
+ credit_limit, payment_term_days, risk_status, is_active, is_deleted)
+VALUES
+    ('cust-auto-000-0000-0000-000000000001','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Usta Motor Tamir','0532 111 22 33','usta@email.com','Kadikoy, Istanbul','Duzenlimüsteri, aylık ödeme','CORPORATE','1112223334','Istanbul',
+     50000.00,30,'NORMAL',true,false),
+    ('cust-auto-000-0000-0000-000000000002','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Yildiz Oto Servis','0533 444 55 66','yildiz@email.com','Atasehir, Istanbul','Buyuk servis, haftalik siparis','CORPORATE','5556667778','Istanbul',
+     100000.00,15,'NORMAL',true,false)
+ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================
+-- URUNLER (Oto Yedek Parcalar) — 10 adet
+-- ============================================================
+INSERT INTO products
+(id, create_user, company_code, create_time, last_modified_time,
+ name, sku, slug, category_id, brand, unit, description, is_deleted, status)
+VALUES
+    ('prd-auto-0000-0000-0000-000000000001','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'On Fren Balata Seti','FRN-BLT-001','on-fren-balata-seti','cat-auto-0000-0000-0000-000000000001','Bosch','ADET','On teker fren balata takimi',false,'ACTIVE'),
+    ('prd-auto-0000-0000-0000-000000000002','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Arka Fren Balata Seti','FRN-BLT-002','arka-fren-balata-seti','cat-auto-0000-0000-0000-000000000001','TRW','ADET','Arka teker fren balata takimi',false,'ACTIVE'),
+    ('prd-auto-0000-0000-0000-000000000003','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'On Fren Diski','FRN-DSK-001','on-fren-diski','cat-auto-0000-0000-0000-000000000001','Brembo','ADET','On fren diski (ventilasyonlu)',false,'ACTIVE'),
+    ('prd-auto-0000-0000-0000-000000000004','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Yag Filtresi','FLT-YAG-001','yag-filtresi','cat-auto-0000-0000-0000-000000000004','Mann Filter','ADET','Motor yag filtresi',false,'ACTIVE'),
+    ('prd-auto-0000-0000-0000-000000000005','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Hava Filtresi','FLT-HVA-001','hava-filtresi','cat-auto-0000-0000-0000-000000000004','Mahle','ADET','Motor hava filtresi',false,'ACTIVE'),
+    ('prd-auto-0000-0000-0000-000000000006','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'On Amortisor','SUS-AMR-001','on-amortisor','cat-auto-0000-0000-0000-000000000002','Sachs','ADET','On amortisor (sol/sag)',false,'ACTIVE'),
+    ('prd-auto-0000-0000-0000-000000000007','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Debriyaj Seti','DBR-SET-001','debriyaj-seti','cat-auto-0000-0000-0000-000000000009','Valeo','ADET','3 parca debriyaj seti (baskı, balata, rulman)',false,'ACTIVE'),
+    ('prd-auto-0000-0000-0000-000000000008','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Triger Seti','KYS-TRG-001','triger-seti','cat-auto-0000-0000-0000-000000000010','Gates','ADET','Triger kayis + gergi + avare seti',false,'ACTIVE'),
+    ('prd-auto-0000-0000-0000-000000000009','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Buji Takimi (4lu)','ELK-BJI-001','buji-takimi','cat-auto-0000-0000-0000-000000000006','Bosch','ADET','4 adet ateslemeli buji seti',false,'ACTIVE'),
+    ('prd-auto-0000-0000-0000-000000000010','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'Devirdaim Pompasi','SGT-DVR-001','devirdaim-pompasi','cat-auto-0000-0000-0000-000000000007','SKF','ADET','Su pompasi / devirdaim',false,'ACTIVE')
+ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================
+-- URUN VARYANTLARI — her ürün için 1 varyant
+-- ============================================================
+INSERT INTO product_variants
+(id, create_user, company_code, create_time, last_modified_time,
+ sku, slug, name, product_id, is_deleted, min_stock_level, shelf_location_code, additional_price)
+VALUES
+    ('var-auto-0000-0000-0000-000000000001','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'FRN-BLT-001-V1','on-fren-balata-v1','On Fren Balata - Standart','prd-auto-0000-0000-0000-000000000001',false,5,'A-1-01',0.00),
+    ('var-auto-0000-0000-0000-000000000002','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'FRN-BLT-002-V1','arka-fren-balata-v1','Arka Fren Balata - Standart','prd-auto-0000-0000-0000-000000000002',false,5,'A-1-02',0.00),
+    ('var-auto-0000-0000-0000-000000000003','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'FRN-DSK-001-V1','on-fren-diski-v1','On Fren Diski - Ventilasyonlu','prd-auto-0000-0000-0000-000000000003',false,4,'A-2-01',0.00),
+    ('var-auto-0000-0000-0000-000000000004','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'FLT-YAG-001-V1','yag-filtresi-v1','Yag Filtresi - Standart','prd-auto-0000-0000-0000-000000000004',false,10,'B-1-01',0.00),
+    ('var-auto-0000-0000-0000-000000000005','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'FLT-HVA-001-V1','hava-filtresi-v1','Hava Filtresi - Standart','prd-auto-0000-0000-0000-000000000005',false,10,'B-1-02',0.00),
+    ('var-auto-0000-0000-0000-000000000006','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'SUS-AMR-001-V1','on-amortisor-v1','On Amortisor - Gaz','prd-auto-0000-0000-0000-000000000006',false,3,'C-1-01',0.00),
+    ('var-auto-0000-0000-0000-000000000007','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'DBR-SET-001-V1','debriyaj-seti-v1','Debriyaj Seti - 3 Parca','prd-auto-0000-0000-0000-000000000007',false,2,'C-2-01',0.00),
+    ('var-auto-0000-0000-0000-000000000008','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'KYS-TRG-001-V1','triger-seti-v1','Triger Seti - Komple','prd-auto-0000-0000-0000-000000000008',false,3,'C-3-01',0.00),
+    ('var-auto-0000-0000-0000-000000000009','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'ELK-BJI-001-V1','buji-takimi-v1','Buji Takimi - Iridyum','prd-auto-0000-0000-0000-000000000009',false,8,'D-1-01',0.00),
+    ('var-auto-0000-0000-0000-000000000010','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'SGT-DVR-001-V1','devirdaim-v1','Devirdaim Pompasi - Standart','prd-auto-0000-0000-0000-000000000010',false,3,'D-2-01',0.00)
+ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================
+-- VARYANT FIYATLANDIRMA
+-- ============================================================
+INSERT INTO variant_pricing
+(id, create_user, company_code, create_time, last_modified_time,
+ variant_id, purchase_price, sale_price, currency, vat_rate, special_tax_rate, vat_included, withholding_tax_rate, tax_exempt)
+VALUES
+    ('vpr-auto-0000-0000-0000-000000000001','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000001',180.00,320.00,'TRY',20.00,0.00,true,0.00,false),
+    ('vpr-auto-0000-0000-0000-000000000002','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000002',150.00,270.00,'TRY',20.00,0.00,true,0.00,false),
+    ('vpr-auto-0000-0000-0000-000000000003','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000003',450.00,780.00,'TRY',20.00,0.00,true,0.00,false),
+    ('vpr-auto-0000-0000-0000-000000000004','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000004',45.00,85.00,'TRY',20.00,0.00,true,0.00,false),
+    ('vpr-auto-0000-0000-0000-000000000005','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000005',60.00,110.00,'TRY',20.00,0.00,true,0.00,false),
+    ('vpr-auto-0000-0000-0000-000000000006','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000006',650.00,1100.00,'TRY',20.00,0.00,true,0.00,false),
+    ('vpr-auto-0000-0000-0000-000000000007','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000007',1200.00,2100.00,'TRY',20.00,0.00,true,0.00,false),
+    ('vpr-auto-0000-0000-0000-000000000008','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000008',800.00,1400.00,'TRY',20.00,0.00,true,0.00,false),
+    ('vpr-auto-0000-0000-0000-000000000009','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000009',120.00,220.00,'TRY',20.00,0.00,true,0.00,false),
+    ('vpr-auto-0000-0000-0000-000000000010','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000010',350.00,620.00,'TRY',20.00,0.00,true,0.00,false)
+ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================
+-- BARKODLAR
+-- ============================================================
+INSERT INTO barcodes
+(id, create_user, company_code, create_time, last_modified_time,
+ variant_id, barcode_code, barcode_type, is_primary, is_active, usage_count)
+VALUES
+    ('brc-auto-0000-0000-0000-000000000001','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000001','8690000001011','EAN13',true,true,0),
+    ('brc-auto-0000-0000-0000-000000000002','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000002','8690000001028','EAN13',true,true,0),
+    ('brc-auto-0000-0000-0000-000000000003','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000003','8690000001035','EAN13',true,true,0),
+    ('brc-auto-0000-0000-0000-000000000004','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000004','8690000001042','EAN13',true,true,0),
+    ('brc-auto-0000-0000-0000-000000000005','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000005','8690000001059','EAN13',true,true,0),
+    ('brc-auto-0000-0000-0000-000000000006','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000006','8690000001066','EAN13',true,true,0),
+    ('brc-auto-0000-0000-0000-000000000007','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000007','8690000001073','EAN13',true,true,0),
+    ('brc-auto-0000-0000-0000-000000000008','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000008','8690000001080','EAN13',true,true,0),
+    ('brc-auto-0000-0000-0000-000000000009','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000009','8690000001097','EAN13',true,true,0),
+    ('brc-auto-0000-0000-0000-000000000010','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000010','8690000001103','EAN13',true,true,0)
+ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================
+-- OEM NUMARALARI — her parca icin gercekci OEM numaralari
+-- ============================================================
+INSERT INTO oem_numbers
+(id, create_user, company_code, create_time, last_modified_time,
+ variant_id, oem_number, manufacturer, is_primary)
+VALUES
+    -- On Fren Balata
+    ('oem-auto-0000-0000-0000-000000000001','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000001','04465-02220','Toyota',true),
+    ('oem-auto-0000-0000-0000-000000000002','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000001','04465-02230','Toyota',false),
+    -- Arka Fren Balata
+    ('oem-auto-0000-0000-0000-000000000003','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000002','04466-02181','Toyota',true),
+    -- On Fren Diski
+    ('oem-auto-0000-0000-0000-000000000004','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000003','43512-02330','Toyota',true),
+    -- Yag Filtresi
+    ('oem-auto-0000-0000-0000-000000000005','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000004','03L 115 561B','Volkswagen',true),
+    ('oem-auto-0000-0000-0000-000000000006','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000004','03L 115 561','Volkswagen',false),
+    -- Hava Filtresi
+    ('oem-auto-0000-0000-0000-000000000007','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000005','28113-D3100','Hyundai',true),
+    -- On Amortisor
+    ('oem-auto-0000-0000-0000-000000000008','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000006','54651-D7100','Hyundai',true),
+    -- Debriyaj Seti
+    ('oem-auto-0000-0000-0000-000000000009','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000007','55570661','Fiat',true),
+    -- Triger Seti
+    ('oem-auto-0000-0000-0000-000000000010','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000008','03L 109 244','Volkswagen',true),
+    -- Buji
+    ('oem-auto-0000-0000-0000-000000000011','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000009','18846-11070','Hyundai',true),
+    -- Devirdaim
+    ('oem-auto-0000-0000-0000-000000000012','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000010','16100-09520','Toyota',true)
+ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================
+-- CAPRAZ REFERANSLAR — muadil parca numaralari
+-- ============================================================
+INSERT INTO cross_references
+(id, create_user, company_code, create_time, last_modified_time,
+ variant_id, cross_ref_number, cross_ref_brand, notes)
+VALUES
+    -- On Fren Balata → muadil markalar
+    ('crf-auto-0000-0000-0000-000000000001','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000001','GDB3550','TRW','TRW muadili'),
+    ('crf-auto-0000-0000-0000-000000000002','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000001','BP43263','Brembo','Brembo muadili'),
+    -- Arka Fren Balata
+    ('crf-auto-0000-0000-0000-000000000003','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000002','GDB3568','TRW','TRW muadili'),
+    -- On Fren Diski
+    ('crf-auto-0000-0000-0000-000000000004','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000003','09.C112.11','Brembo','Brembo orijinal'),
+    -- Yag Filtresi
+    ('crf-auto-0000-0000-0000-000000000005','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000004','W 712/94','Mann Filter','Mann muadili'),
+    ('crf-auto-0000-0000-0000-000000000006','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000004','0451103318','Bosch','Bosch muadili'),
+    -- Hava Filtresi
+    ('crf-auto-0000-0000-0000-000000000007','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000005','LX 3539','Mahle','Mahle muadili'),
+    -- Amortisor
+    ('crf-auto-0000-0000-0000-000000000008','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000006','315 700','Sachs','Sachs muadili'),
+    -- Debriyaj Seti
+    ('crf-auto-0000-0000-0000-000000000009','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000007','826818','Valeo','Valeo orijinal'),
+    -- Triger Seti
+    ('crf-auto-0000-0000-0000-000000000010','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000008','K015603XS','Gates','Gates orijinal')
+ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================
+-- ARAC UYUMLULUKLARI — hangi parca hangi araca uyar
+-- ============================================================
+INSERT INTO vehicle_compatibilities
+(id, create_user, company_code, create_time, last_modified_time,
+ variant_id, vehicle_id, notes, is_verified)
+VALUES
+    -- On Fren Balata → Toyota Corolla (2013-2018), Toyota Corolla (2019-2025)
+    ('vc-auto-0000-0000-0000-0000-000000000001','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000001','veh-00001-0000-0000-0000-000000000001','On fren',true),
+    ('vc-auto-0000-0000-0000-0000-000000000002','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000001','veh-00001-0000-0000-0000-000000000002','On fren',true),
+    -- Arka Fren Balata → Toyota Corolla (2013-2018)
+    ('vc-auto-0000-0000-0000-0000-000000000003','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000002','veh-00001-0000-0000-0000-000000000001','Arka fren',true),
+    -- On Fren Diski → VW Golf, VW Passat
+    ('vc-auto-0000-0000-0000-0000-000000000004','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000003','veh-00001-0000-0000-0000-000000000003','On disk',true),
+    ('vc-auto-0000-0000-0000-0000-000000000005','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000003','veh-00001-0000-0000-0000-000000000004','On disk',true),
+    -- Yag Filtresi → VW Golf, VW Passat, Ford Focus
+    ('vc-auto-0000-0000-0000-0000-000000000006','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000004','veh-00001-0000-0000-0000-000000000003','1.6 TDI',true),
+    ('vc-auto-0000-0000-0000-0000-000000000007','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000004','veh-00001-0000-0000-0000-000000000004','1.6 TDI',true),
+    -- Hava Filtresi → Hyundai Tucson
+    ('vc-auto-0000-0000-0000-0000-000000000008','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000005','veh-00001-0000-0000-0000-000000000007','1.6 CRDi',true),
+    -- Amortisor → Hyundai Tucson
+    ('vc-auto-0000-0000-0000-0000-000000000009','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000006','veh-00001-0000-0000-0000-000000000007','On sol/sag',true),
+    -- Debriyaj Seti → Fiat Egea
+    ('vc-auto-0000-0000-0000-0000-000000000010','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000007','veh-00001-0000-0000-0000-000000000008','1.3 MultiJet',true),
+    -- Triger Seti → VW Golf, VW Passat
+    ('vc-auto-0000-0000-0000-0000-000000000011','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000008','veh-00001-0000-0000-0000-000000000003','1.6 TDI',true),
+    ('vc-auto-0000-0000-0000-0000-000000000012','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000008','veh-00001-0000-0000-0000-000000000004','1.6 TDI',true),
+    -- Buji → Toyota Corolla (2013-2018), Hyundai Tucson
+    ('vc-auto-0000-0000-0000-0000-000000000013','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000009','veh-00001-0000-0000-0000-000000000001','Benzinli model',true),
+    ('vc-auto-0000-0000-0000-0000-000000000014','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000009','veh-00001-0000-0000-0000-000000000007','Benzinli model',false),
+    -- Devirdaim → Toyota Corolla (2013-2018), Renault Megane
+    ('vc-auto-0000-0000-0000-0000-000000000015','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000010','veh-00001-0000-0000-0000-000000000001','1.6 motor',true),
+    ('vc-auto-0000-0000-0000-0000-000000000016','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000010','veh-00001-0000-0000-0000-000000000006','1.5 dCi',false)
+ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================
+-- STOK HAREKETLERI — baslangic stoku (PURCHASE_IN)
+-- ============================================================
+INSERT INTO stock_movements
+(id, create_user, company_code, create_time, last_modified_time,
+ variant_id, store_id, warehouse_id, movement_type, quantity)
+VALUES
+    ('stm-auto-0000-0000-0000-000000000001','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000001','STORE-01','WH-01','PURCHASE_IN',20),
+    ('stm-auto-0000-0000-0000-000000000002','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000002','STORE-01','WH-01','PURCHASE_IN',15),
+    ('stm-auto-0000-0000-0000-000000000003','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000003','STORE-01','WH-01','PURCHASE_IN',12),
+    ('stm-auto-0000-0000-0000-000000000004','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000004','STORE-01','WH-01','PURCHASE_IN',50),
+    ('stm-auto-0000-0000-0000-000000000005','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000005','STORE-01','WH-01','PURCHASE_IN',40),
+    ('stm-auto-0000-0000-0000-000000000006','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000006','STORE-01','WH-01','PURCHASE_IN',8),
+    ('stm-auto-0000-0000-0000-000000000007','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000007','STORE-01','WH-01','PURCHASE_IN',6),
+    ('stm-auto-0000-0000-0000-000000000008','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000008','STORE-01','WH-01','PURCHASE_IN',10),
+    ('stm-auto-0000-0000-0000-000000000009','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000009','STORE-01','WH-01','PURCHASE_IN',30),
+    ('stm-auto-0000-0000-0000-000000000010','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-auto-0000-0000-0000-000000000010','STORE-01','WH-01','PURCHASE_IN',7)
+ON CONFLICT (id) DO NOTHING;

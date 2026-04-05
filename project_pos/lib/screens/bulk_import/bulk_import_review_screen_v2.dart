@@ -5,7 +5,7 @@ import '../../core/api/api_client.dart';
 import '../../models/bulk_import_models.dart';
 import '../../services/product_service.dart';
 import '../../services/bulk_import_service.dart';
-import 'simple_mock_data_v2.dart';
+import '../../core/data/simple_mock_data_v2.dart';
 import 'modals/update_stock_modal.dart';
 import 'modals/match_confirm_modal.dart';
 import 'modals/manual_match_modal.dart';

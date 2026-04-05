@@ -1,6 +1,10 @@
 import '../core/data/mock_data.dart';
 import '../core/api/api_client.dart';
 
+/// Satış servisi — Satış işlemleri için backend API çağrıları yönetir.
+///
+/// Backend endpoint: `product/api/v1/sales`
+/// Mock data desteği geliştirme ortamı için mevcuttur.
 class SalesService {
 
   /// Development mode - uses mock data when API is unavailable
@@ -9,7 +13,10 @@ class SalesService {
 
   SalesService(this._apiClient);
 
-  // Get all sales
+  /// Satışları listeler.
+  ///
+  /// [startDate], [endDate] ile tarih aralığı, [customerId] ile müşteri,
+  /// [paymentMethod] ile ödeme yöntemi, [paymentStatus] ile durum filtreleme destekler.
   Future<List<Map<String, dynamic>>> getSales({
     DateTime? startDate,
     DateTime? endDate,
@@ -57,7 +64,7 @@ class SalesService {
 
   static const String _base = 'product/api/v1/sales';
 
-  // Get single sale by ID
+  /// Tek bir satışı ID ile getirir.
   Future<Map<String, dynamic>> getSaleById(String id) async {
     if (useMockData) {
       await Future.delayed(const Duration(milliseconds: 300));
@@ -78,7 +85,9 @@ class SalesService {
     }
   }
 
-  // Create new sale (POS)
+  /// Yeni satış oluşturur (POS ekranından).
+  ///
+  /// [data] satış kalemleri, müşteri bilgisi ve ödeme detaylarını içerir.
   Future<Map<String, dynamic>> createSale(Map<String, dynamic> data) async {
     if (useMockData) {
       await Future.delayed(const Duration(milliseconds: 500));
@@ -99,7 +108,7 @@ class SalesService {
     }
   }
 
-  // Update sale
+  /// Mevcut satışı günceller.
   Future<Map<String, dynamic>> updateSale(String id, Map<String, dynamic> data) async {
     if (useMockData) {
       await Future.delayed(const Duration(milliseconds: 400));
@@ -122,7 +131,9 @@ class SalesService {
     }
   }
 
-  // Cancel sale
+  /// Satışı iptal eder.
+  ///
+  /// [reason] iptal nedenini belirtir.
   Future<Map<String, dynamic>> cancelSale(String id, String reason) async {
     if (useMockData) {
       await Future.delayed(const Duration(milliseconds: 400));
@@ -143,7 +154,7 @@ class SalesService {
     }
   }
 
-  // Get sale items
+  /// Satış kalemlerini getirir.
   Future<List<Map<String, dynamic>>> getSaleItems(String saleId) async {
     if (useMockData) {
       await Future.delayed(const Duration(milliseconds: 300));
@@ -162,7 +173,9 @@ class SalesService {
     }
   }
 
-  // Get sales statistics
+  /// Satış istatistiklerini getirir.
+  ///
+  /// [startDate] ve [endDate] ile tarih aralığı filtreleme destekler.
   Future<Map<String, dynamic>> getSalesStats({
     DateTime? startDate,
     DateTime? endDate,
@@ -194,7 +207,7 @@ class SalesService {
     }
   }
 
-  // Get daily sales report
+  /// Günlük satış raporunu getirir.
   Future<List<Map<String, dynamic>>> getDailySalesReport({
     DateTime? date,
   }) async {
@@ -214,7 +227,29 @@ class SalesService {
     }
   }
 
-  // Print receipt
+  /// Satış iadesi oluşturur.
+  ///
+  /// [data] iade kalemleri ve nedenini içerir.
+  Future<Map<String, dynamic>> createSaleReturn(String saleId, Map<String, dynamic> data) async {
+    if (useMockData) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      return {
+        'id': 'SRET-${DateTime.now().millisecondsSinceEpoch}',
+        'saleId': saleId,
+        ...data,
+        'createdAt': DateTime.now().toIso8601String(),
+      };
+    }
+
+    try {
+      final response = await _apiClient.post('$_base/$saleId/returns', data: data);
+      return response.data['data'] as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Satış fişini yazdırır.
   Future<Map<String, dynamic>> printReceipt(String saleId) async {
     if (useMockData) {
       await Future.delayed(const Duration(milliseconds: 500));

@@ -1,6 +1,10 @@
 import '../core/data/mock_data.dart';
 import '../core/api/api_client.dart';
 
+/// Stok servisi — Stok hareketleri ve yönetimi için backend API çağrıları.
+///
+/// Backend endpoint: `product/api/v1/stock-movements`
+/// Transfer endpoint: `product/api/v1/stock-transfers`
 class StockService {
 
   /// Development mode - uses mock data when API is unavailable
@@ -9,7 +13,10 @@ class StockService {
 
   StockService(this._apiClient);
 
-  // Get stock movements
+  /// Stok hareketlerini listeler.
+  ///
+  /// [productId] ile ürün, [movementType] ile hareket tipi (in, out, adjustment, return),
+  /// [startDate] ve [endDate] ile tarih aralığı filtreleme destekler.
   Future<List<Map<String, dynamic>>> getStockMovements({
     int? productId,
     String? movementType, // in, out, adjustment, return
@@ -40,7 +47,9 @@ class StockService {
     }
   }
 
-  // Create stock movement
+  /// Yeni stok hareketi oluşturur.
+  ///
+  /// [data] içeriği: `productId`, `quantity`, `movementType` (in/out/adjustment).
   Future<Map<String, dynamic>> createStockMovement(Map<String, dynamic> data) async {
     if (useMockData) {
       await Future.delayed(const Duration(milliseconds: 500));
@@ -76,7 +85,9 @@ class StockService {
     }
   }
 
-  // Get low stock products
+  /// Düşük stoklu ürünleri getirir.
+  ///
+  /// [threshold] ile eşik değeri belirlenebilir, varsayılan 10.
   Future<List<Map<String, dynamic>>> getLowStockProducts({
     int? threshold,
   }) async {
@@ -101,7 +112,7 @@ class StockService {
     }
   }
 
-  // Get out of stock products
+  /// Stokta olmayan ürünleri getirir.
   Future<List<Map<String, dynamic>>> getOutOfStockProducts() async {
     if (useMockData) {
       await Future.delayed(const Duration(milliseconds: 300));
@@ -117,7 +128,7 @@ class StockService {
     }
   }
 
-  // Get critical stock products
+  /// Kritik stok seviyesindeki ürünleri getirir (stok <= eşik).
   Future<List<Map<String, dynamic>>> getCriticalStockProducts() async {
     if (useMockData) {
       await Future.delayed(const Duration(milliseconds: 300));
@@ -137,16 +148,20 @@ class StockService {
     }
   }
 
-  // Adjust stock
+  /// Stok düzeltmesi yapar.
+  ///
+  /// [quantity] yeni stok miktarı, [reason] düzeltme nedeni.
   Future<Map<String, dynamic>> adjustStock({
-    required int productId,
+    required String productId,
     required int quantity,
     required String reason,
     String? notes,
   }) async {
     if (useMockData) {
       await Future.delayed(const Duration(milliseconds: 400));
-      final index = MockData.sampleProducts.indexWhere((p) => p['id'] == productId);
+      final index = MockData.sampleProducts.indexWhere(
+        (p) => p['id']?.toString() == productId,
+      );
       if (index != -1) {
         MockData.sampleProducts[index]['stock'] = quantity;
         return {
@@ -173,7 +188,9 @@ class StockService {
     }
   }
 
-  // Bulk stock update
+  /// Toplu stok güncelleme yapar.
+  ///
+  /// [items] her biri `productId` ve `quantity` içeren liste.
   Future<List<Map<String, dynamic>>> bulkStockUpdate(List<Map<String, dynamic>> items) async {
     if (useMockData) {
       await Future.delayed(const Duration(milliseconds: 500));
@@ -205,7 +222,27 @@ class StockService {
     }
   }
 
-  // Get stock statistics
+  /// Depolar/mağazalar arası stok transferi oluşturur.
+  Future<Map<String, dynamic>> createTransfer(Map<String, dynamic> data) async {
+    if (useMockData) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      return {
+        'id': 'TRF-${DateTime.now().millisecondsSinceEpoch}',
+        ...data,
+        'status': 'pending',
+        'createdAt': DateTime.now().toIso8601String(),
+      };
+    }
+
+    try {
+      final response = await _apiClient.post('product/api/v1/stock-transfers', data: data);
+      return response.data['data'] as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Stok istatistiklerini getirir (toplam, düşük stok, stok değeri vb.).
   Future<Map<String, dynamic>> getStockStats() async {
     if (useMockData) {
       await Future.delayed(const Duration(milliseconds: 300));
@@ -231,7 +268,10 @@ class StockService {
     }
   }
 
-  // Stock count/audit
+  /// Stok sayımı/denetimi gerçekleştirir.
+  ///
+  /// [items] sayılan ürünlerin `productId` ve `quantity` bilgilerini içerir.
+  /// Sistem miktarı ile sayılan miktar arasındaki farkları raporlar.
   Future<Map<String, dynamic>> performStockCount(List<Map<String, dynamic>> items) async {
     if (useMockData) {
       await Future.delayed(const Duration(milliseconds: 500));

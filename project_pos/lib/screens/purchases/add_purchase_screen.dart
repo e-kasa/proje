@@ -675,6 +675,29 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
     });
   }
 
+  Map<String, dynamic> _buildRequest() {
+    return {
+      'supplierId': _selectedSupplierId,
+      'invoiceNumber': _invoiceCtrl.text.trim(),
+      'purchaseDate': DateFormat('yyyy-MM-dd').format(_purchaseDate),
+      'storeId': _selectedStoreId,
+      'warehouseId': _selectedWarehouseId,
+      'notes': _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+      'items': _items
+          .map((i) => {
+                'variantId': i.variantId,
+                'quantity': i.quantity,
+                'unitPrice': i.unitPrice,
+              })
+          .toList(),
+    };
+  }
+
+  bool _isCreditLimitError(dynamic error) {
+    final msg = error.toString().toLowerCase();
+    return msg.contains('creditlimit') && msg.contains('null');
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -704,23 +727,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      final request = {
-        'supplierId': _selectedSupplierId,
-        'invoiceNumber': _invoiceCtrl.text.trim(),
-        'purchaseDate': DateFormat('yyyy-MM-dd').format(_purchaseDate),
-        'storeId': _selectedStoreId,
-        'warehouseId': _selectedWarehouseId,
-        'notes': _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
-        'items': _items
-            .map((i) => {
-                  'variantId': i.variantId,
-                  'quantity': i.quantity,
-                  'unitPrice': i.unitPrice,
-                })
-            .toList(),
-      };
-
-      await ref.read(purchaseServiceProvider).createPurchase(request);
+      await ref.read(purchaseServiceProvider).createPurchase(_buildRequest());
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -733,14 +740,167 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
       }
     } catch (e) {
       setState(() => _isSubmitting = false);
-      if (mounted) {
+
+      if (!mounted) return;
+
+      if (_isCreditLimitError(e) && _selectedSupplierId != null) {
+        _showCreditLimitPrompt();
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Hata: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Hata: $e'), backgroundColor: Colors.red),
         );
       }
+    }
+  }
+
+  Future<void> _showCreditLimitPrompt() async {
+    final supplierName = _suppliers
+        .firstWhere((s) => s['id']?.toString() == _selectedSupplierId,
+            orElse: () => {})['name']
+        ?.toString() ?? 'Tedarikçi';
+
+    final shouldUpdate = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 48),
+        title: const Text('Kredi Limiti Tanımsız'),
+        content: Text(
+          '"$supplierName" tedarikçisinin kredi limiti tanımlanmamış.\n\n'
+          'Satın alma işlemini tamamlamak için önce kredi limitini güncellemek ister misiniz?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Vazgeç'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(ctx, true),
+            icon: const Icon(Icons.edit_rounded, size: 18),
+            label: const Text('Kredi Limiti Güncelle'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldUpdate != true || !mounted) return;
+
+    _showCreditLimitEditor(supplierName);
+  }
+
+  Future<void> _showCreditLimitEditor(String supplierName) async {
+    final limitCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool saving = false;
+
+    final updated = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.account_balance_wallet_rounded,
+                  color: AppColors.primary, size: 24),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('Kredi Limiti — $supplierName',
+                    style: const TextStyle(fontSize: 16)),
+              ),
+            ],
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Bu tedarikçi için kredi limitini belirleyin. '
+                  'İşlem sonrasında satın alma otomatik olarak tekrar denenecektir.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: limitCtrl,
+                  autofocus: true,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[\d.,]')),
+                  ],
+                  decoration: InputDecoration(
+                    labelText: 'Kredi Limiti (₺)',
+                    prefixIcon: const Icon(Icons.monetization_on_outlined),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    hintText: 'Örn: 50000',
+                  ),
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Limit giriniz';
+                    final n = double.tryParse(v.replaceAll(',', '.'));
+                    if (n == null || n <= 0) return 'Geçerli bir tutar giriniz';
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: saving ? null : () => Navigator.pop(ctx, false),
+              child: const Text('Vazgeç'),
+            ),
+            FilledButton.icon(
+              onPressed: saving
+                  ? null
+                  : () async {
+                      if (!formKey.currentState!.validate()) return;
+                      setDialogState(() => saving = true);
+                      try {
+                        final limit = double.parse(
+                            limitCtrl.text.replaceAll(',', '.'));
+                        await ref.read(supplierServiceProvider).updateCreditLimit(
+                            _selectedSupplierId!, limit);
+                        if (ctx.mounted) Navigator.pop(ctx, true);
+                      } catch (e) {
+                        setDialogState(() => saving = false);
+                        if (ctx.mounted) {
+                          ScaffoldMessenger.of(ctx).showSnackBar(
+                            SnackBar(
+                                content: Text('Güncelleme hatası: $e'),
+                                backgroundColor: Colors.red),
+                          );
+                        }
+                      }
+                    },
+              icon: saving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.save_rounded, size: 18),
+              label: Text(saving ? 'Kaydediliyor...' : 'Kaydet ve Devam Et'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (updated == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kredi limiti güncellendi, satın alma tekrar deneniyor...'),
+          backgroundColor: Colors.blue,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      // Kısa bir gecikme ile kullanıcıya bilgi göster, sonra otomatik tekrar dene
+      await Future.delayed(const Duration(milliseconds: 500));
+      _submit();
     }
   }
 }

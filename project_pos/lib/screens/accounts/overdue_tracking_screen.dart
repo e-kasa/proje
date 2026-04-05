@@ -1,0 +1,325 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../core/theme/app_colors.dart';
+import '../../services/service_locator.dart';
+
+class OverdueTrackingScreen extends ConsumerStatefulWidget {
+  const OverdueTrackingScreen({super.key});
+
+  @override
+  ConsumerState<OverdueTrackingScreen> createState() =>
+      _OverdueTrackingScreenState();
+}
+
+class _OverdueTrackingScreenState extends ConsumerState<OverdueTrackingScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  List<Map<String, dynamic>> _customerOverdue = [];
+  List<Map<String, dynamic>> _supplierOverdue = [];
+  bool _loadingCustomer = true;
+  bool _loadingSupplier = true;
+  String? _errorCustomer;
+  String? _errorSupplier;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _loadCustomerOverdue();
+    _loadSupplierOverdue();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadCustomerOverdue() async {
+    setState(() {
+      _loadingCustomer = true;
+      _errorCustomer = null;
+    });
+    try {
+      final accountService = ref.read(accountServiceProvider);
+      final data =
+          await accountService.getOverdueAccounts(accountType: 'CUSTOMER');
+      data.sort((a, b) {
+        final dateA = a['dueDate']?.toString() ?? '';
+        final dateB = b['dueDate']?.toString() ?? '';
+        return dateA.compareTo(dateB);
+      });
+      setState(() {
+        _customerOverdue = data;
+        _loadingCustomer = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorCustomer = e.toString();
+        _loadingCustomer = false;
+      });
+    }
+  }
+
+  Future<void> _loadSupplierOverdue() async {
+    setState(() {
+      _loadingSupplier = true;
+      _errorSupplier = null;
+    });
+    try {
+      final accountService = ref.read(accountServiceProvider);
+      final data =
+          await accountService.getOverdueAccounts(accountType: 'SUPPLIER');
+      data.sort((a, b) {
+        final dateA = a['dueDate']?.toString() ?? '';
+        final dateB = b['dueDate']?.toString() ?? '';
+        return dateA.compareTo(dateB);
+      });
+      setState(() {
+        _supplierOverdue = data;
+        _loadingSupplier = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorSupplier = e.toString();
+        _loadingSupplier = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Vadesi Gecmis Hesaplar'),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.danger, AppColors.orange],
+            ),
+          ),
+        ),
+        foregroundColor: Colors.white,
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          tabs: const [
+            Tab(text: 'Musteriler'),
+            Tab(text: 'Tedarikciler'),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildTab(
+            items: _customerOverdue,
+            loading: _loadingCustomer,
+            error: _errorCustomer,
+            onRefresh: _loadCustomerOverdue,
+            isCustomer: true,
+          ),
+          _buildTab(
+            items: _supplierOverdue,
+            loading: _loadingSupplier,
+            error: _errorSupplier,
+            onRefresh: _loadSupplierOverdue,
+            isCustomer: false,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTab({
+    required List<Map<String, dynamic>> items,
+    required bool loading,
+    required String? error,
+    required Future<void> Function() onRefresh,
+    required bool isCustomer,
+  }) {
+    if (loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: AppColors.danger),
+            const SizedBox(height: 12),
+            Text('Veri yuklenirken hata olustu',
+                style: TextStyle(color: AppColors.textSecondary)),
+            const SizedBox(height: 8),
+            Text(error,
+                style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: onRefresh,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Tekrar Dene'),
+            ),
+          ],
+        ),
+      );
+    }
+    if (items.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.check_circle_outline,
+                size: 56, color: AppColors.success),
+            const SizedBox(height: 12),
+            Text(
+              isCustomer
+                  ? 'Vadesi gecmis musteri hesabi yok'
+                  : 'Vadesi gecmis tedarikci hesabi yok',
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: items.length,
+        itemBuilder: (context, index) =>
+            _overdueItemCard(items[index], isCustomer),
+      ),
+    );
+  }
+
+  Widget _overdueItemCard(Map<String, dynamic> item, bool isCustomer) {
+    final accountName = item['accountName']?.toString() ?? '-';
+    final debitAmount = (item['debitAmount'] ?? 0).toDouble();
+    final dueDate = item['dueDate']?.toString() ?? '-';
+    final referenceNumber = item['referenceNumber']?.toString() ?? '';
+    final accountType = item['accountType']?.toString() ?? '';
+    final accountId = item['accountId']?.toString() ?? '';
+
+    return GestureDetector(
+      onTap: () {
+        context.push('/accounts/statement', extra: {
+          'accountType': accountType,
+          'accountId': accountId,
+          'accountName': accountName,
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 22,
+              backgroundColor:
+                  (isCustomer ? AppColors.info : AppColors.orange)
+                      .withOpacity(0.1),
+              child: Icon(
+                isCustomer ? Icons.person : Icons.business,
+                color: isCustomer ? AppColors.info : AppColors.orange,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    accountName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.calendar_today,
+                          size: 13, color: AppColors.danger),
+                      const SizedBox(width: 4),
+                      Text(
+                        dueDate.length >= 10
+                            ? dueDate.substring(0, 10)
+                            : dueDate,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.danger,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (referenceNumber.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.tag, size: 13, color: AppColors.textMuted),
+                        const SizedBox(width: 4),
+                        Text(
+                          referenceNumber,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  _formatCurrency(debitAmount),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: AppColors.danger,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Icon(Icons.chevron_right,
+                    size: 20, color: AppColors.textMuted),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatCurrency(double amount) {
+    final formatted = amount.toStringAsFixed(2).replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]}.',
+    );
+    return '$formatted TL';
+  }
+}

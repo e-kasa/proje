@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:animate_do/animate_do.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/theme/app_theme.dart';
+import '../../core/theme/app_colors.dart';
+import '../../services/service_locator.dart';
 
-class ProductDetailScreen extends ConsumerWidget {
+class ProductDetailScreen extends ConsumerStatefulWidget {
   final String productId;
 
   const ProductDetailScreen({
@@ -13,255 +13,455 @@ class ProductDetailScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      body: SafeArea(
-        child: SingleChildScrollView(
+  ConsumerState<ProductDetailScreen> createState() =>
+      _ProductDetailScreenState();
+}
+
+class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
+  Map<String, dynamic>? _product;
+  bool _isLoading = true;
+  String? _error;
+
+  // OEM tab state
+  List<Map<String, dynamic>> _oemNumbers = [];
+  bool _oemLoading = false;
+
+  // Cross reference tab state
+  List<Map<String, dynamic>> _crossRefs = [];
+  bool _crossRefLoading = false;
+
+  // Vehicle compatibility tab state
+  List<Map<String, dynamic>> _vehicleCompats = [];
+  bool _vehicleCompatLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProduct();
+  }
+
+  Future<void> _loadProduct() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final product = await ref
+          .read(productServiceProvider)
+          .getProductById(widget.productId);
+      if (product.isEmpty) {
+        setState(() {
+          _error = 'Urun bulunamadi';
+          _isLoading = false;
+        });
+        return;
+      }
+      setState(() {
+        _product = product;
+        _isLoading = false;
+      });
+      _loadTabData();
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  String? get _firstVariantId {
+    final variants =
+        (_product?['variants'] as List?)?.cast<Map<String, dynamic>>();
+    if (variants != null && variants.isNotEmpty) {
+      return variants.first['id']?.toString();
+    }
+    return null;
+  }
+
+  Future<void> _loadTabData() async {
+    final variantId = _firstVariantId;
+    if (variantId == null) return;
+
+    // Load OEM numbers
+    setState(() => _oemLoading = true);
+    try {
+      final oems =
+          await ref.read(oemServiceProvider).getByVariantId(variantId);
+      setState(() {
+        _oemNumbers = oems;
+        _oemLoading = false;
+      });
+    } catch (_) {
+      setState(() => _oemLoading = false);
+    }
+
+    // Load cross references
+    setState(() => _crossRefLoading = true);
+    try {
+      final crossRefs = await ref
+          .read(crossReferenceServiceProvider)
+          .getByVariantId(variantId);
+      setState(() {
+        _crossRefs = crossRefs;
+        _crossRefLoading = false;
+      });
+    } catch (_) {
+      setState(() => _crossRefLoading = false);
+    }
+
+    // Load vehicle compatibilities
+    setState(() => _vehicleCompatLoading = true);
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient
+          .get('product/api/vehicle-compatibility/variant/$variantId');
+      final data = response.data['data'];
+      if (data is List) {
+        setState(() {
+          _vehicleCompats = data.cast<Map<String, dynamic>>();
+          _vehicleCompatLoading = false;
+        });
+      } else {
+        setState(() => _vehicleCompatLoading = false);
+      }
+    } catch (_) {
+      setState(() => _vehicleCompatLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: AppColors.bgLight,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error != null || _product == null) {
+      return Scaffold(
+        backgroundColor: AppColors.bgLight,
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.go('/inventory/products'),
+          ),
+          title: const Text('Urun Detayi'),
+        ),
+        body: Center(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: FadeInDown(
-                  child: Row(
+              Icon(Icons.error_outline, size: 64, color: AppColors.danger),
+              const SizedBox(height: 16),
+              Text(
+                _error ?? 'Bilinmeyen hata',
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadProduct,
+                child: const Text('Tekrar Dene'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final product = _product!;
+    final productName = product['name']?.toString() ?? 'Urun';
+
+    return DefaultTabController(
+      length: 4,
+      child: Scaffold(
+        backgroundColor: AppColors.bgLight,
+        appBar: AppBar(
+          backgroundColor: AppColors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+            onPressed: () => context.go('/inventory/products'),
+          ),
+          title: Text(
+            productName,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          actions: [
+            OutlinedButton.icon(
+              onPressed: () {
+                context.push('/inventory/add-product?edit=${_product!['id']}');
+              },
+              icon: const Icon(Icons.edit, size: 18),
+              label: const Text('Duzenle'),
+            ),
+            const SizedBox(width: 12),
+          ],
+          bottom: const TabBar(
+            labelColor: AppColors.primary,
+            unselectedLabelColor: AppColors.textMuted,
+            indicatorColor: AppColors.primary,
+            tabs: [
+              Tab(text: 'Genel Bilgi'),
+              Tab(text: 'OEM Numaralar'),
+              Tab(text: 'Capraz Referans'),
+              Tab(text: 'Arac Uyumlulugu'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            _buildGeneralInfoTab(product),
+            _buildOemTab(),
+            _buildCrossRefTab(),
+            _buildVehicleCompatibilityTab(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Tab 1: Genel Bilgi ───────────────────────────────────────────────────
+
+  Widget _buildGeneralInfoTab(Map<String, dynamic> product) {
+    final variants =
+        (product['variants'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Product info card
+          Card(
+            elevation: 0,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product['name']?.toString() ?? '-',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'SKU: ${product['sku'] ?? '-'}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  if (product['barcode'] != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Barkod: ${product['barcode']}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  Row(
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back),
-                        onPressed: () => context.go('/inventory/products'),
+                      _buildInfoChip(
+                        'Marka',
+                        product['brand']?.toString() ?? '-',
+                        Icons.local_offer_outlined,
                       ),
                       const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Product Details',
-                              style: Theme.of(context).textTheme.headlineMedium,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Product ID: $productId',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: AppTheme.textSecondary,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: () {},
-                        icon: const Icon(Icons.edit),
-                        label: const Text('Edit'),
-                      ),
-                      const SizedBox(width: 12),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline),
-                        color: AppTheme.errorColor,
-                        onPressed: () {},
+                      _buildInfoChip(
+                        'Kategori',
+                        product['categoryId']?.toString() ?? '-',
+                        Icons.category_outlined,
                       ),
                     ],
                   ),
-                ),
-              ),
-
-              // Content
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Left Column - Image & Gallery
-                    Expanded(
-                      flex: 2,
-                      child: FadeInLeft(
-                        child: Column(
-                          children: [
-                            Card(
-                              child: AspectRatio(
-                                aspectRatio: 1,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.backgroundColor,
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: const Icon(
-                                    Icons.image_outlined,
-                                    size: 120,
-                                    color: AppTheme.textTertiary,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            SizedBox(
-                              height: 100,
-                              child: ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: 4,
-                                separatorBuilder: (context, index) =>
-                                    const SizedBox(width: 12),
-                                itemBuilder: (context, index) {
-                                  return Card(
-                                    child: Container(
-                                      width: 100,
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.backgroundColor,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: const Icon(
-                                        Icons.image_outlined,
-                                        size: 32,
-                                        color: AppTheme.textTertiary,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
+                  const SizedBox(height: 20),
+                  const Divider(),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatItem(
+                          'Fiyat',
+                          '${product['basePrice'] ?? 0} TL',
+                          Icons.attach_money,
+                          AppColors.primary,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 24),
-
-                    // Right Column - Details
-                    Expanded(
-                      flex: 3,
-                      child: FadeInRight(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Basic Info Card
-                            Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(24),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Product $productId',
-                                      style: Theme.of(context).textTheme.headlineMedium,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'SKU: PRD-${int.parse(productId) + 1000}',
-                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                            color: AppTheme.textSecondary,
-                                          ),
-                                    ),
-                                    const SizedBox(height: 24),
-                                    Row(
-                                      children: [
-                                        _buildInfoChip(
-                                          'Category',
-                                          'Electronics',
-                                          Icons.category_outlined,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        _buildInfoChip(
-                                          'Brand',
-                                          'Samsung',
-                                          Icons.local_offer_outlined,
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 24),
-                                    const Divider(),
-                                    const SizedBox(height: 24),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: _buildStatItem(
-                                            'Price',
-                                            '\$${int.parse(productId) * 25}',
-                                            Icons.attach_money,
-                                            AppTheme.primaryColor,
-                                          ),
-                                        ),
-                                        Expanded(
-                                          child: _buildStatItem(
-                                            'Stock',
-                                            '${int.parse(productId) * 10}',
-                                            Icons.inventory_2_outlined,
-                                            AppTheme.successColor,
-                                          ),
-                                        ),
-                                        Expanded(
-                                          child: _buildStatItem(
-                                            'Sold',
-                                            '${int.parse(productId) * 5}',
-                                            Icons.trending_up,
-                                            AppTheme.warningColor,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Description Card
-                            Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(24),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Description',
-                                      style: Theme.of(context).textTheme.titleLarge,
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '
-                                      'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. '
-                                      'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.',
-                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                            color: AppTheme.textSecondary,
-                                            height: 1.6,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Specifications Card
-                            Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(24),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Specifications',
-                                      style: Theme.of(context).textTheme.titleLarge,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    _buildSpecRow('Weight', '500g'),
-                                    _buildSpecRow('Dimensions', '20 x 15 x 5 cm'),
-                                    _buildSpecRow('Color', 'Black'),
-                                    _buildSpecRow('Material', 'Plastic'),
-                                    _buildSpecRow('Warranty', '1 Year'),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
+                      Expanded(
+                        child: _buildStatItem(
+                          'Stok',
+                          '${product['stock'] ?? 0}',
+                          Icons.inventory_2_outlined,
+                          AppColors.success,
                         ),
+                      ),
+                      Expanded(
+                        child: _buildStatItem(
+                          'Durum',
+                          product['isActive'] == true ? 'Aktif' : 'Pasif',
+                          Icons.circle,
+                          product['isActive'] == true
+                              ? AppColors.success
+                              : AppColors.danger,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Description card
+          if (product['description'] != null &&
+              product['description'].toString().isNotEmpty)
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Aciklama',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      product['description'].toString(),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                        height: 1.6,
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
+            ),
+
+          // Variants card
+          if (variants.length > 1) ...[
+            const SizedBox(height: 16),
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Varyantlar (${variants.length})',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ...variants.map((v) => _buildVariantRow(v)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVariantRow(Map<String, dynamic> variant) {
+    final inventory = variant['inventory'] as Map<String, dynamic>? ?? {};
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.bgLight,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  variant['name']?.toString() ?? variant['sku']?.toString() ?? '-',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'SKU: ${variant['sku'] ?? '-'}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+          Expanded(
+            flex: 2,
+            child: Text(
+              'Satis: ${variant['salePrice'] ?? '-'} TL',
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.primary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(
+              'Alis: ${variant['purchasePrice'] ?? '-'} TL',
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              'Stok: ${inventory['physicalQuantity'] ?? 0}',
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.success,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -270,13 +470,14 @@ class ProductDetailScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppTheme.backgroundColor,
+        color: AppColors.bgLight,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.borderColor),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: AppTheme.textSecondary),
+          Icon(icon, size: 18, color: AppColors.textSecondary),
           const SizedBox(width: 8),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -285,7 +486,7 @@ class ProductDetailScreen extends ConsumerWidget {
                 label,
                 style: const TextStyle(
                   fontSize: 11,
-                  color: AppTheme.textSecondary,
+                  color: AppColors.textSecondary,
                 ),
               ),
               Text(
@@ -293,6 +494,7 @@ class ProductDetailScreen extends ConsumerWidget {
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
@@ -302,7 +504,8 @@ class ProductDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatItem(String label, String value, IconData icon, Color color) {
+  Widget _buildStatItem(
+      String label, String value, IconData icon, Color color) {
     return Column(
       children: [
         Container(
@@ -317,7 +520,7 @@ class ProductDetailScreen extends ConsumerWidget {
         Text(
           value,
           style: TextStyle(
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: color,
           ),
@@ -327,35 +530,553 @@ class ProductDetailScreen extends ConsumerWidget {
           label,
           style: const TextStyle(
             fontSize: 12,
-            color: AppTheme.textSecondary,
+            color: AppColors.textSecondary,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSpecRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppTheme.textSecondary,
-            ),
+  // ─── Tab 2: OEM Numaralar ─────────────────────────────────────────────────
+
+  Widget _buildOemTab() {
+    if (_oemLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_firstVariantId == null) {
+      return const Center(
+        child: Text(
+          'Varyant bulunamadi',
+          style: TextStyle(color: AppColors.textMuted),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        // Add button
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'OEM Numaralari (${_oemNumbers.length})',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  _showAddOemDialog();
+                },
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Ekle'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.white,
+                ),
+              ),
+            ],
           ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+        ),
+        Expanded(
+          child: _oemNumbers.isEmpty
+              ? const Center(
+                  child: Text(
+                    'Henuz OEM numarasi eklenmemis',
+                    style: TextStyle(color: AppColors.textMuted),
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.all(20),
+                  itemCount: _oemNumbers.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final oem = _oemNumbers[index];
+                    final isPrimary = oem['isPrimary'] == true;
+                    return Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: BorderSide(
+                          color: isPrimary
+                              ? AppColors.warning
+                              : AppColors.border,
+                        ),
+                      ),
+                      child: ListTile(
+                        leading: isPrimary
+                            ? const Icon(Icons.star,
+                                color: AppColors.warning, size: 24)
+                            : const Icon(Icons.tag,
+                                color: AppColors.textMuted, size: 24),
+                        title: Text(
+                          oem['oemNumber']?.toString() ?? '-',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        subtitle: Text(
+                          oem['manufacturer']?.toString() ?? '-',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                          ),
+                        ),
+                        trailing: isPrimary
+                            ? Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.warning.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  'Birincil',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.warning,
+                                  ),
+                                ),
+                              )
+                            : null,
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  // ─── Tab 3: Capraz Referans ───────────────────────────────────────────────
+
+  Widget _buildCrossRefTab() {
+    if (_crossRefLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_firstVariantId == null) {
+      return const Center(
+        child: Text(
+          'Varyant bulunamadi',
+          style: TextStyle(color: AppColors.textMuted),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Capraz Referanslar (${_crossRefs.length})',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  _showAddCrossReferenceDialog();
+                },
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Ekle'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _crossRefs.isEmpty
+              ? const Center(
+                  child: Text(
+                    'Henuz capraz referans eklenmemis',
+                    style: TextStyle(color: AppColors.textMuted),
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.all(20),
+                  itemCount: _crossRefs.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final cr = _crossRefs[index];
+                    return Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: const BorderSide(color: AppColors.border),
+                      ),
+                      child: ListTile(
+                        leading: const Icon(Icons.swap_horiz,
+                            color: AppColors.info, size: 24),
+                        title: Text(
+                          cr['crossRefNumber']?.toString() ?? '-',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        subtitle: Text(
+                          cr['crossRefBrand']?.toString() ?? '-',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                          ),
+                        ),
+                        trailing: cr['notes'] != null &&
+                                cr['notes'].toString().isNotEmpty
+                            ? Tooltip(
+                                message: cr['notes'].toString(),
+                                child: const Icon(Icons.info_outline,
+                                    color: AppColors.textMuted, size: 20),
+                              )
+                            : null,
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  // ─── Dialogs ─────────────────────────────────────────────────────────────
+
+  void _showAddOemDialog() {
+    final oemController = TextEditingController();
+    final manufacturerController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('OEM Numarasi Ekle'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: oemController,
+                decoration: const InputDecoration(
+                  labelText: 'OEM Numarasi *',
+                  hintText: 'Orn: 1234567890',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'OEM numarasi zorunlu' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: manufacturerController,
+                decoration: const InputDecoration(
+                  labelText: 'Uretici Adi',
+                  hintText: 'Orn: Bosch',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Iptal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              final variantId = _firstVariantId;
+              if (variantId == null) return;
+
+              try {
+                await ref.read(oemServiceProvider).create({
+                  'variantId': int.tryParse(variantId) ?? variantId,
+                  'oemNumber': oemController.text.trim(),
+                  'manufacturer': manufacturerController.text.trim(),
+                });
+                if (ctx.mounted) Navigator.of(ctx).pop();
+                _loadOemNumbers();
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Hata: $e')),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.white,
             ),
+            child: const Text('Kaydet'),
           ),
         ],
       ),
+    ).then((_) {
+      oemController.dispose();
+      manufacturerController.dispose();
+    });
+  }
+
+  void _showAddCrossReferenceDialog() {
+    final codeController = TextEditingController();
+    final brandController = TextEditingController();
+    final notesController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Capraz Referans Ekle'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: codeController,
+                decoration: const InputDecoration(
+                  labelText: 'Referans Kodu *',
+                  hintText: 'Orn: ABC-123',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Referans kodu zorunlu' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: brandController,
+                decoration: const InputDecoration(
+                  labelText: 'Marka',
+                  hintText: 'Orn: Febi',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: notesController,
+                decoration: const InputDecoration(
+                  labelText: 'Aciklama',
+                  hintText: 'Opsiyonel not',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Iptal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              final variantId = _firstVariantId;
+              if (variantId == null) return;
+
+              try {
+                await ref.read(crossReferenceServiceProvider).create({
+                  'variantId': int.tryParse(variantId) ?? variantId,
+                  'crossRefNumber': codeController.text.trim(),
+                  'crossRefBrand': brandController.text.trim(),
+                  'notes': notesController.text.trim(),
+                });
+                if (ctx.mounted) Navigator.of(ctx).pop();
+                _loadCrossRefs();
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Hata: $e')),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.white,
+            ),
+            child: const Text('Kaydet'),
+          ),
+        ],
+      ),
+    ).then((_) {
+      codeController.dispose();
+      brandController.dispose();
+      notesController.dispose();
+    });
+  }
+
+  Future<void> _loadOemNumbers() async {
+    final variantId = _firstVariantId;
+    if (variantId == null) return;
+    setState(() => _oemLoading = true);
+    try {
+      final oems = await ref.read(oemServiceProvider).getByVariantId(variantId);
+      setState(() {
+        _oemNumbers = oems;
+        _oemLoading = false;
+      });
+    } catch (_) {
+      setState(() => _oemLoading = false);
+    }
+  }
+
+  Future<void> _loadCrossRefs() async {
+    final variantId = _firstVariantId;
+    if (variantId == null) return;
+    setState(() => _crossRefLoading = true);
+    try {
+      final crossRefs =
+          await ref.read(crossReferenceServiceProvider).getByVariantId(variantId);
+      setState(() {
+        _crossRefs = crossRefs;
+        _crossRefLoading = false;
+      });
+    } catch (_) {
+      setState(() => _crossRefLoading = false);
+    }
+  }
+
+  // ─── Tab 4: Arac Uyumlulugu ──────────────────────────────────────────────
+
+  Widget _buildVehicleCompatibilityTab() {
+    final variantId = _firstVariantId;
+
+    if (variantId == null) {
+      return const Center(
+        child: Text(
+          'Varyant bulunamadi',
+          style: TextStyle(color: AppColors.textMuted),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        // Navigate button
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Arac Uyumlulugu (${_vehicleCompats.length})',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  context.push('/vehicles/compatibility/$variantId');
+                },
+                icon: const Icon(Icons.open_in_new, size: 18),
+                label: const Text('Tumu'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _vehicleCompatLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _vehicleCompats.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.directions_car_outlined,
+                              size: 48, color: AppColors.textMuted),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Henuz arac uyumlulugu eklenmemis',
+                            style: TextStyle(color: AppColors.textMuted),
+                          ),
+                          const SizedBox(height: 16),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              context.push(
+                                  '/vehicles/compatibility/$variantId');
+                            },
+                            icon: const Icon(Icons.add, size: 18),
+                            label: const Text('Uyumluluk Ekle'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.all(20),
+                      itemCount: _vehicleCompats.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final vc = _vehicleCompats[index];
+                        final vehicle =
+                            vc['vehicle'] as Map<String, dynamic>? ?? {};
+                        final make =
+                            vehicle['make']?.toString() ?? '';
+                        final model =
+                            vehicle['model']?.toString() ?? '';
+                        final year =
+                            vehicle['year']?.toString() ?? '';
+                        final displayText =
+                            [make, model, year].where((s) => s.isNotEmpty).join(' ');
+
+                        return Card(
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            side: const BorderSide(color: AppColors.border),
+                          ),
+                          child: ListTile(
+                            leading: const Icon(Icons.directions_car,
+                                color: AppColors.info, size: 24),
+                            title: Text(
+                              displayText.isNotEmpty ? displayText : 'Arac',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            subtitle: vc['notes'] != null &&
+                                    vc['notes'].toString().isNotEmpty
+                                ? Text(
+                                    vc['notes'].toString(),
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 13,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                        );
+                      },
+                    ),
+        ),
+      ],
     );
   }
 }

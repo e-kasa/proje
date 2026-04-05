@@ -4,14 +4,18 @@ import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../screens/dashboard/modern_dashboard_screen.dart';
-import '../../screens/sales/sales_screen.dart';
+import '../../screens/sales/sale_list_screen.dart';
+import '../../screens/sales/sale_detail_screen.dart';
+import '../../screens/sales/sale_return_screen.dart';
+import '../../screens/purchases/purchase_return_screen.dart';
 import '../../screens/inventory/inventory_screen.dart';
 import '../../screens/inventory/enhanced_product_list_screen.dart';
 import '../../screens/inventory/product_detail_screen.dart';
-import '../../screens/inventory/add_product_wizard_screen.dart';
+import '../../screens/inventory/add_product/add_product_wizard_screen.dart';
 import '../../screens/inventory/brands_screen.dart';
 import '../../screens/inventory/units_screen.dart';
 import '../../screens/inventory/barcode_management_screen.dart';
+import '../../screens/inventory/batch_entry/batch_product_screen.dart';
 import '../../screens/categories/category_list_screen.dart';
 import '../../screens/categories/add_category_screen.dart';
 import '../../screens/categories/company_category_screen.dart';
@@ -19,7 +23,7 @@ import '../../screens/customers/customer_list_screen.dart';
 import '../../screens/customers/add_customer_screen.dart';
 import '../../screens/suppliers/supplier_list_screen.dart';
 import '../../screens/suppliers/add_supplier_screen.dart';
-import '../../screens/pos/pos_sales_screen.dart';
+import '../../screens/pos/pos_screen.dart';
 import '../../screens/stock/enhanced_stock_screen.dart';
 import '../../screens/reports/reports_screen.dart';
 import '../../screens/scanner/barcode_scanner_screen.dart';
@@ -32,13 +36,17 @@ import '../../screens/store/add_store_screen.dart';
 import '../../screens/finance/finance_dashboard_screen.dart';
 import '../../screens/finance/expense_list_screen.dart';
 import '../../screens/finance/add_expense_screen.dart';
+import '../../screens/finance/add_income_screen.dart';
+import '../../screens/finance/payment_list_screen.dart';
+import '../../screens/finance/cash_flow_screen.dart';
 import '../../screens/settings/settings_screen.dart';
+import '../../screens/settings/user_management_screen.dart';
+import '../../screens/settings/company_settings_screen.dart';
 import '../../screens/hrm/employee_list_screen.dart';
+import '../../screens/hrm/add_employee_screen.dart';
 import '../../screens/bulk_import/bulk_import_upload_screen.dart';
 import '../../screens/bulk_import/bulk_import_review_screen_v2.dart';
-import '../../screens/bulk_import/simplified_bulk_import_screen.dart';
 import '../../screens/bulk_import/supplier_import_review_screen.dart';
-import '../../screens/bulk_import/supplier_import_review_table_screen.dart';
 // import '../../screens/bulk_import/supplier_import_table_dropdown_screen.dart'; // DISABLED: Has compile errors
 import '../../screens/supplier_upload/supplier_upload_wizard_screen.dart';
 import '../../models/supplier_upload_models.dart' as supplier_models;
@@ -47,6 +55,26 @@ import '../../screens/stock/stock_transfer_review_screen.dart';
 import '../../screens/stock/stock_count_review_screen.dart';
 import '../../screens/purchases/purchase_list_screen.dart';
 import '../../screens/purchases/add_purchase_screen.dart';
+import '../../screens/purchases/purchase_detail_screen.dart';
+import '../../screens/suppliers/supplier_account_detail_screen.dart';
+import '../../screens/suppliers/supplier_detail_screen.dart';
+import '../../screens/vehicles/vehicle_list_screen.dart';
+import '../../screens/part_search/part_search_screen.dart';
+import '../../screens/vehicles/vehicle_compatibility_screen.dart';
+import '../../screens/customers/customer_account_detail_screen.dart';
+import '../../screens/customers/customer_detail_screen.dart';
+import '../../screens/accounts/account_summary_dashboard_screen.dart';
+import '../../screens/accounts/account_statement_screen.dart';
+import '../../screens/accounts/overdue_tracking_screen.dart';
+import '../../screens/stock/stock_transfer_screen.dart';
+import '../../screens/stock/stock_movement_history_screen.dart';
+import '../../screens/stock/stock_alert_screen.dart';
+import '../../screens/stock/stock_value_report_screen.dart';
+import '../../screens/reports/sales_summary_screen.dart';
+import '../../screens/reports/product_sales_analysis_screen.dart';
+import '../../screens/reports/customer_sales_analysis_screen.dart';
+import '../../screens/reports/profit_overview_screen.dart';
+import '../../screens/reports/daily_summary_screen.dart';
 import '../layouts/responsive_layout.dart';  // Changed from main_layout.dart
 
 /// Auth değişimlerini GoRouter'a iletmek için ChangeNotifier.
@@ -90,11 +118,25 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/sales',
-            builder: (context, state) => const SalesScreen(),
+            builder: (context, state) => const SaleListScreen(),
+          ),
+          GoRoute(
+            path: '/sales/detail/:id',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return SaleDetailScreen(saleId: id);
+            },
+          ),
+          GoRoute(
+            path: '/sales/return/:saleId',
+            builder: (context, state) {
+              final saleId = state.pathParameters['saleId']!;
+              return SaleReturnScreen(saleId: saleId);
+            },
           ),
           GoRoute(
             path: '/pos',
-            builder: (context, state) => const PosSalesScreen(),
+            builder: (context, state) => const PosScreen(),
           ),
           GoRoute(
             path: '/scanner',
@@ -127,6 +169,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/stock/count-review',
             builder: (context, state) => const StockCountReviewScreen(),
+          ),
+          GoRoute(
+            path: '/stock/transfer',
+            builder: (context, state) => const StockTransferScreen(),
           ),
           GoRoute(
             path: '/reports',
@@ -185,6 +231,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: 'barcodes',
                 builder: (context, state) => const BarcodeManagementScreen(),
               ),
+              GoRoute(
+                path: 'batch-entry',
+                builder: (context, state) => const BatchProductScreen(),
+              ),
             ],
           ),
           // Warehouse Routes
@@ -221,6 +271,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           // Customer Routes
           GoRoute(
+            path: '/customers/detail/:id',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return CustomerDetailScreen(customerId: id);
+            },
+          ),
+          GoRoute(
             path: '/customers/add',
             builder: (context, state) => const AddCustomerScreen(),
           ),
@@ -240,7 +297,28 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/purchases/create',
             builder: (context, state) => const AddPurchaseScreen(),
           ),
+          GoRoute(
+            path: '/purchases/detail/:id',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return PurchaseDetailScreen(purchaseId: id);
+            },
+          ),
+          GoRoute(
+            path: '/purchases/return/:purchaseId',
+            builder: (context, state) {
+              final purchaseId = state.pathParameters['purchaseId']!;
+              return PurchaseReturnScreen(purchaseId: purchaseId);
+            },
+          ),
           // Supplier Routes
+          GoRoute(
+            path: '/suppliers/detail/:id',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return SupplierDetailScreen(supplierId: id);
+            },
+          ),
           GoRoute(
             path: '/suppliers/add',
             builder: (context, state) => const AddSupplierScreen(),
@@ -250,6 +328,33 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) {
               final id = state.pathParameters['id'];
               return AddSupplierScreen(supplierId: id);
+            },
+          ),
+          GoRoute(
+            path: '/suppliers/account/:id',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return SupplierAccountDetailScreen(supplierId: id);
+            },
+          ),
+          // Vehicle & Part Search Routes
+          GoRoute(
+            path: '/part-search',
+            builder: (context, state) => const PartSearchScreen(),
+          ),
+          GoRoute(
+            path: '/vehicles',
+            builder: (context, state) => const VehicleListScreen(),
+          ),
+          GoRoute(
+            path: '/vehicles/compatibility/:variantId',
+            builder: (context, state) {
+              final variantId = state.pathParameters['variantId']!;
+              final extra = state.extra as Map<String, dynamic>?;
+              return VehicleCompatibilityScreen(
+                variantId: variantId,
+                variantName: extra?['variantName'] ?? '',
+              );
             },
           ),
           // Category Routes
@@ -292,10 +397,33 @@ final routerProvider = Provider<GoRouter>((ref) {
               return AddExpenseScreen(expenseId: id);
             },
           ),
+          GoRoute(
+            path: '/finance/add-income',
+            builder: (context, state) => const AddIncomeScreen(),
+          ),
+          GoRoute(
+            path: '/finance/payments',
+            builder: (context, state) => const PaymentListScreen(),
+          ),
+          GoRoute(
+            path: '/finance/cash-flow',
+            builder: (context, state) => const CashFlowScreen(),
+          ),
           // HRM Routes
           GoRoute(
             path: '/hrm/employees',
             builder: (context, state) => const EmployeeListScreen(),
+          ),
+          GoRoute(
+            path: '/hrm/employees/add',
+            builder: (context, state) => const AddEmployeeScreen(),
+          ),
+          GoRoute(
+            path: '/hrm/employees/edit/:id',
+            builder: (context, state) {
+              final id = int.parse(state.pathParameters['id']!);
+              return AddEmployeeScreen(employeeId: id);
+            },
           ),
           // Bulk Import Routes
           GoRoute(
@@ -307,16 +435,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const BulkImportReviewScreenV2(),
           ),
           GoRoute(
-            path: '/bulk-import/simplified',
-            builder: (context, state) => const SimplifiedBulkImportScreen(),
-          ),
-          GoRoute(
             path: '/bulk-import/supplier',
             builder: (context, state) => const SupplierImportReviewScreen(),
-          ),
-          GoRoute(
-            path: '/bulk-import/supplier-table',
-            builder: (context, state) => const SupplierImportReviewTableScreen(),
           ),
           // DISABLED: supplier-dropdown route has compile errors
           // GoRoute(
@@ -333,10 +453,79 @@ final routerProvider = Provider<GoRouter>((ref) {
               return SupplierUploadWizardScreen(uploadResponse: mockResponse);
             },
           ),
+          // ─── Cari Hesap Routes ────────────────────────────────────
+          GoRoute(
+            path: '/customers/account/:id',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return CustomerAccountDetailScreen(customerId: id);
+            },
+          ),
+          GoRoute(
+            path: '/accounts',
+            builder: (context, state) => const AccountSummaryDashboardScreen(),
+          ),
+          GoRoute(
+            path: '/accounts/statement',
+            builder: (context, state) {
+              final extra = state.extra as Map<String, dynamic>? ?? {};
+              return AccountStatementScreen(
+                accountType: extra['accountType'] as String?,
+                accountId: extra['accountId'] as String?,
+                accountName: extra['accountName'] as String?,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/accounts/overdue',
+            builder: (context, state) => const OverdueTrackingScreen(),
+          ),
+          // ─── Stok Rapor Routes ─────────────────────────────────────
+          GoRoute(
+            path: '/stock/movements',
+            builder: (context, state) => const StockMovementHistoryScreen(),
+          ),
+          GoRoute(
+            path: '/stock/alerts',
+            builder: (context, state) => const StockAlertScreen(),
+          ),
+          GoRoute(
+            path: '/stock/value-report',
+            builder: (context, state) => const StockValueReportScreen(),
+          ),
+          // ─── Satis Rapor Routes ────────────────────────────────────
+          GoRoute(
+            path: '/reports/sales-summary',
+            builder: (context, state) => const SalesSummaryScreen(),
+          ),
+          GoRoute(
+            path: '/reports/product-analysis',
+            builder: (context, state) => const ProductSalesAnalysisScreen(),
+          ),
+          GoRoute(
+            path: '/reports/customer-analysis',
+            builder: (context, state) => const CustomerSalesAnalysisScreen(),
+          ),
+          GoRoute(
+            path: '/reports/profit-overview',
+            builder: (context, state) => const ProfitOverviewScreen(),
+          ),
+          GoRoute(
+            path: '/reports/daily-summary',
+            builder: (context, state) => const DailySummaryScreen(),
+          ),
           // Settings Route
           GoRoute(
             path: '/settings',
             builder: (context, state) => const SettingsScreen(),
+          ),
+          GoRoute(
+            path: '/settings/users',
+            builder: (context, state) => const UserManagementScreen(),
+          ),
+          GoRoute(
+            path: '/settings/company',
+            builder: (context, state) => const CompanySettingsScreen(),
           ),
         ],
       ),

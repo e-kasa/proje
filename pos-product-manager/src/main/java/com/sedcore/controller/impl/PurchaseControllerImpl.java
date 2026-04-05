@@ -65,6 +65,22 @@ public class PurchaseControllerImpl {
         }
     }
 
+    // PUT /api/v1/purchases/{id}
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<PurchaseResponse>> update(
+            @PathVariable String id,
+            @RequestBody PurchaseRequest request) {
+        try {
+            PurchaseResponse response = purchaseService.updatePurchase(id, request);
+            log.info("Satin alma guncellendi: id={}", id);
+            return ResponseEntity.ok(ApiResponse.success(response));
+        } catch (Exception e) {
+            log.error("Satin alma guncelleme hatasi: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Guncelleme basarisiz: " + e.getMessage()));
+        }
+    }
+
     // PATCH /api/v1/purchases/{id}/cancel
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<ApiResponse<PurchaseResponse>> cancel(@PathVariable String id) {

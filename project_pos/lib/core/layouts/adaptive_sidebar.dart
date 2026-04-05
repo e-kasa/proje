@@ -75,7 +75,7 @@ class AdaptiveSidebar extends ConsumerWidget {
                 ),
               ],
             ),
-            child: const Icon(Icons.shopping_bag, color: Colors.white, size: 20),
+            child: const Icon(Icons.build_circle, color: Colors.white, size: 20),
           ),
 
           if (isExpanded) ...[
@@ -86,7 +86,7 @@ class AdaptiveSidebar extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'E-Kasa',
+                    'Parçacı',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
@@ -95,7 +95,7 @@ class AdaptiveSidebar extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    'POS Sistemi',
+                    'Stok & Cari Yönetimi',
                     style: TextStyle(
                       fontSize: 10,
                       color: AppColors.textMuted,

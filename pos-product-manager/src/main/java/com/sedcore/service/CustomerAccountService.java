@@ -2,6 +2,7 @@ package com.sedcore.service;
 
 import com.sedcore.entity.Customer;
 import com.sedcore.entity.CustomerAccount;
+import com.sedcore.model.CustomerAccountResponse;
 import com.towpen.base.security.BaseDbService;
 
 import java.math.BigDecimal;
@@ -10,6 +11,9 @@ public interface CustomerAccountService extends BaseDbService<CustomerAccount> {
 
     /** Müşteri hesabını getir, yoksa sıfır bakiyeyle oluştur */
     CustomerAccount getOrCreate(Customer customer);
+
+    /** Müşteri cari hesap bilgilerini DTO olarak getir */
+    CustomerAccountResponse getAccountResponse(String customerId);
 
     /**
      * Müşteriden tahsilat yapıldı — bakiye azalır (müşteri borcunu ödedi)
@@ -28,4 +32,7 @@ public interface CustomerAccountService extends BaseDbService<CustomerAccount> {
      * currentBalance ↑  totalCredit ↓
      */
     CustomerAccount reverseCredit(Customer customer, BigDecimal amount);
+
+    /** Kredi limiti değişince hesaplanan alanları güncelle */
+    CustomerAccountResponse recalculate(String customerId);
 }

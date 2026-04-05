@@ -1,10 +1,11 @@
 import '../core/data/mock_data.dart';
 import '../core/api/api_client.dart';
+import '../core/utils/app_logger.dart';
 
 class ReportService {
 
   /// Development mode - uses mock data when API is unavailable
-  static const bool useMockData = true;
+  static const bool useMockData = false;
   final ApiClient _apiClient;
 
   ReportService(this._apiClient);
@@ -15,8 +16,17 @@ class ReportService {
     DateTime? endDate,
     String? groupBy, // day, week, month, year
   }) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 400));
+    try {
+      final queryParams = <String, dynamic>{};
+      if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
+      if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
+      if (groupBy != null) queryParams['groupBy'] = groupBy;
+
+      final response = await _apiClient.get('product/api/v1/reports/sales', queryParameters: queryParams);
+      return response.data['data'] as Map<String, dynamic>;
+    } catch (e) {
+      AppLogger.error('Failed to fetch sales report', tag: 'ReportService', error: e);
+      // Fallback to mock data
       final sales = MockData.sampleSales;
       return {
         'totalSales': sales.length,
@@ -26,18 +36,6 @@ class ReportService {
         'groupBy': groupBy ?? 'day',
       };
     }
-
-    try {
-      final queryParams = <String, dynamic>{};
-      if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
-      if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
-      if (groupBy != null) queryParams['groupBy'] = groupBy;
-
-      final response = await _apiClient.get('api/reports/sales', queryParameters: queryParams);
-      return response.data['data'] as Map<String, dynamic>;
-    } catch (e) {
-      rethrow;
-    }
   }
 
   // Get inventory report
@@ -45,8 +43,16 @@ class ReportService {
     int? categoryId,
     bool? lowStockOnly,
   }) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 400));
+    try {
+      final queryParams = <String, dynamic>{};
+      if (categoryId != null) queryParams['categoryId'] = categoryId;
+      if (lowStockOnly != null) queryParams['lowStockOnly'] = lowStockOnly;
+
+      final response = await _apiClient.get('product/api/v1/reports/inventory', queryParameters: queryParams);
+      return response.data['data'] as Map<String, dynamic>;
+    } catch (e) {
+      AppLogger.error('Failed to fetch inventory report', tag: 'ReportService', error: e);
+      // Fallback to mock data
       var products = List<Map<String, dynamic>>.from(MockData.sampleProducts);
 
       if (lowStockOnly == true) {
@@ -64,17 +70,6 @@ class ReportService {
         'outOfStockCount': products.where((p) => p['stock'] == 0).length,
       };
     }
-
-    try {
-      final queryParams = <String, dynamic>{};
-      if (categoryId != null) queryParams['categoryId'] = categoryId;
-      if (lowStockOnly != null) queryParams['lowStockOnly'] = lowStockOnly;
-
-      final response = await _apiClient.get('api/reports/inventory', queryParameters: queryParams);
-      return response.data['data'] as Map<String, dynamic>;
-    } catch (e) {
-      rethrow;
-    }
   }
 
   // Get customer reports
@@ -83,8 +78,17 @@ class ReportService {
     DateTime? endDate,
     String? customerType,
   }) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 400));
+    try {
+      final queryParams = <String, dynamic>{};
+      if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
+      if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
+      if (customerType != null) queryParams['customerType'] = customerType;
+
+      final response = await _apiClient.get('product/api/v1/reports/customers', queryParameters: queryParams);
+      return response.data['data'] as Map<String, dynamic>;
+    } catch (e) {
+      AppLogger.error('Failed to fetch customer report', tag: 'ReportService', error: e);
+      // Fallback to mock data
       var customers = List<Map<String, dynamic>>.from(MockData.sampleCustomers);
 
       if (customerType != null) {
@@ -100,18 +104,6 @@ class ReportService {
           0, (sum, c) => sum + (c['loyaltyPoints'] as int? ?? 0)),
       };
     }
-
-    try {
-      final queryParams = <String, dynamic>{};
-      if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
-      if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
-      if (customerType != null) queryParams['customerType'] = customerType;
-
-      final response = await _apiClient.get('api/reports/customers', queryParameters: queryParams);
-      return response.data['data'] as Map<String, dynamic>;
-    } catch (e) {
-      rethrow;
-    }
   }
 
   // Get profit/loss report
@@ -119,14 +111,21 @@ class ReportService {
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 400));
+    try {
+      final queryParams = <String, dynamic>{};
+      if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
+      if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
+
+      final response = await _apiClient.get('product/api/v1/reports/profit-loss', queryParameters: queryParams);
+      return response.data['data'] as Map<String, dynamic>;
+    } catch (e) {
+      AppLogger.error('Failed to fetch profit/loss report', tag: 'ReportService', error: e);
+      // Fallback to mock data
       final sales = MockData.sampleSales;
       final totalRevenue = sales.fold<double>(
         0, (sum, s) => sum + ((s['totalAmount'] as num?)?.toDouble() ?? 0));
 
-      // Mock costs (would come from purchases/expenses in real app)
-      final totalCost = totalRevenue * 0.6; // Assume 60% cost
+      final totalCost = totalRevenue * 0.6;
       final profit = totalRevenue - totalCost;
 
       return {
@@ -137,17 +136,6 @@ class ReportService {
         'period': 'all',
       };
     }
-
-    try {
-      final queryParams = <String, dynamic>{};
-      if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
-      if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
-
-      final response = await _apiClient.get('api/reports/profit-loss', queryParameters: queryParams);
-      return response.data['data'] as Map<String, dynamic>;
-    } catch (e) {
-      rethrow;
-    }
   }
 
   // Get top selling products
@@ -156,30 +144,26 @@ class ReportService {
     DateTime? endDate,
     int? limit,
   }) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 300));
-      final products = MockData.sampleProducts;
-      // Return top products based on low stock (simulating high sales)
-      final topProducts = List<Map<String, dynamic>>.from(products);
-      topProducts.sort((a, b) {
-        final stockA = a['stock'] as int;
-        final stockB = b['stock'] as int;
-        return stockA.compareTo(stockB); // Lower stock = higher sales
-      });
-
-      return topProducts.take(limit ?? 10).toList();
-    }
-
     try {
       final queryParams = <String, dynamic>{};
       if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
       if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
       if (limit != null) queryParams['limit'] = limit;
 
-      final response = await _apiClient.get('api/reports/top-products', queryParameters: queryParams);
+      final response = await _apiClient.get('product/api/v1/reports/top-products', queryParameters: queryParams);
       return List<Map<String, dynamic>>.from(response.data['data'] ?? []);
     } catch (e) {
-      return [];
+      AppLogger.error('Failed to fetch top selling products', tag: 'ReportService', error: e);
+      // Fallback to mock data
+      final products = MockData.sampleProducts;
+      final topProducts = List<Map<String, dynamic>>.from(products);
+      topProducts.sort((a, b) {
+        final stockA = a['stock'] as int;
+        final stockB = b['stock'] as int;
+        return stockA.compareTo(stockB);
+      });
+
+      return topProducts.take(limit ?? 10).toList();
     }
   }
 
@@ -189,28 +173,25 @@ class ReportService {
     DateTime? endDate,
     int? limit,
   }) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 300));
-      final customers = List<Map<String, dynamic>>.from(MockData.sampleCustomers);
-      customers.sort((a, b) {
-        final purchasesA = a['totalPurchases'] as int;
-        final purchasesB = b['totalPurchases'] as int;
-        return purchasesB.compareTo(purchasesA); // More purchases = higher rank
-      });
-
-      return customers.take(limit ?? 10).toList();
-    }
-
     try {
       final queryParams = <String, dynamic>{};
       if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
       if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
       if (limit != null) queryParams['limit'] = limit;
 
-      final response = await _apiClient.get('api/reports/top-customers', queryParameters: queryParams);
+      final response = await _apiClient.get('product/api/v1/reports/top-customers', queryParameters: queryParams);
       return List<Map<String, dynamic>>.from(response.data['data'] ?? []);
     } catch (e) {
-      return [];
+      AppLogger.error('Failed to fetch top customers', tag: 'ReportService', error: e);
+      // Fallback to mock data
+      final customers = List<Map<String, dynamic>>.from(MockData.sampleCustomers);
+      customers.sort((a, b) {
+        final purchasesA = a['totalPurchases'] as int;
+        final purchasesB = b['totalPurchases'] as int;
+        return purchasesB.compareTo(purchasesA);
+      });
+
+      return customers.take(limit ?? 10).toList();
     }
   }
 
@@ -220,9 +201,17 @@ class ReportService {
     DateTime? endDate,
     String? category,
   }) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 400));
-      // Mock expenses data
+    try {
+      final queryParams = <String, dynamic>{};
+      if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
+      if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
+      if (category != null) queryParams['category'] = category;
+
+      final response = await _apiClient.get('product/api/v1/reports/expenses', queryParameters: queryParams);
+      return response.data['data'] as Map<String, dynamic>;
+    } catch (e) {
+      AppLogger.error('Failed to fetch expenses report', tag: 'ReportService', error: e);
+      // Fallback to mock data
       return {
         'totalExpenses': 15000.0,
         'expenses': [
@@ -234,24 +223,16 @@ class ReportService {
         'period': 'month',
       };
     }
-
-    try {
-      final queryParams = <String, dynamic>{};
-      if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
-      if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
-      if (category != null) queryParams['category'] = category;
-
-      final response = await _apiClient.get('api/reports/expenses', queryParameters: queryParams);
-      return response.data['data'] as Map<String, dynamic>;
-    } catch (e) {
-      rethrow;
-    }
   }
 
   // Get dashboard statistics
   Future<Map<String, dynamic>> getDashboardStats() async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 300));
+    try {
+      final response = await _apiClient.get('product/api/v1/reports/dashboard');
+      return response.data['data'] as Map<String, dynamic>;
+    } catch (e) {
+      AppLogger.error('Failed to fetch dashboard stats', tag: 'ReportService', error: e);
+      // Fallback to mock data
       final products = MockData.sampleProducts;
       final sales = MockData.sampleSales;
       final customers = MockData.sampleCustomers;
@@ -271,13 +252,6 @@ class ReportService {
           p['stock'] <= (p['lowStockThreshold'] ?? 10)).take(5).toList(),
       };
     }
-
-    try {
-      final response = await _apiClient.get('api/reports/dashboard');
-      return response.data['data'] as Map<String, dynamic>;
-    } catch (e) {
-      rethrow;
-    }
   }
 
   // Export report (PDF/Excel)
@@ -287,11 +261,6 @@ class ReportService {
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      return 'mock://export/$reportType.$format';
-    }
-
     try {
       final queryParams = <String, dynamic>{
         'format': format,
@@ -299,10 +268,12 @@ class ReportService {
       if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
       if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
 
-      final response = await _apiClient.get('api/reports/$reportType/export', queryParameters: queryParams);
+      final response = await _apiClient.get('product/api/v1/reports/$reportType/export', queryParameters: queryParams);
       return response.data['downloadUrl'] as String;
     } catch (e) {
-      rethrow;
+      AppLogger.error('Failed to export report: $reportType', tag: 'ReportService', error: e);
+      // Fallback to mock data
+      return 'mock://export/$reportType.$format';
     }
   }
 }

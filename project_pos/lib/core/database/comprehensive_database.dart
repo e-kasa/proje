@@ -281,29 +281,29 @@ class ComprehensiveDatabase {
     final existingCategories = await db.query('categories', limit: 1);
     if (existingCategories.isNotEmpty) return;
 
-    // Kategoriler
+    // Kategoriler (Oto Yedek Parça)
     final categories = [
       {
-        'name': 'Elektronik',
-        'icon': 'devices',
-        'color': '#2196F3',
+        'name': 'Fren Sistemi',
+        'icon': 'disc_full',
+        'color': '#F44336',
         'sortOrder': 1,
         'isActive': 1,
         'createdAt': now,
         'updatedAt': now,
       },
       {
-        'name': 'Giyim',
-        'icon': 'checkroom',
-        'color': '#E91E63',
+        'name': 'Süspansiyon',
+        'icon': 'compress',
+        'color': '#2196F3',
         'sortOrder': 2,
         'isActive': 1,
         'createdAt': now,
         'updatedAt': now,
       },
       {
-        'name': 'Ayakkabı',
-        'icon': 'sports_tennis',
+        'name': 'Motor Parçaları',
+        'icon': 'settings',
         'color': '#FF9800',
         'sortOrder': 3,
         'isActive': 1,
@@ -311,8 +311,8 @@ class ComprehensiveDatabase {
         'updatedAt': now,
       },
       {
-        'name': 'Ev & Yaşam',
-        'icon': 'home',
+        'name': 'Filtreler',
+        'icon': 'filter_alt',
         'color': '#4CAF50',
         'sortOrder': 4,
         'isActive': 1,
@@ -320,10 +320,55 @@ class ComprehensiveDatabase {
         'updatedAt': now,
       },
       {
-        'name': 'Spor',
-        'icon': 'fitness_center',
-        'color': '#9C27B0',
+        'name': 'Aydınlatma',
+        'icon': 'lightbulb',
+        'color': '#FFEB3B',
         'sortOrder': 5,
+        'isActive': 1,
+        'createdAt': now,
+        'updatedAt': now,
+      },
+      {
+        'name': 'Elektrik/Akü',
+        'icon': 'battery_charging_full',
+        'color': '#9C27B0',
+        'sortOrder': 6,
+        'isActive': 1,
+        'createdAt': now,
+        'updatedAt': now,
+      },
+      {
+        'name': 'Soğutma',
+        'icon': 'ac_unit',
+        'color': '#00BCD4',
+        'sortOrder': 7,
+        'isActive': 1,
+        'createdAt': now,
+        'updatedAt': now,
+      },
+      {
+        'name': 'Egzoz',
+        'icon': 'air',
+        'color': '#795548',
+        'sortOrder': 8,
+        'isActive': 1,
+        'createdAt': now,
+        'updatedAt': now,
+      },
+      {
+        'name': 'Debriyaj',
+        'icon': 'sync',
+        'color': '#607D8B',
+        'sortOrder': 9,
+        'isActive': 1,
+        'createdAt': now,
+        'updatedAt': now,
+      },
+      {
+        'name': 'Kayış/Gergi',
+        'icon': 'loop',
+        'color': '#E91E63',
+        'sortOrder': 10,
         'isActive': 1,
         'createdAt': now,
         'updatedAt': now,
@@ -334,82 +379,56 @@ class ComprehensiveDatabase {
       await db.insert('categories', cat);
     }
 
-    // Markalar
+    // Markalar (Oto Yedek Parça)
     final brands = [
-      {'name': 'Apple', 'isActive': 1, 'createdAt': now},
-      {'name': 'Samsung', 'isActive': 1, 'createdAt': now},
-      {'name': 'Nike', 'isActive': 1, 'createdAt': now},
-      {'name': 'Adidas', 'isActive': 1, 'createdAt': now},
-      {'name': 'Sony', 'isActive': 1, 'createdAt': now},
+      {'name': 'Bosch', 'isActive': 1, 'createdAt': now},
+      {'name': 'TRW', 'isActive': 1, 'createdAt': now},
+      {'name': 'Valeo', 'isActive': 1, 'createdAt': now},
+      {'name': 'Mann Filter', 'isActive': 1, 'createdAt': now},
+      {'name': 'Brembo', 'isActive': 1, 'createdAt': now},
+      {'name': 'Sachs', 'isActive': 1, 'createdAt': now},
+      {'name': 'SKF', 'isActive': 1, 'createdAt': now},
+      {'name': 'Gates', 'isActive': 1, 'createdAt': now},
+      {'name': 'Mahle', 'isActive': 1, 'createdAt': now},
+      {'name': 'Delphi', 'isActive': 1, 'createdAt': now},
+      {'name': 'Depo', 'isActive': 1, 'createdAt': now},
+      {'name': 'Mutlu', 'isActive': 1, 'createdAt': now},
+      {'name': 'Nissens', 'isActive': 1, 'createdAt': now},
     ];
 
     for (var brand in brands) {
       await db.insert('brands', brand);
     }
 
-    // Ürünler
+    // Ürünler (Oto Yedek Parça)
     final products = [
       {
-        'name': 'iPhone 15 Pro',
-        'sku': 'IP15PRO-001',
-        'barcode': '1234567890123',
+        'name': 'Fren Balatası Ön Takım',
+        'sku': 'BOS-FB-001',
+        'barcode': '8680000000001',
         'categoryId': 1,
         'brandId': 1,
-        'purchasePrice': 40000.0,
-        'sellingPrice': 52999.0,
-        'profitMargin': 32.5,
-        'stock': 12,
+        'purchasePrice': 280.0,
+        'sellingPrice': 450.0,
+        'profitMargin': 60.7,
+        'stock': 25,
         'minStock': 5,
-        'unit': 'adet',
+        'unit': 'takım',
         'taxRate': 18.0,
         'isActive': 1,
         'createdAt': now,
         'updatedAt': now,
       },
       {
-        'name': 'Samsung Galaxy S24 Ultra',
-        'sku': 'SGS24U-001',
-        'barcode': '1234567890124',
-        'categoryId': 1,
-        'brandId': 2,
-        'purchasePrice': 35000.0,
-        'sellingPrice': 45999.0,
-        'profitMargin': 31.4,
-        'stock': 8,
-        'minStock': 5,
-        'unit': 'adet',
-        'taxRate': 18.0,
-        'isActive': 1,
-        'createdAt': now,
-        'updatedAt': now,
-      },
-      {
-        'name': 'Nike Air Max 90',
-        'sku': 'NAM90-001',
-        'barcode': '1234567890125',
-        'categoryId': 3,
-        'brandId': 3,
-        'purchasePrice': 800.0,
-        'sellingPrice': 1299.0,
-        'profitMargin': 62.4,
-        'stock': 45,
-        'minStock': 10,
-        'unit': 'adet',
-        'taxRate': 18.0,
-        'isActive': 1,
-        'createdAt': now,
-        'updatedAt': now,
-      },
-      {
-        'name': 'Adidas Ultraboost 22',
-        'sku': 'AUB22-001',
-        'barcode': '1234567890126',
-        'categoryId': 3,
+        'name': 'Yağ Filtresi',
+        'sku': 'MAN-YF-001',
+        'barcode': '8680000000002',
+        'categoryId': 4,
         'brandId': 4,
-        'purchasePrice': 900.0,
-        'sellingPrice': 1499.0,
-        'profitMargin': 66.6,
-        'stock': 38,
+        'purchasePrice': 50.0,
+        'sellingPrice': 85.0,
+        'profitMargin': 70.0,
+        'stock': 50,
         'minStock': 10,
         'unit': 'adet',
         'taxRate': 18.0,
@@ -418,16 +437,135 @@ class ComprehensiveDatabase {
         'updatedAt': now,
       },
       {
-        'name': 'Sony WH-1000XM5',
-        'sku': 'SWH1000-001',
-        'barcode': '1234567890127',
-        'categoryId': 1,
-        'brandId': 5,
-        'purchasePrice': 2500.0,
-        'sellingPrice': 3999.0,
-        'profitMargin': 59.96,
-        'stock': 3,
+        'name': 'Hava Filtresi',
+        'sku': 'MAH-HF-001',
+        'barcode': '8680000000003',
+        'categoryId': 4,
+        'brandId': 9,
+        'purchasePrice': 70.0,
+        'sellingPrice': 120.0,
+        'profitMargin': 71.4,
+        'stock': 40,
+        'minStock': 10,
+        'unit': 'adet',
+        'taxRate': 18.0,
+        'isActive': 1,
+        'createdAt': now,
+        'updatedAt': now,
+      },
+      {
+        'name': 'Amortisör Ön Sol',
+        'sku': 'SAC-AM-001',
+        'barcode': '8680000000004',
+        'categoryId': 2,
+        'brandId': 6,
+        'purchasePrice': 520.0,
+        'sellingPrice': 850.0,
+        'profitMargin': 63.5,
+        'stock': 12,
         'minStock': 3,
+        'unit': 'adet',
+        'taxRate': 18.0,
+        'isActive': 1,
+        'createdAt': now,
+        'updatedAt': now,
+      },
+      {
+        'name': 'Buji Takımı (4 adet)',
+        'sku': 'BOS-BJ-001',
+        'barcode': '8680000000005',
+        'categoryId': 3,
+        'brandId': 1,
+        'purchasePrice': 190.0,
+        'sellingPrice': 320.0,
+        'profitMargin': 68.4,
+        'stock': 30,
+        'minStock': 8,
+        'unit': 'takım',
+        'taxRate': 18.0,
+        'isActive': 1,
+        'createdAt': now,
+        'updatedAt': now,
+      },
+      {
+        'name': 'Triger Seti',
+        'sku': 'GAT-TS-001',
+        'barcode': '8680000000006',
+        'categoryId': 10,
+        'brandId': 8,
+        'purchasePrice': 750.0,
+        'sellingPrice': 1200.0,
+        'profitMargin': 60.0,
+        'stock': 8,
+        'minStock': 3,
+        'unit': 'takım',
+        'taxRate': 18.0,
+        'isActive': 1,
+        'createdAt': now,
+        'updatedAt': now,
+      },
+      {
+        'name': 'Far Sol Komple',
+        'sku': 'DEP-FR-001',
+        'barcode': '8680000000007',
+        'categoryId': 5,
+        'brandId': 11,
+        'purchasePrice': 950.0,
+        'sellingPrice': 1500.0,
+        'profitMargin': 57.9,
+        'stock': 6,
+        'minStock': 2,
+        'unit': 'adet',
+        'taxRate': 18.0,
+        'isActive': 1,
+        'createdAt': now,
+        'updatedAt': now,
+      },
+      {
+        'name': 'Akü 60Ah',
+        'sku': 'MUT-AK-001',
+        'barcode': '8680000000008',
+        'categoryId': 6,
+        'brandId': 12,
+        'purchasePrice': 1400.0,
+        'sellingPrice': 2200.0,
+        'profitMargin': 57.1,
+        'stock': 10,
+        'minStock': 3,
+        'unit': 'adet',
+        'taxRate': 18.0,
+        'isActive': 1,
+        'createdAt': now,
+        'updatedAt': now,
+      },
+      {
+        'name': 'Debriyaj Seti Komple',
+        'sku': 'VAL-DB-001',
+        'barcode': '8680000000009',
+        'categoryId': 9,
+        'brandId': 3,
+        'purchasePrice': 1800.0,
+        'sellingPrice': 2800.0,
+        'profitMargin': 55.6,
+        'stock': 5,
+        'minStock': 2,
+        'unit': 'takım',
+        'taxRate': 18.0,
+        'isActive': 1,
+        'createdAt': now,
+        'updatedAt': now,
+      },
+      {
+        'name': 'Radyatör Su',
+        'sku': 'NIS-RD-001',
+        'barcode': '8680000000010',
+        'categoryId': 7,
+        'brandId': 13,
+        'purchasePrice': 2200.0,
+        'sellingPrice': 3500.0,
+        'profitMargin': 59.1,
+        'stock': 4,
+        'minStock': 2,
         'unit': 'adet',
         'taxRate': 18.0,
         'isActive': 1,
@@ -480,23 +618,23 @@ class ComprehensiveDatabase {
       await db.insert('customers', customer);
     }
 
-    // Tedarikçiler
+    // Tedarikçiler (Oto Yedek Parça)
     final suppliers = [
       {
-        'name': 'TechVision Dağıtım',
+        'name': 'Bosch Türkiye Distribütör',
         'contactPerson': 'Can Öztürk',
         'phone': '02121234567',
-        'email': 'info@techvision.com',
+        'email': 'info@bosch-distributor.com',
         'paymentTerms': '30 gün vade',
         'rating': 5,
         'isActive': 1,
         'createdAt': now,
       },
       {
-        'name': 'SportMax Toptan',
+        'name': 'Valeo Yedek Parça Toptan',
         'contactPerson': 'Zeynep Arslan',
         'phone': '02129876543',
-        'email': 'siparis@sportmax.com',
+        'email': 'siparis@valeo-toptan.com',
         'paymentTerms': '45 gün vade',
         'rating': 4,
         'isActive': 1,
@@ -508,35 +646,35 @@ class ComprehensiveDatabase {
       await db.insert('suppliers', supplier);
     }
 
-    // === DAHA FAZLA ÜRÜN EKLE (Toplam 25 ürün) ===
+    // === DAHA FAZLA ÜRÜN EKLE (Oto Yedek Parça) ===
     final moreProducts = [
-      // Elektronik kategorisi
-      {'name': 'MacBook Air M2', 'sku': 'MBA-M2-001', 'barcode': '1234567890128', 'categoryId': 1, 'brandId': 1, 'purchasePrice': 55000.0, 'sellingPrice': 69999.0, 'stock': 5, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
-      {'name': 'iPad Pro 12.9"', 'sku': 'IPP-129-001', 'barcode': '1234567890129', 'categoryId': 1, 'brandId': 1, 'purchasePrice': 35000.0, 'sellingPrice': 44999.0, 'stock': 8, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
-      {'name': 'AirPods Pro 2', 'sku': 'APP2-001', 'barcode': '1234567890130', 'categoryId': 1, 'brandId': 1, 'purchasePrice': 1800.0, 'sellingPrice': 2499.0, 'stock': 25, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
-      {'name': 'Samsung Galaxy Tab S9', 'sku': 'SGT-S9-001', 'barcode': '1234567890131', 'categoryId': 1, 'brandId': 2, 'purchasePrice': 18000.0, 'sellingPrice': 24999.0, 'stock': 12, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
-      {'name': 'Galaxy Buds 2 Pro', 'sku': 'GB2P-001', 'barcode': '1234567890132', 'categoryId': 1, 'brandId': 2, 'purchasePrice': 1200.0, 'sellingPrice': 1799.0, 'stock': 30, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
+      // Fren Sistemi kategorisi
+      {'name': 'Fren Balatası Arka Takım', 'sku': 'BOS-FB-002', 'barcode': '8680000000011', 'categoryId': 1, 'brandId': 1, 'purchasePrice': 240.0, 'sellingPrice': 380.0, 'stock': 20, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
+      {'name': 'Fren Diski Ön (2 adet)', 'sku': 'BRM-FD-001', 'barcode': '8680000000012', 'categoryId': 1, 'brandId': 5, 'purchasePrice': 600.0, 'sellingPrice': 950.0, 'stock': 15, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
+      {'name': 'Fren Kaliperi Sol', 'sku': 'TRW-FK-001', 'barcode': '8680000000013', 'categoryId': 1, 'brandId': 2, 'purchasePrice': 1100.0, 'sellingPrice': 1750.0, 'stock': 6, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
+      {'name': 'Fren Hidroliği DOT4 1L', 'sku': 'BOS-FH-001', 'barcode': '8680000000014', 'categoryId': 1, 'brandId': 1, 'purchasePrice': 60.0, 'sellingPrice': 95.0, 'stock': 35, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
+      {'name': 'ABS Sensörü Ön', 'sku': 'DEL-ABS-001', 'barcode': '8680000000015', 'categoryId': 1, 'brandId': 10, 'purchasePrice': 180.0, 'sellingPrice': 300.0, 'stock': 18, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
 
-      // Giyim kategorisi
-      {'name': 'Polo Yaka T-Shirt', 'sku': 'POLO-001', 'barcode': '1234567890133', 'categoryId': 2, 'brandId': 3, 'purchasePrice': 150.0, 'sellingPrice': 299.0, 'stock': 50, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
-      {'name': 'Dri-FIT Spor T-Shirt', 'sku': 'DFIT-001', 'barcode': '1234567890134', 'categoryId': 2, 'brandId': 3, 'purchasePrice': 180.0, 'sellingPrice': 349.0, 'stock': 45, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
-      {'name': 'Hoodie Sweatshirt', 'sku': 'HOOD-001', 'barcode': '1234567890135', 'categoryId': 2, 'brandId': 4, 'purchasePrice': 350.0, 'sellingPrice': 599.0, 'stock': 35, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
-      {'name': 'Eşofman Takımı', 'sku': 'ESOF-001', 'barcode': '1234567890136', 'categoryId': 2, 'brandId': 4, 'purchasePrice': 450.0, 'sellingPrice': 799.0, 'stock': 28, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
-      {'name': 'Spor Şort', 'sku': 'SORT-001', 'barcode': '1234567890137', 'categoryId': 2, 'brandId': 3, 'purchasePrice': 120.0, 'sellingPrice': 249.0, 'stock': 60, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
+      // Süspansiyon kategorisi
+      {'name': 'Amortisör Ön Sağ', 'sku': 'SAC-AM-002', 'barcode': '8680000000016', 'categoryId': 2, 'brandId': 6, 'purchasePrice': 520.0, 'sellingPrice': 850.0, 'stock': 12, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
+      {'name': 'Amortisör Arka (2 adet)', 'sku': 'SAC-AM-003', 'barcode': '8680000000017', 'categoryId': 2, 'brandId': 6, 'purchasePrice': 400.0, 'sellingPrice': 650.0, 'stock': 14, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
+      {'name': 'Rot Başı Sol', 'sku': 'TRW-RB-001', 'barcode': '8680000000018', 'categoryId': 2, 'brandId': 2, 'purchasePrice': 120.0, 'sellingPrice': 200.0, 'stock': 22, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
+      {'name': 'Salıncak Alt Sol', 'sku': 'TRW-SA-001', 'barcode': '8680000000019', 'categoryId': 2, 'brandId': 2, 'purchasePrice': 350.0, 'sellingPrice': 580.0, 'stock': 10, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
+      {'name': 'Viraj Demir Lastiği', 'sku': 'SKF-VD-001', 'barcode': '8680000000020', 'categoryId': 2, 'brandId': 7, 'purchasePrice': 45.0, 'sellingPrice': 75.0, 'stock': 40, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
 
-      // Ayakkabı kategorisi
-      {'name': 'Air Force 1', 'sku': 'AF1-001', 'barcode': '1234567890138', 'categoryId': 3, 'brandId': 3, 'purchasePrice': 700.0, 'sellingPrice': 1199.0, 'stock': 40, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
-      {'name': 'Jordan 1 Mid', 'sku': 'J1M-001', 'barcode': '1234567890139', 'categoryId': 3, 'brandId': 3, 'purchasePrice': 1000.0, 'sellingPrice': 1699.0, 'stock': 22, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
-      {'name': 'Stan Smith', 'sku': 'SS-001', 'barcode': '1234567890140', 'categoryId': 3, 'brandId': 4, 'purchasePrice': 600.0, 'sellingPrice': 999.0, 'stock': 35, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
-      {'name': 'Superstar', 'sku': 'SUPS-001', 'barcode': '1234567890141', 'categoryId': 3, 'brandId': 4, 'purchasePrice': 650.0, 'sellingPrice': 1099.0, 'stock': 30, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
-      {'name': 'Nike Blazer Mid', 'sku': 'NBM-001', 'barcode': '1234567890142', 'categoryId': 3, 'brandId': 3, 'purchasePrice': 750.0, 'sellingPrice': 1299.0, 'stock': 25, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
+      // Motor Parçaları kategorisi
+      {'name': 'Supap Kapağı Contası', 'sku': 'MAH-SC-001', 'barcode': '8680000000021', 'categoryId': 3, 'brandId': 9, 'purchasePrice': 80.0, 'sellingPrice': 140.0, 'stock': 20, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
+      {'name': 'Ateşleme Bobini', 'sku': 'BOS-AB-001', 'barcode': '8680000000022', 'categoryId': 3, 'brandId': 1, 'purchasePrice': 250.0, 'sellingPrice': 420.0, 'stock': 16, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
+      {'name': 'Enjektör', 'sku': 'BOS-EN-001', 'barcode': '8680000000023', 'categoryId': 3, 'brandId': 1, 'purchasePrice': 900.0, 'sellingPrice': 1450.0, 'stock': 8, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
+      {'name': 'Krank Keçesi', 'sku': 'SKF-KK-001', 'barcode': '8680000000024', 'categoryId': 3, 'brandId': 7, 'purchasePrice': 55.0, 'sellingPrice': 90.0, 'stock': 25, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
+      {'name': 'Termostat', 'sku': 'MAH-TR-001', 'barcode': '8680000000025', 'categoryId': 3, 'brandId': 9, 'purchasePrice': 75.0, 'sellingPrice': 130.0, 'stock': 18, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
 
-      // Ev & Yaşam kategorisi
-      {'name': 'Bluetooth Hoparlör', 'sku': 'BT-SPK-001', 'barcode': '1234567890143', 'categoryId': 4, 'brandId': 5, 'purchasePrice': 800.0, 'sellingPrice': 1399.0, 'stock': 15, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
-      {'name': 'Akıllı Saat', 'sku': 'SMW-001', 'barcode': '1234567890144', 'categoryId': 4, 'brandId': 2, 'purchasePrice': 1500.0, 'sellingPrice': 2499.0, 'stock': 18, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
-      {'name': 'Power Bank 20000mAh', 'sku': 'PB-20K-001', 'barcode': '1234567890145', 'categoryId': 4, 'brandId': 2, 'purchasePrice': 300.0, 'sellingPrice': 549.0, 'stock': 42, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
-      {'name': 'Kablosuz Şarj Cihazı', 'sku': 'WC-001', 'barcode': '1234567890146', 'categoryId': 4, 'brandId': 1, 'purchasePrice': 400.0, 'sellingPrice': 699.0, 'stock': 28, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
-      {'name': 'USB-C Hub', 'sku': 'USBC-HUB-001', 'barcode': '1234567890147', 'categoryId': 4, 'brandId': 1, 'purchasePrice': 250.0, 'sellingPrice': 449.0, 'stock': 35, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
+      // Filtreler kategorisi
+      {'name': 'Polen Filtresi', 'sku': 'MAN-PF-001', 'barcode': '8680000000026', 'categoryId': 4, 'brandId': 4, 'purchasePrice': 40.0, 'sellingPrice': 70.0, 'stock': 45, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
+      {'name': 'Yakıt Filtresi', 'sku': 'BOS-YF-001', 'barcode': '8680000000027', 'categoryId': 4, 'brandId': 1, 'purchasePrice': 90.0, 'sellingPrice': 150.0, 'stock': 30, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
+      {'name': 'Şanzıman Filtresi', 'sku': 'MAN-SF-001', 'barcode': '8680000000028', 'categoryId': 4, 'brandId': 4, 'purchasePrice': 110.0, 'sellingPrice': 185.0, 'stock': 15, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
+      {'name': 'Hidrolik Direksiyon Filtresi', 'sku': 'MAN-HF-001', 'barcode': '8680000000029', 'categoryId': 4, 'brandId': 4, 'purchasePrice': 65.0, 'sellingPrice': 110.0, 'stock': 20, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
+      {'name': 'Partikül Filtresi (DPF)', 'sku': 'MAH-PF-001', 'barcode': '8680000000030', 'categoryId': 4, 'brandId': 9, 'purchasePrice': 4500.0, 'sellingPrice': 7200.0, 'stock': 3, 'isActive': 1, 'createdAt': now, 'updatedAt': now},
     ];
 
     for (var product in moreProducts) {
@@ -580,7 +718,7 @@ class ComprehensiveDatabase {
       double subtotal = 0;
 
       for (int j = 0; j < itemCount; j++) {
-        final productId = ((i + j) % 25) + 1;
+        final productId = ((i + j) % 30) + 1;
         final quantity = (j % 3) + 1;
         final unitPrice = 299.0 + (productId * 100);
         final itemTotal = unitPrice * quantity;
@@ -630,7 +768,7 @@ class ComprehensiveDatabase {
     for (int i = 1; i <= 30; i++) {
       final daysAgo = (i * 0.8).floor();
       final movementDate = DateTime.now().subtract(Duration(days: daysAgo)).toIso8601String();
-      final productId = (i % 25) + 1;
+      final productId = (i % 30) + 1;
       final types = ['in', 'out', 'adjustment', 'return'];
       final type = types[i % 4];
       final quantity = type == 'in' ? (i % 20) + 5 : -((i % 10) + 1);

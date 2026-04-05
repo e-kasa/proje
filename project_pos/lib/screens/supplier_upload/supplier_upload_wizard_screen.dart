@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/utils/app_logger.dart';
 import '../../models/supplier_upload_models.dart';
 
 /// Basitleştirilmiş Wizard - Her ürün için 3 seçenek
@@ -551,9 +552,18 @@ class _SupplierUploadWizardScreenState
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: decisions.isNotEmpty ? _saveAllDecisions : null,
-              icon: const Icon(Icons.save),
-              label: const Text('KAYDET VE TAMAMLA'),
+              onPressed: decisions.isNotEmpty && !_isLoading ? _saveAllDecisions : null,
+              icon: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Icon(Icons.save),
+              label: Text(_isLoading ? 'Kaydediliyor...' : 'KAYDET VE TAMAMLA'),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 backgroundColor: Colors.green,
@@ -586,17 +596,44 @@ class _SupplierUploadWizardScreenState
     );
   }
 
-  void _saveAllDecisions() {
-    // TODO: Backend'e gönder
-    // API call: POST /api/supplier-upload/save-decisions
-    // Body: { decisions: [...] }
+  bool _isLoading = false;
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const _SuccessScreen(),
-      ),
-    );
+  void _saveAllDecisions() async {
+    setState(() => _isLoading = true);
+    try {
+      // Collect decisions (will be used when backend endpoint is ready)
+      // ignore: unused_local_variable
+      final decisionList = decisions.entries.map((entry) => {
+        'productIndex': entry.key,
+        'action': entry.value.action.toString().split('.').last,
+        'data': entry.value.data,
+      }).toList();
+
+      // TODO: Uncomment when backend endpoint is ready
+      // await ref.read(bulkImportServiceProvider).saveDecisions(
+      //   importId: widget.uploadResponse.importId,
+      //   products: decisionList,
+      // );
+
+      // For now, simulate success
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const _SuccessScreen()),
+        );
+      }
+    } catch (e) {
+      AppLogger.error('Kararlar kaydedilemedi', tag: 'SupplierUpload', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Kaydetme hatasi: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 }
 

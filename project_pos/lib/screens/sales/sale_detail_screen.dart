@@ -1,0 +1,942 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import '../../core/theme/app_colors.dart';
+import '../../services/service_locator.dart';
+
+class SaleDetailScreen extends ConsumerStatefulWidget {
+  final String saleId;
+  const SaleDetailScreen({super.key, required this.saleId});
+
+  @override
+  ConsumerState<SaleDetailScreen> createState() => _SaleDetailScreenState();
+}
+
+class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
+  bool _isLoading = true;
+  String? _error;
+  Map<String, dynamic> _sale = {};
+  List<Map<String, dynamic>> _items = [];
+
+  final _fmt = NumberFormat.currency(locale: 'tr_TR', symbol: '₺');
+  final _dateTimeFmt = DateFormat('dd.MM.yyyy HH:mm');
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final service = ref.read(salesServiceProvider);
+      final data = await service.getSaleById(widget.saleId);
+      final items = (data['items'] as List?)
+              ?.map((e) => Map<String, dynamic>.from(e as Map))
+              .toList() ??
+          [];
+
+      setState(() {
+        _sale = data;
+        _items = items;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _error = e.toString();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cancelled = _sale['status']?.toString().toLowerCase() == 'cancelled' ||
+        _sale['isCancelled'] == true;
+
+    return Scaffold(
+      backgroundColor: theme.colorScheme.surface,
+      appBar: AppBar(
+        title: const Text('Satış Detayı'),
+        backgroundColor: theme.colorScheme.surface,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _load,
+            tooltip: 'Yenile',
+          ),
+          if (!_isLoading && _error == null && !cancelled)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              onSelected: (val) {
+                if (val == 'cancel') _confirmCancel(context);
+                if (val == 'return') {
+                  context.push('/sales/return/${widget.saleId}').then((result) {
+                    if (result == true && mounted) _load();
+                  });
+                }
+              },
+              itemBuilder: (_) => [
+                const PopupMenuItem(
+                  value: 'return',
+                  child: Row(
+                    children: [
+                      Icon(Icons.assignment_return_outlined,
+                          size: 18, color: Colors.orange),
+                      SizedBox(width: 8),
+                      Text('Satış İadesi',
+                          style: TextStyle(color: Colors.orange)),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'cancel',
+                  child: Row(
+                    children: [
+                      Icon(Icons.cancel_outlined,
+                          size: 18, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('Satışı İptal Et',
+                          style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? _buildError()
+              : RefreshIndicator(
+                  onRefresh: _load,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildStatusBanner(cancelled, theme),
+                        const SizedBox(height: 16),
+                        _buildHeaderCard(theme),
+                        const SizedBox(height: 16),
+                        _buildAmountCard(theme),
+                        const SizedBox(height: 16),
+                        _buildPaymentInfoCard(theme),
+                        const SizedBox(height: 16),
+                        _buildItemsSection(theme),
+                        if ((_sale['note'] ?? _sale['notes'] ?? '')
+                            .toString()
+                            .isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          _buildNotesCard(theme),
+                        ],
+                        if (!cancelled) ...[
+                          const SizedBox(height: 24),
+                          _buildActionButtons(theme),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+    );
+  }
+
+  // ─── Status Banner ────────────────────────────────────────────────────────
+
+  Widget _buildStatusBanner(bool cancelled, ThemeData theme) {
+    final status = _sale['status']?.toString().toLowerCase() ??
+        _sale['paymentStatus']?.toString().toLowerCase() ??
+        '';
+    final isPending = status == 'pending' || status == 'unpaid';
+
+    if (cancelled) {
+      return _statusContainer(
+        icon: Icons.cancel_outlined,
+        text: 'Bu satış iptal edilmiştir',
+        color: Colors.red,
+        reason: _sale['cancelReason']?.toString(),
+        theme: theme,
+      );
+    }
+
+    if (isPending) {
+      return _statusContainer(
+        icon: Icons.schedule,
+        text: 'Veresiye satış — ödeme bekleniyor',
+        color: Colors.orange,
+        theme: theme,
+      );
+    }
+
+    return _statusContainer(
+      icon: Icons.check_circle_outline,
+      text: 'Satış tamamlandı',
+      color: Colors.green,
+      theme: theme,
+    );
+  }
+
+  Widget _statusContainer({
+    required IconData icon,
+    required String text,
+    required Color color,
+    required ThemeData theme,
+    String? reason,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  text,
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: color, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          if (reason != null && reason.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.only(left: 30),
+              child: Text(
+                'Sebep: $reason',
+                style: theme.textTheme.bodySmall?.copyWith(color: color),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ─── Header Card ──────────────────────────────────────────────────────────
+
+  Widget _buildHeaderCard(ThemeData theme) {
+    final saleNo =
+        _sale['saleNumber']?.toString() ?? _sale['id']?.toString() ?? '-';
+    final customerName = _sale['customerName']?.toString() ??
+        _sale['customer']?.toString();
+    final dateStr = _sale['createdAt']?.toString() ??
+        _sale['saleDate']?.toString() ??
+        _sale['date']?.toString();
+    final dateDisplay = dateStr != null
+        ? _dateTimeFmt.format(DateTime.tryParse(dateStr) ?? DateTime.now())
+        : '-';
+    final paymentMethod =
+        _paymentMethodLabel(_sale['paymentMethod']?.toString() ?? '');
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.point_of_sale,
+                    color: AppColors.primary, size: 24),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      customerName ?? 'Perakende Satış',
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      customerName != null ? 'Müşteri' : 'Anonim Satış',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1),
+          const SizedBox(height: 16),
+          _infoRow(Icons.tag, 'Satış No', '#$saleNo', theme),
+          const SizedBox(height: 10),
+          _infoRow(
+              Icons.calendar_today_outlined, 'Tarih', dateDisplay, theme),
+          const SizedBox(height: 10),
+          _infoRow(Icons.payment, 'Ödeme Yöntemi',
+              paymentMethod.isNotEmpty ? paymentMethod : '-', theme),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoRow(
+      IconData icon, String label, String value, ThemeData theme) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: theme.colorScheme.onSurfaceVariant),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 110,
+          child: Text(
+            label,
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: theme.textTheme.bodyMedium
+                ?.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── Amount Card ──────────────────────────────────────────────────────────
+
+  Widget _buildAmountCard(ThemeData theme) {
+    final subtotal = (_sale['subtotal'] as num?)?.toDouble() ?? 0;
+    final totalDiscount =
+        (_sale['totalDiscount'] as num?)?.toDouble() ?? 0;
+    final totalTax = (_sale['totalTax'] as num?)?.toDouble() ?? 0;
+    final grandTotal = (_sale['grandTotal'] as num?)?.toDouble() ??
+        (_sale['totalAmount'] as num?)?.toDouble() ??
+        0;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary.withOpacity(0.08),
+            AppColors.primary.withOpacity(0.02),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.primary.withOpacity(0.15)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.receipt_long_outlined,
+                  color: AppColors.primary, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Tutar Bilgileri',
+                style: theme.textTheme.titleSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _amountRow('Ara Toplam', subtotal, theme),
+          if (totalDiscount > 0) ...[
+            const SizedBox(height: 6),
+            _amountRow('İndirim', -totalDiscount, theme,
+                color: AppColors.success),
+          ],
+          if (totalTax > 0) ...[
+            const SizedBox(height: 6),
+            _amountRow('KDV', totalTax, theme),
+          ],
+          const SizedBox(height: 10),
+          const Divider(height: 1),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'GENEL TOPLAM',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
+                ),
+              ),
+              Text(
+                _fmt.format(grandTotal),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _amountRow(String label, double amount, ThemeData theme,
+      {Color? color}) {
+    final isNegative = amount < 0;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.bodySmall
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
+        Text(
+          '${isNegative ? "-" : ""}${_fmt.format(amount.abs())}',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: color ?? theme.colorScheme.onSurface,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── Payment Info Card ────────────────────────────────────────────────────
+
+  Widget _buildPaymentInfoCard(ThemeData theme) {
+    final cashReceived =
+        (_sale['cashReceived'] as num?)?.toDouble() ?? 0;
+    final cardAmount = (_sale['cardAmount'] as num?)?.toDouble() ?? 0;
+    final transferAmount =
+        (_sale['transferAmount'] as num?)?.toDouble() ?? 0;
+    final changeAmount =
+        (_sale['changeAmount'] as num?)?.toDouble() ?? 0;
+
+    final hasCash = cashReceived > 0;
+    final hasCard = cardAmount > 0;
+    final hasTransfer = transferAmount > 0;
+
+    if (!hasCash && !hasCard && !hasTransfer) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.payments_outlined,
+                  size: 20, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Ödeme Detayı',
+                style: theme.textTheme.titleSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (hasCash)
+            _paymentDetailRow(Icons.money, 'Nakit', cashReceived, theme),
+          if (hasCard) ...[
+            const SizedBox(height: 8),
+            _paymentDetailRow(
+                Icons.credit_card, 'Kredi Kartı', cardAmount, theme),
+          ],
+          if (hasTransfer) ...[
+            const SizedBox(height: 8),
+            _paymentDetailRow(
+                Icons.account_balance, 'Havale/EFT', transferAmount, theme),
+          ],
+          if (changeAmount > 0) ...[
+            const SizedBox(height: 8),
+            const Divider(height: 1),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.currency_lira,
+                        size: 16, color: AppColors.success),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Para Üstü',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.success,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  _fmt.format(changeAmount),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.success,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _paymentDetailRow(
+      IconData icon, String label, double amount, ThemeData theme) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 16, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 8),
+            Text(label, style: theme.textTheme.bodyMedium),
+          ],
+        ),
+        Text(
+          _fmt.format(amount),
+          style: theme.textTheme.bodyMedium
+              ?.copyWith(fontWeight: FontWeight.w600),
+        ),
+      ],
+    );
+  }
+
+  // ─── Items Section ────────────────────────────────────────────────────────
+
+  Widget _buildItemsSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.inventory_2_outlined,
+                size: 20, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Text(
+              'Satış Kalemleri',
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const Spacer(),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${_items.length} kalem',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (_items.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest
+                  .withOpacity(0.3),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+              ),
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.inbox_outlined, size: 40, color: Colors.grey[400]),
+                const SizedBox(height: 8),
+                Text(
+                  'Kalem bilgisi bulunamadı',
+                  style: TextStyle(color: Colors.grey[500]),
+                ),
+              ],
+            ),
+          )
+        else
+          ..._items.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final item = entry.value;
+            return _buildItemCard(item, idx, theme);
+          }),
+      ],
+    );
+  }
+
+  Widget _buildItemCard(
+      Map<String, dynamic> item, int index, ThemeData theme) {
+    final qty = (item['quantity'] as num?)?.toInt() ?? 0;
+    final unitPrice = (item['unitPrice'] as num?)?.toDouble() ?? 0;
+    final discount = (item['discount'] as num?)?.toDouble() ?? 0;
+    final taxRate = (item['taxRate'] as num?)?.toDouble() ?? 0;
+    final lineTotal = (item['total'] as num?)?.toDouble() ??
+        (item['lineTotal'] as num?)?.toDouble() ??
+        (unitPrice * qty);
+    final productName = item['productName']?.toString() ??
+        item['name']?.toString() ??
+        'Ürün';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Sıra no
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: Text(
+                '${index + 1}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Ürün bilgisi
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  productName,
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    _itemTag('$qty adet', Icons.inventory_2_outlined,
+                        AppColors.primary, theme),
+                    _itemTag('${_fmt.format(unitPrice)} /br',
+                        Icons.sell_outlined, Colors.teal, theme),
+                    if (discount > 0)
+                      _itemTag(
+                          '%${discount.toStringAsFixed(0)} ind.',
+                          Icons.discount_outlined,
+                          AppColors.success,
+                          theme),
+                    if (taxRate > 0)
+                      _itemTag(
+                          '%${taxRate.toStringAsFixed(0)} KDV',
+                          Icons.percent,
+                          Colors.blue,
+                          theme),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // Satır toplamı
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                _fmt.format(lineTotal),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Toplam',
+                style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant, fontSize: 11),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _itemTag(
+      String label, IconData icon, Color color, ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 11, color: color, fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
+  }
+
+  // ─── Notes Card ───────────────────────────────────────────────────────────
+
+  Widget _buildNotesCard(ThemeData theme) {
+    final notes = _sale['note']?.toString() ??
+        _sale['notes']?.toString() ??
+        '';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.notes_outlined,
+                  size: 18, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Notlar',
+                style: theme.textTheme.titleSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            notes,
+            style: theme.textTheme.bodyMedium
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Action Buttons ───────────────────────────────────────────────────────
+
+  Widget _buildActionButtons(ThemeData theme) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () {
+              context.push('/sales/return/${widget.saleId}').then((result) {
+                if (result == true && mounted) _load();
+              });
+            },
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.orange,
+              side: const BorderSide(color: Colors.orange),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            icon: const Icon(Icons.assignment_return_outlined, size: 18),
+            label: const Text('Satış İadesi'),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () => _confirmCancel(context),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.red,
+              side: const BorderSide(color: Colors.red),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            icon: const Icon(Icons.cancel_outlined, size: 18),
+            label: const Text('Satışı İptal Et'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── Cancel Confirmation ──────────────────────────────────────────────────
+
+  Future<void> _confirmCancel(BuildContext context) async {
+    final reasonCtrl = TextEditingController();
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Satışı İptal Et'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Bu satışı iptal etmek istediğinize emin misiniz?'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: reasonCtrl,
+              maxLines: 2,
+              decoration: InputDecoration(
+                labelText: 'İptal Sebebi',
+                hintText: 'İptal nedenini yazın...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Vazgeç'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('İptal Et',
+                style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      final reason =
+          reasonCtrl.text.trim().isNotEmpty ? reasonCtrl.text.trim() : 'Belirtilmedi';
+      try {
+        await ref.read(salesServiceProvider).cancelSale(widget.saleId, reason);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Satış iptal edildi'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          _load();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('İptal hatası: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  // ─── Error ────────────────────────────────────────────────────────────────
+
+  Widget _buildError() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+          const SizedBox(height: 12),
+          Text(_error ?? 'Hata', textAlign: TextAlign.center),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: _load,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Tekrar Dene'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Helpers ──────────────────────────────────────────────────────────────
+
+  String _paymentMethodLabel(String method) {
+    switch (method.toLowerCase()) {
+      case 'cash':
+        return 'Nakit';
+      case 'credit_card':
+        return 'Kredi Kartı';
+      case 'bank_transfer':
+        return 'Havale/EFT';
+      case 'mixed':
+        return 'Karma Ödeme';
+      default:
+        return '';
+    }
+  }
+}

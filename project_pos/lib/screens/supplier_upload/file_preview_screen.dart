@@ -25,7 +25,13 @@ class _FilePreviewScreenState extends State<FilePreviewScreen> {
     });
 
     try {
-      // TODO: Backend'e analiz isteği gönder
+      // TODO: Uncomment when backend endpoint is ready
+      // final result = await ref.read(apiClientProvider).post(
+      //   'product/api/v1/supplier-upload/analyze',
+      //   data: {'fileId': widget.fileId},
+      // );
+
+      // For now, simulate analysis
       await Future.delayed(const Duration(seconds: 1));
 
       if (mounted) {

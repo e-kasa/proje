@@ -80,6 +80,8 @@ class _$ProductCopyWithImpl<$Res, $Val extends Product>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  get freezed => null;
+
   /// Create a copy of Product
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')

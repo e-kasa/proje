@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../core/theme/app_colors.dart';
 import '../../core/database/comprehensive_database.dart';
+import '../../services/service_locator.dart';
 
-class ReportsScreen extends StatefulWidget {
+class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
 
   @override
-  State<ReportsScreen> createState() => _ReportsScreenState();
+  ConsumerState<ReportsScreen> createState() => _ReportsScreenState();
 }
 
-class _ReportsScreenState extends State<ReportsScreen>
+class _ReportsScreenState extends ConsumerState<ReportsScreen>
     with SingleTickerProviderStateMixin {
   final _db = ComprehensiveDatabase.instance;
   late TabController _tabController;
+  bool _isExporting = false;
 
   bool _isLoading = true;
   DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
@@ -148,6 +152,76 @@ class _ReportsScreenState extends State<ReportsScreen>
     }
   }
 
+  Future<void> _showExportDialog() async {
+    final reportTypes = ['sales', 'inventory', 'customers'];
+    final tabIndex = _tabController.index;
+    final reportType = reportTypes[tabIndex];
+
+    final format = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Rapor Disa Aktar'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf, color: AppColors.danger),
+              title: const Text('PDF olarak disa aktar'),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+              onTap: () => Navigator.of(ctx).pop('pdf'),
+            ),
+            const SizedBox(height: 8),
+            ListTile(
+              leading:
+                  const Icon(Icons.table_chart, color: AppColors.success),
+              title: const Text('Excel olarak disa aktar'),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+              onTap: () => Navigator.of(ctx).pop('excel'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Iptal'),
+          ),
+        ],
+      ),
+    );
+
+    if (format == null || !mounted) return;
+
+    setState(() => _isExporting = true);
+    try {
+      final service = ref.read(reportServiceProvider);
+      await service.exportReport(
+        reportType: reportType,
+        format: format,
+        startDate: _startDate,
+        endDate: _endDate,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Rapor disa aktarildi'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Disa aktarma hatasi: $e'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -160,18 +234,20 @@ class _ReportsScreenState extends State<ReportsScreen>
             onPressed: _selectDateRange,
             tooltip: 'Tarih Aralığı Seç',
           ),
-          IconButton(
-            icon: const Icon(Icons.file_download),
-            onPressed: () {
-              // TODO: Export report
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Rapor dışa aktarma özelliği yakında...'),
+          _isExporting
+              ? const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              : IconButton(
+                  icon: const Icon(Icons.file_download),
+                  onPressed: _showExportDialog,
+                  tooltip: 'Raporu Indir',
                 ),
-              );
-            },
-            tooltip: 'Raporu İndir',
-          ),
         ],
         bottom: TabBar(
           controller: _tabController,

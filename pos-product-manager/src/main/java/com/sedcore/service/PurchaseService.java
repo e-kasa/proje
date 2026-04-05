@@ -19,4 +19,7 @@ public interface PurchaseService extends BaseDbService<Purchase> {
     List<PurchaseResponse> listPurchases(String supplierId, Boolean isCancelled);
 
     PurchaseResponse getPurchase(String id);
+
+    /** Satın alma güncelleme: belge bilgileri + notlar */
+    PurchaseResponse updatePurchase(String id, PurchaseRequest request);
 }

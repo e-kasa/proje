@@ -1,7 +1,9 @@
 import '../core/api/api_client.dart';
 
-/// Purchase Service — Satın alma işlemleri için backend API çağrıları.
-/// Backend endpoint: product/api/v1/purchases
+/// Satın alma servisi — Satın alma işlemleri için backend API çağrıları.
+///
+/// Backend endpoint: `product/api/v1/purchases`
+/// Fatura oluşturma, iptal, iade ve istatistik endpoint'lerini kapsar.
 class PurchaseService {
   final ApiClient _apiClient;
 
@@ -58,6 +60,16 @@ class PurchaseService {
     }
   }
 
+  /// Satın alma günceller (belge bilgileri, notlar).
+  Future<Map<String, dynamic>> updatePurchase(String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiClient.put('$_base/$id', data: data);
+      return (response.data['data'] as Map<String, dynamic>?) ?? {};
+    } catch (e) {
+      throw Exception('Satın alma güncellenemedi: $e');
+    }
+  }
+
   /// Satın almayı iptal eder.
   Future<Map<String, dynamic>> cancelPurchase(String id) async {
     try {
@@ -65,6 +77,20 @@ class PurchaseService {
       return (response.data['data'] as Map<String, dynamic>?) ?? {};
     } catch (e) {
       throw Exception('Satın alma iptal edilemedi: $e');
+    }
+  }
+
+  /// Satın alma iadesi oluşturur.
+  /// [data] içeriği:
+  ///   - items: [{ productId, variantId, quantity, unitPrice, reason }]
+  ///   - reason (String — genel iade nedeni)
+  ///   - notes (String, opsiyonel)
+  Future<Map<String, dynamic>> createPurchaseReturn(String purchaseId, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiClient.post('$_base/$purchaseId/returns', data: data);
+      return (response.data['data'] as Map<String, dynamic>?) ?? {};
+    } catch (e) {
+      throw Exception('Satın alma iadesi oluşturulamadı: $e');
     }
   }
 

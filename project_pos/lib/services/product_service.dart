@@ -1,7 +1,11 @@
 import '../core/api/api_client.dart';
 import '../core/data/mock_data.dart';
+import '../core/utils/app_logger.dart';
 
-/// Product Service - handles all product-related API calls
+/// Ürün servisi — Ürün CRUD işlemleri için backend API çağrıları yönetir.
+///
+/// Backend endpoint: `product/api/v1/products`
+/// Arama endpoint: `product/api/v1/productssearch`
 class ProductService {
   final ApiClient _apiClient;
 
@@ -12,9 +16,11 @@ class ProductService {
 
   // ─── Response Mappers ────────────────────────────────────────────────────
 
-  /// Backend ProductResponse → Flutter field adlarına normalize eder.
-  /// Stock ekranının beklediği: id(String), name, stock, sellingPrice,
-  /// isActive, sku, barcode, lowStockThreshold
+  /// Backend `ProductResponse` nesnesini Flutter field adlarına normalize eder.
+  ///
+  /// Stock ekranının beklediği alanlar: `id`, `name`, `stock`, `sellingPrice`,
+  /// `isActive`, `sku`, `barcode`, `lowStockThreshold`.
+  /// Varyant ve envanter bilgileri ilk varyanttan alınır.
   Map<String, dynamic> _mapProduct(Map<String, dynamic> raw) {
     final variants =
         (raw['variants'] as List?)?.cast<Map<String, dynamic>>() ?? [];
@@ -33,6 +39,10 @@ class ProductService {
       'brand': raw['brand'],
       'categoryId': raw['categoryId'],
 
+      // Varyant bilgileri — satış/stok işlemleri için gerekli
+      'variantId': firstVariant['id'],          // backend variantId
+      'variants': variants,                      // tüm varyant listesi
+
       // Fiyat — basePrice ana fiyat, varyant additionalPrice eklenebilir
       'basePrice': raw['basePrice'],
       'sellingPrice': raw['basePrice'],   // ekran uyumu için alias
@@ -46,6 +56,8 @@ class ProductService {
       'stock': inventory['physicalQuantity'] ?? 0,
       'lowStockThreshold': inventory['minStockLevel'] ?? 10,
       'warehouseCode': inventory['warehouseCode'],
+      'warehouseId': inventory['warehouseId'],
+      'storeId': inventory['storeId'],
 
       // Barkod — variants[0].barcodes içindeki primary barkod
       'barcode': _extractBarcode(firstVariant),
@@ -68,9 +80,11 @@ class ProductService {
 
   // ─── API Methods ─────────────────────────────────────────────────────────
 
-  /// Ürün listesi — search varsa /search endpoint'ini kullanır
-  /// Backend: GET /api/v1/products          (Page<ProductResponse>)
-  ///          GET /product/api/v1/productssearch    (Page<ProductResponse>)
+  /// Ürünleri listeler.
+  ///
+  /// [page] ve [size] ile sayfalama, [search] ile arama,
+  /// [category] ile kategori filtreleme, [isActive] ile durum filtreleme destekler.
+  /// Arama varsa `/productssearch` endpoint'ini kullanır.
   Future<List<Map<String, dynamic>>> getProducts({
     int page = 0,
     int size = 50,
@@ -101,9 +115,9 @@ class ProductService {
 
     try {
       if (search != null && search.isNotEmpty) {
-        // Arama endpoint'i ayrı: /product/api/v1/productssearch?keyword=...
+        // Arama endpoint'i ayrı: /product/api/v1/products/search?keyword=...
         final response = await _apiClient.get(
-          'product/api/v1/productssearch',
+          'product/api/v1/products/search',
           queryParameters: {
             'keyword': search,
             'page': page,
@@ -145,7 +159,9 @@ class ProductService {
     }
   }
 
-  /// Tek ürün — GET /product/api/v1/products{id}
+  /// Tek bir ürünü ID ile getirir.
+  ///
+  /// Backend: `GET /product/api/v1/products/{id}`
   Future<Map<String, dynamic>> getProductById(String id) async {
     if (useMockData) {
       await Future.delayed(const Duration(milliseconds: 300));
@@ -155,7 +171,7 @@ class ProductService {
       );
     }
     try {
-      final response = await _apiClient.get('product/api/v1/products$id');
+      final response = await _apiClient.get('product/api/v1/products/$id');
       final raw = (response.data as Map<String, dynamic>)['data']
           as Map<String, dynamic>;
       return _mapProduct(raw);
@@ -164,7 +180,9 @@ class ProductService {
     }
   }
 
-  /// Ürün oluştur — POST /api/v1/products
+  /// Yeni ürün oluşturur.
+  ///
+  /// [data] backend `ProductRequest` formatında olmalıdır.
   Future<Map<String, dynamic>> createProduct(
       Map<String, dynamic> data) async {
     if (useMockData) {
@@ -188,7 +206,9 @@ class ProductService {
     }
   }
 
-  /// Ürün güncelle — PUT /product/api/v1/products{id}
+  /// Mevcut ürünü günceller.
+  ///
+  /// [id] ürün UUID'si, [data] güncellenecek alanları içerir.
   Future<Map<String, dynamic>> updateProduct(
       String id, Map<String, dynamic> data) async {
     if (useMockData) {
@@ -206,7 +226,7 @@ class ProductService {
     }
     try {
       final response =
-          await _apiClient.put('product/api/v1/products$id', data: data);
+          await _apiClient.put('product/api/v1/products/$id', data: data);
       final raw = (response.data as Map<String, dynamic>)['data']
           as Map<String, dynamic>;
       return _mapProduct(raw);
@@ -215,7 +235,9 @@ class ProductService {
     }
   }
 
-  /// Ürün sil — DELETE /product/api/v1/products{id}
+  /// Ürünü siler.
+  ///
+  /// Backend: `DELETE /product/api/v1/products/{id}`
   Future<void> deleteProduct(String id) async {
     if (useMockData) {
       await Future.delayed(const Duration(milliseconds: 300));
@@ -223,11 +245,16 @@ class ProductService {
       return;
     }
     try {
-      await _apiClient.delete('product/api/v1/products$id');
-    } catch (_) {}
+      await _apiClient.delete('product/api/v1/products/$id');
+    } catch (e) {
+      AppLogger.error('Ürün silinemedi: $id', tag: 'ProductService', error: e);
+    }
   }
 
-  /// Ürün istatistikleri (lokal hesaplama — backend'de stats endpoint yok)
+  /// Ürün istatistiklerini hesaplar (lokal).
+  ///
+  /// Toplam, aktif, düsuk stok ve stokta olmayan ürün sayılarını döner.
+  /// Backend'de ayrı bir stats endpoint'i bulunmadığından lokal hesaplanır.
   Future<Map<String, dynamic>> getProductStats() async {
     final products = await getProducts();
     return {

@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/utils/app_logger.dart';
 
 /// Theme Mode (Light/Dark)
 enum AppThemeMode { light, dark, system }
@@ -60,7 +63,10 @@ enum PrimaryColorOption {
   const PrimaryColorOption(this.label, this.color);
 }
 
-/// Theme Settings State
+/// Tema ayarları durum nesnesi.
+///
+/// Tema modu, ana renk, layout, sidebar/topbar görünümü gibi
+/// tüm UI konfigürasyonlarını tutar. JSON serialize/deserialize destekler.
 class ThemeSettings {
   // Basic
   final AppThemeMode themeMode;
@@ -172,7 +178,11 @@ class ThemeSettings {
   }
 }
 
-/// Theme Notifier
+/// Tema ayarları yöneticisi — dark/light mod, renkler ve layout tercihlerini yönetir.
+///
+/// Ayarlar [SharedPreferences] üzerinde JSON formatında saklanır.
+/// Eski pipe-delimited (`|`) formattan JSON'a otomatik migrasyon destekler.
+/// Her değişiklikte kalıcı depoya kaydeder.
 class ThemeNotifier extends StateNotifier<ThemeSettings> {
   ThemeNotifier() : super(const ThemeSettings()) {
     _loadSettings();
@@ -183,9 +193,19 @@ class ThemeNotifier extends StateNotifier<ThemeSettings> {
   Future<void> _loadSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final jsonString = prefs.getString(_storageKey);
-      if (jsonString != null) {
-        final parts = jsonString.split('|');
+      final raw = prefs.getString(_storageKey);
+      if (raw == null) return;
+
+      // Try JSON first
+      try {
+        final json = jsonDecode(raw) as Map<String, dynamic>;
+        state = ThemeSettings.fromJson(json);
+        return;
+      } catch (_) {}
+
+      // Fallback: try pipe-delimited (migration from old format)
+      try {
+        final parts = raw.split('|');
         if (parts.length >= 8) {
           state = ThemeSettings(
             themeMode: AppThemeMode.values.firstWhere(
@@ -221,29 +241,24 @@ class ThemeNotifier extends StateNotifier<ThemeSettings> {
                 ? Color(int.parse(parts[9]))
                 : null,
           );
+          // Re-save as JSON for migration
+          _saveSettings();
         }
+      } catch (e) {
+        AppLogger.warning('Tema ayarları okunamadı, varsayılana dönülüyor', tag: 'ThemeProvider');
       }
     } catch (e) {
-      print('Error loading theme settings: $e');
+      AppLogger.error('Tema ayarları yüklenemedi', tag: 'Theme', error: e);
     }
   }
 
   Future<void> _saveSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final value = '${state.themeMode.name}|'
-          '${state.primaryColor.name}|'
-          '${state.layoutMode.name}|'
-          '${state.widthMode.name}|'
-          '${state.sidebarAppearance.name}|'
-          '${state.topbarAppearance.name}|'
-          '${state.useMaterialYou}|'
-          '${state.isRTL}|'
-          '${state.customSidebarColor?.value ?? 'null'}|'
-          '${state.customTopbarColor?.value ?? 'null'}';
-      await prefs.setString(_storageKey, value);
+      final jsonString = jsonEncode(state.toJson());
+      await prefs.setString(_storageKey, jsonString);
     } catch (e) {
-      print('Error saving theme settings: $e');
+      AppLogger.error('Tema ayarları kaydedilemedi', tag: 'Theme', error: e);
     }
   }
 

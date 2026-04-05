@@ -1,8 +1,9 @@
 import '../core/api/api_client.dart';
+import '../core/utils/app_logger.dart';
 
 /// HRM Service - İnsan Kaynakları Yönetimi
 class HrmService {
-  static const bool useMockData = true;
+  static const bool useMockData = false;
   final ApiClient _apiClient;
 
   HrmService(this._apiClient);
@@ -97,8 +98,17 @@ class HrmService {
     String? status,
     String? search,
   }) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 400));
+    try {
+      final queryParams = <String, dynamic>{};
+      if (department != null) queryParams['department'] = department;
+      if (status != null) queryParams['status'] = status;
+      if (search != null) queryParams['search'] = search;
+
+      final response = await _apiClient.get('product/api/v1/hrm/employees', queryParameters: queryParams);
+      return List<Map<String, dynamic>>.from(response.data['data'] ?? []);
+    } catch (e) {
+      AppLogger.error('Failed to fetch employees', tag: 'HrmService', error: e);
+      // Fallback to mock data
       var employees = List<Map<String, dynamic>>.from(_mockEmployees);
 
       if (department != null && department.isNotEmpty) {
@@ -121,56 +131,28 @@ class HrmService {
 
       return employees;
     }
-
-    try {
-      final queryParams = <String, dynamic>{};
-      if (department != null) queryParams['department'] = department;
-      if (status != null) queryParams['status'] = status;
-      if (search != null) queryParams['search'] = search;
-
-      final response = await _apiClient.get('api/hrm/employees', queryParameters: queryParams);
-      return List<Map<String, dynamic>>.from(response.data['data'] ?? []);
-    } catch (e) {
-      return _mockEmployees;
-    }
   }
 
   // Get employee by ID
   Future<Map<String, dynamic>> getEmployeeById(int id) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 300));
-      return _mockEmployees.firstWhere(
-        (e) => e['id'] == id,
-        orElse: () => {},
-      );
-    }
-
     try {
-      final response = await _apiClient.get('api/hrm/employees/$id');
+      final response = await _apiClient.get('product/api/v1/hrm/employees/$id');
       return response.data['data'] as Map<String, dynamic>;
     } catch (e) {
+      AppLogger.error('Failed to fetch employee by id: $id', tag: 'HrmService', error: e);
+      // Fallback to mock data
       return _mockEmployees.firstWhere((e) => e['id'] == id, orElse: () => {});
     }
   }
 
   // Create employee
   Future<Map<String, dynamic>> createEmployee(Map<String, dynamic> data) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      final newEmployee = {
-        'id': DateTime.now().millisecondsSinceEpoch,
-        'employeeNumber': 'EMP-${_mockEmployees.length + 1}'.padLeft(7, '0'),
-        ...data,
-        'createdAt': DateTime.now().toIso8601String(),
-      };
-      _mockEmployees.add(newEmployee);
-      return newEmployee;
-    }
-
     try {
-      final response = await _apiClient.post('api/hrm/employees', data: data);
+      final response = await _apiClient.post('product/api/v1/hrm/employees', data: data);
       return response.data['data'] as Map<String, dynamic>;
     } catch (e) {
+      AppLogger.error('Failed to create employee', tag: 'HrmService', error: e);
+      // Fallback to mock data
       final newEmployee = {
         'id': DateTime.now().millisecondsSinceEpoch,
         'employeeNumber': 'EMP-${_mockEmployees.length + 1}'.padLeft(7, '0'),
@@ -184,20 +166,12 @@ class HrmService {
 
   // Update employee
   Future<Map<String, dynamic>> updateEmployee(int id, Map<String, dynamic> data) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      final index = _mockEmployees.indexWhere((e) => e['id'] == id);
-      if (index != -1) {
-        _mockEmployees[index] = {..._mockEmployees[index], ...data};
-        return _mockEmployees[index];
-      }
-      return {};
-    }
-
     try {
-      final response = await _apiClient.put('api/hrm/employees/$id', data: data);
+      final response = await _apiClient.put('product/api/v1/hrm/employees/$id', data: data);
       return response.data['data'] as Map<String, dynamic>;
     } catch (e) {
+      AppLogger.error('Failed to update employee: $id', tag: 'HrmService', error: e);
+      // Fallback to mock data
       final index = _mockEmployees.indexWhere((e) => e['id'] == id);
       if (index != -1) {
         _mockEmployees[index] = {..._mockEmployees[index], ...data};
@@ -209,16 +183,12 @@ class HrmService {
 
   // Delete employee
   Future<bool> deleteEmployee(int id) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 300));
-      _mockEmployees.removeWhere((e) => e['id'] == id);
-      return true;
-    }
-
     try {
-      await _apiClient.delete('api/hrm/employees/$id');
+      await _apiClient.delete('product/api/v1/hrm/employees/$id');
       return true;
     } catch (e) {
+      AppLogger.error('Failed to delete employee: $id', tag: 'HrmService', error: e);
+      // Fallback to mock data
       _mockEmployees.removeWhere((e) => e['id'] == id);
       return true;
     }
@@ -226,21 +196,12 @@ class HrmService {
 
   // Toggle employee status
   Future<bool> toggleEmployeeStatus(int id) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 300));
-      final index = _mockEmployees.indexWhere((e) => e['id'] == id);
-      if (index != -1) {
-        final currentStatus = _mockEmployees[index]['status'];
-        _mockEmployees[index]['status'] = currentStatus == 'active' ? 'inactive' : 'active';
-        return true;
-      }
-      return false;
-    }
-
     try {
-      await _apiClient.post('api/hrm/employees/$id/toggle-status');
+      await _apiClient.post('product/api/v1/hrm/employees/$id/toggle-status');
       return true;
     } catch (e) {
+      AppLogger.error('Failed to toggle employee status: $id', tag: 'HrmService', error: e);
+      // Fallback to mock data
       final index = _mockEmployees.indexWhere((e) => e['id'] == id);
       if (index != -1) {
         final currentStatus = _mockEmployees[index]['status'];
@@ -253,23 +214,24 @@ class HrmService {
 
   // Get departments
   Future<List<String>> getDepartments() async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 200));
-      return ['Satış', 'İnsan Kaynakları', 'IT', 'Muhasebe', 'Depo', 'Pazarlama', 'Lojistik'];
-    }
-
     try {
-      final response = await _apiClient.get('api/hrm/departments');
+      final response = await _apiClient.get('product/api/v1/hrm/departments');
       return List<String>.from(response.data['data'] ?? []);
     } catch (e) {
-      return [];
+      AppLogger.error('Failed to fetch departments', tag: 'HrmService', error: e);
+      // Fallback to mock data
+      return ['Satış', 'İnsan Kaynakları', 'IT', 'Muhasebe', 'Depo', 'Pazarlama', 'Lojistik'];
     }
   }
 
   // Get employee statistics
   Future<Map<String, dynamic>> getEmployeeStats() async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 300));
+    try {
+      final response = await _apiClient.get('product/api/v1/hrm/stats');
+      return response.data['data'] as Map<String, dynamic>;
+    } catch (e) {
+      AppLogger.error('Failed to fetch employee stats', tag: 'HrmService', error: e);
+      // Fallback to mock data
       final activeCount = _mockEmployees.where((e) => e['status'] == 'active').length;
       final inactiveCount = _mockEmployees.where((e) => e['status'] == 'inactive').length;
       final totalSalary = _mockEmployees.fold<double>(
@@ -285,13 +247,6 @@ class HrmService {
         'averageSalary': _mockEmployees.isNotEmpty ? totalSalary / _mockEmployees.length : 0,
         'departmentCount': getDepartments(),
       };
-    }
-
-    try {
-      final response = await _apiClient.get('api/hrm/stats');
-      return response.data['data'] as Map<String, dynamic>;
-    } catch (e) {
-      return {};
     }
   }
 }

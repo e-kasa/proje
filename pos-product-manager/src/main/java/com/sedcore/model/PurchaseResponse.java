@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Satın Alma Response DTO
@@ -36,4 +37,23 @@ public class PurchaseResponse {
     // Durum
     private Boolean isCancelled;
     private String notes;
+
+    // Kalemler
+    private List<PurchaseItemResponse> items;
+    private Integer itemCount;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PurchaseItemResponse {
+        private String movementId;
+        private String variantId;
+        private String variantSku;
+        private String variantName;
+        private String productName;
+        private Integer quantity;
+        private BigDecimal unitPrice;
+        private BigDecimal lineTotal;
+    }
 }

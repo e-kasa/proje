@@ -250,6 +250,24 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
             ),
           ),
 
+          // Quick Report Links
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildReportLink('Hareket Geçmişi', Icons.history, '/stock/movements', AppColors.info),
+                  const SizedBox(width: 8),
+                  _buildReportLink('Stok Alarmları', Icons.notifications_active, '/stock/alerts', AppColors.danger),
+                  const SizedBox(width: 8),
+                  _buildReportLink('Değer Raporu', Icons.bar_chart, '/stock/value-report', AppColors.success),
+                ],
+              ),
+            ),
+          ),
+
           const SizedBox(height: 8),
 
           // Product List
@@ -317,6 +335,16 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
         label: const Text('Stok Sayım'),
         backgroundColor: AppColors.primary,
       ),
+    );
+  }
+
+  Widget _buildReportLink(String label, IconData icon, String route, Color color) {
+    return ActionChip(
+      avatar: Icon(icon, size: 16, color: color),
+      label: Text(label, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600)),
+      side: BorderSide(color: color.withOpacity(0.3)),
+      backgroundColor: color.withOpacity(0.05),
+      onPressed: () => context.push(route),
     );
   }
 

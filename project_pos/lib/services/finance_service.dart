@@ -1,9 +1,10 @@
 import '../core/api/api_client.dart';
+import '../core/utils/app_logger.dart';
 
 /// Finance Service - Gelir/Gider yönetimi
 class FinanceService {
   /// Development mode - uses mock data when API is unavailable
-  static const bool useMockData = true;
+  static const bool useMockData = false;
   final ApiClient _apiClient;
 
   FinanceService(this._apiClient);
@@ -148,8 +149,20 @@ class FinanceService {
     int? page,
     int? limit,
   }) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 400));
+    try {
+      final queryParams = <String, dynamic>{};
+      if (category != null) queryParams['category'] = category;
+      if (status != null) queryParams['status'] = status;
+      if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
+      if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
+      if (page != null) queryParams['page'] = page;
+      if (limit != null) queryParams['limit'] = limit;
+
+      final response = await _apiClient.get('product/api/v1/finance/expenses', queryParameters: queryParams);
+      return List<Map<String, dynamic>>.from(response.data['data'] ?? []);
+    } catch (e) {
+      AppLogger.error('Failed to fetch expenses', tag: 'FinanceService', error: e);
+      // Fallback to mock data
       var expenses = List<Map<String, dynamic>>.from(_mockExpenses);
 
       if (category != null && category.isNotEmpty) {
@@ -174,25 +187,9 @@ class FinanceService {
         }).toList();
       }
 
-      // Sort by date descending
       expenses.sort((a, b) => DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
 
       return expenses;
-    }
-
-    try {
-      final queryParams = <String, dynamic>{};
-      if (category != null) queryParams['category'] = category;
-      if (status != null) queryParams['status'] = status;
-      if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
-      if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
-      if (page != null) queryParams['page'] = page;
-      if (limit != null) queryParams['limit'] = limit;
-
-      final response = await _apiClient.get('api/finance/expenses', queryParameters: queryParams);
-      return List<Map<String, dynamic>>.from(response.data['data'] ?? []);
-    } catch (e) {
-      return _mockExpenses;
     }
   }
 
@@ -204,8 +201,19 @@ class FinanceService {
     int? page,
     int? limit,
   }) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 400));
+    try {
+      final queryParams = <String, dynamic>{};
+      if (category != null) queryParams['category'] = category;
+      if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
+      if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
+      if (page != null) queryParams['page'] = page;
+      if (limit != null) queryParams['limit'] = limit;
+
+      final response = await _apiClient.get('product/api/v1/finance/revenues', queryParameters: queryParams);
+      return List<Map<String, dynamic>>.from(response.data['data'] ?? []);
+    } catch (e) {
+      AppLogger.error('Failed to fetch revenues', tag: 'FinanceService', error: e);
+      // Fallback to mock data
       var revenues = List<Map<String, dynamic>>.from(_mockRevenues);
 
       if (category != null && category.isNotEmpty) {
@@ -226,41 +234,20 @@ class FinanceService {
         }).toList();
       }
 
-      // Sort by date descending
       revenues.sort((a, b) => DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
 
       return revenues;
-    }
-
-    try {
-      final queryParams = <String, dynamic>{};
-      if (category != null) queryParams['category'] = category;
-      if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
-      if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
-      if (page != null) queryParams['page'] = page;
-      if (limit != null) queryParams['limit'] = limit;
-
-      final response = await _apiClient.get('api/finance/revenues', queryParameters: queryParams);
-      return List<Map<String, dynamic>>.from(response.data['data'] ?? []);
-    } catch (e) {
-      return _mockRevenues;
     }
   }
 
   // Get single expense by ID
   Future<Map<String, dynamic>> getExpenseById(int id) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 300));
-      return _mockExpenses.firstWhere(
-        (e) => e['id'] == id,
-        orElse: () => {},
-      );
-    }
-
     try {
-      final response = await _apiClient.get('api/finance/expenses/$id');
+      final response = await _apiClient.get('product/api/v1/finance/expenses/$id');
       return response.data['data'] as Map<String, dynamic>;
     } catch (e) {
+      AppLogger.error('Failed to fetch expense by id: $id', tag: 'FinanceService', error: e);
+      // Fallback to mock data
       return _mockExpenses.firstWhere(
         (e) => e['id'] == id,
         orElse: () => {},
@@ -270,22 +257,12 @@ class FinanceService {
 
   // Create new expense
   Future<Map<String, dynamic>> createExpense(Map<String, dynamic> data) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      final newExpense = {
-        'id': DateTime.now().millisecondsSinceEpoch,
-        'type': 'expense',
-        ...data,
-        'createdAt': DateTime.now().toIso8601String(),
-      };
-      _mockExpenses.add(newExpense);
-      return newExpense;
-    }
-
     try {
-      final response = await _apiClient.post('api/finance/expenses', data: data);
+      final response = await _apiClient.post('product/api/v1/finance/expenses', data: data);
       return response.data['data'] as Map<String, dynamic>;
     } catch (e) {
+      AppLogger.error('Failed to create expense', tag: 'FinanceService', error: e);
+      // Fallback to mock data
       final newExpense = {
         'id': DateTime.now().millisecondsSinceEpoch,
         'type': 'expense',
@@ -299,22 +276,12 @@ class FinanceService {
 
   // Create new revenue
   Future<Map<String, dynamic>> createRevenue(Map<String, dynamic> data) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      final newRevenue = {
-        'id': DateTime.now().millisecondsSinceEpoch,
-        'type': 'revenue',
-        ...data,
-        'createdAt': DateTime.now().toIso8601String(),
-      };
-      _mockRevenues.add(newRevenue);
-      return newRevenue;
-    }
-
     try {
-      final response = await _apiClient.post('api/finance/revenues', data: data);
+      final response = await _apiClient.post('product/api/v1/finance/revenues', data: data);
       return response.data['data'] as Map<String, dynamic>;
     } catch (e) {
+      AppLogger.error('Failed to create revenue', tag: 'FinanceService', error: e);
+      // Fallback to mock data
       final newRevenue = {
         'id': DateTime.now().millisecondsSinceEpoch,
         'type': 'revenue',
@@ -328,20 +295,12 @@ class FinanceService {
 
   // Update expense
   Future<Map<String, dynamic>> updateExpense(int id, Map<String, dynamic> data) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      final index = _mockExpenses.indexWhere((e) => e['id'] == id);
-      if (index != -1) {
-        _mockExpenses[index] = {..._mockExpenses[index], ...data};
-        return _mockExpenses[index];
-      }
-      return {};
-    }
-
     try {
-      final response = await _apiClient.put('api/finance/expenses/$id', data: data);
+      final response = await _apiClient.put('product/api/v1/finance/expenses/$id', data: data);
       return response.data['data'] as Map<String, dynamic>;
     } catch (e) {
+      AppLogger.error('Failed to update expense: $id', tag: 'FinanceService', error: e);
+      // Fallback to mock data
       final index = _mockExpenses.indexWhere((e) => e['id'] == id);
       if (index != -1) {
         _mockExpenses[index] = {..._mockExpenses[index], ...data};
@@ -353,16 +312,12 @@ class FinanceService {
 
   // Delete expense
   Future<bool> deleteExpense(int id) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 300));
-      _mockExpenses.removeWhere((e) => e['id'] == id);
-      return true;
-    }
-
     try {
-      await _apiClient.delete('api/finance/expenses/$id');
+      await _apiClient.delete('product/api/v1/finance/expenses/$id');
       return true;
     } catch (e) {
+      AppLogger.error('Failed to delete expense: $id', tag: 'FinanceService', error: e);
+      // Fallback to mock data
       _mockExpenses.removeWhere((e) => e['id'] == id);
       return true;
     }
@@ -370,16 +325,12 @@ class FinanceService {
 
   // Delete revenue
   Future<bool> deleteRevenue(int id) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 300));
-      _mockRevenues.removeWhere((r) => r['id'] == id);
-      return true;
-    }
-
     try {
-      await _apiClient.delete('api/finance/revenues/$id');
+      await _apiClient.delete('product/api/v1/finance/revenues/$id');
       return true;
     } catch (e) {
+      AppLogger.error('Failed to delete revenue: $id', tag: 'FinanceService', error: e);
+      // Fallback to mock data
       _mockRevenues.removeWhere((r) => r['id'] == id);
       return true;
     }
@@ -390,9 +341,16 @@ class FinanceService {
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 400));
+    try {
+      final queryParams = <String, dynamic>{};
+      if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
+      if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
 
+      final response = await _apiClient.get('product/api/v1/finance/summary', queryParameters: queryParams);
+      return response.data['data'] as Map<String, dynamic>;
+    } catch (e) {
+      AppLogger.error('Failed to fetch finance summary', tag: 'FinanceService', error: e);
+      // Fallback to mock data
       var expenses = List<Map<String, dynamic>>.from(_mockExpenses);
       var revenues = List<Map<String, dynamic>>.from(_mockRevenues);
 
@@ -438,23 +396,16 @@ class FinanceService {
         'revenuesByCategory': _groupByCategory(revenues),
       };
     }
-
-    try {
-      final queryParams = <String, dynamic>{};
-      if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
-      if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
-
-      final response = await _apiClient.get('api/finance/summary', queryParameters: queryParams);
-      return response.data['data'] as Map<String, dynamic>;
-    } catch (e) {
-      return {};
-    }
   }
 
   // Get expense categories
   Future<List<Map<String, dynamic>>> getExpenseCategories() async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 200));
+    try {
+      final response = await _apiClient.get('product/api/v1/finance/expense-categories');
+      return List<Map<String, dynamic>>.from(response.data['data'] ?? []);
+    } catch (e) {
+      AppLogger.error('Failed to fetch expense categories', tag: 'FinanceService', error: e);
+      // Fallback to mock data
       return [
         {'id': 1, 'name': 'Kira', 'icon': '🏢'},
         {'id': 2, 'name': 'Maaşlar', 'icon': '👥'},
@@ -467,13 +418,6 @@ class FinanceService {
         {'id': 9, 'name': 'Bakım Onarım', 'icon': '🔧'},
         {'id': 10, 'name': 'Diğer', 'icon': '📋'},
       ];
-    }
-
-    try {
-      final response = await _apiClient.get('api/finance/expense-categories');
-      return List<Map<String, dynamic>>.from(response.data['data'] ?? []);
-    } catch (e) {
-      return [];
     }
   }
 

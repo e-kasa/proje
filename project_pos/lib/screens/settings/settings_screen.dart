@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
 import '../../providers/theme_provider.dart';
@@ -355,6 +356,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   title: 'Fatura Öneki',
                   subtitle: 'INV-',
                   onTap: () => _showEditDialog('Fatura Öneki', 'INV-'),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Yonetim
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Yonetim',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                _buildSettingItem(
+                  icon: Icons.people_outline,
+                  title: 'Kullanici Yonetimi',
+                  subtitle: 'Kullanicilari ve rolleri yonet',
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/settings/users'),
+                ),
+                _buildSettingItem(
+                  icon: Icons.business_center_outlined,
+                  title: 'Firma Ayarlari',
+                  subtitle: 'Firma bilgileri, fatura ve sistem ayarlari',
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/settings/company'),
                 ),
               ],
             ),

@@ -4,6 +4,7 @@ import com.sedcore.entity.Sale;
 import com.sedcore.model.SaleRequest;
 import com.sedcore.repository.SaleRepository;
 import com.sedcore.se.ApiResponse;
+import com.sedcore.service.SaleService;
 import com.sedcore.service.impl.SaleServiceIntegrated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +23,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SaleControllerImpl {
 
-    private final SaleRepository saleRepository;
+    private final SaleService saleRepository;
     private final SaleServiceIntegrated saleService;
 
     // GET /product/api/v1/sales

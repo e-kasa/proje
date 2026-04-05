@@ -5,6 +5,7 @@ import 'package:csv/csv.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_logger.dart';
 import '../../services/service_locator.dart';
 import '../../widgets/quick_add_product_modal.dart';
 
@@ -27,15 +28,9 @@ class _EnhancedProductListScreenState extends ConsumerState<EnhancedProductListS
   String _selectedFilter = 'Tümü';
   bool _isLoading = true;
   bool _isSelectionMode = false;
+  bool _isOemSearching = false; // OEM/Capraz Referans ile arama modu
 
-  final List<String> _categories = [
-    'Tümü',
-    'Elektronik',
-    'Giyim',
-    'Ayakkabı',
-    'Aksesuar',
-    'Ev & Yaşam',
-  ];
+  List<String> _categories = ['Tümü'];
 
   final List<String> _filters = [
     'Tümü',
@@ -55,6 +50,20 @@ class _EnhancedProductListScreenState extends ConsumerState<EnhancedProductListS
     try {
       final productService = ref.read(productServiceProvider);
       final products = await productService.getProducts();
+
+      // Kategorileri API'den yükle
+      try {
+        final cats = await ref.read(categoryServiceProvider).getCategories();
+        final catNames = cats.map((c) => c['name']?.toString() ?? '').where((n) => n.isNotEmpty).toList();
+        if (mounted) {
+          setState(() {
+            _categories = ['Tümü', ...catNames];
+          });
+        }
+      } catch (e) {
+        AppLogger.warning('Kategoriler yüklenemedi', tag: 'ProductList', error: e);
+      }
+
       setState(() {
         _allProducts = products;
         _filteredProducts = products;
@@ -123,6 +132,33 @@ class _EnhancedProductListScreenState extends ConsumerState<EnhancedProductListS
         ),
       ),
     );
+  }
+
+  void _searchByOem(String query) async {
+    if (query.length < 3) {
+      setState(() => _filteredProducts = []);
+      return;
+    }
+    try {
+      final partSearchService = ref.read(partSearchServiceProvider);
+      final results = await partSearchService.search(keyword: query);
+      setState(() => _filteredProducts = results.map((r) => {
+        'id': r['variantId'] ?? r['productId'] ?? '',
+        'name': r['productName'] ?? '',
+        'sku': r['variantSku'] ?? '',
+        'barcode': (r['barcodes'] as List?)?.firstOrNull ?? '',
+        'stock': 0,
+        'price': r['salePrice'] ?? 0,
+        'category': '',
+        'unit': 'pcs',
+        'lowStockThreshold': 10,
+        'isActive': true,
+        '_oemNumbers': (r['oemNumbers'] as List?)?.join(', ') ?? '',
+        '_crossRefs': (r['crossReferences'] as List?)?.join(', ') ?? '',
+      }).toList());
+    } catch (e) {
+      // Fallback: filtre uygulama
+    }
   }
 
   void _searchByBarcode(String barcode) async {
@@ -283,25 +319,65 @@ class _EnhancedProductListScreenState extends ConsumerState<EnhancedProductListS
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.white,
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Ürün, SKU veya barkod ara...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          _filterProducts();
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: _isOemSearching
+                          ? 'OEM numarasi veya capraz referans ara...'
+                          : 'Urun, SKU veya barkod ara...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                _filterProducts();
+                              },
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onChanged: (value) {
+                      if (_isOemSearching) {
+                        _searchByOem(value);
+                      } else {
+                        _filterProducts();
+                      }
+                    },
+                  ),
                 ),
-              ),
-              onChanged: (value) => _filterProducts(),
+                const SizedBox(width: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    color: _isOemSearching ? AppColors.orange.withOpacity(0.15) : AppColors.bgLight,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _isOemSearching ? AppColors.orange : AppColors.border,
+                    ),
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.build_circle,
+                      color: _isOemSearching ? AppColors.orange : AppColors.textMuted,
+                    ),
+                    tooltip: 'OEM / Capraz Referans Ara',
+                    onPressed: () {
+                      setState(() {
+                        _isOemSearching = !_isOemSearching;
+                        _searchController.clear();
+                        if (!_isOemSearching) {
+                          _filteredProducts = _allProducts;
+                        }
+                      });
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
 
@@ -453,12 +529,47 @@ class _EnhancedProductListScreenState extends ConsumerState<EnhancedProductListS
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'SKU: ${product['sku']} | ${product['category']}',
+                      'SKU: ${product['sku']}${product['category'] != null && product['category'].toString().isNotEmpty ? ' | ${product['category']}' : ''}',
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
                       ),
                     ),
+                    // OEM / Cross Reference bilgisi (OEM arama modunda)
+                    if (_isOemSearching && (product['_oemNumbers'] ?? '').toString().isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.confirmation_number, size: 12, color: AppColors.orange),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              'OEM: ${product['_oemNumbers']}',
+                              style: const TextStyle(fontSize: 11, color: AppColors.orange),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (_isOemSearching && (product['_crossRefs'] ?? '').toString().isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          const Icon(Icons.compare_arrows, size: 12, color: AppColors.info),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              'Ref: ${product['_crossRefs']}',
+                              style: const TextStyle(fontSize: 11, color: AppColors.info),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     Row(
                       children: [

@@ -38,7 +38,7 @@ public interface ProductRepository extends BaseDaoRepository<Product> {
             String categoryId,ProductStatus status, Boolean isDeleted
     );
 
-    // Arama
+    // Arama (pageable)
     @Query("SELECT p FROM Product p WHERE " +
             " (LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(p.brand) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
@@ -46,6 +46,16 @@ public interface ProductRepository extends BaseDaoRepository<Product> {
     Page<Product> searchProducts(
             @Param("keyword") String keyword,
             Pageable pageable
+    );
+
+    // Arama (pageable'siz — PartSearchService icin)
+    @Query("SELECT p FROM Product p WHERE " +
+            " (LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(p.sku) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(p.brand) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "AND p.isDeleted = false")
+    List<Product> searchProducts(
+            @Param("keyword") String keyword
     );
 
     // Validasyon

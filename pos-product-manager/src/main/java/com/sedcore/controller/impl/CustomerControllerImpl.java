@@ -1,15 +1,20 @@
 package com.sedcore.controller.impl;
 
 import com.sedcore.entity.Customer;
+import com.sedcore.model.AccountTransactionResponse;
+import com.sedcore.model.CustomerAccountResponse;
 import com.sedcore.model.CustomerDto;
+import com.sedcore.model.CustomerPaymentDto;
 import com.sedcore.repository.CustomerRepository;
 import com.sedcore.se.ApiResponse;
+import com.sedcore.service.CustomerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +27,7 @@ import java.util.stream.Collectors;
 public class CustomerControllerImpl {
 
     private final CustomerRepository customerRepository;
+    private final CustomerService customerService;
 
     // GET /product/api/v1/customers
     @GetMapping
@@ -145,6 +151,59 @@ public class CustomerControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(stats));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    // =========================================================================
+    // CARİ HESAP ENDPOINT'LERİ
+    // =========================================================================
+
+    // GET /product/api/v1/customers/{id}/account
+    @GetMapping("/{id}/account")
+    public ResponseEntity<ApiResponse<CustomerAccountResponse>> getAccount(@PathVariable String id) {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(customerService.getCustomerAccount(id)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    // GET /product/api/v1/customers/{id}/transactions
+    @GetMapping("/{id}/transactions")
+    public ResponseEntity<ApiResponse<List<AccountTransactionResponse>>> getTransactions(@PathVariable String id) {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(customerService.getCustomerTransactions(id)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    // POST /product/api/v1/customers/{id}/payment
+    @PostMapping("/{id}/payment")
+    public ResponseEntity<ApiResponse<CustomerAccountResponse>> recordPayment(
+            @PathVariable String id,
+            @RequestBody CustomerPaymentDto dto) {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(customerService.recordPayment(id, dto)));
+        } catch (Exception e) {
+            log.error("Tahsilat kaydi hatasi: customerId={}, {}", id, e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error("Tahsilat kaydedilemedi: " + e.getMessage()));
+        }
+    }
+
+    // PUT /product/api/v1/customers/{id}/credit-limit
+    @PutMapping("/{id}/credit-limit")
+    public ResponseEntity<ApiResponse<CustomerAccountResponse>> updateCreditLimit(
+            @PathVariable String id,
+            @RequestBody Map<String, BigDecimal> body) {
+        try {
+            BigDecimal newLimit = body.get("creditLimit");
+            if (newLimit == null) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("creditLimit alani zorunlu"));
+            }
+            return ResponseEntity.ok(ApiResponse.success(customerService.updateCreditLimit(id, newLimit)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Kredi limiti guncellenemedi: " + e.getMessage()));
         }
     }
 

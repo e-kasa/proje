@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -87,11 +88,11 @@ public class PurchaseServiceImpl
                     .warehouseId(request.getWarehouseId())
                     .movementType(StockMovementType.PURCHASE_IN)
                     .quantity(item.getQuantity())
+                    .unitPrice(item.getUnitPrice())
                     .purchase(purchase)
                     .build();
             movements.add(stockMovementService.saveMovement(movement));
         }
-        purchase.setMovements(movements);
 
         // 4. Tedarikçi cari hesap: borç ekle (currentBalance ↑, totalDebt ↑)
         SupplierAccount account = supplierAccountService.applyDebit(supplier, totalAmount);
@@ -115,8 +116,12 @@ public class PurchaseServiceImpl
                 .build();
         accountTransactionService.save(tx);
 
-        log.info("Satin alma tamamlandi: id={}", purchase.getId());
-        return mapToResponse(purchase);
+        // DB'den yeniden yükle — Hibernate movements collection'ı doğru şekilde yüklesin
+        Purchase saved = findById(purchase.getId())
+                .orElseThrow(() -> new RuntimeException("Satin alma bulunamadi: " ));
+
+        log.info("Satin alma tamamlandi: id={}", saved.getId());
+        return mapToResponse(saved);
     }
 
     // ─── CANCEL ──────────────────────────────────────────────────────────────
@@ -192,6 +197,8 @@ public class PurchaseServiceImpl
         }
 
         return purchases.stream()
+                .sorted(Comparator.comparing(Purchase::getPurchaseDate,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -204,9 +211,60 @@ public class PurchaseServiceImpl
         return mapToResponse(purchase);
     }
 
+    // ─── UPDATE ──────────────────────────────────────────────────────────────
+
+    @Override
+    public PurchaseResponse updatePurchase(String id, PurchaseRequest request) {
+        Purchase purchase = findById(id)
+                .orElseThrow(() -> new RuntimeException("Satin alma bulunamadi: " + id));
+
+        if (Boolean.TRUE.equals(purchase.getIsCancelled())) {
+            throw new RuntimeException("Iptal edilmis satin alma guncellenemez: " + id);
+        }
+
+        // Belge bilgilerini güncelle
+        if (request.getInvoiceNumber() != null) {
+            purchase.setInvoiceNumber(request.getInvoiceNumber());
+        }
+        if (request.getDeliveryNoteNumber() != null) {
+            purchase.setDeliveryNoteNumber(request.getDeliveryNoteNumber());
+        }
+        if (request.getPurchaseDate() != null) {
+            purchase.setPurchaseDate(request.getPurchaseDate());
+        }
+        if (request.getNotes() != null) {
+            purchase.setNotes(request.getNotes());
+        }
+
+        purchase = save(purchase);
+        log.info("Satin alma guncellendi: id={}", id);
+        return mapToResponse(purchase);
+    }
+
     // ─── HELPERS ─────────────────────────────────────────────────────────────
 
     private PurchaseResponse mapToResponse(Purchase purchase) {
+        List<PurchaseResponse.PurchaseItemResponse> items = new ArrayList<>();
+        if (purchase.getMovements() != null) {
+            items = purchase.getMovements().stream()
+                    .filter(m -> m != null && m.getMovementType() == StockMovementType.PURCHASE_IN)
+                    .map(m -> {
+                        ProductVariant v = m.getVariant();
+                        BigDecimal price = m.getUnitPrice() != null ? m.getUnitPrice() : BigDecimal.ZERO;
+                        return PurchaseResponse.PurchaseItemResponse.builder()
+                                .movementId(m.getId())
+                                .variantId(v != null ? v.getId() : null)
+                                .variantSku(v != null ? v.getSku() : null)
+                                .variantName(v != null ? v.getName() : null)
+                                .productName(v != null && v.getProduct() != null ? v.getProduct().getName() : null)
+                                .quantity(m.getQuantity())
+                                .unitPrice(price)
+                                .lineTotal(price.multiply(BigDecimal.valueOf(m.getQuantity())))
+                                .build();
+                    })
+                    .collect(Collectors.toList());
+        }
+
         return PurchaseResponse.builder()
                 .id(purchase.getId())
                 .supplierId(purchase.getSupplier() != null ? purchase.getSupplier().getId() : null)
@@ -219,6 +277,8 @@ public class PurchaseServiceImpl
                 .remainingDebt(purchase.getRemainingDebt())
                 .isCancelled(purchase.getIsCancelled())
                 .notes(purchase.getNotes())
+                .items(items)
+                .itemCount(items.size())
                 .build();
     }
 

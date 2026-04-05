@@ -5,11 +5,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/auth_events.dart';
 import '../core/constants/app_constants.dart';
+import '../core/utils/app_logger.dart';
 import '../models/auth_state.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/service_locator.dart';
 
+/// Kimlik doğrulama durum yöneticisi.
+///
+/// JWT tabanlı login/logout, token saklama ([SharedPreferences]) ve
+/// otomatik oturum kontrolü sağlar. [ApiClient] 401 döndüğünde
+/// [AuthEvents] üzerinden logout tetiklenir ve router `/login`'e yönlendirir.
+/// JWT payload'undan kullanıcı bilgileri (`sessionInstance`) decode edilir.
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthService _authService;
   late final StreamSubscription<void> _unauthorizedSub;
@@ -46,11 +53,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
           );
         }
       } catch (e) {
-        print('Auth check error: $e');
+        AppLogger.error('Auth check error', tag: 'Auth', error: e);
       }
     });
   }
 
+  /// Kullanıcı girişi yapar. Token ve kullanıcı bilgilerini saklar.
   Future<void> login(String username, String password) async {
     state = state.copyWith(isLoading: true, error: null);
 
@@ -97,6 +105,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Oturumu kapatır ve saklanan token/kullanıcı bilgilerini temizler.
   Future<void> logout() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -106,7 +115,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await prefs.remove('session_id');
       await prefs.remove(AppConstants.companyCodeKey);
     } catch (e) {
-      print('Logout error: $e');
+      AppLogger.error('Logout error', tag: 'Auth', error: e);
     }
     state = AuthState.initial();
   }

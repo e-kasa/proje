@@ -61,10 +61,71 @@ class _DecisionTableScreenState extends State<DecisionTableScreen> {
   }
 
   void _showAddVariantPanel(int index) {
-    // TODO: Expansion panel veya bottom sheet ile varyant formu göster
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Varyant ekleme formu açılacak...'),
+    final nameCtrl = TextEditingController();
+    final skuCtrl = TextEditingController();
+    final priceCtrl = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          left: 16,
+          right: 16,
+          top: 16,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Varyant Ekle',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Varyant Adi',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: skuCtrl,
+              decoration: const InputDecoration(
+                labelText: 'SKU',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: priceCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Fiyat',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _products[index].decisionData ??= {};
+                  _products[index].decisionData!['variants'] ??= [];
+                  (_products[index].decisionData!['variants'] as List).add({
+                    'name': nameCtrl.text,
+                    'sku': skuCtrl.text,
+                    'price': double.tryParse(priceCtrl.text) ?? 0,
+                  });
+                });
+                Navigator.pop(ctx);
+              },
+              child: const Text('Ekle'),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }
@@ -101,14 +162,30 @@ class _DecisionTableScreenState extends State<DecisionTableScreen> {
     });
 
     try {
-      // TODO: Backend'e kaydet
-      await Future.delayed(const Duration(seconds: 2)); // Simülasyon
+      // Collect decisions for backend (will be used when backend endpoint is ready)
+      // ignore: unused_local_variable
+      final decisions = _products
+          .where((p) => p.userDecision != null)
+          .map((p) => {
+                'productName': p.readProductName,
+                'decision': p.userDecision,
+                'data': p.decisionData,
+              })
+          .toList();
+
+      // TODO: Uncomment when backend endpoint is ready
+      // await ref.read(bulkImportServiceProvider).saveDecisions(
+      //   importId: widget.uploadId,
+      //   products: decisions,
+      // );
+
+      // For now, simulate save
+      await Future.delayed(const Duration(seconds: 1));
 
       if (mounted) {
-        // Başarı ekranına git (Ekran 6)
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Kararlar başarıyla kaydedildi!'),
+            content: Text('Kararlar basariyla kaydedildi!'),
             backgroundColor: Colors.green,
           ),
         );

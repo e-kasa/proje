@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/data/pos_mock_data.dart';
 import '../../core/theme/theme_aware_gradient.dart';
+import '../../core/utils/app_logger.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/navigation_provider.dart';
 
@@ -37,7 +38,7 @@ class _PosSalesScreenState extends ConsumerState<PosSalesScreen> {
 
   Future<void> _loadData() async {
     // MOCK DATA - No Database!
-    print('✅ POS: Mock data yükleniyor...');
+    AppLogger.debug('POS: Mock data yükleniyor...', tag: 'POS');
 
     // Simulate async loading (like React)
     await Future.delayed(const Duration(milliseconds: 100));
@@ -50,7 +51,7 @@ class _PosSalesScreenState extends ConsumerState<PosSalesScreen> {
         _isLoading = false;
       });
 
-      print('✅ POS: ${_categories.length} kategori, ${_allProducts.length} ürün yüklendi');
+      AppLogger.debug('POS: ${_categories.length} kategori, ${_allProducts.length} ürün yüklendi', tag: 'POS');
     }
   }
 

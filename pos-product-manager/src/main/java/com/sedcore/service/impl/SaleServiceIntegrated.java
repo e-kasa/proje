@@ -1,13 +1,16 @@
 package com.sedcore.service.impl;
 
+import com.sedcore.context.CompanyContext;
 import com.sedcore.entity.*;
 import com.sedcore.enums.StockMovementType;
 import com.sedcore.enums.TransactionType;
 import com.sedcore.model.SaleItemRequest;
 import com.sedcore.model.SaleRequest;
 import com.sedcore.repository.*;
-import lombok.RequiredArgsConstructor;
+import com.towpen.base.db.model.TOpenSimpleCompanyEntity;
+import com.towpen.base.security.BaseDbServiceImp;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,20 +18,26 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
-public class SaleServiceIntegrated {
+@Transactional
+public class SaleServiceIntegrated
+        extends BaseDbServiceImp<SaleRepository, Sale> {
 
-    private final SaleRepository saleRepository;
-    private final StockMovementRepository stockMovementRepository;
-    private final CustomerRepository customerRepository;
-    private final CustomerAccountRepository customerAccountRepository;
-    private final AccountTransactionRepository accountTransactionRepository;
-    private final ProductVariantRepository variantRepository;
-    private final InventoryRepository inventoryRepository;
+    @Autowired private StockMovementRepository stockMovementRepository;
+    @Autowired private CustomerRepository customerRepository;
+    @Autowired private CustomerAccountRepository customerAccountRepository;
+    @Autowired private AccountTransactionRepository accountTransactionRepository;
+    @Autowired private ProductVariantRepository variantRepository;
+    @Autowired private InventoryRepository inventoryRepository;
+
+    @Override
+    public Class<?> getDTOClassForService() {
+        return Sale.class;
+    }
 
     @Transactional
     public Sale createSale(SaleRequest request) {
@@ -55,7 +64,7 @@ public class SaleServiceIntegrated {
                 .notes(request.getNotes())
                 .build();
 
-        sale = saleRepository.save(sale);
+        sale = save(sale);  // BaseDbServiceImp.save() → prepareForInsert() → companyCode set
         log.info("Sale kaydedildi: ID={}, Tutar={}", sale.getId(), sale.getTotalAmount());
 
         // 3. STOK HAREKETLERI
@@ -76,7 +85,7 @@ public class SaleServiceIntegrated {
                     .sale(sale)
                     .build();
 
-            movements.add(stockMovementRepository.save(movement));
+            movements.add(prepareAndSave(stockMovementRepository, movement));
             log.info("Stok hareketi: Variant={}, Miktar={}", variant.getSku(), item.getQuantity());
         }
 
@@ -145,7 +154,7 @@ public class SaleServiceIntegrated {
                             .overdueAmount(BigDecimal.ZERO)
                             .totalTransactionCount(0L)
                             .build();
-                    return customerAccountRepository.save(na);
+                    return prepareAndSave(customerAccountRepository, na);
                 });
 
         account.setCurrentBalance(account.getCurrentBalance().add(sale.getRemainingAmount()));
@@ -156,7 +165,7 @@ public class SaleServiceIntegrated {
         account.setTotalTransactionCount(account.getTotalTransactionCount() + 1);
         account.updateCalculatedFields();
 
-        CustomerAccount saved = customerAccountRepository.save(account);
+        CustomerAccount saved = prepareAndSave(customerAccountRepository, account);
         log.info("Musteri bakiyesi guncellendi - {}, Bakiye: {}",
                 customer.getName(), saved.getCurrentBalance());
         return saved;
@@ -184,7 +193,7 @@ public class SaleServiceIntegrated {
                 .isCancelled(false)
                 .build();
 
-        accountTransactionRepository.save(tx);
+        prepareAndSave(accountTransactionRepository, tx);
         log.info("Cari hareket kaydedildi - Tutar: {}, Vade: {}",
                 tx.getDebitAmount(), tx.getDueDate());
     }
@@ -197,5 +206,26 @@ public class SaleServiceIntegrated {
 
     private LocalDate calculateDueDate(LocalDate saleDate, Integer paymentTermDays) {
         return saleDate.plusDays(paymentTermDays != null ? paymentTermDays : 30);
+    }
+
+    /**
+     * BaseDbServiceImp.save() sadece Sale entity'si icin calisir.
+     * Diger entity'lere (StockMovement, CustomerAccount, AccountTransaction)
+     * companyCode ve createTime bilgilerini manuel set eder.
+     */
+    private <E extends TOpenSimpleCompanyEntity> E prepareAndSave(
+            org.springframework.data.repository.CrudRepository<E, String> repo, E entity) {
+        // companyCode: CompanyContext (ThreadLocal) → fallback "syste"
+        String companyCode = CompanyContext.get();
+        if (companyCode == null || companyCode.isBlank()) {
+            companyCode = "syste";
+        }
+        if (entity.getCompanyCode() == null || entity.getCompanyCode().isBlank()) {
+            entity.setCompanyCode(companyCode);
+        }
+        if (entity.getCreateTime() == null) {
+            entity.setCreateTime(Calendar.getInstance().getTime());
+        }
+        return repo.save(entity);
     }
 }

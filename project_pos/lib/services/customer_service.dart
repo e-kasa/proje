@@ -1,12 +1,17 @@
 import '../core/api/api_client.dart';
 
+/// Müşteri servisi — Müşteri CRUD işlemleri için backend API çağrıları.
+///
+/// Backend endpoint: `product/api/v1/customers`
 class CustomerService {
   final ApiClient _apiClient;
   static const String _base = 'product/api/v1/customers';
 
   CustomerService(this._apiClient);
 
-  // Get all customers
+  /// Müşteri listesini getirir.
+  ///
+  /// [search] ile arama, [isActive] ile durum filtreleme, [page] ve [limit] ile sayfalama destekler.
   Future<List<Map<String, dynamic>>> getCustomers({
     String? search,
     bool? isActive,
@@ -27,7 +32,7 @@ class CustomerService {
     }
   }
 
-  // Get single customer by ID
+  /// Tek bir müşteriyi ID ile getirir.
   Future<Map<String, dynamic>?> getCustomerById(String id) async {
     try {
       final response = await _apiClient.get('$_base/$id');
@@ -38,7 +43,7 @@ class CustomerService {
     }
   }
 
-  // Create new customer
+  /// Yeni müşteri oluşturur.
   Future<Map<String, dynamic>> createCustomer(Map<String, dynamic> data) async {
     try {
       final response = await _apiClient.post(_base, data: data);
@@ -48,7 +53,7 @@ class CustomerService {
     }
   }
 
-  // Update customer
+  /// Müşteri bilgilerini günceller.
   Future<Map<String, dynamic>> updateCustomer(String id, Map<String, dynamic> data) async {
     try {
       final response = await _apiClient.put('$_base/$id', data: data);
@@ -58,7 +63,7 @@ class CustomerService {
     }
   }
 
-  // Delete customer (soft delete)
+  /// Müşteriyi siler (soft delete).
   Future<void> deleteCustomer(String id) async {
     try {
       await _apiClient.delete('$_base/$id');
@@ -67,7 +72,7 @@ class CustomerService {
     }
   }
 
-  // Toggle customer status
+  /// Müşteri aktif/pasif durumunu değiştirir.
   Future<Map<String, dynamic>> toggleStatus(String id) async {
     try {
       final response = await _apiClient.patch('$_base/$id/toggle-status');
@@ -77,7 +82,7 @@ class CustomerService {
     }
   }
 
-  // Get customer statistics
+  /// Müşteri istatistiklerini getirir.
   Future<Map<String, dynamic>> getCustomerStats() async {
     try {
       final response = await _apiClient.get('$_base/stats');

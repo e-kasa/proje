@@ -1,10 +1,9 @@
-import '../core/data/mock_data.dart';
 import '../core/api/api_client.dart';
 
 class AuthService {
   
   /// Development mode - uses mock data when API is unavailable
-  static const bool useMockData = true;
+  static const bool useMockData = false;
   final ApiClient _apiClient;
 
   AuthService(this._apiClient);

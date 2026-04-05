@@ -1,8 +1,10 @@
+import 'env_config.dart';
+
 class AppConstants {
-  // API Configuration
-  static const String baseUrl = 'http://localhost:8080/';
-  static const int connectionTimeout = 15000;
-  static const int receiveTimeout = 15000;
+  // API Configuration — ortam bazlı, EnvConfig üzerinden okunur
+  static String get baseUrl => EnvConfig.baseUrl;
+  static int get connectionTimeout => EnvConfig.connectionTimeout;
+  static int get receiveTimeout => EnvConfig.receiveTimeout;
 
   // Storage Keys
   static const String tokenKey = 'auth_token';

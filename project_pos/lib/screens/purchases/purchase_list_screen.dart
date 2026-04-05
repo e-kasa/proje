@@ -270,8 +270,9 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
           ),
           child: InkWell(
             borderRadius: BorderRadius.circular(14),
-            onTap: () {
-              // İlerde detay ekranı açılabilir
+            onTap: () async {
+              await context.push('/purchases/detail/${p['id']}');
+              if (mounted) ref.read(purchaseListProvider.notifier).load();
             },
             child: Padding(
               padding: const EdgeInsets.all(14),

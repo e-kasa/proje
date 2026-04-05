@@ -31,16 +31,23 @@ class NavigationItem {
 
 /// Route → sayfa başlığı eşlemesi (AppBar ve breadcrumb için)
 const _routeTitles = <String, String>{
+  // Genel
   '/dashboard': 'Ana Sayfa',
+  '/menu': 'Menü',
+  '/profile': 'Profil',
+  '/settings': 'Ayarlar',
+  // Parça Arama
+  '/part-search': 'Parça Arama',
+  '/vehicles': 'Araçlar',
+  // Satış
   '/pos': 'Satış / POS',
+  '/sales': 'Satış Geçmişi',
+  // Stok
   '/stock': 'Stok Yönetimi',
   '/stock/multi-warehouse': 'Çok Depo Stok',
   '/stock/transfer-review': 'Stok Transfer',
   '/stock/count-review': 'Stok Sayım',
-  '/bulk-import': 'Toplu Ürün Yükleme',
-  '/categories/company-setup': 'Kategori Tanımla',
-  '/menu': 'Menü',
-  '/sales': 'Satışlar',
+  // Ürün Kataloğu
   '/inventory': 'Envanter',
   '/inventory/products': 'Ürünler',
   '/inventory/add-product': 'Ürün Ekle',
@@ -48,21 +55,27 @@ const _routeTitles = <String, String>{
   '/inventory/brands': 'Markalar',
   '/inventory/units': 'Birimler',
   '/inventory/barcodes': 'Barkodlar',
+  '/categories/company-setup': 'Kategori Tanımla',
+  '/bulk-import': 'Toplu Ürün Yükleme',
+  // Satın Alma
+  '/purchases': 'Satın Alma',
+  '/purchases/create': 'Yeni Alım',
+  // Cari Hesaplar
   '/customers': 'Müşteriler',
   '/customers/add': 'Müşteri Ekle',
   '/suppliers': 'Tedarikçiler',
   '/suppliers/add': 'Tedarikçi Ekle',
+  // Depo
   '/warehouses': 'Depolar',
   '/warehouses/add': 'Depo Ekle',
   '/stores': 'Mağazalar',
   '/stores/add': 'Mağaza Ekle',
+  // Finans
   '/finance': 'Finans',
   '/finance/expenses': 'Giderler',
   '/finance/expenses/add': 'Gider Ekle',
-  '/hrm/employees': 'Çalışanlar',
+  // Raporlar
   '/reports': 'Raporlar',
-  '/profile': 'Profil',
-  '/settings': 'Ayarlar',
 };
 
 String _getPageTitle(String location) =>
@@ -88,6 +101,7 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
   bool _isSidebarExpanded = true;
 
   final List<NavigationItem> _webNavItems = [
+    // ── GENEL ──
     NavigationItem(
       icon: Icons.dashboard_outlined,
       label: 'Ana Sayfa',
@@ -95,31 +109,93 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
       sectionLabel: 'GENEL',
     ),
     NavigationItem(
+      icon: Icons.search_outlined,
+      label: 'Parça Ara',
+      route: '/part-search',
+    ),
+    // ── SATIŞ ──
+    NavigationItem(
       icon: Icons.point_of_sale_outlined,
       label: 'Satış / POS',
       route: '/pos',
+      sectionLabel: 'SATIŞ',
     ),
+    NavigationItem(
+      icon: Icons.history_outlined,
+      label: 'Satış Geçmişi',
+      route: '/sales',
+    ),
+    // ── ÜRÜN KATALOĞU ──
+    NavigationItem(
+      icon: Icons.list_alt_outlined,
+      label: 'Ürünler',
+      route: '/inventory/products',
+      sectionLabel: 'ÜRÜN KATALOĞU',
+    ),
+    NavigationItem(
+      icon: Icons.add_box_outlined,
+      label: 'Ürün Ekle',
+      route: '/inventory/add-product',
+    ),
+    NavigationItem(
+      icon: Icons.category_outlined,
+      label: 'Kategoriler',
+      route: '/inventory/categories',
+    ),
+    // ── STOK YÖNETİMİ ──
     NavigationItem(
       icon: Icons.inventory_2_outlined,
-      label: 'Stok',
+      label: 'Stok Durumu',
       route: '/stock',
-      sectionLabel: 'OPERASYONLAR',
+      sectionLabel: 'STOK YÖNETİMİ',
     ),
     NavigationItem(
-      icon: Icons.upload_file_outlined,
-      label: 'Toplu Yükleme',
-      route: '/bulk-import',
+      icon: Icons.warehouse_outlined,
+      label: 'Depolar',
+      route: '/warehouses',
+    ),
+    // ── SATIN ALMA & TEDARİK ──
+    NavigationItem(
+      icon: Icons.shopping_cart_outlined,
+      label: 'Satın Alma',
+      route: '/purchases',
+      sectionLabel: 'TEDARİK',
     ),
     NavigationItem(
-      icon: Icons.tune_outlined,
-      label: 'Kategori Tanımla',
-      route: '/categories/company-setup',
+      icon: Icons.business_outlined,
+      label: 'Tedarikçiler',
+      route: '/suppliers',
+    ),
+    // ── CARİ HESAPLAR ──
+    NavigationItem(
+      icon: Icons.people_outlined,
+      label: 'Müşteriler',
+      route: '/customers',
+      sectionLabel: 'CARİ HESAPLAR',
+    ),
+    // ── FİNANS ──
+    NavigationItem(
+      icon: Icons.account_balance_outlined,
+      label: 'Finans',
+      route: '/finance',
+      sectionLabel: 'FİNANS',
+    ),
+    NavigationItem(
+      icon: Icons.analytics_outlined,
+      label: 'Raporlar',
+      route: '/reports',
+    ),
+    // ── YÖNETİM ──
+    NavigationItem(
+      icon: Icons.settings_outlined,
+      label: 'Ayarlar',
+      route: '/settings',
+      sectionLabel: 'YÖNETİM',
     ),
     NavigationItem(
       icon: Icons.grid_view_rounded,
-      label: 'Menü',
+      label: 'Tüm Menü',
       route: '/menu',
-      sectionLabel: 'DİĞER',
     ),
   ];
 
@@ -130,9 +206,9 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
       route: '/dashboard',
     ),
     NavigationItem(
-      icon: Icons.point_of_sale_outlined,
-      label: 'Satış',
-      route: '/pos',
+      icon: Icons.search_outlined,
+      label: 'Parça Ara',
+      route: '/part-search',
     ),
     // CENTER: Barkod FAB (harici)
     NavigationItem(
@@ -491,7 +567,7 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
               ),
               borderRadius: BorderRadius.circular(7),
             ),
-            child: const Icon(Icons.shopping_bag, color: Colors.white, size: 17),
+            child: const Icon(Icons.build_circle, color: Colors.white, size: 17),
           ),
           const SizedBox(width: 10),
           Text(

@@ -14,6 +14,16 @@ import 'store_service.dart';
 import 'purchase_service.dart';
 import 'brand_service.dart';
 import 'unit_service.dart';
+import 'vehicle_service.dart';
+import 'oem_service.dart';
+import 'cross_reference_service.dart';
+import 'part_search_service.dart';
+import 'account_service.dart';
+import 'stock_report_service.dart';
+import 'sales_report_service.dart';
+import 'user_service.dart';
+import 'bulk_import_service.dart';
+import 'payment_service.dart';
 
 // API Client Provider
 final apiClientProvider = Provider<ApiClient>((ref) {
@@ -89,4 +99,54 @@ final brandServiceProvider = Provider<BrandService>((ref) {
 final unitServiceProvider = Provider<UnitService>((ref) {
   final apiClient = ref.watch(apiClientProvider);
   return UnitService(apiClient);
+});
+
+final vehicleServiceProvider = Provider<VehicleService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return VehicleService(apiClient);
+});
+
+final oemServiceProvider = Provider<OemService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return OemService(apiClient);
+});
+
+final crossReferenceServiceProvider = Provider<CrossReferenceService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return CrossReferenceService(apiClient);
+});
+
+final partSearchServiceProvider = Provider<PartSearchService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return PartSearchService(apiClient);
+});
+
+final accountServiceProvider = Provider<AccountService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return AccountService(apiClient);
+});
+
+final stockReportServiceProvider = Provider<StockReportService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return StockReportService(apiClient);
+});
+
+final salesReportServiceProvider = Provider<SalesReportService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return SalesReportService(apiClient);
+});
+
+final userServiceProvider = Provider<UserService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return UserService(apiClient);
+});
+
+final bulkImportServiceProvider = Provider<BulkImportService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return BulkImportService(apiClient);
+});
+
+final paymentServiceProvider = Provider<PaymentService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return PaymentService(apiClient);
 });

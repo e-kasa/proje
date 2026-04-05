@@ -46,6 +46,9 @@ public class StockMovement extends TOpenSimpleCompanyEntity{
     @Column(nullable = false)
     private Integer quantity;
 
+    @Column(name = "unit_price", precision = 15, scale = 2)
+    private java.math.BigDecimal unitPrice;
+
     // 🔗 KAYNAK BELGELER
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "purchase_id")

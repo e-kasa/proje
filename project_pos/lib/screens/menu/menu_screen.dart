@@ -48,14 +48,17 @@ class MenuScreen extends ConsumerWidget {
               _MenuItem('Markalar', Icons.branding_watermark, '/inventory/brands'),
               _MenuItem('Birimler', Icons.straighten, '/inventory/units'),
               _MenuItem('Yeni Ürün Ekle', Icons.add_box, '/inventory/add-product'),
-              _MenuItem('Toplu Ürün İçe Aktarma', Icons.cloud_upload, '/bulk-import/simplified'),
+              _MenuItem('Toplu Ürün Girişi', Icons.playlist_add, '/inventory/batch-entry'),
+              _MenuItem('Toplu Ürün İçe Aktarma', Icons.cloud_upload, '/bulk-import'),
               _MenuItem('Tedarikçi İthalatı', Icons.local_shipping, '/bulk-import/supplier'),
-              _MenuItem('Tedarikçi İthalatı (Tablo)', Icons.table_chart, '/bulk-import/supplier-table'),
-              // _MenuItem('Tedarikçi İthalatı (Dropdown)', Icons.arrow_drop_down_circle, '/bulk-import/supplier-dropdown'), // DISABLED: Has errors
-              _MenuItem('Tedarikçi İthalatı (Wizard) 🧙', Icons.auto_awesome, '/bulk-import/supplier-wizard'),
+              _MenuItem('Tedarikçi İthalatı (Wizard)', Icons.auto_awesome, '/bulk-import/supplier-wizard'),
               _MenuItem('Barkod Yönetimi', Icons.qr_code_2, '/inventory/barcodes'),
               _MenuItem('Stok Yönetimi', Icons.warehouse, '/stock'),
+              _MenuItem('Hareket Geçmişi', Icons.history, '/stock/movements'),
+              _MenuItem('Stok Alarmları', Icons.notifications_active, '/stock/alerts'),
+              _MenuItem('Stok Değer Raporu', Icons.bar_chart, '/stock/value-report'),
               _MenuItem('Depo Bazlı Stok', Icons.store, '/stock/multi-warehouse'),
+              _MenuItem('Transfer Olustur', Icons.swap_horiz, '/stock/transfer'),
               _MenuItem('Transfer Onay', Icons.swap_horiz, '/stock/transfer-review'),
               _MenuItem('Stok Sayım İnceleme', Icons.fact_check, '/stock/count-review'),
             ],
@@ -107,16 +110,17 @@ class MenuScreen extends ConsumerWidget {
 
           const SizedBox(height: 16),
 
-          // İLİŞKİLER
+          // CARİ HESAPLAR & İLİŞKİLER
           _buildMenuSection(
             context: context,
-            title: 'İLİŞKİLER',
+            title: 'CARİ HESAPLAR & İLİŞKİLER',
             icon: Icons.people,
             iconColor: AppColors.info,
             items: [
+              _MenuItem('Cari Hesap Özeti', Icons.dashboard, '/accounts'),
+              _MenuItem('Vadesi Geçmiş', Icons.warning_amber, '/accounts/overdue'),
               _MenuItem('Müşteriler', Icons.person, '/customers'),
               _MenuItem('Tedarikçiler', Icons.business, '/suppliers'),
-              _MenuItem('Borç/Alacak', Icons.account_balance_wallet, '/customers'),
             ],
           ),
 
@@ -130,10 +134,26 @@ class MenuScreen extends ConsumerWidget {
             iconColor: Colors.purple,
             items: [
               _MenuItem('Dashboard', Icons.dashboard, '/dashboard'),
-              _MenuItem('Satış Analizi', Icons.trending_up, '/reports'),
-              _MenuItem('Stok Raporu', Icons.inventory, '/reports'),
-              _MenuItem('Kâr/Zarar', Icons.attach_money, '/reports'),
-              _MenuItem('Müşteri Analizi', Icons.people_outline, '/reports'),
+              _MenuItem('Raporlar', Icons.analytics, '/reports'),
+              _MenuItem('Gunluk Ozet', Icons.today, '/reports/daily-summary'),
+              _MenuItem('Satış Özeti', Icons.show_chart, '/reports/sales-summary'),
+              _MenuItem('Ürün Satış Analizi', Icons.category, '/reports/product-analysis'),
+              _MenuItem('Müşteri Satış Analizi', Icons.people_outline, '/reports/customer-analysis'),
+              _MenuItem('Kâr/Zarar Özeti', Icons.trending_up, '/reports/profit-overview'),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // INSAN KAYNAKLARI
+          _buildMenuSection(
+            context: context,
+            title: 'INSAN KAYNAKLARI',
+            icon: Icons.people_alt,
+            iconColor: Colors.teal,
+            items: [
+              _MenuItem('Calisanlar', Icons.badge, '/hrm/employees'),
+              _MenuItem('Yeni Calisan Ekle', Icons.person_add, '/hrm/employees/add'),
             ],
           ),
 

@@ -288,12 +288,49 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: _buildActionButton(
+                  icon: Icons.add_circle_outline,
+                  label: 'Gelir Ekle',
+                  color: AppColors.success,
+                  onTap: () => context.go('/finance/add-income'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildActionButton(
                   icon: Icons.receipt_long,
                   label: 'Giderler',
                   color: AppColors.primary,
                   onTap: () => context.go('/finance/expenses'),
                 ),
               ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildActionButton(
+                  icon: Icons.payment,
+                  label: 'Odemeler',
+                  color: AppColors.info,
+                  onTap: () => context.go('/finance/payments'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildActionButton(
+                  icon: Icons.show_chart,
+                  label: 'Nakit Akisi',
+                  color: AppColors.warning,
+                  onTap: () => context.go('/finance/cash-flow'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(child: SizedBox()),
             ],
           ),
         ],

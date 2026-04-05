@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
-import 'mock_import_data.dart';
+import '../../core/data/mock_import_data.dart';
 
 /// Toplu İçe Aktarma - Ürün Düzenleme ve Manuel Eşleştirme Modal
 class EditProductModal extends StatefulWidget {

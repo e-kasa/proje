@@ -1,27 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/database/comprehensive_database.dart';
 import '../services/service_locator.dart';
 
-/// Category Provider - Optimized with caching
+/// Category Provider - API-based
 final categoryProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
-  final db = ComprehensiveDatabase.instance;
-  final database = await db.database;
-
-  return await database.query(
-    'categories',
-    where: 'isActive = ?',
-    whereArgs: [1],
-    orderBy: 'sortOrder ASC, name ASC',
-  );
+  final categories = await ref.read(categoryServiceProvider).getCategories();
+  return categories;
 });
 
-/// Product Provider - Paginated
+/// Product Provider - Paginated (API-based)
 class ProductNotifier extends StateNotifier<AsyncValue<List<Map<String, dynamic>>>> {
-  ProductNotifier() : super(const AsyncValue.loading()) {
+  ProductNotifier(this._ref) : super(const AsyncValue.loading()) {
     loadProducts();
   }
 
-  final _db = ComprehensiveDatabase.instance;
+  final Ref _ref;
   int _page = 0;
   final int _limit = 20;
   bool _hasMore = true;
@@ -34,26 +26,18 @@ class ProductNotifier extends StateNotifier<AsyncValue<List<Map<String, dynamic>
     }
 
     try {
-      final database = await _db.database;
-      final products = await database.query(
-        'products',
-        where: 'isActive = ?',
-        whereArgs: [1],
-        orderBy: 'createdAt DESC',
-        limit: _limit,
-        offset: _page * _limit,
+      final products = await _ref.read(productServiceProvider).getProducts(
+        page: _page,
+        size: _limit,
       );
-
       _hasMore = products.length == _limit;
-
-      if (refresh) {
+      if (refresh || _page == 0) {
         state = AsyncValue.data(products);
       } else {
         state.whenData((current) {
           state = AsyncValue.data([...current, ...products]);
         });
       }
-
       _page++;
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
@@ -71,55 +55,27 @@ class ProductNotifier extends StateNotifier<AsyncValue<List<Map<String, dynamic>
 }
 
 final productProvider = StateNotifierProvider.autoDispose<ProductNotifier, AsyncValue<List<Map<String, dynamic>>>>((ref) {
-  return ProductNotifier();
+  return ProductNotifier(ref);
 });
 
-/// Customer Provider - Cached
+/// Customer Provider - API-based
 final customerProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>((ref, filter) async {
-  final db = ComprehensiveDatabase.instance;
-  final database = await db.database;
-
-  String? whereClause;
-  List<dynamic>? whereArgs;
-
+  final customers = await ref.read(customerServiceProvider).getCustomers();
   if (filter == 'active') {
-    whereClause = 'isActive = ?';
-    whereArgs = [1];
-  } else if (filter == 'vip') {
-    whereClause = 'customerType = ?';
-    whereArgs = ['vip'];
+    return customers.where((c) => c['isActive'] == true).toList();
   }
-
-  return await database.query(
-    'customers',
-    where: whereClause,
-    whereArgs: whereArgs,
-    orderBy: 'totalPurchases DESC',
-  );
+  return customers;
 });
 
-/// Search Provider - Debounced
+/// Search Provider - Debounced (API-based)
 final searchProvider = StateProvider.autoDispose<String>((ref) => '');
 
 final searchResultsProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final query = ref.watch(searchProvider);
-
-  if (query.isEmpty) {
-    return [];
-  }
-
-  // Debounce effect
+  if (query.isEmpty) return [];
   await Future.delayed(const Duration(milliseconds: 300));
-
-  final db = ComprehensiveDatabase.instance;
-  final database = await db.database;
-
-  return await database.query(
-    'products',
-    where: 'name LIKE ? OR sku LIKE ? OR barcode LIKE ?',
-    whereArgs: ['%$query%', '%$query%', '%$query%'],
-    limit: 20,
-  );
+  final results = await ref.read(productServiceProvider).getProducts(search: query);
+  return results;
 });
 
 // ============================================================
@@ -193,7 +149,7 @@ class StockNotifier extends StateNotifier<StockState> {
     state = state.copyWith(isAdjusting: true, error: null);
     try {
       await _ref.read(stockServiceProvider).adjustStock(
-            productId: int.tryParse(productId) ?? 0,
+            productId: productId,
             quantity: newQuantity,
             reason: reason,
           );
@@ -215,4 +171,62 @@ class StockNotifier extends StateNotifier<StockState> {
 
 final stockProvider = StateNotifierProvider<StockNotifier, StockState>((ref) {
   return StockNotifier(ref);
+});
+
+// ============================================================
+// Vehicle Provider - Arac Listesi
+// ============================================================
+
+final vehicleListProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+  final vehicles = await ref.read(vehicleServiceProvider).getActiveVehicles();
+  return vehicles;
+});
+
+// ============================================================
+// OEM Search Provider
+// ============================================================
+
+final oemSearchQueryProvider = StateProvider.autoDispose<String>((ref) => '');
+
+final oemSearchResultsProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+  final query = ref.watch(oemSearchQueryProvider);
+  if (query.length < 3) return [];
+  await Future.delayed(const Duration(milliseconds: 300));
+  final results = await ref.read(oemServiceProvider).search(query);
+  return results;
+});
+
+// ============================================================
+// Part Search Provider
+// ============================================================
+
+final partSearchQueryProvider = StateProvider.autoDispose<String>((ref) => '');
+final partSearchMakeProvider = StateProvider.autoDispose<String?>((ref) => null);
+final partSearchModelProvider = StateProvider.autoDispose<String?>((ref) => null);
+final partSearchYearProvider = StateProvider.autoDispose<int?>((ref) => null);
+
+final partSearchResultsProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+  final query = ref.watch(partSearchQueryProvider);
+  final make = ref.watch(partSearchMakeProvider);
+  final model = ref.watch(partSearchModelProvider);
+  final year = ref.watch(partSearchYearProvider);
+
+  if (query.isEmpty && make == null) return [];
+  await Future.delayed(const Duration(milliseconds: 400));
+
+  final results = await ref.read(partSearchServiceProvider).search(
+    keyword: query.isNotEmpty ? query : null,
+    make: make,
+    model: model,
+    year: year,
+  );
+  return results;
+});
+
+// ============================================================
+// Vehicle Makes Provider (for dropdowns)
+// ============================================================
+
+final vehicleMakesProvider = FutureProvider.autoDispose<List<String>>((ref) async {
+  return await ref.read(vehicleServiceProvider).getDistinctMakes();
 });

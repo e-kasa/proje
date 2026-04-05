@@ -59,4 +59,16 @@ public class ProductVariant extends TOpenSimpleCompanyEntity {
 
     @OneToMany(mappedBy = "variant", cascade = CascadeType.ALL)
     private List<Barcode> barcodes;
+
+    @OneToMany(mappedBy = "variant", cascade = CascadeType.ALL)
+    private List<OemNumber> oemNumbers;
+
+    @OneToMany(mappedBy = "variant", cascade = CascadeType.ALL)
+    private List<CrossReference> crossReferences;
+
+    @OneToMany(mappedBy = "variant", cascade = CascadeType.ALL)
+    private List<VehicleCompatibility> vehicleCompatibilities;
+
+    @Column(name = "shelf_location_code", length = 50)
+    private String shelfLocationCode;
 }

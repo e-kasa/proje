@@ -2,10 +2,13 @@ package com.sedcore.service.impl;
 
 import com.sedcore.entity.Customer;
 import com.sedcore.entity.CustomerAccount;
+import com.sedcore.model.CustomerAccountResponse;
 import com.sedcore.repository.CustomerAccountRepository;
+import com.sedcore.repository.CustomerRepository;
 import com.sedcore.service.CustomerAccountService;
 import com.towpen.base.security.BaseDbServiceImp;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,9 +22,35 @@ public class CustomerAccountServiceImpl
         extends BaseDbServiceImp<CustomerAccountRepository, CustomerAccount>
         implements CustomerAccountService {
 
+    @Autowired
+    private CustomerRepository customerRepository;
+
     @Override
     public Class<?> getDTOClassForService() {
-        return CustomerAccount.class;
+        return CustomerAccountResponse.class;
+    }
+
+    // =========================================================================
+    // MAPPER
+    // =========================================================================
+
+    private CustomerAccountResponse mapToResponse(CustomerAccount acct) {
+        return CustomerAccountResponse.builder()
+                .id(acct.getId())
+                .customerId(acct.getCustomer().getId())
+                .customerName(acct.getCustomer().getName())
+                .creditLimit(acct.getCustomer().getCreditLimit())
+                .currentBalance(acct.getCurrentBalance())
+                .totalDebt(acct.getTotalDebt())
+                .totalCredit(acct.getTotalCredit())
+                .overdueAmount(acct.getOverdueAmount())
+                .availableCreditLimit(acct.getAvailableCreditLimit())
+                .isCreditLimitExceeded(acct.getIsCreditLimitExceeded())
+                .totalTransactionCount(acct.getTotalTransactionCount())
+                .lastTransactionDate(acct.getLastTransactionDate())
+                .lastPaymentDate(acct.getLastPaymentDate())
+                .lastSaleDate(acct.getLastSaleDate())
+                .build();
     }
 
     // =========================================================================
@@ -90,5 +119,22 @@ public class CustomerAccountServiceImpl
         log.info("Musteri kredi ters kayit: customerId={}, amount={}",
                 customer.getId(), amount);
         return save(acct);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CustomerAccountResponse getAccountResponse(String customerId) {
+        CustomerAccount acct = dao.findByCustomerId(customerId)
+                .orElseThrow(() -> new RuntimeException("Musteri cari hesabi bulunamadi: " + customerId));
+        return mapToResponse(acct);
+    }
+
+    @Override
+    public CustomerAccountResponse recalculate(String customerId) {
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new RuntimeException("Musteri bulunamadi: " + customerId));
+        CustomerAccount acct = getOrCreate(customer);
+        acct.updateCalculatedFields();
+        return mapToResponse(save(acct));
     }
 }

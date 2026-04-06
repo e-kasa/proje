@@ -105,7 +105,7 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
-        title: const Text('Çalışanlar'),
+        title: 'Çalışanlar',
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [

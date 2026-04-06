@@ -43,7 +43,7 @@ class _SupplierUploadWizardScreenState
 
     return Scaffold(
       appBar: AppAppBar.standard(
-        title: const Text('Tedarikçi Dosyası - Ürün Kararları'),
+        title: 'Tedarikçi Dosyası - Ürün Kararları',
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: _buildProgressIndicator(),
@@ -404,7 +404,7 @@ class _SupplierUploadWizardScreenState
   Widget _buildSummaryScreen() {
     return Scaffold(
       appBar: AppAppBar.standard(
-        title: const Text('Özet - Kararlarınızı Gözden Geçirin'),
+        title: 'Özet - Kararlarınızı Gözden Geçirin',
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -914,4 +914,26 @@ class _SuccessScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(
-              Icons.ch
+              Icons.check_circle,
+              size: 64,
+              color: Colors.green,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'İşlem Başarıyla Tamamlandı!',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Geri Dön'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

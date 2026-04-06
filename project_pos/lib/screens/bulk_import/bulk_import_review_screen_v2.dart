@@ -1313,10 +1313,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
-        title: const Text('Toplu Ürün Yükleme - İnceleme'),
-        backgroundColor: Colors.white,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
+        title: 'Toplu Ürün Yükleme - İnceleme',
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline),

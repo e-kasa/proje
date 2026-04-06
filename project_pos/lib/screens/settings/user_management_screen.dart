@@ -193,7 +193,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
-        title: const Text('Kullanici Yonetimi'),
+        title: 'Kullanici Yonetimi',
         backgroundColor: Colors.white,
         elevation: 0,
       ),

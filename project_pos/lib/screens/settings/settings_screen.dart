@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -660,8 +661,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             onPressed: () => Navigator.pop(context),
             child: const Text('İptal'),
           ),
-          AppButton.text(
-            label: 'Kaydet',
+          AppButton.outline(
+            text: 'Kaydet',
             onPressed: () {
               Navigator.pop(context);
               AppToast.success(this.context, '$label güncellendi');
@@ -708,8 +709,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             onPressed: () => Navigator.pop(context),
             child: const Text('İptal'),
           ),
-          AppButton.text(
-            label: 'Kaydet',
+          AppButton.outline(
+            text: 'Kaydet',
             onPressed: () {
               Navigator.pop(context);
               AppToast.success(context, 'Şifre değiştirildi');

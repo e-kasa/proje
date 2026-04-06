@@ -67,7 +67,7 @@ class _FilePreviewScreenState extends State<FilePreviewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppAppBar.standard(
-        title: const Text('👁️ Dosya Önizleme'),
+        title: '👁️ Dosya Önizleme',
         elevation: 0,
       ),
       body: Column(
@@ -251,7 +251,15 @@ class _FilePreviewScreenState extends State<FilePreviewScreen> {
                   ),
                 ),
                 AppButton.primary(
-                  text: _isProcessing ? 'İşleniyor...' : 'Doğru, Devam Et',,
+                  text: _isProcessing ? 'İşleniyor...' : 'Doğru, Devam Et',
                   icon: Icons.check,
                   onPressed: _isProcessing ? null : _confirmAndProceed,
                 ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

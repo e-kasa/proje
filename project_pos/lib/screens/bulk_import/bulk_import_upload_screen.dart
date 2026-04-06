@@ -102,10 +102,7 @@ class _BulkImportUploadScreenState extends State<BulkImportUploadScreen> with Si
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
-        title: const Text('Toplu Ürün Yükleme'),
-        backgroundColor: Colors.white,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
+        title: 'Toplu Ürün Yükleme',
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline),

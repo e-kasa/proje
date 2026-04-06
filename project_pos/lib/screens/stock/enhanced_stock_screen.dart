@@ -166,7 +166,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
           // Header with filters
           Container(
             color: Colors.white,
-            padding: AppConstants.paddingAllMedium,
+            padding: AppConstants.paddingMedium,
             child: Column(
               children: [
                 // Search Bar
@@ -202,7 +202,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
           // Stock Stats Summary
           Container(
             color: Colors.white,
-            padding: AppConstants.paddingSymmetricHorizontalMedium.copyWith(bottom: AppConstants.paddingMedium),
+            padding: AppConstants.paddingHorizontalMedium.copyWith(bottom: AppConstants.spacing16),
             child: Row(
               children: [
                 _buildStatCard(
@@ -232,7 +232,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
           // Quick Report Links
           Container(
             color: Colors.white,
-            padding: AppConstants.paddingSymmetricHorizontalMedium.copyWith(bottom: AppConstants.paddingSmall),
+            padding: AppConstants.paddingHorizontalMedium.copyWith(bottom: AppConstants.spacing8),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -270,7 +270,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
                         : RefreshIndicator(
                             onRefresh: () => ref.read(stockProvider.notifier).load(),
                             child: ListView.builder(
-                              padding: AppConstants.paddingSymmetricHorizontalMedium,
+                              padding: AppConstants.paddingHorizontalMedium,
                               itemCount: filtered.length,
                               itemBuilder: (context, index) =>
                                   _buildProductCard(filtered[index]),
@@ -334,7 +334,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
   Widget _buildStatCard(String label, String value, Color color, IconData icon) {
     return Expanded(
       child: Container(
-        padding: AppConstants.paddingAllSmall,
+        padding: AppConstants.paddingSmall,
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
           borderRadius: AppConstants.borderRadiusMedium,
@@ -343,7 +343,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
         child: Row(
           children: [
             Container(
-              padding: AppConstants.paddingAllSmall,
+              padding: AppConstants.paddingSmall,
               decoration: BoxDecoration(color: color, borderRadius: AppConstants.borderRadiusSmall),
               child: Icon(icon, color: Colors.white, size: 20),
             ),
@@ -372,7 +372,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
     final stockLabel = _getStockLabel(stock);
 
     return Padding(
-      padding: AppConstants.paddingOnlyBottomSmall,
+      padding: const EdgeInsets.only(bottom: AppConstants.spacing8),
       child: Dismissible(
         key: Key(product['id'].toString()),
         confirmDismiss: (direction) async {

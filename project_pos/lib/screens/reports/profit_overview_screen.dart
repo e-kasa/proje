@@ -89,7 +89,7 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppAppBar.standard(
-        title: const Text('Kar/Zarar Ozeti'),
+        title: 'Kar/Zarar Ozeti',
         actions: [
           IconButton(
             icon: const Icon(Icons.date_range),

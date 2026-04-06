@@ -106,7 +106,7 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
-        title: const Text('Giderler'),
+        title: 'Giderler',
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [

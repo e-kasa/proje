@@ -131,7 +131,7 @@ class _SupplierImportUploadScreenState
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppAppBar.standard(
-        title: const Text('Tedarikçi Dosyası Yükle'),
+        title: 'Tedarikçi Dosyası Yükle',
         elevation: 0,
       ),
       body: _uploading || _analyzing

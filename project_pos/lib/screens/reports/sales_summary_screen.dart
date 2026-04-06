@@ -87,7 +87,7 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppAppBar.standard(
-        title: const Text('Satis Ozeti'),
+        title: 'Satis Ozeti',
         actions: [
           IconButton(
             icon: const Icon(Icons.date_range),

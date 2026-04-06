@@ -140,7 +140,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppAppBar.standard(
-        title: Text(_isEditing ? 'Satın Alma Düzenle' : 'Satın Alma Detayı'),
+        title: _isEditing ? 'Satın Alma Düzenle' : 'Satın Alma Detayı',
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
@@ -825,4 +825,16 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
                   decoration: InputDecoration(
                     hintText: 'Not ekleyin...',
                     border: OutlineInputBorder(
-                        borderRadius: Bor
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                )
+              : Text(
+                  _notesCtrl.text.isEmpty ? '(boş)' : _notesCtrl.text,
+                  style: theme.textTheme.bodySmall,
+                ),
+        ],
+      ),
+    );
+  }
+}

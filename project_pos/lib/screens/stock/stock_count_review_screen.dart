@@ -96,10 +96,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Stok Sayim Inceleme',
-          style: TextStyle(color: Colors.black, fontSize: 18),
-        ),
+        title: 'Stok Sayim Inceleme',
         actions: [
           Center(
             child: Padding(
@@ -697,4 +694,32 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          B
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Kararlar: $_decidedCount/${_response!.productCount}',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton.icon(
+            onPressed: allDecided ? () {} : null,
+            icon: const Icon(Icons.check),
+            label: const Text('Kaydet'),
+          ),
+        ],
+      ),
+    );
+  }
+}

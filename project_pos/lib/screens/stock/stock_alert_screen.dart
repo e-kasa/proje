@@ -64,10 +64,7 @@ class _StockAlertScreenState extends ConsumerState<StockAlertScreen> {
       child: Scaffold(
         backgroundColor: AppColors.bgLight,
         appBar: AppAppBar.standard(
-          title: const Text('Stok Uyarilari'),
-          backgroundColor: Colors.white,
-          foregroundColor: AppColors.textPrimary,
-          elevation: 0,
+          title: 'Stok Uyarilari',
           bottom: TabBar(
             labelColor: AppColors.primary,
             unselectedLabelColor: AppColors.textMuted,

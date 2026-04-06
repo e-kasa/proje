@@ -102,7 +102,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
-        title: const Text('Odemeler'),
+        title: 'Odemeler',
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [

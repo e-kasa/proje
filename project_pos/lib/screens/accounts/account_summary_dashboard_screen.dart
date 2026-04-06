@@ -55,16 +55,8 @@ class _AccountSummaryDashboardScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppAppBar.standard(
-        title: const Text('Cari Hesap Ozeti'),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppColors.gradientStart, AppColors.gradientEnd],
-            ),
-          ),
-        ),
-        foregroundColor: Colors.white,
+      appBar: AppAppBar.gradient(
+        title: 'Cari Hesap Ozeti',
       ),
       body: RefreshIndicator(
         onRefresh: _loadData,

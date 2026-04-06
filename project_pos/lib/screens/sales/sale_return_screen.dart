@@ -110,7 +110,7 @@ class _SaleReturnScreenState extends ConsumerState<SaleReturnScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppAppBar.standard(
-        title: const Text('Satış İadesi'),
+        title: 'Satış İadesi',
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(

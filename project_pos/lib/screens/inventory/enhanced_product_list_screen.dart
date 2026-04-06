@@ -120,7 +120,7 @@ class _EnhancedProductListScreenState extends ConsumerState<EnhancedProductListS
       context,
       MaterialPageRoute(
         builder: (context) => Scaffold(
-          appBar: AppAppBar.standard(title: const Text('Barkod Okut')),
+          appBar: AppAppBar.standard(title: 'Barkod Okut'),
           body: MobileScanner(
             onDetect: (capture) {
               final List<Barcode> barcodes = capture.barcodes;
@@ -612,4 +612,9 @@ class _EnhancedProductListScreenState extends ConsumerState<EnhancedProductListS
                 ),
               ),
             ],
+          ),
+        ),
+      );
+    });
+  }
           

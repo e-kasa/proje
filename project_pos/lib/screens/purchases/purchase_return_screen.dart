@@ -104,7 +104,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppAppBar.standard(
-        title: const Text('Satın Alma İadesi'),
+        title: 'Satın Alma İadesi',
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(

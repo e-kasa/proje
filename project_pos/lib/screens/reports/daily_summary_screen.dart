@@ -311,7 +311,7 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           if (top5.isEmpty)
-            AppEmptyState.noData(message: 'Veri bulunamadi')
+            AppEmptyState.noData(description: 'Veri bulunamadi')
           else
             ...top5.asMap().entries.map((e) {
               final idx = e.key;
@@ -369,7 +369,7 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           if (recentSales.isEmpty)
-            AppEmptyState.noData(message: 'Bugun islem yapilmamis')
+            AppEmptyState.noData(description: 'Bugun islem yapilmamis')
           else
             ...recentSales.map((sale) {
               final id = sale['id']?.toString() ?? '-';

@@ -77,7 +77,7 @@ class _SupplierAccountDetailScreenState
     if (_isLoading) {
       return Scaffold(
         backgroundColor: AppColors.bgLight,
-        appBar: AppAppBar.standard(title: const Text('Cari Hesap')),
+        appBar: AppAppBar.standard(title: 'Cari Hesap'),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -85,7 +85,7 @@ class _SupplierAccountDetailScreenState
     if (_error != null || _supplier == null) {
       return Scaffold(
         backgroundColor: AppColors.bgLight,
-        appBar: AppAppBar.standard(title: const Text('Cari Hesap')),
+        appBar: AppAppBar.standard(title: 'Cari Hesap'),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/theme/app_colors.dart';
+import 'package:project_pos/core/theme/app_colors.dart';
 import 'models/wizard_state.dart';
 import 'steps/basic_info_step.dart';
 import 'steps/variants_step.dart';
 import 'steps/stock_barcode_step.dart';
 import 'steps/images_step.dart';
 import 'steps/preview_step.dart';
-import '../../core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/widgets.dart';
 
 class AddProductWizardScreen extends ConsumerStatefulWidget {
   final bool fromBulkImport;
@@ -497,4 +497,17 @@ class _AddProductWizardScreenState extends ConsumerState<AddProductWizardScreen>
                 child: ElevatedButton.icon(
                   onPressed: _state.isSaving
                       ? null
-                      : () => _state.handleSubmit(ref: ref, context: c
+                      : () => _state.handleSubmit(ref: ref, context: context),
+                  icon: const Icon(Icons.check_circle_outline, size: 16),
+                  label: const Text('Kaydet', style: TextStyle(fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+    );
+  }

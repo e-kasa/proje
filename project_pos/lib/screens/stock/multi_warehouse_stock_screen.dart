@@ -75,10 +75,7 @@ class _MultiWarehouseStockScreenState extends ConsumerState<MultiWarehouseStockS
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Depo Bazinda Stok',
-          style: TextStyle(color: Colors.black, fontSize: 18),
-        ),
+        title: 'Depo Bazinda Stok',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.black),
@@ -482,4 +479,82 @@ class _MultiWarehouseStockScreenState extends ConsumerState<MultiWarehouseStockS
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
-                 
+                  color: statusColor,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(statusIcon, size: 14, color: statusColor),
+                  const SizedBox(width: 4),
+                  Text(
+                    statusText,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: statusColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    Widget _buildFilterButtons() {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Wrap(
+          spacing: 8,
+          children: [
+            FilterChip(
+              label: const Text('TÜMÜ'),
+              selected: _filterType == 'TÜMÜ',
+              onSelected: (_) => setState(() => _filterType = 'TÜMÜ'),
+            ),
+            FilterChip(
+              label: const Text('DÜŞÜK STOK'),
+              selected: _filterType == 'DÜŞÜK STOK',
+              onSelected: (_) => setState(() => _filterType = 'DÜŞÜK STOK'),
+            ),
+            FilterChip(
+              label: const Text('KRİTİK'),
+              selected: _filterType == 'KRİTİK',
+              onSelected: (_) => setState(() => _filterType = 'KRİTİK'),
+            ),
+            FilterChip(
+              label: const Text('TÜKENDİ'),
+              selected: _filterType == 'TÜKENDİ',
+              onSelected: (_) => setState(() => _filterType = 'TÜKENDİ'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget _buildStatistics() {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildStatItem('Ürün Sayısı', '${_products.length}'),
+            _buildStatItem('Depo Sayısı', '${_products.fold<Set<String>>({}, (set, p) => set..addAll(p.locationStocks.map((loc) => loc.locationName))).length}'),
+          ],
+        ),
+      );
+    }
+
+    Widget _buildStatItem(String label, String value) {
+      return Column(
+        children: [
+          Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+          const SizedBox(height: 4),
+          Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        ],
+      );
+    }
+}

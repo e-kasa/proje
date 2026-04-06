@@ -83,7 +83,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
-        title: const Text('Nakit Akisi'),
+        title: 'Nakit Akisi',
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [

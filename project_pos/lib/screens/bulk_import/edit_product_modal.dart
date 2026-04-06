@@ -186,9 +186,8 @@ class _EditProductModalState extends State<EditProductModal> {
         width: 800,
         constraints: const BoxConstraints(maxHeight: 720),
         child: Scaffold(
-          appBar: AppAppBar.standard(
-            title: const Text('Ürün Düzenle / Eşleştir'),
-            backgroundColor: AppColors.primary,
+          appBar: AppAppBar.primary(
+            title: 'Ürün Düzenle / Eşleştir',
             automaticallyImplyLeading: false,
             actions: [
               IconButton(
@@ -744,4 +743,14 @@ class _EditProductModalState extends State<EditProductModal> {
                   ),
                   Text(
                     'Stok: ${product['stock']} | Alış: ₺${product['buyPrice']} | Satış: ₺${product['sellPrice']}',
-                    style: const TextStyle(fontSize: 12, color: Ap
+                    style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

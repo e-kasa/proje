@@ -136,7 +136,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppAppBar.standard(
-        title: const Text('Stok Transfer Oluştur'),
+        title: 'Stok Transfer Oluştur',
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(

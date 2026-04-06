@@ -94,16 +94,8 @@ class _OverdueTrackingScreenState extends ConsumerState<OverdueTrackingScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppAppBar.standard(
-        title: const Text('Vadesi Gecmis Hesaplar'),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppColors.danger, AppColors.orange],
-            ),
-          ),
-        ),
-        foregroundColor: Colors.white,
+      appBar: AppAppBar.gradient(
+        title: 'Vadesi Gecmis Hesaplar',
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,

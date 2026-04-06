@@ -47,4 +47,16 @@ class AppConstants {
   // Chart Colors
   static const List<String> chartColors = [
     '#6366F1',
-    '#8B5CF6',
+    '#8B5CF6',
+    '#EC4899',
+    '#F97316',
+    '#EAB308',
+    '#22C55E',
+    '#10B981',
+    '#14B8A6',
+    '#06B6D4',
+    '#0EA5E9',
+    '#3B82F6',
+    '#6366F1',
+  ];
+}

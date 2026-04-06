@@ -166,7 +166,7 @@ class _SupplierImportReviewScreenState
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppAppBar.standard(
-        title: const Text('Tedarikçi Ürün Kontrolü'),
+        title: 'Tedarikçi Ürün Kontrolü',
         actions: [
           if (!_loading)
             Padding(
@@ -941,3 +941,17 @@ class _DecisionOption extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -85,4 +85,25 @@ class PurchaseService {
   ///   - items: [{ productId, variantId, quantity, unitPrice, reason }]
   ///   - reason (String — genel iade nedeni)
   ///   - notes (String, opsiyonel)
-  Future<Map<String, dynamic>> createPurchas
+  Future<Map<String, dynamic>> createPurchaseReturn(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      final response = await _apiClient.post('$_base/$id/returns', data: data);
+      return (response.data['data'] as Map<String, dynamic>?) ?? {};
+    } catch (e) {
+      throw Exception('Satın alma iadesi oluşturulamadı: $e');
+    }
+  }
+
+  /// Satın alma istatistiklerini getirir.
+  Future<Map<String, dynamic>> getPurchaseStats() async {
+    try {
+      final response = await _apiClient.get('$_base/stats');
+      return (response.data['data'] as Map<String, dynamic>?) ?? {};
+    } catch (e) {
+      throw Exception('Satın alma istatistikleri alınamadı: $e');
+    }
+  }
+}

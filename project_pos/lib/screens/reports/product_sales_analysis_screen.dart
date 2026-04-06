@@ -109,7 +109,7 @@ class _ProductSalesAnalysisScreenState
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppAppBar.standard(
-        title: const Text('Urun Satis Analizi'),
+        title: 'Urun Satis Analizi',
         actions: [
           IconButton(
             icon: const Icon(Icons.date_range),
@@ -321,4 +321,92 @@ class _ProductSalesAnalysisScreenState
                   // Stats row
                   Wrap(
                     spacing: 12,
-     
+                    children: [
+                      _buildStatItem(
+                        label: 'Satışlar',
+                        value: _currencyFormat.format(totalRevenue),
+                      ),
+                      _buildStatItem(
+                        label: 'Kar Marjı',
+                        value: '$profitMargin%',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem({required String label, required String value}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            color: AppColors.textMuted,
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterButtons() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            'Süre:',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          ElevatedButton.icon(
+            onPressed: _pickDateRange,
+            icon: const Icon(Icons.date_range, size: 18),
+            label: Text(
+              '${_dateFormat.format(_startDate)} - ${_dateFormat.format(_endDate)}',
+              style: const TextStyle(fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatistics() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildStatCard('Ürün Sayısı', '${_products.length}'),
+          _buildStatCard('Toplam Satış', '${_products.fold<double>(0, (sum, p) => sum + ((p['totalRevenue'] ?? 0) as num).toDouble())}'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String label, String value) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+}

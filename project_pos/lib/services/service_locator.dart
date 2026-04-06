@@ -132,3 +132,21 @@ final stockReportServiceProvider = Provider<StockReportService>((ref) {
 });
 
 final salesReportServiceProvider = Provider<SalesReportService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return SalesReportService(apiClient);
+});
+
+final userServiceProvider = Provider<UserService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return UserService(apiClient);
+});
+
+final bulkImportServiceProvider = Provider<BulkImportService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return BulkImportService(apiClient);
+});
+
+final paymentServiceProvider = Provider<PaymentService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return PaymentService(apiClient);
+});

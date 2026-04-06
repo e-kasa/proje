@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/theme/app_colors.dart';
+import 'package:project_pos/core/theme/app_colors.dart';
 import '../providers/pos_provider.dart';
 import 'category_filter_bar.dart';
-import '../../core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/widgets.dart';
 
 class ProductSearchPanel extends ConsumerStatefulWidget {
   const ProductSearchPanel({super.key});

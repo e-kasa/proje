@@ -71,7 +71,7 @@ class _StockValueReportScreenState
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
-        title: const Text('Stok Deger Raporu'),
+        title: 'Stok Deger Raporu',
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,

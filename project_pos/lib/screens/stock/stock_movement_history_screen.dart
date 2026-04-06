@@ -186,7 +186,7 @@ class _StockMovementHistoryScreenState
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
-        title: const Text('Stok Hareket Gecmisi'),
+        title: 'Stok Hareket Gecmisi',
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,

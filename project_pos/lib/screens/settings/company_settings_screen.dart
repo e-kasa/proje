@@ -118,7 +118,7 @@ class _CompanySettingsScreenState extends ConsumerState<CompanySettingsScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
-        title: const Text('Firma Ayarlari'),
+        title: 'Firma Ayarlari',
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [

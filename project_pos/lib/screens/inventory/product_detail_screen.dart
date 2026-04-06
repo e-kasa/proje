@@ -148,7 +148,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             icon: const Icon(Icons.arrow_back),
             onPressed: () => context.go('/inventory/products'),
           ),
-          title: const Text('Urun Detayi'),
+          title: 'Urun Detayi',
         ),
         body: Center(
           child: Column(

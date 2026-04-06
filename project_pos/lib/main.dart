@@ -15,4 +15,33 @@ void main() {
     debugPrint('║ Ortam   : ${EnvConfig.environmentName}');
     debugPrint('║ Base URL: ${EnvConfig.baseUrl}');
     debugPrint('║ Logging : ${EnvConfig.enableLogging ? "Aktif" : "Kapalı"}');
-    debugPrint('╚══════════════════════════�
+    debugPrint('╚══════════════════════════════════════════');
+  }
+
+  runApp(
+    ProviderScope(
+      child: MyApp(),
+    ),
+  );
+}
+
+class MyApp extends ConsumerWidget {
+  const MyApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
+    final lightTheme = ref.watch(lightThemeProvider);
+    final darkTheme = ref.watch(darkThemeProvider);
+    final router = ref.watch(appRouterProvider);
+
+    return MaterialApp.router(
+      title: 'Admin Dashboard',
+      theme: lightTheme,
+      darkTheme: darkTheme,
+      themeMode: themeMode,
+      routerConfig: router,
+      debugShowCheckedModeBanner: false,
+    );
+  }
+}

@@ -351,14 +351,14 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
   Widget _buildStatusCard() {
     return AppCard(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppConstants.pagePaddingValue, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
             Container(
               width: 40, height: 40,
               decoration: BoxDecoration(
                 color: (_isActive ? const Color(0xFF10B981) : Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey).withOpacity(0.12),
-                borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+                borderRadius: AppConstants.borderRadiusMedium,
               ),
               child: Icon(
                 _isActive ? Icons.check_circle_outline : Icons.cancel_outlined,

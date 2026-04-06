@@ -90,7 +90,7 @@ class _CustomerSalesAnalysisScreenState
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
-        title: const Text('Musteri Satis Analizi'),
+        title: 'Musteri Satis Analizi',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

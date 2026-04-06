@@ -123,7 +123,7 @@ class _SupplierFileUploadScreenState extends State<SupplierFileUploadScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppAppBar.standard(
-        title: const Text('📦 Tedarikçi Dosyası Yükle'),
+        title: '📦 Tedarikçi Dosyası Yükle',
         elevation: 0,
       ),
       body: Center(
@@ -296,4 +296,43 @@ class _SupplierFileUploadScreenState extends State<SupplierFileUploadScreen> {
                         ),
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
-                            
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+}

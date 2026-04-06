@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/src/intl/number_format.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../services/service_locator.dart';
+import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/services/service_locator.dart';
 import '../providers/pos_provider.dart';
 import 'cart_item_row.dart';
-import '../../core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/widgets.dart';
 
 class CartPanel extends ConsumerWidget {
   final VoidCallback onPaymentPressed;

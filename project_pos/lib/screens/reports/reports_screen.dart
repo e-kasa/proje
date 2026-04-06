@@ -252,8 +252,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? AppEmptyState.error(
-                  message: 'Veri yüklenemedi',
-                  onRetry: _loadReportData,
+                  description: 'Veri yüklenemedi',
+                  onAction: _loadReportData,
                 )
               : Column(
                   children: [
@@ -326,7 +326,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
               const Padding(padding: EdgeInsets.all(16), child: Text('Son Satışlar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
               const Divider(height: 1),
               if (_sales.isEmpty)
-                AppEmptyState.noData(message: 'Satış kaydı yok')
+                AppEmptyState.noData(description: 'Satış kaydı yok')
               else
                 ListView.separated(
                   shrinkWrap: true,
@@ -387,7 +387,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
               const Padding(padding: EdgeInsets.all(16), child: Text('En İyi Müşteriler', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
               const Divider(height: 1),
               if (_topCustomers.isEmpty)
-                AppEmptyState.noData(message: 'Müşteri kaydı yok')
+                AppEmptyState.noData(description: 'Müşteri kaydı yok')
               else
                 ListView.separated(
                   shrinkWrap: true,

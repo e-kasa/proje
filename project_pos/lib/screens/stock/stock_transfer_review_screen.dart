@@ -69,7 +69,7 @@ class _StockTransferReviewScreenState
       return Scaffold(
         backgroundColor: Colors.grey[100],
         appBar: AppAppBar.standard(
-          title: const Text('Transfer Talep Inceleme', style: TextStyle(color: Colors.black, fontSize: 18)),
+          title: 'Transfer Talep Inceleme',
         ),
         body: const Center(child: CircularProgressIndicator()),
       );
@@ -78,7 +78,7 @@ class _StockTransferReviewScreenState
       return Scaffold(
         backgroundColor: Colors.grey[100],
         appBar: AppAppBar.standard(
-          title: const Text('Transfer Talep Inceleme', style: TextStyle(color: Colors.black, fontSize: 18)),
+          title: 'Transfer Talep Inceleme',
         ),
         body: Center(child: Text(_error ?? 'Veri yuklenemedi')),
       );
@@ -727,4 +727,36 @@ class _StockTransferReviewScreenState
     final allDecided = _decidedCount == _response!.itemCount;
 
     return Container(
-      padding: const EdgeInsets.al
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Kararlar: $_decidedCount/${_response!.itemCount}',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton.icon(
+            onPressed: allDecided ? () {} : null,
+            icon: const Icon(Icons.check),
+            label: const Text('Onayla'),
+          ),
+        ],
+      ),
+    );
+  }
+}

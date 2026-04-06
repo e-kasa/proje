@@ -4,6 +4,7 @@
 /// import 'package:flutter_admin_app/core/widgets/widgets.dart';
 
 // Basic Components
+export 'app_app_bar.dart';
 export 'app_button.dart';
 export 'app_card.dart';
 export 'app_badge.dart';

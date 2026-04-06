@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/stock_management_models.dart';
-import '../../services/mock_stock_management_data.dart';
+import '../../services/service_locator.dart';
+import '../../core/widgets/widgets.dart';
 
 /// STOK TRANSFER ONAY EKRANI
-/// Tedarikçi ithalat review ekranının birebir benzeri
 /// Transfer taleplerini inceleyip onaylama/reddetme
-class StockTransferReviewScreen extends StatefulWidget {
+class StockTransferReviewScreen extends ConsumerStatefulWidget {
   final String? transferId;
 
   const StockTransferReviewScreen({
@@ -14,13 +15,15 @@ class StockTransferReviewScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<StockTransferReviewScreen> createState() =>
+  ConsumerState<StockTransferReviewScreen> createState() =>
       _StockTransferReviewScreenState();
 }
 
 class _StockTransferReviewScreenState
-    extends State<StockTransferReviewScreen> {
-  late StockTransferResponse _response;
+    extends ConsumerState<StockTransferReviewScreen> {
+  StockTransferResponse? _response;
+  bool _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -28,28 +31,67 @@ class _StockTransferReviewScreenState
     _loadData();
   }
 
-  void _loadData() {
-    // Mock data yükle
-    _response = MockStockManagementData.getMockTransferRequest();
+  Future<void> _loadData() async {
+    setState(() { _isLoading = true; _error = null; });
+    try {
+      final service = ref.read(stockServiceProvider);
+      final data = await service.getStockMovements();
+      // Build response from API data
+      final items = (data as List).map((item) {
+        return TransferItem.fromJson(item as Map<String, dynamic>);
+      }).toList();
+      setState(() {
+        _response = StockTransferResponse(
+          transferId: widget.transferId ?? '-',
+          createdBy: '-',
+          items: items,
+          itemCount: items.length,
+          status: TransferStatus.PENDING,
+          createdAt: DateTime.now(),
+        );
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Veri yuklenemedi';
+        _isLoading = false;
+      });
+    }
   }
 
   int get _decidedCount {
-    return _response.items.where((item) => item.hasDecision).length;
+    return _response!.items.where((item) => item.hasDecision).length;
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: Colors.grey[100],
+        appBar: AppAppBar.standard(
+          title: const Text('Transfer Talep Inceleme', style: TextStyle(color: Colors.black, fontSize: 18)),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_error != null || _response == null) {
+      return Scaffold(
+        backgroundColor: Colors.grey[100],
+        appBar: AppAppBar.standard(
+          title: const Text('Transfer Talep Inceleme', style: TextStyle(color: Colors.black, fontSize: 18)),
+        ),
+        body: Center(child: Text(_error ?? 'Veri yuklenemedi')),
+      );
+    }
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
+      appBar: AppAppBar.standard(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Transfer Talep İnceleme',
+          'Transfer Talep Inceleme',
           style: TextStyle(color: Colors.black, fontSize: 18),
         ),
         actions: [
@@ -57,7 +99,7 @@ class _StockTransferReviewScreenState
             child: Padding(
               padding: const EdgeInsets.only(right: 16),
               child: Text(
-                '${_decidedCount}/${_response.itemCount}',
+                '${_decidedCount}/${_response!.itemCount}',
                 style: const TextStyle(
                   color: Colors.black,
                   fontSize: 16,
@@ -80,9 +122,9 @@ class _StockTransferReviewScreenState
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: _response.items.length,
+              itemCount: _response!.items.length,
               itemBuilder: (context, index) {
-                return _buildTransferItemCard(_response.items[index], index + 1);
+                return _buildTransferItemCard(_response!.items[index], index + 1);
               },
             ),
           ),
@@ -110,7 +152,7 @@ class _StockTransferReviewScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Transfer ID: ${_response.transferId}',
+                      'Transfer ID: ${_response!.transferId}',
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
@@ -118,7 +160,7 @@ class _StockTransferReviewScreenState
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Oluşturan: ${_response.createdBy}',
+                      'Oluşturan: ${_response!.createdBy}',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
@@ -135,7 +177,7 @@ class _StockTransferReviewScreenState
   }
 
   Widget _buildProgressBar() {
-    final progress = _decidedCount / _response.itemCount;
+    final progress = _decidedCount / _response!.itemCount;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -156,7 +198,7 @@ class _StockTransferReviewScreenState
                 ),
               ),
               Text(
-                '${(_decidedCount / _response.itemCount * 100).toInt()}%',
+                '${(_decidedCount / _response!.itemCount * 100).toInt()}%',
                 style: TextStyle(
                   fontSize: 13,
                   color: Colors.blue[700],
@@ -590,19 +632,11 @@ class _StockTransferReviewScreenState
     Color color,
     VoidCallback onTap,
   ) {
-    return ElevatedButton.icon(
+    AppButton.primary(
+      text: label,
+      icon: icon, size: 18,
       onPressed: onTap,
-      icon: Icon(icon, size: 18),
-      label: Text(label),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-    );
+    ),
   }
 
   Widget _buildDecisionSummary(TransferItem item) {
@@ -690,60 +724,7 @@ class _StockTransferReviewScreenState
   }
 
   Widget _buildApproveButton() {
-    final allDecided = _decidedCount == _response.itemCount;
+    final allDecided = _decidedCount == _response!.itemCount;
 
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: ElevatedButton(
-          onPressed: allDecided ? _saveDecisions : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: Text(
-            allDecided
-                ? 'Transfer Onayla ($_decidedCount Ürün)'
-                : 'Tüm ürünler için karar verin ($_decidedCount/${_response.itemCount})',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _saveDecisions() async {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Başarılı!'),
-        content: Text('Transfer talebi onaylandı. $_decidedCount ürün transfer edilecek.'),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context); // Dialog
-              Navigator.pop(context); // Screen
-            },
-            child: const Text('Tamam'),
-          ),
-        ],
-      ),
-    );
-  }
-}
+      padding: const EdgeInsets.al

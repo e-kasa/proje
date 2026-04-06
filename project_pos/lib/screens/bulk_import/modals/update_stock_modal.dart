@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/bulk_import_models.dart';
+import '../../core/widgets/widgets.dart';
 
 /// Stok Güncelleme Modal - CONFLICT durumu için
 class UpdateStockModal extends StatefulWidget {
@@ -222,14 +223,15 @@ class _UpdateStockModalState extends State<UpdateStockModal> {
                   child: const Text('İptal'),
                 ),
                 const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.save),
-                  label: const Text('Güncelle'),
+                AppButton.success(
+
+                  text: 'Güncelle',
+
+                  icon: Icons.save,
+
                   onPressed: _confirm,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.success,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  ),
+
+                ),
                 ),
               ],
             ),

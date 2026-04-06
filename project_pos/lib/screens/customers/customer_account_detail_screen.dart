@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 import '../accounts/payment_record_modal.dart';
 
@@ -76,7 +78,7 @@ class _CustomerAccountDetailScreenState
     if (_isLoading) {
       return Scaffold(
         backgroundColor: AppColors.bgLight,
-        appBar: AppBar(title: const Text('Cari Hesap')),
+        appBar: AppAppBar.standard(title: const Text('Cari Hesap')),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -84,7 +86,7 @@ class _CustomerAccountDetailScreenState
     if (_error != null || _customer == null) {
       return Scaffold(
         backgroundColor: AppColors.bgLight,
-        appBar: AppBar(title: const Text('Cari Hesap')),
+        appBar: AppAppBar.standard(title: const Text('Cari Hesap')),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -94,8 +96,13 @@ class _CustomerAccountDetailScreenState
               Text(_error ?? 'Musteri bulunamadi',
                   style: const TextStyle(color: AppColors.textSecondary)),
               const SizedBox(height: 12),
-              ElevatedButton(
-                  onPressed: _loadAll, child: const Text('Tekrar Dene')),
+              AppButton.primary(
+
+                text: 'Tekrar Dene',
+
+                onPressed: _loadAll,
+
+              ),
             ],
           ),
         ),
@@ -114,9 +121,7 @@ class _CustomerAccountDetailScreenState
 
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
+      appBar: AppAppBar.standard(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => context.pop(),
@@ -192,11 +197,12 @@ class _CustomerAccountDetailScreenState
             // Tahsilat Kaydet Butonu
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => _showPaymentDialog(),
-                icon: const Icon(Icons.payments, color: Colors.white, size: 18),
-                label: const Text('Tahsilat Kaydet',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+              child: AppButton.primary(
+   text: 'Tahsilat Kaydet',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13,
+   icon: Icons.payments, color: Colors.white, size: 18,
+   onPressed: () => _showPaymentDialog(),
+ ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.success,
                   padding: const EdgeInsets.symmetric(vertical: 14),

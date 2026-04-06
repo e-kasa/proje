@@ -5,6 +5,7 @@ import '../../core/widgets/app_toast.dart';
 import '../../services/company_category_service.dart';
 import '../../services/service_locator.dart';
 import '../../providers/navigation_provider.dart';
+import '../../core/widgets/widgets.dart';
 
 // ============================================================
 // Provider
@@ -279,11 +280,14 @@ class _CompanyCategoryScreenState extends ConsumerState<CompanyCategoryScreen> {
             const SizedBox(height: 12),
             Text(state.error!, style: const TextStyle(color: AppColors.danger)),
             const SizedBox(height: 16),
-            ElevatedButton.icon(
+            AppButton.primary(
+
+              text: 'Tekrar Dene',
+
+              icon: Icons.refresh,
+
               onPressed: () => notifier.loadCategories(),
-              icon: const Icon(Icons.refresh),
-              label: const Text('Tekrar Dene'),
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+
             ),
           ],
         ),

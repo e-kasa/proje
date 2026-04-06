@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/stock_management_models.dart';
-import '../../services/mock_stock_management_data.dart';
+import '../../services/service_locator.dart';
+import '../../core/widgets/widgets.dart';
 
-/// STOK SAYIM İNCELEME EKRANI
-/// Tedarikçi ithalat review ekranının benzeri
-/// Sayım sonuçlarını inceleyip kabul/red/düzeltme yapma
-class StockCountReviewScreen extends StatefulWidget {
+/// STOK SAYIM INCELEME EKRANI
+/// Sayim sonuclarini inceleyip kabul/red/duzeltme yapma
+class StockCountReviewScreen extends ConsumerStatefulWidget {
   final String? countId;
 
   const StockCountReviewScreen({
@@ -14,11 +15,13 @@ class StockCountReviewScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<StockCountReviewScreen> createState() => _StockCountReviewScreenState();
+  ConsumerState<StockCountReviewScreen> createState() => _StockCountReviewScreenState();
 }
 
-class _StockCountReviewScreenState extends State<StockCountReviewScreen> {
-  late StockCountResponse _response;
+class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen> {
+  StockCountResponse? _response;
+  bool _isLoading = true;
+  String? _error;
   String _filterType = 'TÜMÜ';
 
   @override
@@ -27,42 +30,74 @@ class _StockCountReviewScreenState extends State<StockCountReviewScreen> {
     _loadData();
   }
 
-  void _loadData() {
-    _response = MockStockManagementData.getMockStockCount();
+  Future<void> _loadData() async {
+    setState(() { _isLoading = true; _error = null; });
+    try {
+      final service = ref.read(stockServiceProvider);
+      final data = await service.performStockCount([]);
+      final products = (data['products'] as List?)?.map((item) {
+        return CountedProduct.fromJson(item as Map<String, dynamic>);
+      }).toList() ?? [];
+      setState(() {
+        _response = StockCountResponse(
+          countId: widget.countId ?? '-',
+          countedBy: '-',
+          products: products,
+          productCount: products.length,
+          countDate: DateTime.now(),
+        );
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Veri yuklenemedi';
+        _isLoading = false;
+      });
+    }
   }
 
   int get _decidedCount {
-    return _response.products.where((p) => p.hasDecision).length;
+    return _response!.products.where((p) => p.hasDecision).length;
   }
 
   List<CountedProduct> get _filteredProducts {
     switch (_filterType) {
       case 'FARK OLAN':
-        return _response.products.where((p) => p.hasDifference).toList();
+        return _response!.products.where((p) => p.hasDifference).toList();
       case 'FAZLA':
-        return _response.products.where((p) => p.isOverage).toList();
+        return _response!.products.where((p) => p.isOverage).toList();
       case 'EKSİK':
-        return _response.products.where((p) => p.isShortage).toList();
+        return _response!.products.where((p) => p.isShortage).toList();
       case 'FARK YOK':
-        return _response.products.where((p) => !p.hasDifference).toList();
+        return _response!.products.where((p) => !p.hasDifference).toList();
       default:
-        return _response.products;
+        return _response!.products;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: Colors.grey[100],
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_error != null || _response == null) {
+      return Scaffold(
+        backgroundColor: Colors.grey[100],
+        body: Center(child: Text(_error ?? 'Veri yuklenemedi')),
+      );
+    }
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
+      appBar: AppAppBar.standard(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Stok Sayım İnceleme',
+          'Stok Sayim Inceleme',
           style: TextStyle(color: Colors.black, fontSize: 18),
         ),
         actions: [
@@ -70,7 +105,7 @@ class _StockCountReviewScreenState extends State<StockCountReviewScreen> {
             child: Padding(
               padding: const EdgeInsets.only(right: 16),
               child: Text(
-                '${_decidedCount}/${_response.productCount}',
+                '${_decidedCount}/${_response!.productCount}',
                 style: const TextStyle(
                   color: Colors.black,
                   fontSize: 16,
@@ -123,7 +158,7 @@ class _StockCountReviewScreenState extends State<StockCountReviewScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Sayım ID: ${_response.countId}',
+                  'Sayım ID: ${_response!.countId}',
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -131,7 +166,7 @@ class _StockCountReviewScreenState extends State<StockCountReviewScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Sayan: ${_response.countedBy}',
+                  'Sayan: ${_response!.countedBy}',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[600],
@@ -187,7 +222,7 @@ class _StockCountReviewScreenState extends State<StockCountReviewScreen> {
   }
 
   Widget _buildProgressBar() {
-    final progress = _decidedCount / _response.productCount;
+    final progress = _decidedCount / _response!.productCount;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -208,7 +243,7 @@ class _StockCountReviewScreenState extends State<StockCountReviewScreen> {
                 ),
               ),
               Text(
-                '${(_decidedCount / _response.productCount * 100).toInt()}%',
+                '${(_decidedCount / _response!.productCount * 100).toInt()}%',
                 style: TextStyle(
                   fontSize: 13,
                   color: Colors.blue[700],
@@ -577,19 +612,11 @@ class _StockCountReviewScreenState extends State<StockCountReviewScreen> {
     Color color,
     VoidCallback onTap,
   ) {
-    return ElevatedButton.icon(
+    AppButton.primary(
+      text: label,
+      icon: icon, size: 18,
       onPressed: onTap,
-      icon: Icon(icon, size: 18),
-      label: Text(label),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-    );
+    ),
   }
 
   Widget _buildDecisionSummary(CountedProduct product) {
@@ -663,60 +690,11 @@ class _StockCountReviewScreenState extends State<StockCountReviewScreen> {
   }
 
   Widget _buildSaveButton() {
-    final allDecided = _decidedCount == _response.productCount;
+    final allDecided = _decidedCount == _response!.productCount;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: ElevatedButton(
-          onPressed: allDecided ? _saveDecisions : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: Text(
-            allDecided
-                ? 'Sayımı Kaydet ($_decidedCount Ürün)'
-                : 'Tüm ürünler için karar verin ($_decidedCount/${_response.productCount})',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _saveDecisions() async {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Başarılı!'),
-        content: Text('Sayım kaydedildi. $_decidedCount ürün güncellendi.'),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context); // Dialog
-              Navigator.pop(context); // Screen
-            },
-            child: const Text('Tamam'),
-          ),
-        ],
-      ),
-    );
-  }
-}
+          B

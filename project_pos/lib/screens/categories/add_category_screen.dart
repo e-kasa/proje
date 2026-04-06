@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 
 /// Yeni kategori ekleme / mevcut kategori düzenleme ekranı.
@@ -163,11 +165,8 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        title: Text(isEdit ? 'Kategori Düzenle' : 'Yeni Kategori'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 0,
+      appBar: AppAppBar.primary(
+        title: isEdit ? 'Kategori Düzenle' : 'Yeni Kategori',
         actions: [
           if (_isLoading)
             const Center(
@@ -186,7 +185,7 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: AppConstants.pagePadding,
           children: [
             // ── Temel Bilgiler ──────────────────────────────────────
             _buildCard(
@@ -230,7 +229,7 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
                     final sel = _selectedIcon == iconData.name;
                     return InkWell(
                       onTap: () => setState(() => _selectedIcon = iconData.name),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppConstants.borderRadiusMedium,
                       child: Container(
                         width: 70,
                         height: 70,
@@ -238,7 +237,7 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
                           color: sel
                               ? AppColors.primary.withValues(alpha: 0.12)
                               : Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppConstants.borderRadiusMedium,
                           border: Border.all(
                             color: sel ? AppColors.primary : Colors.grey.shade300,
                             width: sel ? 2 : 1,
@@ -354,29 +353,11 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
             // Kaydet butonu
             SizedBox(
               height: 50,
-              child: ElevatedButton(
+              child: AppButton.primary(
+                text: isEdit ? 'Güncelle' : 'Oluştur',
                 onPressed: _isLoading ? null : _saveCategory,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
-                      )
-                    : Text(
-                        isEdit ? 'Güncelle' : 'Oluştur',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
+                isLoading: _isLoading,
+                fullWidth: true,
               ),
             ),
 
@@ -399,7 +380,7 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppConstants.borderRadiusSmall,
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
@@ -430,7 +411,7 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppConstants.borderRadiusMedium,
         border: Border.all(color: AppColors.border),
       ),
       child: Column(

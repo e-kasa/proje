@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
+import '../../core/widgets/widgets.dart';
 
 /// EKRAN 1: Dosya Yükle
 /// Kullanıcı tedarikçi seçer ve Excel/CSV dosyası yükler
@@ -121,7 +122,7 @@ class _SupplierFileUploadScreenState extends State<SupplierFileUploadScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppAppBar.standard(
         title: const Text('📦 Tedarikçi Dosyası Yükle'),
         elevation: 0,
       ),
@@ -295,19 +296,4 @@ class _SupplierFileUploadScreenState extends State<SupplierFileUploadScreen> {
                         ),
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 16,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+                            

@@ -3,8 +3,9 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../../core/database/comprehensive_database.dart';
 import '../../services/service_locator.dart';
+import '../../core/widgets/widgets.dart';
+import '../../core/theme/app_constants.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
@@ -15,11 +16,11 @@ class ReportsScreen extends ConsumerStatefulWidget {
 
 class _ReportsScreenState extends ConsumerState<ReportsScreen>
     with SingleTickerProviderStateMixin {
-  final _db = ComprehensiveDatabase.instance;
   late TabController _tabController;
   bool _isExporting = false;
 
   bool _isLoading = true;
+  String? _error;
   DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
   DateTime _endDate = DateTime.now();
 
@@ -48,91 +49,83 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   }
 
   Future<void> _loadReportData() async {
-    setState(() => _isLoading = true);
-
-    await Future.wait([
-      _loadSalesReport(),
-      _loadCustomerReport(),
-      _loadInventoryReport(),
-    ]);
-
-    setState(() => _isLoading = false);
+    setState(() { _isLoading = true; _error = null; });
+    try {
+      await Future.wait([
+        _loadSalesReport(),
+        _loadCustomerReport(),
+        _loadInventoryReport(),
+      ]);
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _loadSalesReport() async {
-    final db = await _db.database;
+    try {
+      final service = ref.read(reportServiceProvider);
+      final data = await service.getSalesReport(
+        startDate: _startDate,
+        endDate: _endDate,
+      );
 
-    // Get sales within date range
-    final sales = await db.query(
-      'sales',
-      where: 'saleDate BETWEEN ? AND ?',
-      whereArgs: [
-        _startDate.toIso8601String(),
-        _endDate.toIso8601String(),
-      ],
-      orderBy: 'saleDate DESC',
-    );
+      final salesList = (data['sales'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+      double totalAmount = 0;
+      for (final sale in salesList) {
+        totalAmount += (sale['total'] as num?)?.toDouble() ?? 0;
+      }
 
-    double totalAmount = 0;
-    for (final sale in sales) {
-      totalAmount += sale['total'] as double;
+      if (mounted) {
+        setState(() {
+          _sales = salesList;
+          _totalSalesAmount = totalAmount;
+          _totalSalesCount = salesList.length;
+          _averageSaleAmount = salesList.isEmpty ? 0 : totalAmount / salesList.length;
+        });
+      }
+    } catch (e) {
+      debugPrint('Sales report error: $e');
     }
-
-    setState(() {
-      _sales = sales;
-      _totalSalesAmount = totalAmount;
-      _totalSalesCount = sales.length;
-      _averageSaleAmount = sales.isEmpty ? 0 : totalAmount / sales.length;
-    });
   }
 
   Future<void> _loadCustomerReport() async {
-    final db = await _db.database;
+    try {
+      final service = ref.read(reportServiceProvider);
+      final data = await service.getCustomerReport(
+        startDate: _startDate,
+        endDate: _endDate,
+      );
 
-    // Get top customers by total purchases
-    final topCustomers = await db.rawQuery('''
-      SELECT * FROM customers
-      WHERE totalPurchases > 0
-      ORDER BY totalPurchases DESC
-      LIMIT 10
-    ''');
-
-    final allCustomers = await db.query('customers');
-    final activeCustomers = await db.query(
-      'customers',
-      where: 'isActive = ?',
-      whereArgs: [1],
-    );
-
-    setState(() {
-      _topCustomers = topCustomers;
-      _totalCustomers = allCustomers.length;
-      _activeCustomers = activeCustomers.length;
-    });
+      if (mounted) {
+        setState(() {
+          _topCustomers = (data['topCustomers'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+          _totalCustomers = (data['totalCustomers'] as num?)?.toInt() ?? 0;
+          _activeCustomers = (data['activeCustomers'] as num?)?.toInt() ?? 0;
+        });
+      }
+    } catch (e) {
+      debugPrint('Customer report error: $e');
+    }
   }
 
   Future<void> _loadInventoryReport() async {
-    final db = await _db.database;
+    try {
+      final service = ref.read(reportServiceProvider);
+      final data = await service.getInventoryReport();
 
-    final allProducts = await db.query('products', where: 'isActive = ?', whereArgs: [1]);
-    final lowStock = await db.rawQuery(
-      'SELECT * FROM products WHERE stock <= minStock AND stock > 0',
-    );
-    final outOfStock = await db.query('products', where: 'stock = ?', whereArgs: [0]);
-
-    double totalValue = 0;
-    for (final product in allProducts) {
-      final stock = product['stock'] as int;
-      final price = product['sellingPrice'] as double;
-      totalValue += stock * price;
+      if (mounted) {
+        setState(() {
+          _totalProducts = (data['totalProducts'] as num?)?.toInt() ?? 0;
+          _lowStockProducts = (data['lowStockProducts'] as num?)?.toInt() ?? 0;
+          _outOfStockProducts = (data['outOfStockProducts'] as num?)?.toInt() ?? 0;
+          _totalInventoryValue = (data['totalInventoryValue'] as num?)?.toDouble() ?? 0;
+        });
+      }
+    } catch (e) {
+      debugPrint('Inventory report error: $e');
     }
-
-    setState(() {
-      _totalProducts = allProducts.length;
-      _lowStockProducts = lowStock.length;
-      _outOfStockProducts = outOfStock.length;
-      _totalInventoryValue = totalValue;
-    });
   }
 
   Future<void> _selectDateRange() async {
@@ -160,24 +153,21 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     final format = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Rapor Disa Aktar'),
+        title: const Text('Rapor Dışa Aktar'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: const Icon(Icons.picture_as_pdf, color: AppColors.danger),
-              title: const Text('PDF olarak disa aktar'),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
+              title: const Text('PDF olarak dışa aktar'),
+              shape: RoundedRectangleBorder(borderRadius: AppConstants.borderRadiusSmall),
               onTap: () => Navigator.of(ctx).pop('pdf'),
             ),
             const SizedBox(height: 8),
             ListTile(
-              leading:
-                  const Icon(Icons.table_chart, color: AppColors.success),
-              title: const Text('Excel olarak disa aktar'),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
+              leading: const Icon(Icons.table_chart, color: AppColors.success),
+              title: const Text('Excel olarak dışa aktar'),
+              shape: RoundedRectangleBorder(borderRadius: AppConstants.borderRadiusSmall),
               onTap: () => Navigator.of(ctx).pop('excel'),
             ),
           ],
@@ -185,7 +175,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Iptal'),
+            child: const Text('İptal'),
           ),
         ],
       ),
@@ -205,7 +195,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Rapor disa aktarildi'),
+          content: Text('Rapor dışa aktarıldı'),
           backgroundColor: AppColors.success,
         ),
       );
@@ -213,7 +203,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Disa aktarma hatasi: $e'),
+          content: Text('Dışa aktarma hatası: $e'),
           backgroundColor: AppColors.danger,
         ),
       );
@@ -226,8 +216,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        title: const Text('Raporlar'),
+      appBar: AppAppBar.standard(
+        title: 'Raporlar',
         actions: [
           IconButton(
             icon: const Icon(Icons.date_range),
@@ -246,7 +236,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
               : IconButton(
                   icon: const Icon(Icons.file_download),
                   onPressed: _showExportDialog,
-                  tooltip: 'Raporu Indir',
+                  tooltip: 'Raporu İndir',
                 ),
         ],
         bottom: TabBar(
@@ -260,175 +250,110 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                // Date Range Display
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  color: Colors.white,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.calendar_today, size: 16),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${_startDate.day}.${_startDate.month}.${_startDate.year} - ${_endDate.day}.${_endDate.month}.${_endDate.year}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
+          : _error != null
+              ? AppEmptyState.error(
+                  message: 'Veri yüklenemedi',
+                  onRetry: _loadReportData,
+                )
+              : Column(
+                  children: [
+                    Container(
+                      padding: AppConstants.pagePadding,
+                      color: Colors.white,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.calendar_today, size: 16),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${_startDate.day}.${_startDate.month}.${_startDate.year} - ${_endDate.day}.${_endDate.month}.${_endDate.year}',
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildSalesReport(),
+                          _buildCustomerReport(),
+                          _buildInventoryReport(),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildSalesReport(),
-                      _buildCustomerReport(),
-                      _buildInventoryReport(),
-                    ],
-                  ),
-                ),
-              ],
-            ),
     );
   }
 
   Widget _buildSalesReport() {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: AppConstants.pagePadding,
       children: [
-        // Statistics Cards
         Row(
           children: [
-            Expanded(
-              child: _buildStatCard(
-                'Toplam Satış',
-                _totalSalesCount.toString(),
-                Icons.receipt_long,
-                AppColors.primary,
-              ),
-            ),
+            Expanded(child: _buildStatCard('Toplam Satış', _totalSalesCount.toString(), Icons.receipt_long, AppColors.primary)),
             const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard(
-                'Toplam Tutar',
-                '₺${_totalSalesAmount.toStringAsFixed(0)}',
-                Icons.attach_money,
-                AppColors.success,
-              ),
-            ),
+            Expanded(child: _buildStatCard('Toplam Tutar', '₺${_totalSalesAmount.toStringAsFixed(0)}', Icons.attach_money, AppColors.success)),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(
-              child: _buildStatCard(
-                'Ortalama',
-                '₺${_averageSaleAmount.toStringAsFixed(0)}',
-                Icons.analytics,
-                AppColors.warning,
-              ),
-            ),
+            Expanded(child: _buildStatCard('Ortalama', '₺${_averageSaleAmount.toStringAsFixed(0)}', Icons.analytics, AppColors.warning)),
             const SizedBox(width: 12),
             Expanded(
               child: _buildStatCard(
                 'Bugün',
-                _sales
-                    .where((s) {
-                      final saleDate = DateTime.parse(s['saleDate'] as String);
-                      final today = DateTime.now();
-                      return saleDate.year == today.year &&
-                          saleDate.month == today.month &&
-                          saleDate.day == today.day;
-                    })
-                    .length
-                    .toString(),
+                _sales.where((s) {
+                  final d = DateTime.tryParse(s['saleDate']?.toString() ?? '');
+                  if (d == null) return false;
+                  final today = DateTime.now();
+                  return d.year == today.year && d.month == today.month && d.day == today.day;
+                }).length.toString(),
                 Icons.today,
                 AppColors.info,
               ),
             ),
           ],
         ),
-
         const SizedBox(height: 24),
-
-        // Recent Sales List
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
-          ),
+        AppCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'Son Satışlar',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              const Padding(padding: EdgeInsets.all(16), child: Text('Son Satışlar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
               const Divider(height: 1),
               if (_sales.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(32),
-                  child: Center(child: Text('Satış kaydı yok')),
-                )
+                AppEmptyState.noData(message: 'Satış kaydı yok')
               else
                 ListView.separated(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: _sales.length > 10 ? 10 : _sales.length,
-                  separatorBuilder: (context, index) => const Divider(height: 1),
+                  separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final sale = _sales[index];
+                    final total = (sale['total'] as num?)?.toDouble() ?? 0;
                     return ListTile(
                       leading: CircleAvatar(
                         backgroundColor: AppColors.bgSuccess,
-                        child: const Icon(
-                          Icons.receipt,
-                          color: AppColors.success,
-                          size: 20,
-                        ),
+                        child: const Icon(Icons.receipt, color: AppColors.success, size: 20),
                       ),
-                      title: Text(
-                        sale['saleNumber'],
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                      title: Text(sale['saleNumber']?.toString() ?? '-', style: const TextStyle(fontWeight: FontWeight.bold)),
                       subtitle: Text(
-                        DateTime.parse(sale['saleDate'] as String)
-                            .toString()
-                            .substring(0, 16),
+                        (sale['saleDate']?.toString() ?? '').length > 16
+                            ? sale['saleDate'].toString().substring(0, 16)
+                            : sale['saleDate']?.toString() ?? '-',
                         style: const TextStyle(fontSize: 12),
                       ),
                       trailing: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text(
-                            '₺${(sale['total'] as double).toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.success,
-                            ),
-                          ),
-                          Text(
-                            sale['paymentMethod'],
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textMuted,
-                            ),
-                          ),
+                          Text('₺${total.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.success)),
+                          Text(sale['paymentMethod']?.toString() ?? '', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
                         ],
                       ),
                     );
@@ -443,117 +368,49 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
 
   Widget _buildCustomerReport() {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: AppConstants.pagePadding,
       children: [
-        // Statistics Cards
         Row(
           children: [
-            Expanded(
-              child: _buildStatCard(
-                'Toplam Müşteri',
-                _totalCustomers.toString(),
-                Icons.people,
-                AppColors.primary,
-              ),
-            ),
+            Expanded(child: _buildStatCard('Toplam Müşteri', _totalCustomers.toString(), Icons.people, AppColors.primary)),
             const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard(
-                'Aktif',
-                _activeCustomers.toString(),
-                Icons.person_outline,
-                AppColors.success,
-              ),
-            ),
+            Expanded(child: _buildStatCard('Aktif', _activeCustomers.toString(), Icons.person_outline, AppColors.success)),
             const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard(
-                'VIP',
-                _topCustomers
-                    .where((c) => c['customerType'] == 'vip')
-                    .length
-                    .toString(),
-                Icons.star,
-                AppColors.warning,
-              ),
-            ),
+            Expanded(child: _buildStatCard('VIP', _topCustomers.where((c) => c['customerType'] == 'vip').length.toString(), Icons.star, AppColors.warning)),
           ],
         ),
-
         const SizedBox(height: 24),
-
-        // Top Customers List
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
-          ),
+        AppCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'En İyi Müşteriler',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              const Padding(padding: EdgeInsets.all(16), child: Text('En İyi Müşteriler', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
               const Divider(height: 1),
               if (_topCustomers.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(32),
-                  child: Center(child: Text('Müşteri kaydı yok')),
-                )
+                AppEmptyState.noData(message: 'Müşteri kaydı yok')
               else
                 ListView.separated(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: _topCustomers.length,
-                  separatorBuilder: (context, index) => const Divider(height: 1),
+                  separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final customer = _topCustomers[index];
                     final isVip = customer['customerType'] == 'vip';
+                    final totalPurchases = (customer['totalPurchases'] as num?)?.toDouble() ?? 0;
                     return ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: isVip
-                            ? AppColors.warning.withOpacity(0.1)
-                            : AppColors.primary.withOpacity(0.1),
+                        backgroundColor: isVip ? AppColors.warning.withValues(alpha: 0.1) : AppColors.primary.withValues(alpha: 0.1),
                         child: isVip
                             ? const Icon(Icons.star, color: AppColors.warning)
                             : Text(
-                                customer['name'].toString()[0].toUpperCase(),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
-                                ),
+                                (customer['name']?.toString() ?? '?')[0].toUpperCase(),
+                                style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
                               ),
                       ),
-                      title: Text(
-                        customer['name'],
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text(
-                        '${customer['loyaltyPoints'] ?? 0} Puan',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      trailing: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            '₺${(customer['totalPurchases'] as double).toStringAsFixed(0)}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.success,
-                            ),
-                          ),
-                        ],
-                      ),
+                      title: Text(customer['name']?.toString() ?? '-', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Text('${customer['loyaltyPoints'] ?? 0} Puan', style: const TextStyle(fontSize: 12)),
+                      trailing: Text('₺${totalPurchases.toStringAsFixed(0)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.success)),
                     );
                   },
                 ),
@@ -566,104 +423,48 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
 
   Widget _buildInventoryReport() {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: AppConstants.pagePadding,
       children: [
-        // Statistics Cards
         Row(
           children: [
-            Expanded(
-              child: _buildStatCard(
-                'Toplam Ürün',
-                _totalProducts.toString(),
-                Icons.inventory_2,
-                AppColors.primary,
-              ),
-            ),
+            Expanded(child: _buildStatCard('Toplam Ürün', _totalProducts.toString(), Icons.inventory_2, AppColors.primary)),
             const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard(
-                'Düşük Stok',
-                _lowStockProducts.toString(),
-                Icons.warning,
-                AppColors.warning,
-              ),
-            ),
+            Expanded(child: _buildStatCard('Düşük Stok', _lowStockProducts.toString(), Icons.warning, AppColors.warning)),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(
-              child: _buildStatCard(
-                'Tükenen',
-                _outOfStockProducts.toString(),
-                Icons.error,
-                AppColors.danger,
-              ),
-            ),
+            Expanded(child: _buildStatCard('Tükenen', _outOfStockProducts.toString(), Icons.error, AppColors.danger)),
             const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard(
-                'Toplam Değer',
-                '₺${_totalInventoryValue.toStringAsFixed(0)}',
-                Icons.attach_money,
-                AppColors.success,
-              ),
-            ),
+            Expanded(child: _buildStatCard('Toplam Değer', '₺${_totalInventoryValue.toStringAsFixed(0)}', Icons.attach_money, AppColors.success)),
           ],
         ),
-
         const SizedBox(height: 24),
-
-        // Inventory Summary Chart
-        Container(
-          height: 250,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
-          ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Stok Durumu',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: PieChart(
-                  PieChartData(
-                    sections: [
-                      PieChartSectionData(
-                        value: (_totalProducts - _lowStockProducts - _outOfStockProducts).toDouble(),
-                        title: 'Normal',
-                        color: AppColors.success,
-                        radius: 80,
-                      ),
-                      PieChartSectionData(
-                        value: _lowStockProducts.toDouble(),
-                        title: 'Düşük',
-                        color: AppColors.warning,
-                        radius: 80,
-                      ),
-                      PieChartSectionData(
-                        value: _outOfStockProducts.toDouble(),
-                        title: 'Yok',
-                        color: AppColors.danger,
-                        radius: 80,
-                      ),
-                    ],
-                    sectionsSpace: 2,
-                    centerSpaceRadius: 40,
+        AppCard(
+          child: Padding(
+            padding: AppConstants.pagePadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Stok Durumu', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 250,
+                  child: PieChart(
+                    PieChartData(
+                      sections: [
+                        PieChartSectionData(value: (_totalProducts - _lowStockProducts - _outOfStockProducts).toDouble(), title: 'Normal', color: AppColors.success, radius: 80),
+                        PieChartSectionData(value: _lowStockProducts.toDouble(), title: 'Düşük', color: AppColors.warning, radius: 80),
+                        PieChartSectionData(value: _outOfStockProducts.toDouble(), title: 'Yok', color: AppColors.danger, radius: 80),
+                      ],
+                      sectionsSpace: 2,
+                      centerSpaceRadius: 40,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
@@ -671,35 +472,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   }
 
   Widget _buildStatCard(String label, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+    return AppCard(
+      child: Padding(
+        padding: AppConstants.pagePadding,
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 8),
+            Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+            const SizedBox(height: 4),
+            Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary), textAlign: TextAlign.center),
+          ],
+        ),
       ),
     );
   }

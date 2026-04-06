@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../services/service_locator.dart';
+import '../../core/widgets/widgets.dart';
+import '../../core/theme/app_constants.dart';
 
 class DailySummaryScreen extends ConsumerStatefulWidget {
   const DailySummaryScreen({super.key});
@@ -69,10 +71,8 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text('Gunluk Ozet'),
+      appBar: AppAppBar.standard(
+        title: 'Gunluk Ozet',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
@@ -85,7 +85,7 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
           : RefreshIndicator(
               onRefresh: _loadData,
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: AppConstants.pagePadding,
                 children: [
                   _buildDateSelector(),
                   const SizedBox(height: 16),
@@ -108,36 +108,33 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
     final isToday = DateUtils.isSameDay(_selectedDate, DateTime.now());
     return GestureDetector(
       onTap: _pickDate,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(children: [
-          const Icon(Icons.calendar_today,
-              size: 20, color: AppColors.primary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  DateFormat('dd MMMM yyyy, EEEE', 'tr_TR')
-                      .format(_selectedDate),
-                  style: const TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w600),
-                ),
-                if (isToday)
-                  const Text('Bugun',
-                      style: TextStyle(
-                          fontSize: 12, color: AppColors.success)),
-              ],
+      child: AppCard(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(children: [
+            const Icon(Icons.calendar_today,
+                size: 20, color: AppColors.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    DateFormat('dd MMMM yyyy, EEEE', 'tr_TR')
+                        .format(_selectedDate),
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
+                  if (isToday)
+                    const Text('Bugun',
+                        style: TextStyle(
+                            fontSize: 12, color: AppColors.success)),
+                ],
+              ),
             ),
-          ),
-          const Icon(Icons.arrow_drop_down, color: AppColors.textMuted),
-        ]),
+            const Icon(Icons.arrow_drop_down, color: AppColors.textMuted),
+          ]),
+        ),
       ),
     );
   }
@@ -182,32 +179,29 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
 
   Widget _summaryCard(String label, String value, Color color, IconData icon,
       {bool isCount = false}) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+    return AppCard(
+      child: Padding(
+        padding: AppConstants.paddingSmall,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: AppConstants.borderRadiusSmall,
+            ),
+            child: Icon(icon, size: 18, color: color),
           ),
-          child: Icon(icon, size: 18, color: color),
-        ),
-        const SizedBox(height: 10),
-        Text(value,
-            style: TextStyle(
-                fontSize: 16, fontWeight: FontWeight.bold, color: color),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis),
-        const SizedBox(height: 2),
-        Text(label,
-            style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
-      ]),
+          const SizedBox(height: 10),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.bold, color: color),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 2),
+          Text(label,
+              style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+        ]),
+      ),
     );
   }
 
@@ -238,55 +232,52 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
       },
     };
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Odeme Yontemleri',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        ...methods.entries.map((e) {
-          final count = methodCounts[e.key] ?? 0;
-          final amount = methodAmounts[e.key] ?? 0;
-          final info = e.value;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Row(children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: (info['color'] as Color).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+    return AppCard(
+      child: Padding(
+        padding: AppConstants.pagePadding,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Odeme Yontemleri',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          ...methods.entries.map((e) {
+            final count = methodCounts[e.key] ?? 0;
+            final amount = methodAmounts[e.key] ?? 0;
+            final info = e.value;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: (info['color'] as Color).withOpacity(0.1),
+                    borderRadius: AppConstants.borderRadiusSmall,
+                  ),
+                  child: Icon(info['icon'] as IconData,
+                      size: 18, color: info['color'] as Color),
                 ),
-                child: Icon(info['icon'] as IconData,
-                    size: 18, color: info['color'] as Color),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(info['label'] as String,
-                          style: const TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.w600)),
-                      Text('$count islem',
-                          style: const TextStyle(
-                              fontSize: 11, color: AppColors.textMuted)),
-                    ]),
-              ),
-              Text(_currencyFormat.format(amount),
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: info['color'] as Color)),
-            ]),
-          );
-        }),
-      ]),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(info['label'] as String,
+                            style: const TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w600)),
+                        Text('$count islem',
+                            style: const TextStyle(
+                                fontSize: 11, color: AppColors.textMuted)),
+                      ]),
+                ),
+                Text(_currencyFormat.format(amount),
+                    style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: info['color'] as Color)),
+              ]),
+            );
+          }),
+        ]),
+      ),
     );
   }
 
@@ -312,64 +303,56 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
       ..sort((a, b) => b.value.compareTo(a.value));
     final top5 = sorted.take(5).toList();
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('En Cok Satan Urunler',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        if (top5.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(
-                child: Text('Veri bulunamadi',
-                    style: TextStyle(color: AppColors.textMuted))),
-          )
-        else
-          ...top5.asMap().entries.map((e) {
-            final idx = e.key;
-            final entry = e.value;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(children: [
-                Container(
-                  width: 28,
-                  height: 28,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: idx < 3
-                        ? AppColors.warning.withOpacity(0.15)
-                        : AppColors.bgLight,
-                    borderRadius: BorderRadius.circular(6),
+    return AppCard(
+      child: Padding(
+        padding: AppConstants.pagePadding,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('En Cok Satan Urunler',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          if (top5.isEmpty)
+            AppEmptyState.noData(message: 'Veri bulunamadi')
+          else
+            ...top5.asMap().entries.map((e) {
+              final idx = e.key;
+              final entry = e.value;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: idx < 3
+                          ? AppColors.warning.withOpacity(0.15)
+                          : AppColors.bgLight,
+                      borderRadius: AppConstants.borderRadiusSmall,
+                    ),
+                    child: Text('${idx + 1}',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: idx < 3
+                                ? AppColors.warning
+                                : AppColors.textMuted)),
                   ),
-                  child: Text('${idx + 1}',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                          color: idx < 3
-                              ? AppColors.warning
-                              : AppColors.textMuted)),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                    child: Text(entry.key,
-                        style: const TextStyle(fontSize: 13),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis)),
-                Text('${entry.value.toInt()} adet',
-                    style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary)),
-              ]),
-            );
-          }),
-      ]),
+                  const SizedBox(width: 10),
+                  Expanded(
+                      child: Text(entry.key,
+                          style: const TextStyle(fontSize: 13),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis)),
+                  Text('${entry.value.toInt()} adet',
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary)),
+                ]),
+              );
+            }),
+        ]),
+      ),
     );
   }
 
@@ -378,76 +361,68 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
   Widget _buildActivityTimeline() {
     final recentSales = _dailySales.take(5).toList();
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Son Islemler',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        if (recentSales.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(
-                child: Text('Bugun islem yapilmamis',
-                    style: TextStyle(color: AppColors.textMuted))),
-          )
-        else
-          ...recentSales.map((sale) {
-            final id = sale['id']?.toString() ?? '-';
-            final amount = _toD(sale['totalAmount']);
-            final method = sale['paymentMethod']?.toString() ?? '';
-            final createdAt = sale['createdAt']?.toString() ?? '';
-            String timeStr = '';
-            if (createdAt.length >= 16) {
-              timeStr = createdAt.substring(11, 16);
-            }
+    return AppCard(
+      child: Padding(
+        padding: AppConstants.pagePadding,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Son Islemler',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          if (recentSales.isEmpty)
+            AppEmptyState.noData(message: 'Bugun islem yapilmamis')
+          else
+            ...recentSales.map((sale) {
+              final id = sale['id']?.toString() ?? '-';
+              final amount = _toD(sale['totalAmount']);
+              final method = sale['paymentMethod']?.toString() ?? '';
+              final createdAt = sale['createdAt']?.toString() ?? '';
+              String timeStr = '';
+              if (createdAt.length >= 16) {
+                timeStr = createdAt.substring(11, 16);
+              }
 
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: AppColors.success,
-                    borderRadius: BorderRadius.circular(4),
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: AppColors.success,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Satis #$id',
-                            style: const TextStyle(
-                                fontSize: 13, fontWeight: FontWeight.w500)),
-                        Row(children: [
-                          Text(method,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Satis #$id',
                               style: const TextStyle(
-                                  fontSize: 11, color: AppColors.textMuted)),
-                          if (timeStr.isNotEmpty) ...[
-                            const SizedBox(width: 8),
-                            Text(timeStr,
+                                  fontSize: 13, fontWeight: FontWeight.w500)),
+                          Row(children: [
+                            Text(method,
                                 style: const TextStyle(
                                     fontSize: 11, color: AppColors.textMuted)),
-                          ],
+                            if (timeStr.isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              Text(timeStr,
+                                  style: const TextStyle(
+                                      fontSize: 11, color: AppColors.textMuted)),
+                            ],
+                          ]),
                         ]),
-                      ]),
-                ),
-                Text(_currencyFormat.format(amount),
-                    style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.success)),
-              ]),
-            );
-          }),
-      ]),
+                  ),
+                  Text(_currencyFormat.format(amount),
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.success)),
+                ]),
+              );
+            }),
+        ]),
+      ),
     );
   }
 

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 
 class BrandsScreen extends ConsumerStatefulWidget {
@@ -305,7 +307,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppColors.warning.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppConstants.borderRadiusSmall,
                 border: Border.all(color: AppColors.warning.withOpacity(0.3)),
               ),
               child: const Row(
@@ -397,29 +399,8 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Markalar',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
-            ),
-            Text(
-              'Marka yönetimi',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
+      appBar: AppAppBar.standard(
+        title: 'Markalar',
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
@@ -434,7 +415,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
           // Search & Add Section
           Container(
             color: Colors.white,
-            padding: const EdgeInsets.all(16),
+            padding: AppConstants.pagePadding,
             child: Column(
               children: [
                 Row(
@@ -449,7 +430,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                           filled: true,
                           fillColor: AppColors.bgLight,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppConstants.borderRadiusMedium,
                             borderSide: BorderSide.none,
                           ),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -466,7 +447,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppConstants.borderRadiusMedium,
                         ),
                       ),
                     ),
@@ -478,7 +459,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppConstants.borderRadiusSmall,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -502,7 +483,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                 : _filteredBrands.isEmpty
                     ? _buildEmptyState()
                     : ListView.builder(
-                        padding: const EdgeInsets.all(16),
+                        padding: AppConstants.pagePadding,
                         itemCount: _filteredBrands.length,
                         itemBuilder: (context, index) {
                           final brand = _filteredBrands[index];
@@ -583,16 +564,16 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppConstants.borderRadiusMedium,
         border: Border.all(color: AppColors.border),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppConstants.borderRadiusMedium,
           onTap: () => _showEditBrandDialog(brand),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: AppConstants.pagePadding,
             child: Row(
               children: [
                 // Logo placeholder
@@ -601,7 +582,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                   height: 56,
                   decoration: BoxDecoration(
                     color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppConstants.borderRadiusMedium,
                   ),
                   child: const Center(
                     child: Icon(Icons.branding_watermark, color: AppColors.primary, size: 28),
@@ -631,7 +612,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                               color: isActive
                                   ? AppColors.success.withOpacity(0.1)
                                   : AppColors.textMuted.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: AppConstants.borderRadiusSmall,
                             ),
                             child: Text(
                               isActive ? 'Aktif' : 'Pasif',
@@ -679,7 +660,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                 // Actions
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert, color: AppColors.textSecondary),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(borderRadius: AppConstants.borderRadiusSmall),
                   onSelected: (value) {
                     if (value == 'edit') {
                       _showEditBrandDialog(brand);

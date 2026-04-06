@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 
 class PaymentListScreen extends ConsumerStatefulWidget {
@@ -59,85 +61,19 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        // Use mock data as fallback
-        _payments = _getMockPayments();
+        _payments = [];
         _totalIncome = 0;
         _totalExpense = 0;
-        for (final p in _payments) {
-          final amount = (p['amount'] as num?)?.toDouble() ?? 0;
-          if (p['type'] == 'income') {
-            _totalIncome += amount;
-          } else {
-            _totalExpense += amount;
-          }
-        }
       });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Veri yuklenemedi'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
     }
-  }
-
-  List<Map<String, dynamic>> _getMockPayments() {
-    return [
-      {
-        'id': 1,
-        'type': 'income',
-        'amount': 12500.0,
-        'date': '2025-03-15',
-        'relatedParty': 'Ahmet Yilmaz',
-        'paymentMethod': 'Nakit',
-        'referenceNo': 'TAH-2025-001',
-        'description': 'Urun satisi',
-      },
-      {
-        'id': 2,
-        'type': 'expense',
-        'amount': 8750.0,
-        'date': '2025-03-14',
-        'relatedParty': 'ABC Tedarik Ltd.',
-        'paymentMethod': 'Havale/EFT',
-        'referenceNo': 'ODM-2025-001',
-        'description': 'Mal alimi',
-      },
-      {
-        'id': 3,
-        'type': 'income',
-        'amount': 5200.0,
-        'date': '2025-03-13',
-        'relatedParty': 'Mehmet Demir',
-        'paymentMethod': 'Kredi Karti',
-        'referenceNo': 'TAH-2025-002',
-        'description': 'Hizmet bedeli',
-      },
-      {
-        'id': 4,
-        'type': 'expense',
-        'amount': 3200.0,
-        'date': '2025-03-12',
-        'relatedParty': 'Kargo A.S.',
-        'paymentMethod': 'Nakit',
-        'referenceNo': 'ODM-2025-002',
-        'description': 'Kargo ucretleri',
-      },
-      {
-        'id': 5,
-        'type': 'income',
-        'amount': 18000.0,
-        'date': '2025-03-11',
-        'relatedParty': 'XYZ Holding',
-        'paymentMethod': 'Havale/EFT',
-        'referenceNo': 'TAH-2025-003',
-        'description': 'Toptan satis',
-      },
-      {
-        'id': 6,
-        'type': 'expense',
-        'amount': 15000.0,
-        'date': '2025-03-10',
-        'relatedParty': 'Emlak Yonetimi',
-        'paymentMethod': 'Banka Transferi',
-        'referenceNo': 'ODM-2025-003',
-        'description': 'Kira odemesi',
-      },
-    ];
   }
 
   List<Map<String, dynamic>> get _filteredPayments {
@@ -165,7 +101,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
+      appBar: AppAppBar.standard(
         title: const Text('Odemeler'),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -481,3 +417,4 @@ class _PaymentCard extends StatelessWidget {
     );
   }
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         

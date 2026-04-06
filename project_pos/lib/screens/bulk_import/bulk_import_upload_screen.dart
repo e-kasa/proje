@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 
 /// Profesyonel Toplu Ürün Yükleme Ekranı - Adım 1: Dosya Yükleme
 class BulkImportUploadScreen extends StatefulWidget {
@@ -99,7 +101,7 @@ class _BulkImportUploadScreenState extends State<BulkImportUploadScreen> with Si
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
+      appBar: AppAppBar.standard(
         title: const Text('Toplu Ürün Yükleme'),
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
@@ -336,17 +338,15 @@ class _BulkImportUploadScreenState extends State<BulkImportUploadScreen> with Si
                 ),
               ),
               const SizedBox(height: 24),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.folder_open),
-                label: const Text('Dosya Seç'),
+              AppButton.primary(
+
+                text: 'Dosya Seç',
+
+                icon: Icons.folder_open,
+
                 onPressed: _pickFile,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+
+              ),
                   elevation: 0,
                 ),
               ),
@@ -626,16 +626,20 @@ class _BulkImportUploadScreenState extends State<BulkImportUploadScreen> with Si
             ),
           ),
           const SizedBox(width: 16),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.file_download, size: 18),
-            label: const Text('İndir'),
+          AppButton.success(
+
+            text: 'İndir',
+
+            icon: Icons.file_download, size: 18,
+
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Şablon indiriliyor...'),
                   backgroundColor: AppColors.success,
                   duration: Duration(seconds: 2),
-                ),
+
+          ),
               );
             },
             style: ElevatedButton.styleFrom(

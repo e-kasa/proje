@@ -5,9 +5,11 @@ import 'package:csv/csv.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
 import '../../core/utils/app_logger.dart';
 import '../../services/service_locator.dart';
 import '../../widgets/quick_add_product_modal.dart';
+import '../../core/widgets/widgets.dart';
 
 class EnhancedProductListScreen extends ConsumerStatefulWidget {
   const EnhancedProductListScreen({super.key});
@@ -118,7 +120,7 @@ class _EnhancedProductListScreenState extends ConsumerState<EnhancedProductListS
       context,
       MaterialPageRoute(
         builder: (context) => Scaffold(
-          appBar: AppBar(title: const Text('Barkod Okut')),
+          appBar: AppAppBar.standard(title: const Text('Barkod Okut')),
           body: MobileScanner(
             onDetect: (capture) {
               final List<Barcode> barcodes = capture.barcodes;
@@ -281,7 +283,7 @@ class _EnhancedProductListScreenState extends ConsumerState<EnhancedProductListS
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
+      appBar: AppAppBar.standard(
         title: _isSelectionMode
             ? Text('${_selectedProductIds.length} seçili')
             : const Text('Ürünler'),
@@ -317,7 +319,7 @@ class _EnhancedProductListScreenState extends ConsumerState<EnhancedProductListS
         children: [
           // Search Bar
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: AppConstants.pagePadding,
             color: Colors.white,
             child: Row(
               children: [
@@ -339,7 +341,7 @@ class _EnhancedProductListScreenState extends ConsumerState<EnhancedProductListS
                             )
                           : null,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppConstants.borderRadiusMedium,
                       ),
                     ),
                     onChanged: (value) {
@@ -355,7 +357,7 @@ class _EnhancedProductListScreenState extends ConsumerState<EnhancedProductListS
                 Container(
                   decoration: BoxDecoration(
                     color: _isOemSearching ? AppColors.orange.withOpacity(0.15) : AppColors.bgLight,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppConstants.borderRadiusMedium,
                     border: Border.all(
                       color: _isOemSearching ? AppColors.orange : AppColors.border,
                     ),
@@ -429,7 +431,7 @@ class _EnhancedProductListScreenState extends ConsumerState<EnhancedProductListS
                     : RefreshIndicator(
                         onRefresh: _loadProducts,
                         child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
+                          padding: AppConstants.pagePadding,
                           itemCount: _filteredProducts.length,
                           itemBuilder: (context, index) {
                             final product = _filteredProducts[index];
@@ -476,7 +478,7 @@ class _EnhancedProductListScreenState extends ConsumerState<EnhancedProductListS
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppConstants.borderRadiusMedium,
         border: Border.all(
           color: isSelected ? AppColors.primary : AppColors.border,
           width: isSelected ? 2 : 1,
@@ -500,9 +502,9 @@ class _EnhancedProductListScreenState extends ConsumerState<EnhancedProductListS
             _selectedProductIds.add(product['id']);
           });
         },
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppConstants.borderRadiusMedium,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: AppConstants.pagePadding,
           child: Row(
             children: [
               if (_isSelectionMode)
@@ -582,7 +584,7 @@ class _EnhancedProductListScreenState extends ConsumerState<EnhancedProductListS
                             color: isLowStock
                                 ? AppColors.bgDanger
                                 : AppColors.bgSuccess,
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: AppConstants.borderRadiusSmall,
                           ),
                           child: Text(
                             'Stok: ${product['stock']} ${product['unit']}',
@@ -610,15 +612,4 @@ class _EnhancedProductListScreenState extends ConsumerState<EnhancedProductListS
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-}
+          

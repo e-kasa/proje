@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 import '../accounts/payment_record_modal.dart';
 
@@ -77,7 +79,7 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
     if (_isLoading) {
       return Scaffold(
         backgroundColor: AppColors.bgLight,
-        appBar: AppBar(title: const Text('Musteri Detay')),
+        appBar: AppAppBar.standard(title: 'Musteri Detay'),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -85,7 +87,7 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
     if (_error != null || _customer == null) {
       return Scaffold(
         backgroundColor: AppColors.bgLight,
-        appBar: AppBar(title: const Text('Musteri Detay')),
+        appBar: AppAppBar.standard(title: 'Musteri Detay'),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -96,8 +98,10 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
               Text(_error ?? 'Musteri bulunamadi',
                   style: const TextStyle(color: AppColors.textSecondary)),
               const SizedBox(height: 12),
-              ElevatedButton(
-                  onPressed: _loadAll, child: const Text('Tekrar Dene')),
+              AppButton.primary(
+                text: 'Tekrar Dene',
+                onPressed: _loadAll,
+              ),
             ],
           ),
         ),
@@ -111,24 +115,11 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
+      appBar: AppAppBar.standard(
+        title: name,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => context.pop(),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(name,
-                style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary)),
-            const Text('Musteri Detay',
-                style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
-          ],
         ),
         actions: [
           IconButton(
@@ -140,7 +131,7 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
       body: RefreshIndicator(
         onRefresh: _loadAll,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: AppConstants.pagePadding,
           children: [
             _buildInfoCard(),
             const SizedBox(height: 12),
@@ -186,7 +177,7 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppConstants.borderRadiusMedium,
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -246,7 +237,7 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppConstants.borderRadiusMedium,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,7 +255,7 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: AppConstants.borderRadiusSmall,
             ),
             child:
                 Text(label, style: const TextStyle(color: Colors.white, fontSize: 11)),
@@ -281,7 +272,7 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppConstants.borderRadiusMedium,
         border: Border.all(color: AppColors.border),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -289,7 +280,7 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppConstants.borderRadiusSmall,
           ),
           child: Icon(icon, size: 16, color: color),
         ),
@@ -309,39 +300,20 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
   Widget _buildActionButtons() {
     return Row(children: [
       Expanded(
-        child: ElevatedButton.icon(
+        child: AppButton.success(
+          text: 'Odeme Kaydet',
+          icon: Icons.payment,
           onPressed: _showPaymentDialog,
-          icon: const Icon(Icons.payment, color: Colors.white, size: 18),
-          label: const Text('Odeme Kaydet',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13)),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.success,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
         ),
       ),
       const SizedBox(width: 10),
       Expanded(
-        child: ElevatedButton.icon(
+        child: AppButton(
+          text: 'Bilgileri Guncelle',
+          icon: Icons.edit_outlined,
+          variant: ButtonVariant.secondary,
           onPressed: () =>
               context.push('/customers/edit/${widget.customerId}'),
-          icon: const Icon(Icons.edit_outlined, color: Colors.white, size: 18),
-          label: const Text('Bilgileri Guncelle',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13)),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.info,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
         ),
       ),
     ]);
@@ -380,7 +352,7 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
                   backgroundColor: Colors.white,
                   onSelected: (_) => setState(() => _txFilter = f),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                      borderRadius: AppConstants.borderRadiusSmall),
                 ),
               );
             }).toList(),
@@ -424,7 +396,7 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppConstants.borderRadiusMedium,
         border: Border.all(color: AppColors.border),
       ),
       child: Row(children: [
@@ -435,7 +407,7 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
             color: isDebit
                 ? AppColors.danger.withOpacity(0.1)
                 : AppColors.success.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: AppConstants.borderRadiusSmall,
           ),
           child: Icon(
             isDebit ? Icons.arrow_upward : Icons.arrow_downward,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/store_service.dart';
 import '../../core/api/api_client.dart';
@@ -104,10 +105,8 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        title: const Text('Mağaza Yönetimi'),
-        backgroundColor: Colors.white,
-        elevation: 0,
+      appBar: AppAppBar.standard(
+        title: 'Mağaza Yönetimi',
         actions: [IconButton(onPressed: _loadStores, icon: const Icon(Icons.refresh), tooltip: 'Yenile')],
       ),
       body: _isLoading
@@ -128,7 +127,7 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
                           hintText: 'Mağaza ara...',
                           prefixIcon: const Icon(Icons.search),
                           suffixIcon: _searchController.text.isNotEmpty ? IconButton(icon: const Icon(Icons.clear), onPressed: () {_searchController.clear(); _filterStores('');}) : null,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          border: OutlineInputBorder(borderRadius: AppConstants.borderRadiusMedium),
                           filled: true,
                           fillColor: AppColors.bgLight,
                         ),
@@ -197,7 +196,7 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppConstants.borderRadiusMedium,
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(
@@ -225,10 +224,10 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: AppConstants.borderRadiusMedium),
       child: InkWell(
         onTap: () => context.push('/stores/${store['id']}'),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppConstants.borderRadiusMedium,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -240,7 +239,7 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: isActive ? AppColors.primary.withOpacity(0.1) : AppColors.textMuted.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppConstants.borderRadiusMedium,
                     ),
                     child: Icon(Icons.store, color: isActive ? AppColors.primary : AppColors.textMuted, size: 24),
                   ),
@@ -296,7 +295,7 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppConstants.borderRadiusSmall,
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(

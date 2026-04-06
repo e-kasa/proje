@@ -7,6 +7,7 @@ import 'steps/variants_step.dart';
 import 'steps/stock_barcode_step.dart';
 import 'steps/images_step.dart';
 import 'steps/preview_step.dart';
+import '../../core/widgets/widgets.dart';
 
 class AddProductWizardScreen extends ConsumerStatefulWidget {
   final bool fromBulkImport;
@@ -496,99 +497,4 @@ class _AddProductWizardScreenState extends ConsumerState<AddProductWizardScreen>
                 child: ElevatedButton.icon(
                   onPressed: _state.isSaving
                       ? null
-                      : () => _state.handleSubmit(ref: ref, context: context, fromBulkImport: widget.fromBulkImport, tempId: widget.tempId),
-                  icon: _state.isSaving
-                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.save, size: 14),
-                  label: Text(_state.isSaving ? 'Kay\u0131t...' : 'Kaydet', style: const TextStyle(fontSize: 12)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.success,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  ),
-                ),
-              ),
-            ] else
-              Expanded(
-                flex: _currentStep > 0 ? 2 : 3,
-                child: ElevatedButton.icon(
-                  onPressed: _state.isSaving ? null : _handleNext,
-                  icon: const Icon(Icons.arrow_forward, size: 16),
-                  label: const Text('\u0130leri', style: TextStyle(fontSize: 12)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDesktopNavigation() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        if (_currentStep > 0)
-          OutlinedButton.icon(
-            onPressed: _handlePrevious,
-            icon: const Icon(Icons.arrow_back),
-            label: const Text('Geri'),
-            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14)),
-          )
-        else
-          const SizedBox(width: 100),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(color: AppColors.bgLight, borderRadius: BorderRadius.circular(8)),
-          child: Text(
-            ['Temel Bilgiler', 'Varyantlar', 'Stok & Barkod', 'G\u00f6rseller', '\u00d6nizleme'][_currentStep],
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-          ),
-        ),
-        Row(
-          children: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('\u0130ptal')),
-            if (_savedCount > 0) ...[
-              const SizedBox(width: 8),
-              Chip(
-                avatar: const Icon(Icons.check_circle, color: AppColors.success, size: 16),
-                label: Text('$_savedCount kaydedildi', style: const TextStyle(fontSize: 12)),
-                backgroundColor: AppColors.success.withOpacity(0.1),
-                side: BorderSide.none,
-              ),
-            ],
-            const SizedBox(width: 8),
-            if (_currentStep == _totalSteps - 1) ...[
-              OutlinedButton.icon(
-                onPressed: _state.isSaving ? null : _handleSaveAndContinue,
-                icon: const Icon(Icons.add_circle_outline, size: 18),
-                label: const Text('Kaydet ve Yeni Ekle'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                ),
-              ),
-              const SizedBox(width: 8),
-            ],
-            ElevatedButton.icon(
-              onPressed: _state.isSaving
-                  ? null
-                  : _currentStep < _totalSteps - 1
-                      ? _handleNext
-                      : () => _state.handleSubmit(ref: ref, context: context, fromBulkImport: widget.fromBulkImport, tempId: widget.tempId),
-              icon: Icon(_currentStep < _totalSteps - 1 ? Icons.arrow_forward : Icons.save),
-              label: Text(_state.isSaving ? 'Kaydediliyor...' : _currentStep < _totalSteps - 1 ? '\u0130leri' : 'Kaydet ve Kapat'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _currentStep < _totalSteps - 1 ? AppColors.primary : AppColors.success,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
+                      : () => _state.handleSubmit(ref: ref, context: c

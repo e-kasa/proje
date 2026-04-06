@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 import '../../services/sales_service.dart';
-import '../../core/theme/app_colors.dart';
 
 // ─── State ──────────────────────────────────────────────────────────────────
 
@@ -212,10 +214,8 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      appBar: AppBar(
-        title: const Text('Satışlar'),
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
+      appBar: AppAppBar.standard(
+        title: 'Satışlar',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
@@ -279,7 +279,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
               fillColor: theme.colorScheme.surfaceContainerHighest
                   .withOpacity(0.5),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppConstants.borderRadiusMedium,
                 borderSide: BorderSide.none,
               ),
               contentPadding:
@@ -313,7 +313,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                         horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppColors.info.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppConstants.borderRadiusSmall,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -385,7 +385,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppConstants.borderRadiusSmall,
         onTap: () => _showDateRangePicker(state),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -394,7 +394,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                 ? AppColors.info.withOpacity(0.1)
                 : theme.colorScheme.surfaceContainerHighest
                     .withOpacity(0.5),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppConstants.borderRadiusSmall,
             border: Border.all(
               color: hasFilter
                   ? AppColors.info.withOpacity(0.3)
@@ -498,7 +498,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppConstants.borderRadiusMedium,
         side: BorderSide(
           color: cancelled
               ? Colors.red.withOpacity(0.3)
@@ -506,7 +506,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
         ),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppConstants.borderRadiusMedium,
         onTap: () async {
           await context.push('/sales/detail/${s['id']}');
           if (mounted) ref.read(saleListProvider.notifier).load();
@@ -528,7 +528,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                           : isPending
                               ? Colors.orange.withOpacity(0.1)
                               : AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: AppConstants.borderRadiusSmall,
                     ),
                     child: Icon(
                       cancelled
@@ -629,7 +629,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: AppConstants.borderRadiusSmall,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -672,11 +672,11 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
           const SizedBox(height: 12),
           Text(error, textAlign: TextAlign.center),
           const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () => ref.read(saleListProvider.notifier).load(),
-            icon: const Icon(Icons.refresh),
-            label: const Text('Tekrar Dene'),
-          ),
+          AppButton.primary(
+                        text: 'Tekrar Dene',
+                        icon: Icons.refresh,
+                        onPressed: () => ref.read(saleListProvider.notifier).load(),
+                      ),
         ],
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/widgets.dart';
 
 /// EKRAN 4: Karar Ver (Ana Ekran - Tablo Görünümü)
 /// Kullanıcı her ürün için karar verir: Stok Ekle, Varyant Ekle, Yeni Ürün, Atla
@@ -211,7 +212,7 @@ class _DecisionTableScreenState extends State<DecisionTableScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppAppBar.standard(
         title: Text('📋 Tedarikçi: ${widget.supplierName}'),
         elevation: 0,
       ),
@@ -701,85 +702,4 @@ class _CreateNewProductDialogState extends State<CreateNewProductDialog> {
                     child: TextFormField(
                       controller: _costPriceController,
                       decoration: const InputDecoration(
-                        labelText: 'Alış Fiyatı (₺)',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Gerekli';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _sellPriceController,
-                      decoration: const InputDecoration(
-                        labelText: 'Satış Fiyatı (₺)',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Gerekli';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Actions
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('İptal'),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: _save,
-                    icon: const Icon(Icons.check),
-                    label: const Text('Ürünü Oluştur'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Product Decision Data Model
-class ProductDecisionItem {
-  final int rowNumber;
-  final String readProductName;
-  final double readQuantity;
-  final double readCostPrice;
-  final bool isNewProduct;
-  final int matchScore;
-  final String? matchedProductName;
-
-  String? userDecision; // ADD_STOCK, ADD_VARIANT, CREATE_NEW, SKIP
-  Map<String, dynamic>? decisionData;
-
-  ProductDecisionItem({
-    required this.rowNumber,
-    required this.readProductName,
-    required this.readQuantity,
-    required this.readCostPrice,
-    required this.isNewProduct,
-    required this.matchScore,
-    this.matchedProductName,
-    this.userDecision,
-    this.decisionData,
-  });
-}
+                        labelText: 'Alış Fiyatı (₺)

@@ -315,6 +315,7 @@ class ApiClient {
         fieldName: await MultipartFile.fromFile(filePath),
         if (data != null) ...data,
       });
+
       final response = await _dio.post(
         path,
         data: formData,
@@ -326,10 +327,7 @@ class ApiClient {
     }
   }
 
-  /// DioException'ı anlamlı hata mesajına dönüştürür.
-  ///
-  /// error.type'a göre switch ile uygun mesaj üretir.
-  /// badResponse durumunda response body'den mesaj çıkarılmaya çalışılır.
+  /// DioException'ı okunabilir mesaja çevirir.
   Exception _handleError(DioException error) {
     String message;
     switch (error.type) {
@@ -340,18 +338,15 @@ class ApiClient {
         break;
       case DioExceptionType.badResponse:
         final data = error.response?.data;
-        if (data is Map<String, dynamic>) {
-          // Backend'den gelen hata mesajlarını çıkar
-          final messages = data['messages'];
-          if (messages is List && messages.isNotEmpty) {
-            message = messages.join(', ');
+        if (data is Map) {
+          final msgs = data['messages'];
+          if (msgs is List && msgs.isNotEmpty) {
+            message = msgs.first.toString();
           } else {
-            message = data['message']?.toString() ??
-                data['error']?.toString() ??
-                'Bad response: ${error.response?.statusCode}';
+            message = data['message']?.toString() ?? 'Server error';
           }
         } else {
-          message = 'Bad response: ${error.response?.statusCode}';
+          message = 'Server error';
         }
         break;
       case DioExceptionType.cancel:
@@ -362,7 +357,6 @@ class ApiClient {
         break;
       default:
         message = 'Something went wrong';
-        break;
     }
     return Exception(message);
   }

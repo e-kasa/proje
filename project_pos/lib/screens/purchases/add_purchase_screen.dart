@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/widgets.dart';
+import '../../core/theme/app_constants.dart';
 
 // ─── Satır modeli ────────────────────────────────────────────────────────────
 
@@ -109,14 +111,9 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      appBar: AppBar(
-        title: const Text('Yeni Satın Alma'),
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.pop(),
-        ),
+      appBar: AppAppBar.standard(
+        title: 'Yeni Satın Alma',
+        leadingOnPressed: () => context.pop(),
         actions: [
           if (_grandTotal > 0)
             Padding(
@@ -144,7 +141,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
           : Form(
               key: _formKey,
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: AppConstants.pagePadding,
                 children: [
                   _buildSectionTitle('Tedarikçi Bilgileri', Icons.business_rounded, theme),
                   const SizedBox(height: 12),
@@ -217,9 +214,10 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
   }
 
   Widget _buildInvoiceRow(ThemeData theme) {
-    return TextFormField(
+    return AppInput(
+      label: 'Fatura Numarası *',
       controller: _invoiceCtrl,
-      decoration: _inputDeco('Fatura Numarası *', Icons.receipt_outlined, theme),
+      prefixIcon: Icons.receipt_outlined,
       validator: (v) => (v == null || v.isEmpty) ? 'Fatura numarası giriniz' : null,
     );
   }
@@ -227,7 +225,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
   Widget _buildDateRow(ThemeData theme) {
     return InkWell(
       onTap: _pickDate,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppConstants.borderRadiusSmall,
       child: InputDecorator(
         decoration: _inputDeco('Tarih *', Icons.calendar_today_outlined, theme),
         child: Row(
@@ -288,7 +286,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
             border: Border.all(
               color: _itemsError ? AppColors.danger : theme.colorScheme.outlineVariant,
             ),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppConstants.borderRadiusSmall,
           ),
           child: TextField(
             controller: _searchCtrl,
@@ -353,7 +351,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
       constraints: const BoxConstraints(maxHeight: 280),
       decoration: BoxDecoration(
         border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppConstants.borderRadiusSmall,
       ),
       child: ListView.separated(
         padding: EdgeInsets.zero,
@@ -427,15 +425,10 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
   }
 
   Widget _buildItemRow(int index, _PurchaseItem item, ThemeData theme) {
-    return Card(
+    return AppCard(
       margin: const EdgeInsets.only(bottom: 8),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-      ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: AppConstants.paddingSmall,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -518,7 +511,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
           labelText: label,
           isDense: true,
           contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          border: OutlineInputBorder(borderRadius: AppConstants.borderRadiusSmall),
         ),
         keyboardType: isDecimal
             ? const TextInputType.numberWithOptions(decimal: true)
@@ -536,10 +529,10 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
 
   Widget _buildTotal(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppConstants.pagePadding,
       decoration: BoxDecoration(
         color: AppColors.primary.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppConstants.borderRadiusSmall,
         border: Border.all(color: AppColors.primary.withOpacity(0.2)),
       ),
       child: Row(
@@ -569,9 +562,10 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
   }
 
   Widget _buildNotesField(ThemeData theme) {
-    return TextFormField(
+    return AppInput(
+      label: 'Notlar (opsiyonel)',
       controller: _notesCtrl,
-      decoration: _inputDeco('Notlar (opsiyonel)', Icons.notes_rounded, theme),
+      prefixIcon: Icons.notes_rounded,
       maxLines: 2,
     );
   }
@@ -579,22 +573,11 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
   Widget _buildSubmitButton(ThemeData theme) {
     return SizedBox(
       height: 52,
-      child: ElevatedButton.icon(
+      child: AppButton.primary(
         onPressed: _isSubmitting ? null : _submit,
-        icon: _isSubmitting
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-              )
-            : const Icon(Icons.save_rounded),
-        label: Text(_isSubmitting ? 'Kaydediliyor...' : 'Satın Almayı Kaydet'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
+        isLoading: _isSubmitting,
+        label: _isSubmitting ? 'Kaydediliyor...' : 'Satın Almayı Kaydet',
+        icon: Icons.save_rounded,
       ),
     );
   }
@@ -606,11 +589,11 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
       filled: true,
       fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppConstants.borderRadiusSmall,
         borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppConstants.borderRadiusSmall,
         borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
     );
@@ -823,21 +806,11 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
+                AppInput(
+                  label: 'Kredi Limiti (₺)',
                   controller: limitCtrl,
-                  autofocus: true,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[\d.,]')),
-                  ],
-                  decoration: InputDecoration(
-                    labelText: 'Kredi Limiti (₺)',
-                    prefixIcon: const Icon(Icons.monetization_on_outlined),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    hintText: 'Örn: 50000',
-                  ),
+                  prefixIcon: Icons.monetization_on_outlined,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Limit giriniz';
                     final n = double.tryParse(v.replaceAll(',', '.'));

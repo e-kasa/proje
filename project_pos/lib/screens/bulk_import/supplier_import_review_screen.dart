@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../models/supplier_import_models.dart';
-import '../../services/mock_supplier_import_data.dart';
+import '../../core/api/api_client.dart';
+import '../../services/bulk_import_service.dart';
+import '../../core/widgets/widgets.dart';
 
 /// Modern Tedarikçi İthalat İnceleme Ekranı
 class SupplierImportReviewScreen extends StatefulWidget {
@@ -29,11 +31,20 @@ class _SupplierImportReviewScreenState
   }
 
   Future<void> _loadData() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    setState(() {
-      _response = MockSupplierImportData.getMockSupplierImport();
-      _loading = false;
-    });
+    try {
+      final bulkImportService = BulkImportService(ApiClient());
+      final data = await bulkImportService.getAnalysisResult(widget.importId ?? '');
+      setState(() {
+        _response = SupplierImportResponse.fromJson(data);
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _response = SupplierImportResponse(productCount: 0, products: []);
+        _loading = false;
+      });
+      debugPrint('Supplier import veri yuklenemedi: $e');
+    }
   }
 
   int get _decidedCount =>
@@ -154,8 +165,7 @@ class _SupplierImportReviewScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        elevation: 0,
+      appBar: AppAppBar.standard(
         title: const Text('Tedarikçi Ürün Kontrolü'),
         actions: [
           if (!_loading)
@@ -931,18 +941,3 @@ class _DecisionOption extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
-          ],
-        ),
-      ),
-    );
-  }
-}

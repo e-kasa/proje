@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/widgets.dart';
+import '../../core/theme/app_constants.dart';
 
 /// EKRAN 2: Önizleme
 /// Kullanıcı yüklenen dosyanın ilk 5-10 satırını görür ve doğrular
@@ -64,17 +66,17 @@ class _FilePreviewScreenState extends State<FilePreviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppAppBar.standard(
         title: const Text('👁️ Dosya Önizleme'),
         elevation: 0,
       ),
       body: Column(
         children: [
           // Header Card
-          Card(
-            margin: const EdgeInsets.all(16),
-            elevation: 2,
-            child: Padding(
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: AppCard(
+              hasShadow: true,
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -134,10 +136,11 @@ class _FilePreviewScreenState extends State<FilePreviewScreen> {
 
           // Preview Table
           Expanded(
-            child: Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              elevation: 2,
-              child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: AppCard(
+                hasShadow: true,
+                child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: SingleChildScrollView(
                   child: DataTable(
@@ -217,6 +220,7 @@ class _FilePreviewScreenState extends State<FilePreviewScreen> {
                 ),
               ),
             ),
+            ),
           ),
 
           // Action Buttons
@@ -265,16 +269,4 @@ class _FilePreviewScreenState extends State<FilePreviewScreen> {
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
-                      vertical: 16,
-                    ),
-                    backgroundColor: Colors.green,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+                 

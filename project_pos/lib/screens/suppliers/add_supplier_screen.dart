@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/widgets/widgets.dart';
+import '../../core/theme/app_constants.dart';
 import '../../core/theme/app_colors.dart';
 import '../../services/service_locator.dart';
 
@@ -85,9 +87,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Tedarikçi yüklenemedi: $e')),
-        );
+        AppToast.error(context, 'Tedarikçi yüklenemedi: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -156,111 +156,29 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
         final id = (widget.supplier?['id'] ?? widget.supplierId).toString();
         await supplierService.updateSupplier(id, data);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Tedarikçi güncellendi'),
-              backgroundColor: AppColors.success,
-            ),
-          );
+          AppToast.success(context, 'Tedarikçi güncellendi');
         }
       } else {
         await supplierService.createSupplier(data);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Tedarikçi oluşturuldu'),
-              backgroundColor: AppColors.success,
-            ),
-          );
+          AppToast.success(context, 'Tedarikçi oluşturuldu');
         }
       }
 
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Hata: $e'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
+        AppToast.error(context, 'Hata: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // -------------------------------------------------------------------------
-  Widget _buildCard({
-    required String title,
-    required IconData icon,
-    required List<Widget> children,
-  }) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 1,
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: AppColors.primary, size: 20),
-                const SizedBox(width: 8),
-                Text(title,
-                    style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary)),
-              ],
-            ),
-            const Divider(height: 24),
-            ...children,
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    String? hint,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-    int maxLines = 1,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: TextFormField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hint,
-          prefixIcon: Icon(icon, color: AppColors.primary),
-          border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12)),
-          filled: true,
-          fillColor: AppColors.bgLight,
-        ),
-        keyboardType: keyboardType,
-        validator: validator,
-        maxLines: maxLines,
-      ),
-    );
-  }
-
   // Cari hesap durumu kartı (edit modunda)
   Widget _buildAccountCard() {
     if (_accountLoading) {
-      return Card(
-        margin: const EdgeInsets.only(bottom: 16),
-        elevation: 1,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      return AppCard(
         child: const Padding(
           padding: EdgeInsets.all(24),
           child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
@@ -275,19 +193,16 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
 
     // Hesap henüz oluşturulmamış
     if (balance == null && debt == null) {
-      return Card(
-        margin: const EdgeInsets.only(bottom: 16),
-        elevation: 1,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      return AppCard(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: AppConstants.paddingMedium,
           child: Row(
             children: [
               Container(
                 width: 40, height: 40,
                 decoration: BoxDecoration(
                   color: AppColors.textMuted.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppConstants.borderRadiusMedium,
                 ),
                 child: const Icon(Icons.account_balance_wallet_outlined,
                     color: AppColors.textMuted, size: 20),
@@ -319,18 +234,11 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
         v == null ? '—' : '₺${v.abs().toStringAsFixed(2).replaceAllMapped(
           RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}';
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: isExceeded ? AppColors.danger.withOpacity(0.4) : Colors.transparent,
-          width: isExceeded ? 1.5 : 0,
-        ),
-      ),
+    return AppCard(
+      borderColor: isExceeded ? AppColors.danger.withOpacity(0.4) : null,
+      borderWidth: isExceeded ? 1.5 : null,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppConstants.paddingMedium,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -397,7 +305,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
               ),
               const SizedBox(height: 4),
               ClipRRect(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: AppConstants.borderRadiusMedium,
                 child: LinearProgressIndicator(
                   value: limit > 0 ? ((balance ?? 0) / limit).clamp(0.0, 1.0) : 0.0,
                   minHeight: 6,
@@ -447,12 +355,12 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: AppConstants.borderRadiusMedium,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppConstants.borderRadiusMedium,
           border: Border.all(color: color.withOpacity(0.3)),
         ),
         child: Column(
@@ -473,7 +381,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: color.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppConstants.borderRadiusMedium,
       ),
       child: Row(
         children: [
@@ -571,22 +479,12 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
                             if (ctx.mounted) Navigator.pop(ctx);
                             await _loadAccountData();
                             if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('✅ Ödeme kaydedildi'),
-                                  backgroundColor: AppColors.success,
-                                ),
-                              );
+                              AppToast.success(context, 'Ödeme kaydedildi');
                             }
                           } catch (e) {
                             setSaving(() => saving = false);
                             if (ctx.mounted) {
-                              ScaffoldMessenger.of(ctx).showSnackBar(
-                                SnackBar(
-                                  content: Text('❌ $e'),
-                                  backgroundColor: AppColors.danger,
-                                ),
-                              );
+                              AppToast.error(context, '$e');
                             }
                           }
                         },
@@ -651,22 +549,12 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
                           if (ctx.mounted) Navigator.pop(ctx);
                           await _loadAccountData();
                           if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('✅ Kredi limiti güncellendi'),
-                                backgroundColor: AppColors.success,
-                              ),
-                            );
+                            AppToast.success(context, 'Kredi limiti güncellendi');
                           }
                         } catch (e) {
                           setDs(() => saving = false);
                           if (ctx.mounted) {
-                            ScaffoldMessenger.of(ctx).showSnackBar(
-                              SnackBar(
-                                content: Text('❌ $e'),
-                                backgroundColor: AppColors.danger,
-                              ),
-                            );
+                            AppToast.error(context, '$e');
                           }
                         }
                       },
@@ -806,11 +694,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
 
   // Aktif / Pasif toggle kartı
   Widget _buildStatusCard() {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 1,
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return AppCard(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
@@ -821,7 +705,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
               decoration: BoxDecoration(
                 color: (_isActive ? AppColors.success : AppColors.textMuted)
                     .withOpacity(0.12),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: AppConstants.borderRadiusMedium,
               ),
               child: Icon(
                 _isActive
@@ -920,10 +804,8 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        title: Text(isEdit ? 'Tedarikçi Düzenle' : 'Yeni Tedarikçi'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+      appBar: AppAppBar.primary(
+        title: isEdit ? 'Tedarikçi Düzenle' : 'Yeni Tedarikçi',
         actions: [
           if (_isLoading)
             const Center(
@@ -944,30 +826,34 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
           : Form(
               key: _formKey,
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: AppConstants.pagePadding,
                 children: [
                   // ── Cari Hesap Durumu (sadece edit modunda) ──────
-                  if (isEdit) _buildAccountCard(),
+                  if (isEdit) ...[
+                    _buildAccountCard(),
+                    const SizedBox(height: AppConstants.formFieldSpacing),
+                  ],
 
                   // ── Firma Bilgileri ──────────────────────────────
-                  _buildCard(
+                  AppSectionCard(
                     title: 'Firma Bilgileri',
                     icon: Icons.business,
                     children: [
-                      _buildTextField(
+                      AppInput(
                         controller: _companyNameController,
                         label: 'Firma Adı *',
                         hint: 'Örn: ABC Tedarik Ltd. Şti.',
-                        icon: Icons.business_outlined,
+                        prefixIcon: Icons.business_outlined,
                         validator: (v) => (v == null || v.trim().isEmpty)
                             ? 'Firma adı zorunludur'
                             : null,
                       ),
-                      _buildTextField(
+                      const SizedBox(height: AppConstants.formFieldSpacing),
+                      AppInput(
                         controller: _contactNameController,
                         label: 'İletişim Kişisi *',
                         hint: 'Örn: Ahmet Yılmaz',
-                        icon: Icons.person_outline,
+                        prefixIcon: Icons.person_outline,
                         validator: (v) => (v == null || v.trim().isEmpty)
                             ? 'İletişim kişisi zorunludur'
                             : null,
@@ -975,26 +861,29 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
                     ],
                   ),
 
+                  const SizedBox(height: AppConstants.formFieldSpacing),
+
                   // ── İletişim Bilgileri ───────────────────────────
-                  _buildCard(
+                  AppSectionCard(
                     title: 'İletişim Bilgileri',
                     icon: Icons.contact_phone,
                     children: [
-                      _buildTextField(
+                      AppInput(
                         controller: _phoneController,
                         label: 'Telefon *',
                         hint: '0212 345 67 89',
-                        icon: Icons.phone_outlined,
+                        prefixIcon: Icons.phone_outlined,
                         keyboardType: TextInputType.phone,
                         validator: (v) => (v == null || v.trim().isEmpty)
                             ? 'Telefon numarası zorunludur'
                             : null,
                       ),
-                      _buildTextField(
+                      const SizedBox(height: AppConstants.formFieldSpacing),
+                      AppInput(
                         controller: _emailController,
                         label: 'E-posta',
                         hint: 'ornek@sirket.com',
-                        icon: Icons.email_outlined,
+                        prefixIcon: Icons.email_outlined,
                         keyboardType: TextInputType.emailAddress,
                         validator: (v) {
                           if (v != null && v.trim().isNotEmpty) {
@@ -1007,76 +896,66 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
                           return null;
                         },
                       ),
-                      _buildTextField(
+                      const SizedBox(height: AppConstants.formFieldSpacing),
+                      AppInput(
                         controller: _addressController,
                         label: 'Adres',
                         hint: 'Tam adres...',
-                        icon: Icons.location_on_outlined,
+                        prefixIcon: Icons.location_on_outlined,
                         maxLines: 3,
                       ),
-                      _buildTextField(
+                      const SizedBox(height: AppConstants.formFieldSpacing),
+                      AppInput(
                         controller: _websiteController,
                         label: 'Ürün / Katalog Sitesi',
                         hint: 'https://www.tedarikci.com/katalog',
-                        icon: Icons.language_outlined,
+                        prefixIcon: Icons.language_outlined,
                         keyboardType: TextInputType.url,
                       ),
                     ],
                   ),
 
+                  const SizedBox(height: AppConstants.formFieldSpacing),
+
                   // ── Vergi Bilgileri ──────────────────────────────
-                  _buildCard(
+                  AppSectionCard(
                     title: 'Vergi Bilgileri',
                     icon: Icons.receipt_long,
                     children: [
-                      _buildTextField(
+                      AppInput(
                         controller: _taxNumberController,
                         label: 'Vergi Numarası',
                         hint: '1234567890',
-                        icon: Icons.numbers,
+                        prefixIcon: Icons.numbers,
                         keyboardType: TextInputType.number,
                       ),
-                      _buildTextField(
+                      const SizedBox(height: AppConstants.formFieldSpacing),
+                      AppInput(
                         controller: _taxOfficeController,
                         label: 'Vergi Dairesi',
                         hint: 'Örn: Kadıköy',
-                        icon: Icons.account_balance_outlined,
+                        prefixIcon: Icons.account_balance_outlined,
                       ),
                     ],
                   ),
 
+                  const SizedBox(height: AppConstants.formFieldSpacing),
+
                   // ── Durum (Aktif / Pasif) ────────────────────────
                   _buildStatusCard(),
 
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppConstants.formFieldSpacing),
 
                   // ── Kaydet Butonu ────────────────────────────────
-                  SizedBox(
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      onPressed: _isLoading ? null : _saveSupplier,
-                      icon: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Icon(Icons.save),
-                      label: Text(
-                        _isLoading
-                            ? 'Kaydediliyor...'
-                            : (isEdit ? 'Güncelle' : 'Kaydet'),
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
+                  AppButton.primary(
+                    text: _isLoading
+                        ? 'Kaydediliyor...'
+                        : (isEdit ? 'Güncelle' : 'Kaydet'),
+                    onPressed: _isLoading ? null : _saveSupplier,
+                    icon: Icons.save,
+                    isLoading: _isLoading,
+                    fullWidth: true,
+                    size: ButtonSize.large,
                   ),
                 ],
               ),

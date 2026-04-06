@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 
 class SaleDetailScreen extends ConsumerStatefulWidget {
@@ -62,10 +64,8 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      appBar: AppBar(
-        title: const Text('Satış Detayı'),
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
+      appBar: AppAppBar.standard(
+        title: 'Satış Detayı',
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
@@ -201,7 +201,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppConstants.borderRadiusMedium,
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(
@@ -255,7 +255,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppConstants.borderRadiusMedium,
         border: Border.all(
           color: theme.colorScheme.outlineVariant.withOpacity(0.5),
         ),
@@ -270,7 +270,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                 height: 44,
                 decoration: BoxDecoration(
                   color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppConstants.borderRadiusMedium,
                 ),
                 child: const Icon(Icons.point_of_sale,
                     color: AppColors.primary, size: 24),
@@ -358,7 +358,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppConstants.borderRadiusMedium,
         border: Border.all(color: AppColors.primary.withOpacity(0.15)),
       ),
       child: Column(
@@ -458,7 +458,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppConstants.borderRadiusMedium,
         border: Border.all(
           color: theme.colorScheme.outlineVariant.withOpacity(0.5),
         ),
@@ -570,7 +570,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppConstants.borderRadiusMedium,
               ),
               child: Text(
                 '${_items.length} kalem',
@@ -591,7 +591,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerHighest
                   .withOpacity(0.3),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: AppConstants.borderRadiusMedium,
               border: Border.all(
                 color: theme.colorScheme.outlineVariant.withOpacity(0.5),
               ),
@@ -635,7 +635,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppConstants.borderRadiusMedium,
         border: Border.all(
           color: theme.colorScheme.outlineVariant.withOpacity(0.5),
         ),
@@ -649,7 +649,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
             height: 28,
             decoration: BoxDecoration(
               color: AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppConstants.borderRadiusSmall,
             ),
             child: Center(
               child: Text(
@@ -731,7 +731,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: AppConstants.borderRadiusSmall,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -758,7 +758,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppConstants.borderRadiusMedium,
         border: Border.all(
           color: theme.colorScheme.outlineVariant.withOpacity(0.5),
         ),
@@ -806,7 +806,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
               side: const BorderSide(color: Colors.orange),
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppConstants.borderRadiusMedium,
               ),
             ),
             icon: const Icon(Icons.assignment_return_outlined, size: 18),
@@ -822,7 +822,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
               side: const BorderSide(color: Colors.red),
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppConstants.borderRadiusMedium,
               ),
             ),
             icon: const Icon(Icons.cancel_outlined, size: 18),
@@ -855,7 +855,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                 labelText: 'İptal Sebebi',
                 hintText: 'İptal nedenini yazın...',
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppConstants.borderRadiusSmall,
                 ),
               ),
             ),
@@ -913,11 +913,11 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
           const SizedBox(height: 12),
           Text(_error ?? 'Hata', textAlign: TextAlign.center),
           const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: _load,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Tekrar Dene'),
-          ),
+          AppButton.primary(
+                        text: 'Tekrar Dene',
+                        icon: Icons.refresh,
+                        onPressed: _load,
+                      ),
         ],
       ),
     );

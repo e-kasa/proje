@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 
 class ProductSalesAnalysisScreen extends ConsumerStatefulWidget {
@@ -29,89 +31,6 @@ class _ProductSalesAnalysisScreenState
     _loadData();
   }
 
-  List<Map<String, dynamic>> get _mockProducts => [
-        {
-          'productName': 'Bosch Fren Balatasi',
-          'variantSku': 'BRK-001',
-          'quantitySold': 156,
-          'totalRevenue': 78000.0,
-          'averageUnitPrice': 500.0,
-          'costPrice': 320.0,
-        },
-        {
-          'productName': 'Mann Yag Filtresi',
-          'variantSku': 'FLT-012',
-          'quantitySold': 132,
-          'totalRevenue': 39600.0,
-          'averageUnitPrice': 300.0,
-          'costPrice': 180.0,
-        },
-        {
-          'productName': 'NGK Buji Seti',
-          'variantSku': 'SPK-045',
-          'quantitySold': 98,
-          'totalRevenue': 34300.0,
-          'averageUnitPrice': 350.0,
-          'costPrice': 210.0,
-        },
-        {
-          'productName': 'Continental V-Kayisi',
-          'variantSku': 'BLT-023',
-          'quantitySold': 87,
-          'totalRevenue': 26100.0,
-          'averageUnitPrice': 300.0,
-          'costPrice': 175.0,
-        },
-        {
-          'productName': 'Valeo Debriyaj Seti',
-          'variantSku': 'CLT-007',
-          'quantitySold': 45,
-          'totalRevenue': 67500.0,
-          'averageUnitPrice': 1500.0,
-          'costPrice': 950.0,
-        },
-        {
-          'productName': 'SKF Rulman',
-          'variantSku': 'BRG-034',
-          'quantitySold': 76,
-          'totalRevenue': 22800.0,
-          'averageUnitPrice': 300.0,
-          'costPrice': 190.0,
-        },
-        {
-          'productName': 'Sachs Amortisor',
-          'variantSku': 'SHK-019',
-          'quantitySold': 34,
-          'totalRevenue': 40800.0,
-          'averageUnitPrice': 1200.0,
-          'costPrice': 780.0,
-        },
-        {
-          'productName': 'Mahle Hava Filtresi',
-          'variantSku': 'AFT-056',
-          'quantitySold': 110,
-          'totalRevenue': 16500.0,
-          'averageUnitPrice': 150.0,
-          'costPrice': 85.0,
-        },
-        {
-          'productName': 'TRW Rot Basi',
-          'variantSku': 'TRD-088',
-          'quantitySold': 62,
-          'totalRevenue': 18600.0,
-          'averageUnitPrice': 300.0,
-          'costPrice': 185.0,
-        },
-        {
-          'productName': 'LuK Volan',
-          'variantSku': 'FLW-003',
-          'quantitySold': 18,
-          'totalRevenue': 54000.0,
-          'averageUnitPrice': 3000.0,
-          'costPrice': 2100.0,
-        },
-      ];
-
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
@@ -131,17 +50,19 @@ class _ProductSalesAnalysisScreenState
         _products = sorted;
         _isLoading = false;
       });
-    } catch (_) {
-      final sorted = List<Map<String, dynamic>>.from(_mockProducts);
-      sorted.sort((a, b) {
-        final ra = (a['totalRevenue'] ?? 0).toDouble();
-        final rb = (b['totalRevenue'] ?? 0).toDouble();
-        return rb.compareTo(ra);
-      });
+    } catch (e) {
       setState(() {
-        _products = sorted;
+        _products = [];
         _isLoading = false;
       });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Veri yuklenemedi'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
     }
   }
 
@@ -187,7 +108,7 @@ class _ProductSalesAnalysisScreenState
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      appBar: AppBar(
+      appBar: AppAppBar.standard(
         title: const Text('Urun Satis Analizi'),
         actions: [
           IconButton(
@@ -235,37 +156,32 @@ class _ProductSalesAnalysisScreenState
                   const SizedBox(height: 16),
 
                   // Summary card
-                  Card(
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                    elevation: 0,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          _buildSummaryItem(
-                            'Toplam Urun',
-                            totalProducts.toString(),
-                            AppColors.primary,
-                            Icons.inventory_2,
-                          ),
-                          _buildSummaryDivider(),
-                          _buildSummaryItem(
-                            'Toplam Satis',
-                            NumberFormat.compact(locale: 'tr_TR')
-                                .format(totalQuantity),
-                            AppColors.info,
-                            Icons.shopping_bag,
-                          ),
-                          _buildSummaryDivider(),
-                          _buildSummaryItem(
-                            'Toplam Ciro',
-                            _currencyFormat.format(totalRevenue),
-                            AppColors.success,
-                            Icons.trending_up,
-                          ),
-                        ],
-                      ),
+                  AppCard(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        _buildSummaryItem(
+                          'Toplam Urun',
+                          totalProducts.toString(),
+                          AppColors.primary,
+                          Icons.inventory_2,
+                        ),
+                        _buildSummaryDivider(),
+                        _buildSummaryItem(
+                          'Toplam Satis',
+                          NumberFormat.compact(locale: 'tr_TR')
+                              .format(totalQuantity),
+                          AppColors.info,
+                          Icons.shopping_bag,
+                        ),
+                        _buildSummaryDivider(),
+                        _buildSummaryItem(
+                          'Toplam Ciro',
+                          _currencyFormat.format(totalRevenue),
+                          AppColors.success,
+                          Icons.trending_up,
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -405,76 +321,4 @@ class _ProductSalesAnalysisScreenState
                   // Stats row
                   Wrap(
                     spacing: 12,
-                    runSpacing: 6,
-                    children: [
-                      _buildInfoChip(
-                        Icons.shopping_bag,
-                        '$quantitySold adet',
-                        AppColors.primary,
-                      ),
-                      _buildInfoChip(
-                        Icons.trending_up,
-                        _currencyFormat.format(totalRevenue),
-                        AppColors.success,
-                      ),
-                      _buildInfoChip(
-                        Icons.price_change,
-                        _currencyFormat.format(avgPrice),
-                        AppColors.info,
-                      ),
-                    ],
-                  ),
-                  if (profitMargin != null) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: profitMargin >= 30
-                            ? AppColors.bgSuccess
-                            : profitMargin >= 15
-                                ? AppColors.bgWarning
-                                : AppColors.bgDanger,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        'Kar Marji: %${profitMargin.toStringAsFixed(1)}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: profitMargin >= 30
-                              ? AppColors.success
-                              : profitMargin >= 15
-                                  ? AppColors.warning
-                                  : AppColors.danger,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoChip(IconData icon, String text, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: color),
-        const SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 12,
-            color: color,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
+     

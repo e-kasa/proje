@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../providers/pos_provider.dart';
+import '../../core/widgets/widgets.dart';
 
 class PaymentPanel extends ConsumerStatefulWidget {
   const PaymentPanel({super.key});

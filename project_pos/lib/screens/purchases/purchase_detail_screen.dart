@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 
 class PurchaseDetailScreen extends ConsumerStatefulWidget {
@@ -137,7 +139,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      appBar: AppBar(
+      appBar: AppAppBar.standard(
         title: Text(_isEditing ? 'Satın Alma Düzenle' : 'Satın Alma Detayı'),
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
@@ -823,38 +825,4 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
                   decoration: InputDecoration(
                     hintText: 'Not ekleyin...',
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    contentPadding: const EdgeInsets.all(12),
-                  ),
-                )
-              : Text(
-                  _purchase['notes'] ?? '',
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                ),
-        ],
-      ),
-    );
-  }
-
-  // ─── Error ────────────────────────────────────────────────────────────────
-
-  Widget _buildError() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
-          const SizedBox(height: 12),
-          Text(_error ?? 'Hata', textAlign: TextAlign.center),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: _load,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Tekrar Dene'),
-          ),
-        ],
-      ),
-    );
-  }
-}
+                        borderRadius: Bor

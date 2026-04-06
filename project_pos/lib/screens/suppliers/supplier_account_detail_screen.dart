@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 import '../accounts/payment_record_modal.dart';
 
@@ -75,7 +77,7 @@ class _SupplierAccountDetailScreenState
     if (_isLoading) {
       return Scaffold(
         backgroundColor: AppColors.bgLight,
-        appBar: AppBar(title: const Text('Cari Hesap')),
+        appBar: AppAppBar.standard(title: const Text('Cari Hesap')),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -83,7 +85,7 @@ class _SupplierAccountDetailScreenState
     if (_error != null || _supplier == null) {
       return Scaffold(
         backgroundColor: AppColors.bgLight,
-        appBar: AppBar(title: const Text('Cari Hesap')),
+        appBar: AppAppBar.standard(title: const Text('Cari Hesap')),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -93,8 +95,10 @@ class _SupplierAccountDetailScreenState
               Text(_error ?? 'Tedarikci bulunamadi',
                   style: const TextStyle(color: AppColors.textSecondary)),
               const SizedBox(height: 12),
-              ElevatedButton(
-                  onPressed: _loadAll, child: const Text('Tekrar Dene')),
+              AppButton.primary(
+                text: 'Tekrar Dene',
+                onPressed: _loadAll,
+              ),
             ],
           ),
         ),
@@ -113,9 +117,7 @@ class _SupplierAccountDetailScreenState
 
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
+      appBar: AppAppBar.standard(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => context.pop(),
@@ -192,32 +194,18 @@ class _SupplierAccountDetailScreenState
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton.icon(
+                  child: AppButton.success(
+                    text: 'Ödeme Yap',
+                    icon: Icons.payment,
                     onPressed: () => _showPaymentDialog(),
-                    icon: const Icon(Icons.payment, color: Colors.white, size: 18),
-                    label: const Text('Ödeme Yap',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.success,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: ElevatedButton.icon(
+                  child: AppButton.primary(
+                    text: 'Bilgileri Güncelle',
+                    icon: Icons.business_outlined,
                     onPressed: () => _showEditSupplierInfoDialog(),
-                    icon: const Icon(Icons.business_outlined, color: Colors.white, size: 18),
-                    label: const Text('Bilgileri Güncelle',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.info,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
                   ),
                 ),
               ],
@@ -226,17 +214,10 @@ class _SupplierAccountDetailScreenState
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton.icon(
+                  child: AppButton.primary(
+                    text: 'Hesap Ayarları',
+                    icon: Icons.edit_outlined,
                     onPressed: () => _showEditAccountDialog(),
-                    icon: const Icon(Icons.edit_outlined, color: Colors.white, size: 18),
-                    label: const Text('Hesap Ayarları',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
                   ),
                 ),
               ],
@@ -776,301 +757,4 @@ class _SupplierAccountDetailScreenState
               }
               Navigator.pop(ctx);
               await _updateSupplierBasicInfo(
-                name: name,
-                taxNumber: taxNumberCtrl.text.trim(),
-                taxOffice: taxOfficeCtrl.text.trim(),
-                contactName: contactNameCtrl.text.trim(),
-                phone: phoneCtrl.text.trim(),
-                email: emailCtrl.text.trim(),
-                address: addressCtrl.text.trim(),
-                notes: notesCtrl.text.trim(),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.info),
-            child:
-                const Text('Güncelle', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _updateSupplierBasicInfo({
-    required String name,
-    required String taxNumber,
-    required String taxOffice,
-    required String contactName,
-    required String phone,
-    required String email,
-    required String address,
-    required String notes,
-  }) async {
-    try {
-      final svc = ref.read(supplierServiceProvider);
-      await svc.updateSupplier(widget.supplierId, {
-        'name': name,
-        'taxNumber': taxNumber,
-        'taxOffice': taxOffice,
-        'contactName': contactName,
-        'phone': phone,
-        'email': email,
-        'address': address,
-        'notes': notes,
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Tedarikçi bilgileri güncellendi'),
-          backgroundColor: AppColors.success,
-        ));
-      }
-      _loadAll();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Güncelleme hatası: $e'),
-          backgroundColor: AppColors.danger,
-        ));
-      }
-    }
-  }
-
-  // ─── Hesap Bilgileri Düzenleme Dialog ──────────────────────────────
-
-  void _showEditAccountDialog() {
-    final creditLimitCtrl = TextEditingController(
-        text: _toDouble(_account?['creditLimit'] ?? _supplier?['creditLimit'])
-            .toStringAsFixed(0));
-    final paymentTermCtrl = TextEditingController(
-        text: (_supplier?['paymentTermDays'] ?? 30).toString());
-    final contactNameCtrl =
-        TextEditingController(text: _supplier?['contactName']?.toString() ?? '');
-    final phoneCtrl =
-        TextEditingController(text: _supplier?['phone']?.toString() ?? '');
-    final emailCtrl =
-        TextEditingController(text: _supplier?['email']?.toString() ?? '');
-    final addressCtrl =
-        TextEditingController(text: _supplier?['address']?.toString() ?? '');
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.edit_outlined, color: AppColors.primary, size: 22),
-            const SizedBox(width: 8),
-            const Text('Hesap Bilgileri', style: TextStyle(fontSize: 17)),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Kredi Limiti
-              TextField(
-                controller: creditLimitCtrl,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: 'Kredi Limiti (TL)',
-                  prefixIcon:
-                      const Icon(Icons.credit_card, color: AppColors.info),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Vade Süresi
-              TextField(
-                controller: paymentTermCtrl,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'Ödeme Vadesi (gün)',
-                  prefixIcon:
-                      const Icon(Icons.schedule, color: AppColors.warning),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text('İletişim Bilgileri',
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textSecondary)),
-              ),
-              const SizedBox(height: 10),
-              // İletişim Adı
-              TextField(
-                controller: contactNameCtrl,
-                decoration: InputDecoration(
-                  labelText: 'Yetkili Kişi',
-                  prefixIcon:
-                      const Icon(Icons.person_outline, color: AppColors.primary),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Telefon
-              TextField(
-                controller: phoneCtrl,
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
-                  labelText: 'Telefon',
-                  prefixIcon:
-                      const Icon(Icons.phone_outlined, color: AppColors.primary),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // E-posta
-              TextField(
-                controller: emailCtrl,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: 'E-posta',
-                  prefixIcon:
-                      const Icon(Icons.email_outlined, color: AppColors.primary),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Adres
-              TextField(
-                controller: addressCtrl,
-                maxLines: 2,
-                decoration: InputDecoration(
-                  labelText: 'Adres',
-                  prefixIcon: const Icon(Icons.location_on_outlined,
-                      color: AppColors.primary),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('İptal'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await _updateSupplierInfo(
-                creditLimit:
-                    double.tryParse(creditLimitCtrl.text) ?? 0,
-                paymentTermDays:
-                    int.tryParse(paymentTermCtrl.text) ?? 30,
-                contactName: contactNameCtrl.text.trim(),
-                phone: phoneCtrl.text.trim(),
-                email: emailCtrl.text.trim(),
-                address: addressCtrl.text.trim(),
-              );
-            },
-            style:
-                ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('Güncelle',
-                style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _updateSupplierInfo({
-    required double creditLimit,
-    required int paymentTermDays,
-    required String contactName,
-    required String phone,
-    required String email,
-    required String address,
-  }) async {
-    try {
-      final svc = ref.read(supplierServiceProvider);
-
-      // Kredi limiti ayrı endpoint
-      await svc.updateCreditLimit(widget.supplierId, creditLimit);
-
-      // Tedarikçi bilgileri güncelle
-      await svc.updateSupplier(widget.supplierId, {
-        'paymentTermDays': paymentTermDays,
-        'contactName': contactName,
-        'phone': phone,
-        'email': email,
-        'address': address,
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Hesap bilgileri güncellendi'),
-          backgroundColor: AppColors.success,
-        ));
-      }
-      _loadAll();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Güncelleme hatası: $e'),
-          backgroundColor: AppColors.danger,
-        ));
-      }
-    }
-  }
-
-  // ─── Odeme Dialog ─────────────────────────────────────────────────
-
-  Future<void> _showPaymentDialog() async {
-    final supplierName = _supplier?['name']?.toString();
-    final result = await PaymentRecordModal.show(
-      context,
-      isCustomer: false,
-      accountName: supplierName,
-    );
-    if (result != null) {
-      await _recordPayment(result);
-    }
-  }
-
-  Future<void> _recordPayment(Map<String, dynamic> data) async {
-    try {
-      await ref.read(supplierServiceProvider).recordPayment(
-        widget.supplierId,
-        data,
-      );
-      if (mounted) {
-        final amount = data['amount'] as double;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('${_formatCurrency(amount)} TL odeme kaydedildi'),
-          backgroundColor: AppColors.success,
-        ));
-      }
-      _loadAll();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Odeme kaydedilemedi: $e'),
-          backgroundColor: AppColors.danger,
-        ));
-      }
-    }
-  }
-
-  // ─── Helpers ──────────────────────────────────────────────────────
-
-  double _toDouble(dynamic v) {
-    if (v == null) return 0;
-    if (v is num) return v.toDouble();
-    return double.tryParse(v.toString()) ?? 0;
-  }
-
-  String _formatCurrency(double v) {
-    if (v == v.roundToDouble()) return v.toStringAsFixed(0);
-    return v.toStringAsFixed(2);
-  }
-}
+                name: na

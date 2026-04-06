@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/widgets.dart';
+import '../../core/theme/app_constants.dart';
 import '../../services/service_locator.dart';
 import 'payment_record_modal.dart';
 
@@ -126,20 +128,8 @@ class _AccountStatementScreenState
     final hasAccount = _accountId != null && _accountId!.isNotEmpty;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          hasAccount
-              ? 'Hesap Ekstresi - ${_accountName ?? ''}'
-              : 'Hesap Ekstresi',
-        ),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppColors.gradientStart, AppColors.gradientEnd],
-            ),
-          ),
-        ),
-        foregroundColor: Colors.white,
+      appBar: AppAppBar.gradient(
+        title: hasAccount ? 'Hesap Ekstresi - ${_accountName ?? ''}' : 'Hesap Ekstresi',
         actions: [
           if (hasAccount)
             IconButton(
@@ -154,42 +144,12 @@ class _AccountStatementScreenState
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.account_balance_wallet_outlined,
-              size: 64, color: AppColors.textMuted),
-          const SizedBox(height: 16),
-          Text(
-            'Hesap secilmedi',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Ekstre goruntlemek icin bir hesap secin',
-            style: TextStyle(color: AppColors.textMuted),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton.icon(
-            onPressed: _showAccountSelect,
-            icon: const Icon(Icons.person_search, color: Colors.white),
-            label: const Text('Hesap Sec',
-                style: TextStyle(color: Colors.white)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-            ),
-          ),
-        ],
-      ),
+    return AppEmptyState.noData(
+      message: 'Hesap seçilmedi',
+      description: 'Ekstre görüntülemek için bir hesap seçin',
+      icon: Icons.account_balance_wallet_outlined,
+      actionLabel: 'Hesap Seç',
+      onAction: _showAccountSelect,
     );
   }
 
@@ -205,25 +165,10 @@ class _AccountStatementScreenState
   }
 
   Widget _buildError() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: AppColors.danger),
-          const SizedBox(height: 12),
-          Text('Veri yuklenirken hata olustu',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
-          const SizedBox(height: 8),
-          Text(_error ?? '',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: _loadStatement,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Tekrar Dene'),
-          ),
-        ],
-      ),
+    return AppEmptyState.error(
+      message: 'Veri yüklenirken hata oluştu',
+      description: _error ?? '',
+      onRetry: _loadStatement,
     );
   }
 
@@ -238,7 +183,7 @@ class _AccountStatementScreenState
         List<Map<String, dynamic>>.from(_statement?['transactions'] ?? []);
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: AppConstants.pagePadding,
       children: [
         _buildDateRangeBar(),
         const SizedBox(height: 16),
@@ -254,12 +199,10 @@ class _AccountStatementScreenState
   Widget _buildDateRangeBar() {
     return GestureDetector(
       onTap: _pickDateRange,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
+      child: AppCard(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppConstants.spacing16,
+          vertical: AppConstants.spacing12,
         ),
         child: Row(
           children: [
@@ -282,14 +225,14 @@ class _AccountStatementScreenState
 
   Widget _buildOpeningBalanceCard(double openingBalance) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppConstants.cardPadding,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [AppColors.primary, AppColors.indigo],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppConstants.borderRadiusMedium,
         boxShadow: [
           BoxShadow(
             color: AppColors.primary.withOpacity(0.3),
@@ -304,7 +247,7 @@ class _AccountStatementScreenState
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: AppConstants.borderRadiusSmall,
             ),
             child: const Icon(Icons.account_balance,
                 color: Colors.white, size: 24),
@@ -338,13 +281,8 @@ class _AccountStatementScreenState
 
   Widget _buildTransactionTable(List<Map<String, dynamic>> transactions) {
     if (transactions.isEmpty) {
-      return Container(
+      return AppCard(
         padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
-        ),
         child: Center(
           child: Column(
             children: [
@@ -358,85 +296,83 @@ class _AccountStatementScreenState
       );
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          headingRowColor:
-              WidgetStateProperty.all(AppColors.primary.withOpacity(0.05)),
-          columnSpacing: 16,
-          horizontalMargin: 12,
-          headingTextStyle: const TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 12,
-            color: AppColors.textPrimary,
-          ),
-          dataTextStyle: const TextStyle(
-            fontSize: 12,
-            color: AppColors.textPrimary,
-          ),
-          columns: const [
-            DataColumn(label: Text('Tarih')),
-            DataColumn(label: Text('Aciklama')),
-            DataColumn(label: Text('Borc'), numeric: true),
-            DataColumn(label: Text('Alacak'), numeric: true),
-            DataColumn(label: Text('Bakiye'), numeric: true),
-          ],
-          rows: transactions.map((tx) {
-            final date = tx['transactionDate']?.toString() ?? '-';
-            final description = tx['description']?.toString() ?? '-';
-            final debit = (tx['debitAmount'] ?? 0).toDouble();
-            final credit = (tx['creditAmount'] ?? 0).toDouble();
-            final balance = (tx['runningBalance'] ?? 0).toDouble();
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: ClipRRect(
+        borderRadius: AppConstants.borderRadiusMedium,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            headingRowColor:
+                WidgetStateProperty.all(AppColors.primary.withOpacity(0.05)),
+            columnSpacing: 16,
+            horizontalMargin: 12,
+            headingTextStyle: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+              color: AppColors.textPrimary,
+            ),
+            dataTextStyle: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textPrimary,
+            ),
+            columns: const [
+              DataColumn(label: Text('Tarih')),
+              DataColumn(label: Text('Aciklama')),
+              DataColumn(label: Text('Borc'), numeric: true),
+              DataColumn(label: Text('Alacak'), numeric: true),
+              DataColumn(label: Text('Bakiye'), numeric: true),
+            ],
+            rows: transactions.map((tx) {
+              final date = tx['transactionDate']?.toString() ?? '-';
+              final description = tx['description']?.toString() ?? '-';
+              final debit = (tx['debitAmount'] ?? 0).toDouble();
+              final credit = (tx['creditAmount'] ?? 0).toDouble();
+              final balance = (tx['runningBalance'] ?? 0).toDouble();
 
-            return DataRow(cells: [
-              DataCell(Text(
-                date.length >= 10 ? date.substring(0, 10) : date,
-                style: const TextStyle(fontSize: 11),
-              )),
-              DataCell(
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 160),
-                  child: Text(
-                    description,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11),
+              return DataRow(cells: [
+                DataCell(Text(
+                  date.length >= 10 ? date.substring(0, 10) : date,
+                  style: const TextStyle(fontSize: 11),
+                )),
+                DataCell(
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 160),
+                    child: Text(
+                      description,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11),
+                    ),
                   ),
                 ),
-              ),
-              DataCell(Text(
-                debit > 0 ? _formatCurrency(debit) : '-',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: debit > 0 ? AppColors.danger : AppColors.textMuted,
-                  fontWeight: debit > 0 ? FontWeight.w600 : FontWeight.normal,
-                ),
-              )),
-              DataCell(Text(
-                credit > 0 ? _formatCurrency(credit) : '-',
-                style: TextStyle(
-                  fontSize: 11,
-                  color:
-                      credit > 0 ? AppColors.success : AppColors.textMuted,
-                  fontWeight:
-                      credit > 0 ? FontWeight.w600 : FontWeight.normal,
-                ),
-              )),
-              DataCell(Text(
-                _formatCurrency(balance),
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
-              )),
-            ]);
-          }).toList(),
+                DataCell(Text(
+                  debit > 0 ? _formatCurrency(debit) : '-',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: debit > 0 ? AppColors.danger : AppColors.textMuted,
+                    fontWeight: debit > 0 ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                )),
+                DataCell(Text(
+                  credit > 0 ? _formatCurrency(credit) : '-',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color:
+                        credit > 0 ? AppColors.success : AppColors.textMuted,
+                    fontWeight:
+                        credit > 0 ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                )),
+                DataCell(Text(
+                  _formatCurrency(balance),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                )),
+              ]);
+            }).toList(),
+          ),
         ),
       ),
     );
@@ -444,13 +380,8 @@ class _AccountStatementScreenState
 
   Widget _buildSummaryCard(
       double totalDebit, double totalCredit, double closingBalance) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
+    return AppCard(
+      padding: AppConstants.cardPadding,
       child: Column(
         children: [
           _summaryRow(
@@ -486,7 +417,7 @@ class _AccountStatementScreenState
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppConstants.borderRadiusSmall,
           ),
           child: Icon(icon, color: color, size: 18),
         ),

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 
 class SupplierDetailScreen extends ConsumerStatefulWidget {
@@ -59,7 +61,7 @@ class _SupplierDetailScreenState extends ConsumerState<SupplierDetailScreen> {
     if (_isLoading) {
       return Scaffold(
         backgroundColor: AppColors.bgLight,
-        appBar: AppBar(title: const Text('Tedarikci Detay')),
+        appBar: AppAppBar.standard(title: 'Tedarikci Detay'),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -67,7 +69,7 @@ class _SupplierDetailScreenState extends ConsumerState<SupplierDetailScreen> {
     if (_error != null || _supplier == null) {
       return Scaffold(
         backgroundColor: AppColors.bgLight,
-        appBar: AppBar(title: const Text('Tedarikci Detay')),
+        appBar: AppAppBar.standard(title: 'Tedarikci Detay'),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -78,8 +80,10 @@ class _SupplierDetailScreenState extends ConsumerState<SupplierDetailScreen> {
               Text(_error ?? 'Tedarikci bulunamadi',
                   style: const TextStyle(color: AppColors.textSecondary)),
               const SizedBox(height: 12),
-              ElevatedButton(
-                  onPressed: _loadAll, child: const Text('Tekrar Dene')),
+              AppButton.primary(
+                text: 'Tekrar Dene',
+                onPressed: _loadAll,
+              ),
             ],
           ),
         ),
@@ -95,24 +99,11 @@ class _SupplierDetailScreenState extends ConsumerState<SupplierDetailScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
+      appBar: AppAppBar.standard(
+        title: name,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => context.pop(),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(name,
-                style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary)),
-            const Text('Tedarikci Detay',
-                style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
-          ],
         ),
         actions: [
           IconButton(
@@ -124,7 +115,7 @@ class _SupplierDetailScreenState extends ConsumerState<SupplierDetailScreen> {
       body: RefreshIndicator(
         onRefresh: _loadAll,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: AppConstants.pagePadding,
           children: [
             _buildInfoCard(s),
             const SizedBox(height: 12),
@@ -159,7 +150,7 @@ class _SupplierDetailScreenState extends ConsumerState<SupplierDetailScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppConstants.borderRadiusMedium,
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -218,7 +209,7 @@ class _SupplierDetailScreenState extends ConsumerState<SupplierDetailScreen> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppConstants.borderRadiusMedium,
         border: Border.all(color: AppColors.border),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -226,7 +217,7 @@ class _SupplierDetailScreenState extends ConsumerState<SupplierDetailScreen> {
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppConstants.borderRadiusSmall,
           ),
           child: Icon(icon, size: 16, color: color),
         ),
@@ -248,40 +239,19 @@ class _SupplierDetailScreenState extends ConsumerState<SupplierDetailScreen> {
   Widget _buildActionButtons() {
     return Row(children: [
       Expanded(
-        child: ElevatedButton.icon(
+        child: AppButton.primary(
+          text: 'Cari Hesap',
+          icon: Icons.account_balance_wallet,
           onPressed: () =>
               context.push('/suppliers/account/${widget.supplierId}'),
-          icon:
-              const Icon(Icons.account_balance_wallet, color: Colors.white, size: 18),
-          label: const Text('Cari Hesap',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13)),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
         ),
       ),
       const SizedBox(width: 10),
       Expanded(
-        child: ElevatedButton.icon(
+        child: AppButton.success(
+          text: 'Siparis Olustur',
+          icon: Icons.add_shopping_cart,
           onPressed: () => context.push('/purchases/create'),
-          icon: const Icon(Icons.add_shopping_cart, color: Colors.white, size: 18),
-          label: const Text('Siparis Olustur',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13)),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.success,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
         ),
       ),
     ]);
@@ -333,7 +303,7 @@ class _SupplierDetailScreenState extends ConsumerState<SupplierDetailScreen> {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: isCancelled ? AppColors.bgLight : Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppConstants.borderRadiusMedium,
           border: Border.all(color: AppColors.border),
         ),
         child: Row(children: [
@@ -344,7 +314,7 @@ class _SupplierDetailScreenState extends ConsumerState<SupplierDetailScreen> {
               color: isCancelled
                   ? AppColors.textMuted.withOpacity(0.1)
                   : AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: AppConstants.borderRadiusSmall,
             ),
             child: Icon(Icons.receipt,
                 size: 20,
@@ -376,7 +346,7 @@ class _SupplierDetailScreenState extends ConsumerState<SupplierDetailScreen> {
                           horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: AppColors.danger.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: AppConstants.borderRadiusSmall,
                       ),
                       child: const Text('IPTAL',
                           style: TextStyle(

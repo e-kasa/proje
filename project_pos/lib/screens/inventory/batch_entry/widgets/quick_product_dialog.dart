@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../models/batch_entry_models.dart';
+import '../../core/widgets/widgets.dart';
 
 class QuickProductDialog extends StatefulWidget {
   final BatchEntryRow row;
@@ -205,9 +206,9 @@ class _QuickProductDialogState extends State<QuickProductDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Iptal'),
         ),
-        ElevatedButton(
+        AppButton.primary(
+          text: 'Kaydet',
           onPressed: _onSave,
-          child: const Text('Kaydet'),
         ),
       ],
     );

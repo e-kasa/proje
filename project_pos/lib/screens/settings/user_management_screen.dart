@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 
@@ -190,7 +192,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
+      appBar: AppAppBar.standard(
         title: const Text('Kullanici Yonetimi'),
         backgroundColor: Colors.white,
         elevation: 0,

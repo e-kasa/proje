@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/widgets/widgets.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
 import '../../services/service_locator.dart';
 
 class VehicleCompatibilityScreen extends ConsumerStatefulWidget {
@@ -179,7 +181,9 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Iptal')),
-            ElevatedButton.icon(
+            AppButton.primary(
+              text: '${selectedVehicleIds.length} Arac Ekle',
+              icon: Icons.save,
               onPressed: selectedVehicleIds.isEmpty
                   ? null
                   : () async {
@@ -207,9 +211,6 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
                         }
                       }
                     },
-              icon: const Icon(Icons.save),
-              label: Text('${selectedVehicleIds.length} Arac Ekle'),
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
             ),
           ],
         ),
@@ -240,9 +241,7 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
+      appBar: AppAppBar.standard(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -273,11 +272,10 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
                       const SizedBox(height: 16),
                       const Text('Henuz arac uyumlulugu eklenmemis', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
                       const SizedBox(height: 16),
-                      ElevatedButton.icon(
+                      AppButton.primary(
+                        text: 'Arac Ekle',
+                        icon: Icons.add,
                         onPressed: _showAddCompatibilityDialog,
-                        icon: const Icon(Icons.add),
-                        label: const Text('Arac Ekle'),
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
                       ),
                     ],
                   ),
@@ -285,7 +283,7 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
               : RefreshIndicator(
                   onRefresh: _loadCompatibilities,
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: AppConstants.pagePadding,
                     itemCount: _compatibilities.length,
                     itemBuilder: (context, index) {
                       final compat = _compatibilities[index];
@@ -298,7 +296,7 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
                         margin: const EdgeInsets.only(bottom: 8),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppConstants.borderRadiusMedium,
                           border: Border.all(color: AppColors.border),
                         ),
                         child: ListTile(
@@ -306,7 +304,7 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
                             width: 44, height: 44,
                             decoration: BoxDecoration(
                               color: AppColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: AppConstants.borderRadiusSmall,
                             ),
                             child: const Center(child: Icon(Icons.directions_car, color: AppColors.primary, size: 24)),
                           ),

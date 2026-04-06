@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 
 class OverdueTrackingScreen extends ConsumerStatefulWidget {
@@ -92,7 +94,7 @@ class _OverdueTrackingScreenState extends ConsumerState<OverdueTrackingScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppAppBar.standard(
         title: const Text('Vadesi Gecmis Hesaplar'),
         flexibleSpace: Container(
           decoration: const BoxDecoration(
@@ -158,11 +160,11 @@ class _OverdueTrackingScreenState extends ConsumerState<OverdueTrackingScreen>
             Text(error,
                 style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
             const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: onRefresh,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Tekrar Dene'),
-            ),
+            AppButton.primary(
+                        text: 'Tekrar Dene',
+                        icon: Icons.refresh,
+                        onPressed: onRefresh,
+                      ),
           ],
         ),
       );

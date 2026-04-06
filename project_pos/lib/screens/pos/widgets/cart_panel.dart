@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/src/intl/number_format.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../services/service_locator.dart';
 import '../providers/pos_provider.dart';
 import 'cart_item_row.dart';
+import '../../core/widgets/widgets.dart';
 
 class CartPanel extends ConsumerWidget {
   final VoidCallback onPaymentPressed;
 
   const CartPanel({
     super.key,
-    required this.onPaymentPressed,
+    required this.onPaymentPressed, required NumberFormat currencyFormat,
   });
 
   @override
@@ -516,9 +518,4 @@ class _CustomerPickerSheetState extends State<_CustomerPickerSheet> {
     );
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-}
+  

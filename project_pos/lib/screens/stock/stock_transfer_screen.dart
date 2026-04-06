@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 
 // ─── Transfer item model ────────────────────────────────────────────────────
 
@@ -133,7 +135,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      appBar: AppBar(
+      appBar: AppAppBar.standard(
         title: const Text('Stok Transfer Oluştur'),
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
@@ -639,26 +641,10 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
   Widget _buildSubmitButton(ThemeData theme) {
     return SizedBox(
       height: 52,
-      child: ElevatedButton.icon(
+      AppButton.primary(
+        text: _isSubmitting ? 'Kaydediliyor...' : 'Onayla',
+        icon: Icons.check,
         onPressed: _isSubmitting ? null : _submit,
-        icon: _isSubmitting
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.white),
-              )
-            : const Icon(Icons.swap_horiz_rounded),
-        label: Text(
-            _isSubmitting ? 'Kaydediliyor...' : 'Onayla'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14)),
-          textStyle: const TextStyle(
-              fontSize: 16, fontWeight: FontWeight.w600),
-        ),
       ),
     );
   }

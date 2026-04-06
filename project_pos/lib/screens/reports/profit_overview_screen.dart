@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 
 class ProfitOverviewScreen extends ConsumerStatefulWidget {
@@ -28,43 +30,6 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
     _loadData();
   }
 
-  Map<String, dynamic> get _mockData {
-    final months = <Map<String, dynamic>>[];
-    final now = DateTime.now();
-    for (int i = 5; i >= 0; i--) {
-      final month = DateTime(now.year, now.month - i, 1);
-      final revenue = 45000.0 + (i * 3200.0) + (i.isEven ? 5000 : -2000);
-      final expense = 28000.0 + (i * 1800.0) + (i.isOdd ? 3000 : -1000);
-      months.add({
-        'month': DateFormat('MMMM yyyy', 'tr_TR').format(month),
-        'revenue': revenue,
-        'expense': expense,
-        'net': revenue - expense,
-      });
-    }
-
-    final totalRevenue =
-        months.fold<double>(0, (s, m) => s + (m['revenue'] as double));
-    final totalExpense =
-        months.fold<double>(0, (s, m) => s + (m['expense'] as double));
-
-    return {
-      'totalRevenue': totalRevenue,
-      'totalCost': totalExpense,
-      'profit': totalRevenue - totalExpense,
-      'profitMargin':
-          totalRevenue > 0 ? ((totalRevenue - totalExpense) / totalRevenue) * 100 : 0,
-      'monthlyBreakdown': months,
-      'categoryBreakdown': [
-        {'category': 'Urun Maliyeti', 'amount': totalExpense * 0.55, 'color': 0xFFef4444},
-        {'category': 'Personel', 'amount': totalExpense * 0.20, 'color': 0xFFf59e0b},
-        {'category': 'Kira', 'amount': totalExpense * 0.12, 'color': 0xFF3b82f6},
-        {'category': 'Lojistik', 'amount': totalExpense * 0.08, 'color': 0xFF8b5cf6},
-        {'category': 'Diger', 'amount': totalExpense * 0.05, 'color': 0xFF14b8a6},
-      ],
-    };
-  }
-
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
@@ -73,26 +38,30 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
         startDate: _startDate,
         endDate: _endDate,
       );
-      // Enrich with monthly breakdown if missing
-      if (result['monthlyBreakdown'] == null) {
-        final mock = _mockData;
-        result['monthlyBreakdown'] = mock['monthlyBreakdown'];
-        result['categoryBreakdown'] = mock['categoryBreakdown'];
-        // Normalize field names
-        result['totalCost'] ??= result['totalCost'] ?? (result['totalRevenue'] as num? ?? 0).toDouble() * 0.6;
-        result['profit'] ??= (result['totalRevenue'] as num? ?? 0).toDouble() -
-            (result['totalCost'] as num? ?? 0).toDouble();
-        result['profitMargin'] ??= result['profitMargin'] ?? 0;
-      }
+      // Normalize field names if missing
+      result['totalCost'] ??= (result['totalRevenue'] as num? ?? 0).toDouble() * 0.6;
+      result['profit'] ??= (result['totalRevenue'] as num? ?? 0).toDouble() -
+          (result['totalCost'] as num? ?? 0).toDouble();
+      result['profitMargin'] ??= result['profitMargin'] ?? 0;
+      result['monthlyBreakdown'] ??= [];
+      result['categoryBreakdown'] ??= [];
       setState(() {
         _data = result;
         _isLoading = false;
       });
-    } catch (_) {
+    } catch (e) {
       setState(() {
-        _data = _mockData;
+        _data = null;
         _isLoading = false;
       });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Veri yuklenemedi'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
     }
   }
 
@@ -119,7 +88,7 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      appBar: AppBar(
+      appBar: AppAppBar.standard(
         title: const Text('Kar/Zarar Ozeti'),
         actions: [
           IconButton(
@@ -220,70 +189,65 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
         const SizedBox(height: 12),
 
         // Profit margin badge
-        Card(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          elevation: 0,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: isPositive
-                        ? AppColors.success.withOpacity(0.1)
-                        : AppColors.danger.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.pie_chart,
-                    color: isPositive ? AppColors.success : AppColors.danger,
-                    size: 22,
+        AppCard(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isPositive
+                      ? AppColors.success.withOpacity(0.1)
+                      : AppColors.danger.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.pie_chart,
+                  color: isPositive ? AppColors.success : AppColors.danger,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Text(
+                  'Kar Marji',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
                   ),
                 ),
-                const SizedBox(width: 14),
-                const Expanded(
-                  child: Text(
-                    'Kar Marji',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isPositive ? AppColors.bgSuccess : AppColors.bgDanger,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isPositive ? Icons.arrow_upward : Icons.arrow_downward,
+                      size: 16,
+                      color:
+                          isPositive ? AppColors.success : AppColors.danger,
                     ),
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isPositive ? AppColors.bgSuccess : AppColors.bgDanger,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isPositive ? Icons.arrow_upward : Icons.arrow_downward,
-                        size: 16,
+                    const SizedBox(width: 4),
+                    Text(
+                      '%${profitMargin.toStringAsFixed(1)}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                         color:
                             isPositive ? AppColors.success : AppColors.danger,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '%${profitMargin.toStringAsFixed(1)}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color:
-                              isPositive ? AppColors.success : AppColors.danger,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 24),
@@ -299,14 +263,14 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          ...monthlyBreakdown.map((m) => _buildMonthCard(m)),
+          ...monthlyBreakdown.map((item) => _buildMonthCard(item)),
           const SizedBox(height: 24),
         ],
 
         // Category breakdown section
         if (categoryBreakdown.isNotEmpty) ...[
           const Text(
-            'Gider Kategorileri',
+            'Kategori Bazli Gider Dagilimi',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -314,25 +278,20 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          Card(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            elevation: 0,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: categoryBreakdown.map((c) {
-                  final amount = (c['amount'] ?? 0).toDouble();
-                  final fraction = totalCost > 0 ? amount / totalCost : 0.0;
-                  final color = Color(c['color'] as int? ?? 0xFF667eea);
-                  return _buildCategoryRow(
-                    c['category']?.toString() ?? '-',
-                    amount,
-                    fraction,
-                    color,
-                  );
-                }).toList(),
-              ),
+          AppCard(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: categoryBreakdown.map((c) {
+                final amount = (c['amount'] ?? 0).toDouble();
+                final fraction = totalCost > 0 ? amount / totalCost : 0.0;
+                final color = Color(c['color'] as int? ?? 0xFF667eea);
+                return _buildCategoryRow(
+                  c['category']?.toString() ?? '-',
+                  amount,
+                  fraction,
+                  color,
+                );
+              }).toList(),
             ),
           ),
         ],
@@ -342,43 +301,40 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
 
   Widget _buildTopCard(
       String label, String value, IconData icon, Color color, Color bgColor) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      elevation: 0,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 20),
+    return AppCard(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(height: 8),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                value,
-                style: TextStyle(
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 8),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: color,
                 ),
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppColors.textSecondary,
-              ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.textSecondary,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -391,109 +347,167 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
     final maxVal = revenue > expense ? revenue : expense;
     final isPositive = net >= 0;
 
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  month,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: isPositive ? AppColors.bgSuccess : AppColors.bgDanger,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    _currencyFormat.format(net),
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: isPositive ? AppColors.success : AppColors.danger,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Revenue bar
-            _buildBarRow('Gelir', revenue, maxVal, AppColors.success),
-            const SizedBox(height: 6),
-            // Expense bar
-            _buildBarRow('Gider', expense, maxVal, AppColors.danger),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBarRow(String label, double value, double maxVal, Color color) {
-    final fraction = maxVal > 0 ? (value / maxVal).clamp(0.0, 1.0) : 0.0;
-    return Row(
-      children: [
-        SizedBox(
-          width: 42,
-          child: Text(
-            label,
-            style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
-          ),
-        ),
-        Expanded(
-          child: Stack(
+    return AppCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                height: 16,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
+              Text(
+                month,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: AppColors.textPrimary,
                 ),
               ),
-              FractionallySizedBox(
-                widthFactor: fraction,
-                child: Container(
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.7),
-                    borderRadius: BorderRadius.circular(4),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isPositive ? AppColors.bgSuccess : AppColors.bgDanger,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  isPositive ? '+${_currencyFormat.format(net)}' : _currencyFormat.format(net),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: isPositive
+                        ? AppColors.success
+                        : AppColors.danger,
                   ),
                 ),
               ),
             ],
           ),
-        ),
-        const SizedBox(width: 8),
-        SizedBox(
-          width: 90,
-          child: Text(
-            _currencyFormat.format(value),
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Gelir',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _currencyFormat.format(revenue),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: AppColors.success,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Gider',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _currencyFormat.format(expense),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: AppColors.danger,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Net',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _currencyFormat.format(net),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: isPositive
+                            ? AppColors.success
+                            : AppColors.danger,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+          if (maxVal > 0) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: revenue / maxVal,
+                          minHeight: 6,
+                          backgroundColor: AppColors.success.withOpacity(0.2),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                              AppColors.success),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: expense / maxVal,
+                          minHeight: 6,
+                          backgroundColor: AppColors.danger.withOpacity(0.2),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                              AppColors.danger),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 
   Widget _buildCategoryRow(
-      String label, double amount, double fraction, Color color) {
+      String category, double amount, double fraction, Color color) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
@@ -502,57 +516,51 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: color,
-                      borderRadius: BorderRadius.circular(3),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textPrimary,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        category,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textPrimary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               Text(
-                '${_currencyFormat.format(amount)}  (%${(fraction * 100).toStringAsFixed(0)})',
+                '${(fraction * 100).toStringAsFixed(1)}%',
                 style: const TextStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.bold,
                   color: AppColors.textSecondary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          Stack(
-            children: [
-              Container(
-                height: 8,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-              FractionallySizedBox(
-                widthFactor: fraction.clamp(0.0, 1.0),
-                child: Container(
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-            ],
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: fraction,
+              minHeight: 6,
+              backgroundColor: color.withOpacity(0.2),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
           ),
         ],
       ),

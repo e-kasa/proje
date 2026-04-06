@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/stock_management_models.dart';
-import '../../services/mock_stock_management_data.dart';
+import '../../services/service_locator.dart';
 
 /// MULTI-WAREHOUSE STOK EKRANI
-/// Tedarikçi ithalat review ekranından esinlenilmiştir
-/// Depo/Mağaza/Şube bazında stok görüntüleme
-class MultiWarehouseStockScreen extends StatefulWidget {
+/// Depo/Magaza/Sube bazinda stok goruntuleme
+class MultiWarehouseStockScreen extends ConsumerStatefulWidget {
   const MultiWarehouseStockScreen({Key? key}) : super(key: key);
 
   @override
-  State<MultiWarehouseStockScreen> createState() =>
+  ConsumerState<MultiWarehouseStockScreen> createState() =>
       _MultiWarehouseStockScreenState();
 }
 
-class _MultiWarehouseStockScreenState extends State<MultiWarehouseStockScreen> {
+class _MultiWarehouseStockScreenState extends ConsumerState<MultiWarehouseStockScreen> {
   List<WarehouseStockItem> _products = [];
+  bool _isLoading = true;
+  String? _error;
   String _filterType = 'TÜMÜ';
   String? _expandedProductId;
 
@@ -24,10 +26,25 @@ class _MultiWarehouseStockScreenState extends State<MultiWarehouseStockScreen> {
     _loadData();
   }
 
-  void _loadData() {
-    setState(() {
-      _products = MockStockManagementData.getWarehouseStockData();
-    });
+  Future<void> _loadData() async {
+    setState(() { _isLoading = true; _error = null; });
+    try {
+      final service = ref.read(stockServiceProvider);
+      final data = await service.getStockMovements();
+      final items = (data as List).map((item) {
+        return WarehouseStockItem.fromJson(item as Map<String, dynamic>);
+      }).toList();
+      setState(() {
+        _products = items;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _products = [];
+        _error = 'Veri yuklenemedi';
+        _isLoading = false;
+      });
+    }
   }
 
   List<WarehouseStockItem> get _filteredProducts {
@@ -53,15 +70,13 @@ class _MultiWarehouseStockScreenState extends State<MultiWarehouseStockScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
+      appBar: AppAppBar.standard(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Depo Bazında Stok',
+          'Depo Bazinda Stok',
           style: TextStyle(color: Colors.black, fontSize: 18),
         ),
         actions: [
@@ -71,7 +86,11 @@ class _MultiWarehouseStockScreenState extends State<MultiWarehouseStockScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(child: Text(_error!))
+              : Column(
         children: [
           // Filtre Butonları
           _buildFilterButtons(),
@@ -463,29 +482,4 @@ class _MultiWarehouseStockScreenState extends State<MultiWarehouseStockScreen> {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
-                  color: statusColor,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(statusIcon, size: 12, color: statusColor),
-                  const SizedBox(width: 4),
-                  Text(
-                    statusText,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: statusColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
+                 

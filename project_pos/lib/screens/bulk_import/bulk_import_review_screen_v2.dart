@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../core/api/api_client.dart';
 import '../../models/bulk_import_models.dart';
 import '../../services/product_service.dart';
 import '../../services/bulk_import_service.dart';
-import '../../core/data/simple_mock_data_v2.dart';
 import 'modals/update_stock_modal.dart';
 import 'modals/match_confirm_modal.dart';
 import 'modals/manual_match_modal.dart';
@@ -34,16 +35,31 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
     _loadProducts();
   }
 
-  void _loadProducts() {
-    final mockData = SimpleMockData.getMockAnalyzeResponse();
-    final productsJson = mockData['products'] as List;
-    _products = productsJson
-        .map((json) => AnalyzedProduct.fromJson(json as Map<String, dynamic>))
-        .toList();
+  String? _importId;
+  bool _isLoading = true;
+  String? _error;
 
-    _statistics = ImportStatistics.fromJson(
-      mockData['statistics'] as Map<String, dynamic>,
-    );
+  Future<void> _loadProducts() async {
+    setState(() { _isLoading = true; _error = null; });
+    try {
+      final bulkImportService = BulkImportService(ApiClient());
+      final data = await bulkImportService.getAnalysisResult(_importId ?? '');
+      final productsJson = data['products'] as List;
+      _products = productsJson
+          .map((json) => AnalyzedProduct.fromJson(json as Map<String, dynamic>))
+          .toList();
+      _statistics = ImportStatistics.fromJson(
+        data['statistics'] as Map<String, dynamic>,
+      );
+      setState(() { _isLoading = false; });
+    } catch (e) {
+      setState(() {
+        _products = [];
+        _statistics = ImportStatistics(total: 0, newProducts: 0, conflicts: 0, potentialMatches: 0, addVariants: 0, updateVariants: 0, needsVariants: 0, createVariantGroups: 0, errors: 0);
+        _isLoading = false;
+        _error = 'Veri yuklenemedi';
+      });
+    }
   }
 
   List<AnalyzedProduct> get _filteredProducts {
@@ -187,8 +203,8 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
   }
 
   void _showManualMatchModal(AnalyzedProduct product) {
-    // Get all existing products from system (mock data)
-    final availableProducts = _getMockExistingProducts();
+    // Get all existing products from system
+    final availableProducts = <MatchedProduct>[];
 
     showDialog(
       context: context,
@@ -200,114 +216,6 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
     );
   }
 
-  // Mock existing products in system for manual matching
-  List<MatchedProduct> _getMockExistingProducts() {
-    return [
-      MatchedProduct(
-        id: 'sys-prod-001',
-        name: 'Apple iPhone 15 Pro 128GB Space Gray',
-        sku: 'APL-IP15P-128-SG',
-        barcode: '0194253433071',
-        category: 'Elektronik > Cep Telefonu',
-        brand: 'Apple',
-        currentStock: 25,
-        currentBuyPrice: 47500,
-        currentSellPrice: 54500,
-        variants: [],
-        similarity: 0.0,
-        lastUpdated: DateTime.now().subtract(const Duration(days: 10)),
-      ),
-      MatchedProduct(
-        id: 'sys-prod-002',
-        name: 'Samsung Galaxy S23 Ultra 256GB',
-        sku: 'SAM-S23U-256',
-        barcode: '8806094567890',
-        category: 'Elektronik > Cep Telefonu',
-        brand: 'Samsung',
-        currentStock: 18,
-        currentBuyPrice: 42000,
-        currentSellPrice: 48999,
-        variants: [],
-        similarity: 0.0,
-        lastUpdated: DateTime.now().subtract(const Duration(days: 5)),
-      ),
-      MatchedProduct(
-        id: 'sys-prod-003',
-        name: 'Xiaomi Redmi Note 13 Pro 128GB',
-        sku: 'XIA-RN13P-128',
-        barcode: '6941812748300',
-        category: 'Elektronik > Cep Telefonu',
-        brand: 'Xiaomi',
-        currentStock: 35,
-        currentBuyPrice: 8300,
-        currentSellPrice: 9899,
-        variants: [],
-        similarity: 0.0,
-        lastUpdated: DateTime.now().subtract(const Duration(days: 3)),
-      ),
-      MatchedProduct(
-        id: 'sys-prod-004',
-        name: 'Klasik Gömlek',
-        sku: 'GMLEK-001',
-        barcode: '8697854123400',
-        category: 'Giyim > Erkek',
-        brand: 'LC Waikiki',
-        currentStock: 45,
-        currentBuyPrice: 250,
-        currentSellPrice: 399,
-        variants: [
-          Variant(
-            id: 'var-001',
-            sku: 'GMLEK-001-BLK-M',
-            barcode: '8697854123401',
-            attributes: {'color': 'Siyah', 'size': 'M'},
-            stock: 15,
-            buyPrice: 250,
-            sellPrice: 399,
-          ),
-          Variant(
-            id: 'var-002',
-            sku: 'GMLEK-001-BLK-L',
-            barcode: '8697854123402',
-            attributes: {'color': 'Siyah', 'size': 'L'},
-            stock: 12,
-            buyPrice: 250,
-            sellPrice: 399,
-          ),
-        ],
-        similarity: 0.0,
-        lastUpdated: DateTime.now().subtract(const Duration(days: 15)),
-      ),
-      MatchedProduct(
-        id: 'sys-prod-005',
-        name: 'Spor Ayakkabı Nike Air Max',
-        sku: 'AYAK-NIKE-001',
-        barcode: '0826220103109',
-        category: 'Ayakkabı > Spor',
-        brand: 'Nike',
-        currentStock: 28,
-        currentBuyPrice: 2500,
-        currentSellPrice: 3999,
-        variants: [],
-        similarity: 0.0,
-        lastUpdated: DateTime.now().subtract(const Duration(days: 7)),
-      ),
-      MatchedProduct(
-        id: 'sys-prod-006',
-        name: 'Dell XPS 15 Laptop',
-        sku: 'DELL-XPS15-001',
-        barcode: '8840000000000',
-        category: 'Bilgisayar > Dizüstü',
-        brand: 'Dell',
-        currentStock: 8,
-        currentBuyPrice: 55000,
-        currentSellPrice: 62000,
-        variants: [],
-        similarity: 0.0,
-        lastUpdated: DateTime.now().subtract(const Duration(days: 20)),
-      ),
-    ];
-  }
 
   void _showAddVariantModal(AnalyzedProduct product) {
     // TODO: Create dedicated add variant modal
@@ -1261,7 +1169,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
       // Backend API çağrısı
       final bulkImportService = BulkImportService(ApiClient());
       final result = await bulkImportService.saveDecisions(
-        importId: SimpleMockData.mockImportId,
+        importId: _importId ?? '',
         products: payloads,
         onProgress: (current, total) {
           debugPrint('📦 İşleniyor: $current/$total');
@@ -1404,7 +1312,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
+      appBar: AppAppBar.standard(
         title: const Text('Toplu Ürün Yükleme - İnceleme'),
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
@@ -2459,3 +2367,4 @@ class _SaveProgressDialog extends StatelessWidget {
     );
   }
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

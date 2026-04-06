@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../providers/data_providers.dart';
 import '../../providers/navigation_provider.dart';
 
@@ -117,7 +119,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
             onPressed: () => Navigator.pop(context),
             child: const Text('İptal'),
           ),
-          ElevatedButton(
+          AppButton.primary(
             onPressed: () async {
               final newQty = int.tryParse(stockController.text);
               if (newQty == null || newQty < 0) return;
@@ -140,7 +142,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
                 ),
               );
             },
-            child: const Text('Kaydet'),
+            label: 'Kaydet',
           ),
         ],
       ),
@@ -164,36 +166,13 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
           // Header with filters
           Container(
             color: Colors.white,
-            padding: const EdgeInsets.all(16),
+            padding: AppConstants.paddingAllMedium,
             child: Column(
               children: [
                 // Search Bar
-                TextField(
+                AppSearchInput(
                   controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Ürün ara...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() {});
-                            },
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppColors.border),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppColors.border),
-                    ),
-                    filled: true,
-                    fillColor: AppColors.bgLight,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
+                  hintText: 'Ürün ara...',
                   onChanged: (_) => setState(() {}),
                 ),
 
@@ -223,7 +202,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
           // Stock Stats Summary
           Container(
             color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            padding: AppConstants.paddingSymmetricHorizontalMedium.copyWith(bottom: AppConstants.paddingMedium),
             child: Row(
               children: [
                 _buildStatCard(
@@ -253,7 +232,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
           // Quick Report Links
           Container(
             color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            padding: AppConstants.paddingSymmetricHorizontalMedium.copyWith(bottom: AppConstants.paddingSmall),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -275,44 +254,23 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
             child: stockState.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : stockState.error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.error_outline, color: AppColors.danger, size: 48),
-                            const SizedBox(height: 12),
-                            Text(
-                              stockState.error!,
-                              style: const TextStyle(color: AppColors.danger),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton.icon(
-                              onPressed: () => ref.read(stockProvider.notifier).load(),
-                              icon: const Icon(Icons.refresh),
-                              label: const Text('Tekrar Dene'),
-                            ),
-                          ],
-                        ),
+                    ? AppEmptyState(
+                        icon: Icons.error_outline,
+                        title: 'Hata Oluştu',
+                        description: stockState.error!,
+                        actionLabel: 'Tekrar Dene',
+                        onAction: () => ref.read(stockProvider.notifier).load(),
                       )
                     : filtered.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.inventory_2_outlined, size: 64, color: AppColors.textMuted),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Ürün bulunamadı',
-                                  style: TextStyle(fontSize: 16, color: AppColors.textMuted),
-                                ),
-                              ],
-                            ),
+                        ? AppEmptyState(
+                            icon: Icons.inventory_2_outlined,
+                            title: 'Ürün Bulunamadı',
+                            description: 'Arama kriterlerine uygun ürün yok',
                           )
                         : RefreshIndicator(
                             onRefresh: () => ref.read(stockProvider.notifier).load(),
                             child: ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: AppConstants.paddingSymmetricHorizontalMedium,
                               itemCount: filtered.length,
                               itemBuilder: (context, index) =>
                                   _buildProductCard(filtered[index]),
@@ -376,17 +334,17 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
   Widget _buildStatCard(String label, String value, Color color, IconData icon) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: AppConstants.paddingAllSmall,
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppConstants.borderRadiusMedium,
           border: Border.all(color: color.withOpacity(0.3)),
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(8)),
+              padding: AppConstants.paddingAllSmall,
+              decoration: BoxDecoration(color: color, borderRadius: AppConstants.borderRadiusSmall),
               child: Icon(icon, color: Colors.white, size: 20),
             ),
             const SizedBox(width: 8),
@@ -414,7 +372,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
     final stockLabel = _getStockLabel(stock);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: AppConstants.paddingOnlyBottomSmall,
       child: Dismissible(
         key: Key(product['id'].toString()),
         confirmDismiss: (direction) async {
@@ -428,10 +386,10 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
         background: Container(
           decoration: BoxDecoration(
             color: AppColors.success,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppConstants.borderRadiusMedium,
           ),
           alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.only(left: 20),
+          padding: AppConstants.paddingOnlyLeftMedium,
           child: const Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -444,10 +402,10 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
         secondaryBackground: Container(
           decoration: BoxDecoration(
             color: AppColors.info,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppConstants.borderRadiusMedium,
           ),
           alignment: Alignment.centerRight,
-          padding: const EdgeInsets.only(right: 20),
+          padding: AppConstants.paddingOnlyRightMedium,
           child: const Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -457,21 +415,9 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
             ],
           ),
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
+        child: AppCard(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: AppConstants.paddingAllMedium,
             child: Row(
               children: [
                 Container(
@@ -479,7 +425,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
                   height: 56,
                   decoration: BoxDecoration(
                     color: stockColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppConstants.borderRadiusMedium,
                   ),
                   child: Icon(Icons.inventory_2, color: stockColor, size: 28),
                 ),
@@ -501,48 +447,37 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: stockColor.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              stockLabel,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: stockColor,
-                              ),
-                            ),
+                          AppBadge(
+                            text: stockLabel,
+                            color: stockColor,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 12),
                           Text(
-                            '₺${(product['sellingPrice'] as num? ?? product['price'] as num? ?? 0).toStringAsFixed(2)}',
+                            '${stock.toInt()} adet',
                             style: const TextStyle(
                               fontSize: 13,
+                              fontWeight: FontWeight.w500,
                               color: AppColors.textSecondary,
                             ),
                           ),
                         ],
                       ),
+                      if (product['barcode'] != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          'Barkod: ${product['barcode']}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textMuted,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ],
                   ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '$stock',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: stockColor,
-                      ),
-                    ),
-                    Text('adet', style: TextStyle(fontSize: 11, color: stockColor)),
-                  ],
-                ),
+                Icon(Icons.chevron_right, color: AppColors.textMuted),
               ],
             ),
           ),

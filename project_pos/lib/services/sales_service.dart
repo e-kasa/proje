@@ -1,22 +1,20 @@
-import '../core/data/mock_data.dart';
+import 'package:flutter/foundation.dart';
 import '../core/api/api_client.dart';
 
-/// Satış servisi — Satış işlemleri için backend API çağrıları yönetir.
+/// Satis servisi -- Satis islemleri icin backend API cagrilari yonetir.
 ///
 /// Backend endpoint: `product/api/v1/sales`
-/// Mock data desteği geliştirme ortamı için mevcuttur.
 class SalesService {
-
-  /// Development mode - uses mock data when API is unavailable
-  static const bool useMockData = false;
   final ApiClient _apiClient;
 
   SalesService(this._apiClient);
 
-  /// Satışları listeler.
+  static const String _base = 'product/api/v1/sales';
+
+  /// Satislari listeler.
   ///
-  /// [startDate], [endDate] ile tarih aralığı, [customerId] ile müşteri,
-  /// [paymentMethod] ile ödeme yöntemi, [paymentStatus] ile durum filtreleme destekler.
+  /// [startDate], [endDate] ile tarih araligi, [customerId] ile musteri,
+  /// [paymentMethod] ile odeme yontemi, [paymentStatus] ile durum filtreleme destekler.
   Future<List<Map<String, dynamic>>> getSales({
     DateTime? startDate,
     DateTime? endDate,
@@ -26,25 +24,6 @@ class SalesService {
     int? page,
     int? limit,
   }) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 400));
-      var sales = List<Map<String, dynamic>>.from(MockData.sampleSales);
-
-      if (customerId != null) {
-        sales = sales.where((s) => s['customerId'] == customerId).toList();
-      }
-
-      if (paymentMethod != null) {
-        sales = sales.where((s) => s['paymentMethod'] == paymentMethod).toList();
-      }
-
-      if (paymentStatus != null) {
-        sales = sales.where((s) => s['status'] == paymentStatus).toList();
-      }
-
-      return sales;
-    }
-
     try {
       final queryParams = <String, dynamic>{};
       if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
@@ -55,51 +34,29 @@ class SalesService {
       if (page != null) queryParams['page'] = page;
       if (limit != null) queryParams['limit'] = limit;
 
-      final response = await _apiClient.get('product/api/v1/sales', queryParameters: queryParams);
+      final response = await _apiClient.get(_base, queryParameters: queryParams);
       return List<Map<String, dynamic>>.from(response.data['data'] ?? []);
     } catch (e) {
-      return MockData.sampleSales;
+      debugPrint('getSales hata: $e');
+      rethrow;
     }
   }
 
-  static const String _base = 'product/api/v1/sales';
-
-  /// Tek bir satışı ID ile getirir.
+  /// Tek bir satisi ID ile getirir.
   Future<Map<String, dynamic>> getSaleById(String id) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 300));
-      return MockData.sampleSales.firstWhere(
-        (s) => s['id'] == id,
-        orElse: () => {},
-      );
-    }
-
     try {
       final response = await _apiClient.get('$_base/$id');
       return response.data['data'] as Map<String, dynamic>;
     } catch (e) {
-      return MockData.sampleSales.firstWhere(
-        (s) => s['id'] == id,
-        orElse: () => {},
-      );
+      debugPrint('getSaleById hata: $e');
+      rethrow;
     }
   }
 
-  /// Yeni satış oluşturur (POS ekranından).
+  /// Yeni satis olusturur (POS ekranindan).
   ///
-  /// [data] satış kalemleri, müşteri bilgisi ve ödeme detaylarını içerir.
+  /// [data] satis kalemleri, musteri bilgisi ve odeme detaylarini icerir.
   Future<Map<String, dynamic>> createSale(Map<String, dynamic> data) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      final newSale = {
-        'id': 'SALE-${DateTime.now().millisecondsSinceEpoch}',
-        ...data,
-        'createdAt': DateTime.now().toIso8601String(),
-      };
-      MockData.sampleSales.add(newSale);
-      return newSale;
-    }
-
     try {
       final response = await _apiClient.post(_base, data: data);
       return response.data['data'] as Map<String, dynamic>;
@@ -108,21 +65,8 @@ class SalesService {
     }
   }
 
-  /// Mevcut satışı günceller.
+  /// Mevcut satisi gunceller.
   Future<Map<String, dynamic>> updateSale(String id, Map<String, dynamic> data) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 400));
-      final index = MockData.sampleSales.indexWhere((s) => s['id'] == id);
-      if (index != -1) {
-        MockData.sampleSales[index] = {
-          ...MockData.sampleSales[index],
-          ...data,
-        };
-        return MockData.sampleSales[index];
-      }
-      throw Exception('Sale not found');
-    }
-
     try {
       final response = await _apiClient.put('$_base/$id', data: data);
       return response.data['data'] as Map<String, dynamic>;
@@ -131,21 +75,10 @@ class SalesService {
     }
   }
 
-  /// Satışı iptal eder.
+  /// Satisi iptal eder.
   ///
   /// [reason] iptal nedenini belirtir.
   Future<Map<String, dynamic>> cancelSale(String id, String reason) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 400));
-      final index = MockData.sampleSales.indexWhere((s) => s['id'] == id);
-      if (index != -1) {
-        MockData.sampleSales[index]['status'] = 'cancelled';
-        MockData.sampleSales[index]['cancelReason'] = reason;
-        return MockData.sampleSales[index];
-      }
-      throw Exception('Sale not found');
-    }
-
     try {
       final response = await _apiClient.put('$_base/$id/cancel', data: {'reason': reason});
       return response.data['data'] as Map<String, dynamic>;
@@ -154,47 +87,24 @@ class SalesService {
     }
   }
 
-  /// Satış kalemlerini getirir.
+  /// Satis kalemlerini getirir.
   Future<List<Map<String, dynamic>>> getSaleItems(String saleId) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 300));
-      final sale = MockData.sampleSales.firstWhere(
-        (s) => s['id'] == saleId,
-        orElse: () => {},
-      );
-      return List<Map<String, dynamic>>.from(sale['items'] ?? []);
-    }
-
     try {
       final response = await _apiClient.get('$_base/$saleId/items');
       return List<Map<String, dynamic>>.from(response.data['data'] ?? []);
     } catch (e) {
-      return [];
+      debugPrint('getSaleItems hata: $e');
+      rethrow;
     }
   }
 
-  /// Satış istatistiklerini getirir.
+  /// Satis istatistiklerini getirir.
   ///
-  /// [startDate] ve [endDate] ile tarih aralığı filtreleme destekler.
+  /// [startDate] ve [endDate] ile tarih araligi filtreleme destekler.
   Future<Map<String, dynamic>> getSalesStats({
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 300));
-      final sales = MockData.sampleSales;
-      return {
-        'totalSales': sales.length,
-        'totalRevenue': sales.fold<double>(
-          0, (sum, s) => sum + ((s['totalAmount'] as num?)?.toDouble() ?? 0)),
-        'completedSales': sales.where((s) => s['status'] == 'completed').length,
-        'pendingSales': sales.where((s) => s['status'] == 'pending').length,
-        'averageOrderValue': sales.isNotEmpty
-            ? sales.fold<double>(0, (sum, s) => sum + ((s['totalAmount'] as num?)?.toDouble() ?? 0)) / sales.length
-            : 0,
-      };
-    }
-
     try {
       final queryParams = <String, dynamic>{};
       if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
@@ -207,15 +117,10 @@ class SalesService {
     }
   }
 
-  /// Günlük satış raporunu getirir.
+  /// Gunluk satis raporunu getirir.
   Future<List<Map<String, dynamic>>> getDailySalesReport({
     DateTime? date,
   }) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 300));
-      return MockData.sampleSales;
-    }
-
     try {
       final queryParams = <String, dynamic>{};
       if (date != null) queryParams['date'] = date.toIso8601String();
@@ -223,24 +128,15 @@ class SalesService {
       final response = await _apiClient.get('$_base/daily-report', queryParameters: queryParams);
       return List<Map<String, dynamic>>.from(response.data['data'] ?? []);
     } catch (e) {
-      return MockData.sampleSales;
+      debugPrint('getDailySalesReport hata: $e');
+      rethrow;
     }
   }
 
-  /// Satış iadesi oluşturur.
+  /// Satis iadesi olusturur.
   ///
-  /// [data] iade kalemleri ve nedenini içerir.
+  /// [data] iade kalemleri ve nedenini icerir.
   Future<Map<String, dynamic>> createSaleReturn(String saleId, Map<String, dynamic> data) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      return {
-        'id': 'SRET-${DateTime.now().millisecondsSinceEpoch}',
-        'saleId': saleId,
-        ...data,
-        'createdAt': DateTime.now().toIso8601String(),
-      };
-    }
-
     try {
       final response = await _apiClient.post('$_base/$saleId/returns', data: data);
       return response.data['data'] as Map<String, dynamic>;
@@ -249,13 +145,8 @@ class SalesService {
     }
   }
 
-  /// Satış fişini yazdırır.
+  /// Satis fisini yazdirir.
   Future<Map<String, dynamic>> printReceipt(String saleId) async {
-    if (useMockData) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      return {'success': true, 'message': 'Receipt printed (mock mode)'};
-    }
-
     try {
       final response = await _apiClient.post('$_base/$saleId/print');
       return response.data['data'] as Map<String, dynamic>;

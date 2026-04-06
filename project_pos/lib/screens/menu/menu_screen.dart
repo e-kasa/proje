@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../core/widgets/widgets.dart';
 
 class MenuScreen extends ConsumerWidget {
   const MenuScreen({super.key});
@@ -28,8 +29,6 @@ class MenuScreen extends ConsumerWidget {
             items: [
               _MenuItem('POS Satış', Icons.shopping_cart, '/pos'),
               _MenuItem('Satış Geçmişi', Icons.history, '/sales'),
-              _MenuItem('İadeler', Icons.keyboard_return, '/sales'),
-              _MenuItem('Bekleyen Satışlar', Icons.pending_actions, '/sales'),
             ],
           ),
 
@@ -49,48 +48,42 @@ class MenuScreen extends ConsumerWidget {
               _MenuItem('Birimler', Icons.straighten, '/inventory/units'),
               _MenuItem('Yeni Ürün Ekle', Icons.add_box, '/inventory/add-product'),
               _MenuItem('Toplu Ürün Girişi', Icons.playlist_add, '/inventory/batch-entry'),
-              _MenuItem('Toplu Ürün İçe Aktarma', Icons.cloud_upload, '/bulk-import'),
-              _MenuItem('Tedarikçi İthalatı', Icons.local_shipping, '/bulk-import/supplier'),
-              _MenuItem('Tedarikçi İthalatı (Wizard)', Icons.auto_awesome, '/bulk-import/supplier-wizard'),
               _MenuItem('Barkod Yönetimi', Icons.qr_code_2, '/inventory/barcodes'),
+              _MenuItem('Parça Ara', Icons.search, '/part-search'),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // STOK YÖNETİMİ
+          _buildMenuSection(
+            context: context,
+            title: 'STOK YÖNETİMİ',
+            icon: Icons.warehouse,
+            iconColor: Colors.brown,
+            items: [
               _MenuItem('Stok Yönetimi', Icons.warehouse, '/stock'),
               _MenuItem('Hareket Geçmişi', Icons.history, '/stock/movements'),
               _MenuItem('Stok Alarmları', Icons.notifications_active, '/stock/alerts'),
               _MenuItem('Stok Değer Raporu', Icons.bar_chart, '/stock/value-report'),
               _MenuItem('Depo Bazlı Stok', Icons.store, '/stock/multi-warehouse'),
-              _MenuItem('Transfer Olustur', Icons.swap_horiz, '/stock/transfer'),
-              _MenuItem('Transfer Onay', Icons.swap_horiz, '/stock/transfer-review'),
+              _MenuItem('Transfer Oluştur', Icons.swap_horiz, '/stock/transfer'),
+              _MenuItem('Transfer Onay', Icons.check_circle, '/stock/transfer-review'),
               _MenuItem('Stok Sayım İnceleme', Icons.fact_check, '/stock/count-review'),
             ],
           ),
 
           const SizedBox(height: 16),
 
-          // İŞLETME YÖNETİMİ
+          // İÇE AKTARMA
           _buildMenuSection(
             context: context,
-            title: 'İŞLETME YÖNETİMİ',
-            icon: Icons.business_center,
-            iconColor: AppColors.warning,
+            title: 'İÇE AKTARMA',
+            icon: Icons.cloud_upload,
+            iconColor: Colors.indigo,
             items: [
-              _MenuItem('Depolar', Icons.warehouse, '/warehouses'),
-              _MenuItem('Mağazalar', Icons.store, '/stores'),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // FİNANS YÖNETİMİ
-          _buildMenuSection(
-            context: context,
-            title: 'FİNANS YÖNETİMİ',
-            icon: Icons.account_balance,
-            iconColor: AppColors.success,
-            items: [
-              _MenuItem('Finans Özeti', Icons.dashboard, '/finance'),
-              _MenuItem('Giderler', Icons.arrow_downward, '/finance/expenses'),
-              _MenuItem('Gelirler', Icons.arrow_upward, '/finance'),
-              _MenuItem('Raporlar', Icons.analytics, '/finance'),
+              _MenuItem('Toplu Ürün İçe Aktarma', Icons.cloud_upload, '/bulk-import'),
+              _MenuItem('Tedarikçi İthalatı', Icons.auto_awesome, '/bulk-import/supplier-wizard'),
             ],
           ),
 
@@ -118,9 +111,42 @@ class MenuScreen extends ConsumerWidget {
             iconColor: AppColors.info,
             items: [
               _MenuItem('Cari Hesap Özeti', Icons.dashboard, '/accounts'),
+              _MenuItem('Hesap Ekstresi', Icons.receipt, '/accounts/statement'),
               _MenuItem('Vadesi Geçmiş', Icons.warning_amber, '/accounts/overdue'),
               _MenuItem('Müşteriler', Icons.person, '/customers'),
               _MenuItem('Tedarikçiler', Icons.business, '/suppliers'),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // FİNANS YÖNETİMİ
+          _buildMenuSection(
+            context: context,
+            title: 'FİNANS YÖNETİMİ',
+            icon: Icons.account_balance,
+            iconColor: AppColors.success,
+            items: [
+              _MenuItem('Finans Özeti', Icons.dashboard, '/finance'),
+              _MenuItem('Giderler', Icons.arrow_downward, '/finance/expenses'),
+              _MenuItem('Gelirler', Icons.arrow_upward, '/finance/add-income'),
+              _MenuItem('Ödemeler', Icons.payment, '/finance/payments'),
+              _MenuItem('Nakit Akışı', Icons.currency_lira, '/finance/cash-flow'),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // İŞLETME YÖNETİMİ
+          _buildMenuSection(
+            context: context,
+            title: 'İŞLETME YÖNETİMİ',
+            icon: Icons.business_center,
+            iconColor: AppColors.warning,
+            items: [
+              _MenuItem('Depolar', Icons.warehouse, '/warehouses'),
+              _MenuItem('Mağazalar', Icons.store, '/stores'),
+              _MenuItem('Araç Listesi', Icons.directions_car, '/vehicles'),
             ],
           ),
 
@@ -135,7 +161,7 @@ class MenuScreen extends ConsumerWidget {
             items: [
               _MenuItem('Dashboard', Icons.dashboard, '/dashboard'),
               _MenuItem('Raporlar', Icons.analytics, '/reports'),
-              _MenuItem('Gunluk Ozet', Icons.today, '/reports/daily-summary'),
+              _MenuItem('Günlük Özet', Icons.today, '/reports/daily-summary'),
               _MenuItem('Satış Özeti', Icons.show_chart, '/reports/sales-summary'),
               _MenuItem('Ürün Satış Analizi', Icons.category, '/reports/product-analysis'),
               _MenuItem('Müşteri Satış Analizi', Icons.people_outline, '/reports/customer-analysis'),
@@ -145,15 +171,15 @@ class MenuScreen extends ConsumerWidget {
 
           const SizedBox(height: 16),
 
-          // INSAN KAYNAKLARI
+          // İNSAN KAYNAKLARI
           _buildMenuSection(
             context: context,
-            title: 'INSAN KAYNAKLARI',
+            title: 'İNSAN KAYNAKLARI',
             icon: Icons.people_alt,
             iconColor: Colors.teal,
             items: [
-              _MenuItem('Calisanlar', Icons.badge, '/hrm/employees'),
-              _MenuItem('Yeni Calisan Ekle', Icons.person_add, '/hrm/employees/add'),
+              _MenuItem('Çalışanlar', Icons.badge, '/hrm/employees'),
+              _MenuItem('Yeni Çalışan Ekle', Icons.person_add, '/hrm/employees/add'),
             ],
           ),
 
@@ -166,9 +192,9 @@ class MenuScreen extends ConsumerWidget {
             icon: Icons.settings,
             iconColor: AppColors.textSecondary,
             items: [
-              _MenuItem('Tema Ayarları', Icons.palette, '/settings/theme'),
-              _MenuItem('İşletme Bilgileri', Icons.store, '/profile'),
-              _MenuItem('Yazıcı Ayarları', Icons.print, '/settings/printer'),
+              _MenuItem('Genel Ayarlar', Icons.settings, '/settings'),
+              _MenuItem('İşletme Bilgileri', Icons.business, '/settings/company'),
+              _MenuItem('Kullanıcı Yönetimi', Icons.manage_accounts, '/settings/users'),
               _MenuItem('Profil', Icons.person_outline, '/profile'),
             ],
           ),
@@ -200,14 +226,14 @@ class MenuScreen extends ConsumerWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+          colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
+            color: AppColors.primary.withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -362,7 +388,7 @@ class MenuScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.danger.withOpacity(0.3)),
+        border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
       ),
       child: Material(
         color: Colors.transparent,
@@ -378,16 +404,13 @@ class MenuScreen extends ConsumerWidget {
                     onPressed: () => Navigator.pop(context),
                     child: const Text('İptal'),
                   ),
-                  ElevatedButton(
+                  AppButton.primary(
+                    text: 'Çıkış Yap',
                     onPressed: () {
                       ref.read(authProvider.notifier).logout();
                       Navigator.pop(context);
                       context.go('/login');
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.danger,
-                    ),
-                    child: const Text('Çıkış Yap'),
                   ),
                 ],
               ),

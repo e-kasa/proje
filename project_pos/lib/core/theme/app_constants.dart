@@ -92,4 +92,12 @@ class AppConstants {
   static const double borderThin = 1.0;
   static const double borderMedium = 1.5;
   static const double borderThick = 2.0;
+
+  // === PAGE & SECTION SPACING ===
+  static const EdgeInsets pagePadding = EdgeInsets.all(spacing16);
+  static const EdgeInsets pagePaddingHorizontal = EdgeInsets.symmetric(horizontal: spacing16);
+  static const EdgeInsets cardPadding = EdgeInsets.all(spacing16);
+  static const double formFieldSpacing = spacing16;
+  static const double sectionSpacing = spacing24;
+  static const double listItemSpacing = spacing8;
 }

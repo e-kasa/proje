@@ -1,5 +1,4 @@
 import '../core/api/api_client.dart';
-import '../core/data/mock_data.dart';
 
 /// Supplier Service - handles all supplier-related API calls
 class SupplierService {

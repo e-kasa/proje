@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/widgets.dart';
 
 /// Yeniden kullanilabilir odeme/tahsilat kayit dialog'u.
 /// Hem musteri tahsilati hem tedarikci odemesi icin kullanilir.

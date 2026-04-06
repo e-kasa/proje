@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/widgets.dart';
 
 class BarcodeScannerScreen extends ConsumerStatefulWidget {
   const BarcodeScannerScreen({super.key});
@@ -119,18 +120,14 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> {
             },
             child: const Text('Tekrar Tara'),
           ),
-          ElevatedButton.icon(
+          AppButton.primary(
+            text: 'Ürünü Bul',
+            icon: Icons.search,
             onPressed: () {
               Navigator.pop(context);
               // Navigate to product search with barcode
               context.go('/inventory/products?search=$code');
             },
-            icon: const Icon(Icons.search),
-            label: const Text('Ürünü Bul'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-            ),
           ),
         ],
       ),

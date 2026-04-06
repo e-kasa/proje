@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
@@ -141,7 +143,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     if (_error != null || _product == null) {
       return Scaffold(
         backgroundColor: AppColors.bgLight,
-        appBar: AppBar(
+        appBar: AppAppBar.standard(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => context.go('/inventory/products'),
@@ -179,9 +181,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       length: 4,
       child: Scaffold(
         backgroundColor: AppColors.bgLight,
-        appBar: AppBar(
+        appBar: AppAppBar.standard(
           backgroundColor: AppColors.white,
-          elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
             onPressed: () => context.go('/inventory/products'),
@@ -239,13 +240,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Product info card
-          Card(
-            elevation: 0,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
+          AppCard(
+            padding: const EdgeInsets.all(24),
+            child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -332,13 +329,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           // Description card
           if (product['description'] != null &&
               product['description'].toString().isNotEmpty)
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
+            AppCard(
+              padding: const EdgeInsets.all(24),
+              child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
@@ -366,13 +359,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           // Variants card
           if (variants.length > 1) ...[
             const SizedBox(height: 16),
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
+            AppCard(
+              padding: const EdgeInsets.all(24),
+              child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -387,7 +376,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     ...variants.map((v) => _buildVariantRow(v)),
                   ],
                 ),
-              ),
             ),
           ],
         ],
@@ -399,10 +387,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     final inventory = variant['inventory'] as Map<String, dynamic>? ?? {};
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      padding: AppConstants.pagePadding,
       decoration: BoxDecoration(
         color: AppColors.bgLight,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: AppConstants.borderRadiusSmall,
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
@@ -471,7 +459,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.bgLight,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppConstants.borderRadiusMedium,
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
@@ -512,7 +500,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppConstants.borderRadiusMedium,
           ),
           child: Icon(icon, color: color, size: 24),
         ),
@@ -601,7 +589,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     return Card(
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: AppConstants.borderRadiusSmall,
                         side: BorderSide(
                           color: isPrimary
                               ? AppColors.warning
@@ -635,7 +623,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                     horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: AppColors.warning.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(6),
+                                  borderRadius: AppConstants.borderRadiusSmall,
                                 ),
                                 child: const Text(
                                   'Birincil',
@@ -718,7 +706,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     return Card(
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: AppConstants.borderRadiusSmall,
                         side: const BorderSide(color: AppColors.border),
                       ),
                       child: ListTile(
@@ -898,185 +886,4 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   'variantId': int.tryParse(variantId) ?? variantId,
                   'crossRefNumber': codeController.text.trim(),
                   'crossRefBrand': brandController.text.trim(),
-                  'notes': notesController.text.trim(),
-                });
-                if (ctx.mounted) Navigator.of(ctx).pop();
-                _loadCrossRefs();
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Hata: $e')),
-                  );
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.white,
-            ),
-            child: const Text('Kaydet'),
-          ),
-        ],
-      ),
-    ).then((_) {
-      codeController.dispose();
-      brandController.dispose();
-      notesController.dispose();
-    });
-  }
-
-  Future<void> _loadOemNumbers() async {
-    final variantId = _firstVariantId;
-    if (variantId == null) return;
-    setState(() => _oemLoading = true);
-    try {
-      final oems = await ref.read(oemServiceProvider).getByVariantId(variantId);
-      setState(() {
-        _oemNumbers = oems;
-        _oemLoading = false;
-      });
-    } catch (_) {
-      setState(() => _oemLoading = false);
-    }
-  }
-
-  Future<void> _loadCrossRefs() async {
-    final variantId = _firstVariantId;
-    if (variantId == null) return;
-    setState(() => _crossRefLoading = true);
-    try {
-      final crossRefs =
-          await ref.read(crossReferenceServiceProvider).getByVariantId(variantId);
-      setState(() {
-        _crossRefs = crossRefs;
-        _crossRefLoading = false;
-      });
-    } catch (_) {
-      setState(() => _crossRefLoading = false);
-    }
-  }
-
-  // ─── Tab 4: Arac Uyumlulugu ──────────────────────────────────────────────
-
-  Widget _buildVehicleCompatibilityTab() {
-    final variantId = _firstVariantId;
-
-    if (variantId == null) {
-      return const Center(
-        child: Text(
-          'Varyant bulunamadi',
-          style: TextStyle(color: AppColors.textMuted),
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        // Navigate button
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Arac Uyumlulugu (${_vehicleCompats.length})',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              ElevatedButton.icon(
-                onPressed: () {
-                  context.push('/vehicles/compatibility/$variantId');
-                },
-                icon: const Icon(Icons.open_in_new, size: 18),
-                label: const Text('Tumu'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.white,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: _vehicleCompatLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _vehicleCompats.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.directions_car_outlined,
-                              size: 48, color: AppColors.textMuted),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Henuz arac uyumlulugu eklenmemis',
-                            style: TextStyle(color: AppColors.textMuted),
-                          ),
-                          const SizedBox(height: 16),
-                          OutlinedButton.icon(
-                            onPressed: () {
-                              context.push(
-                                  '/vehicles/compatibility/$variantId');
-                            },
-                            icon: const Icon(Icons.add, size: 18),
-                            label: const Text('Uyumluluk Ekle'),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.all(20),
-                      itemCount: _vehicleCompats.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final vc = _vehicleCompats[index];
-                        final vehicle =
-                            vc['vehicle'] as Map<String, dynamic>? ?? {};
-                        final make =
-                            vehicle['make']?.toString() ?? '';
-                        final model =
-                            vehicle['model']?.toString() ?? '';
-                        final year =
-                            vehicle['year']?.toString() ?? '';
-                        final displayText =
-                            [make, model, year].where((s) => s.isNotEmpty).join(' ');
-
-                        return Card(
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            side: const BorderSide(color: AppColors.border),
-                          ),
-                          child: ListTile(
-                            leading: const Icon(Icons.directions_car,
-                                color: AppColors.info, size: 24),
-                            title: Text(
-                              displayText.isNotEmpty ? displayText : 'Arac',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 15,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            subtitle: vc['notes'] != null &&
-                                    vc['notes'].toString().isNotEmpty
-                                ? Text(
-                                    vc['notes'].toString(),
-                                    style: const TextStyle(
-                                      color: AppColors.textSecondary,
-                                      fontSize: 13,
-                                    ),
-                                  )
-                                : null,
-                          ),
-                        );
-                      },
-                    ),
-        ),
-      ],
-    );
-  }
-}
+                  'notes': notesController.t

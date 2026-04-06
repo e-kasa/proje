@@ -6,7 +6,7 @@ import '../../core/theme/app_colors.dart';
 import 'providers/pos_provider.dart';
 import 'widgets/product_grid_item.dart';
 import 'widgets/cart_panel.dart';
-import 'widgets/payment_dialog.dart';
+import 'widgets/payment_panel.dart';
 import 'widgets/category_filter_bar.dart';
 
 /// Tam fonksiyonel POS Satis Ekrani
@@ -540,10 +540,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => PaymentDialog(
-        currencyFormat: _currencyFormat,
-        onSaleComplete: () => _showReceiptSummary(context),
-      ),
+      builder: (_) => const PaymentPanel(),
     );
   }
 

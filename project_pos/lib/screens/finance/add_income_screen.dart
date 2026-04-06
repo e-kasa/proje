@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../core/utils/validation_helper.dart';
 import '../../services/finance_service.dart';
@@ -115,13 +116,9 @@ class _AddIncomeScreenState extends ConsumerState<AddIncomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        title: const Text('Yeni Gelir'),
-        backgroundColor: Colors.white,
-        elevation: 0,
-      ),
+      appBar: AppAppBar.standard(title: 'Yeni Gelir'),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: AppConstants.pagePadding,
         child: Form(
           key: _formKey,
           child: Column(

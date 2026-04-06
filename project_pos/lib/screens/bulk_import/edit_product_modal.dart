@@ -1,6 +1,39 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/data/mock_import_data.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
+
+/// Reference data helpers for product edit form dropdowns.
+/// TODO: Replace with API-driven reference data when backend endpoints are available.
+class _ReferenceData {
+  static List<String> getCategories() => [
+    'Giyim', 'Elektronik', 'Gida', 'Kozmetik', 'Ev & Yasam',
+    'Spor', 'Oyuncak', 'Kirtasiye', 'Diger',
+  ];
+
+  static List<String> getBrands() => [
+    'Genel', 'Nike', 'Adidas', 'Samsung', 'Apple', 'LG',
+    'Beko', 'Arcelik', 'Diger',
+  ];
+
+  static List<Map<String, dynamic>> getTaxRates() => [
+    {'label': '%0', 'value': 0.0},
+    {'label': '%1', 'value': 0.01},
+    {'label': '%8', 'value': 0.08},
+    {'label': '%10', 'value': 0.10},
+    {'label': '%18', 'value': 0.18},
+    {'label': '%20', 'value': 0.20},
+  ];
+
+  static List<Map<String, String>> getUnits() => [
+    {'label': 'Adet', 'value': 'ADET'},
+    {'label': 'Kilogram', 'value': 'KG'},
+    {'label': 'Litre', 'value': 'LT'},
+    {'label': 'Metre', 'value': 'MT'},
+    {'label': 'Paket', 'value': 'PKT'},
+    {'label': 'Kutu', 'value': 'KTU'},
+  ];
+}
 
 /// Toplu İçe Aktarma - Ürün Düzenleme ve Manuel Eşleştirme Modal
 class EditProductModal extends StatefulWidget {
@@ -153,7 +186,7 @@ class _EditProductModalState extends State<EditProductModal> {
         width: 800,
         constraints: const BoxConstraints(maxHeight: 720),
         child: Scaffold(
-          appBar: AppBar(
+          appBar: AppAppBar.standard(
             title: const Text('Ürün Düzenle / Eşleştir'),
             backgroundColor: AppColors.primary,
             automaticallyImplyLeading: false,
@@ -223,14 +256,15 @@ class _EditProductModalState extends State<EditProductModal> {
                       child: const Text('İptal'),
                     ),
                     const SizedBox(width: 12),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.save),
-                      label: Text(_resolutionMode == 'match' ? 'Eşleştir' : 'Kaydet'),
+                    AppButton.success(
+
+                      text: _resolutionMode == 'match' ? 'Eşleştir' : 'Kaydet',
+
+                      icon: Icons.save,
+
                       onPressed: _saveProduct,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.success,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      ),
+
+                    ),
                     ),
                   ],
                 ),
@@ -450,7 +484,7 @@ class _EditProductModalState extends State<EditProductModal> {
                     labelText: 'Kategori',
                     border: OutlineInputBorder(),
                   ),
-                  items: MockImportData.getCategories().map((category) {
+                  items: _ReferenceData.getCategories().map((category) {
                     return DropdownMenuItem(
                       value: category,
                       child: Text(category),
@@ -471,7 +505,7 @@ class _EditProductModalState extends State<EditProductModal> {
                     labelText: 'Marka',
                     border: OutlineInputBorder(),
                   ),
-                  items: MockImportData.getBrands().map((brand) {
+                  items: _ReferenceData.getBrands().map((brand) {
                     return DropdownMenuItem(
                       value: brand,
                       child: Text(brand),
@@ -553,7 +587,7 @@ class _EditProductModalState extends State<EditProductModal> {
                     labelText: 'KDV Oranı',
                     border: OutlineInputBorder(),
                   ),
-                  items: MockImportData.getTaxRates().map((rate) {
+                  items: _ReferenceData.getTaxRates().map((rate) {
                     return DropdownMenuItem(
                       value: rate['value'] as double,
                       child: Text(rate['label'] as String),
@@ -574,7 +608,7 @@ class _EditProductModalState extends State<EditProductModal> {
                     labelText: 'Birim',
                     border: OutlineInputBorder(),
                   ),
-                  items: MockImportData.getUnits().map((unit) {
+                  items: _ReferenceData.getUnits().map((unit) {
                     return DropdownMenuItem(
                       value: unit['value'],
                       child: Text(unit['label']!),
@@ -710,46 +744,4 @@ class _EditProductModalState extends State<EditProductModal> {
                   ),
                   Text(
                     'Stok: ${product['stock']} | Alış: ₺${product['buyPrice']} | Satış: ₺${product['sellPrice']}',
-                    style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-                  ),
-                ],
-              ),
-            ),
-            if (isSelected)
-              Icon(Icons.check_circle, color: AppColors.success),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              '$label:',
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 13),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  bool get hasExistingProducts =>
-      widget.existingProducts != null && widget.existingProducts!.isNotEmpty;
-}
+                    style: const TextStyle(fontSize: 12, color: Ap

@@ -1,20 +1,24 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
+import '../../services/service_locator.dart';
 
 /// Tedarikçi Dosya Yükleme ve Backend Entegrasyon Ekranı
-class SupplierImportUploadScreen extends StatefulWidget {
+class SupplierImportUploadScreen extends ConsumerStatefulWidget {
   const SupplierImportUploadScreen({super.key});
 
   @override
-  State<SupplierImportUploadScreen> createState() =>
+  ConsumerState<SupplierImportUploadScreen> createState() =>
       _SupplierImportUploadScreenState();
 }
 
 class _SupplierImportUploadScreenState
-    extends State<SupplierImportUploadScreen> {
+    extends ConsumerState<SupplierImportUploadScreen> {
   // State
   File? _selectedFile;
   bool _uploading = false;
@@ -71,12 +75,7 @@ class _SupplierImportUploadScreenState
     });
 
     try {
-      // ==========================================
-      // GERÇEK BACKEND ENTEGRASYONU
-      // ==========================================
-
-      // Simulate upload progress (Gerçekte Dio ile yapılacak)
-      _importId = await _simulateUploadToBackend();
+      _importId = await _uploadToBackend();
 
       setState(() {
         _uploading = false;
@@ -95,72 +94,35 @@ class _SupplierImportUploadScreenState
     }
   }
 
-  /// Backend'e dosya yükle (Simülasyon)
-  ///
-  /// GERÇEK KOD:
-  /// ```dart
-  /// final formData = FormData.fromMap({
-  ///   'file': await MultipartFile.fromFile(_selectedFile!.path),
-  ///   'supplierId': _supplierController.text,
-  ///   'invoiceNumber': _invoiceController.text,
-  ///   'purchaseDate': _dateController.text,
-  /// });
-  ///
-  /// final response = await dio.post(
-  ///   '/api/bulk-import/upload',
-  ///   data: formData,
-  ///   onSendProgress: (sent, total) {
-  ///     setState(() {
-  ///       _uploadProgress = sent / total;
-  ///     });
-  ///   },
-  /// );
-  ///
-  /// return response.data['importId'];
-  /// ```
-  Future<String> _simulateUploadToBackend() async {
-    // Simüle et - Upload progress
-    for (int i = 0; i <= 100; i += 10) {
-      await Future.delayed(const Duration(milliseconds: 200));
-      if (mounted) {
-        setState(() => _uploadProgress = i / 100);
-      }
+  /// Backend'e dosya yükle
+  Future<String> _uploadToBackend() async {
+    final bulkImportService = ref.read(bulkImportServiceProvider);
+    final importId = await bulkImportService.uploadFile(_selectedFile!);
+    if (mounted) {
+      setState(() => _uploadProgress = 1.0);
     }
-    return 'IMPORT-2025-001'; // Mock importId
+    return importId;
   }
 
   /// Analiz sonucunu bekle (Polling)
-  ///
-  /// GERÇEK KOD:
-  /// ```dart
-  /// while (_analyzing) {
-  ///   await Future.delayed(const Duration(seconds: 2));
-  ///
-  ///   final response = await dio.get(
-  ///     '/api/bulk-import/status/$_importId',
-  ///   );
-  ///
-  ///   if (response.data['status'] == 'COMPLETED') {
-  ///     final result = await dio.get(
-  ///       '/api/bulk-import/result/$_importId',
-  ///     );
-  ///     _navigateToReview(result.data);
-  ///     break;
-  ///   }
-  /// }
-  /// ```
   Future<void> _waitForAnalysisResult() async {
-    // Simüle et - Analiz bekleme
-    await Future.delayed(const Duration(seconds: 3));
+    try {
+      final bulkImportService = ref.read(bulkImportServiceProvider);
+      await bulkImportService.waitForAnalysis(importId: _importId!);
 
-    if (mounted) {
-      setState(() => _analyzing = false);
-
-      // Review ekranına git (Backend datası ile)
-      context.push('/bulk-import/supplier', extra: {
-        'importId': _importId,
-        'analysisData': null, // Gerçekte backend'den gelecek
-      });
+      if (mounted) {
+        setState(() => _analyzing = false);
+        context.push('/bulk-import/supplier', extra: {
+          'importId': _importId,
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _analyzing = false;
+          _errorMessage = 'Analiz sirasinda hata: ${e.toString()}';
+        });
+      }
     }
   }
 
@@ -168,7 +130,7 @@ class _SupplierImportUploadScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: AppBar(
+      appBar: AppAppBar.standard(
         title: const Text('Tedarikçi Dosyası Yükle'),
         elevation: 0,
       ),
@@ -566,3 +528,4 @@ class _SupplierImportUploadScreenState
     );
   }
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                

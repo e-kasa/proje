@@ -48,10 +48,8 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
 
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        title: const Text('Finans Özeti'),
-        backgroundColor: Colors.white,
-        elevation: 0,
+      appBar: AppAppBar.standard(
+        title: 'Finans Özeti',
         actions: [
           IconButton(
             onPressed: _loadSummary,
@@ -60,9 +58,11 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: AppLoadingIndicator(),
+            )
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: AppConstants.pagePadding,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -117,32 +117,29 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
                     size: 32,
                   ),
                   const SizedBox(width: 12),
-                  const Text(
+                  Text(
                     'Net Gelir',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               Text(
                 currencyFormat.format(netIncome),
-                style: const TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
               ),
               const SizedBox(height: 8),
               Text(
-                netIncome >= 0 ? '🎉 Karlı' : '⚠️ Zararda',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.white70,
-                ),
+                netIncome >= 0 ? 'Karlı' : 'Zararda',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.white70,
+                    ),
               ),
             ],
           ),
@@ -166,7 +163,7 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
                           height: 40,
                           decoration: BoxDecoration(
                             color: AppColors.success.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: AppConstants.borderRadiusSmall,
                           ),
                           child: const Icon(
                             Icons.arrow_upward,
@@ -175,30 +172,27 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
                           ),
                         ),
                         const SizedBox(width: 12),
-                        const Text(
+                        Text(
                           'Gelirler',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textMuted,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppColors.textMuted,
+                              ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
                     Text(
                       currencyFormat.format(totalRevenues),
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.success,
-                      ),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.success,
+                          ),
                     ),
                     Text(
                       '${_summary['revenueCount'] ?? 0} işlem',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textMuted,
-                      ),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: AppColors.textMuted,
+                          ),
                     ),
                   ],
                 ),
@@ -218,7 +212,7 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
                           height: 40,
                           decoration: BoxDecoration(
                             color: AppColors.danger.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: AppConstants.borderRadiusSmall,
                           ),
                           child: const Icon(
                             Icons.arrow_downward,
@@ -227,30 +221,27 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
                           ),
                         ),
                         const SizedBox(width: 12),
-                        const Text(
+                        Text(
                           'Giderler',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textMuted,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppColors.textMuted,
+                              ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
                     Text(
                       currencyFormat.format(totalExpenses),
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.danger,
-                      ),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.danger,
+                          ),
                     ),
                     Text(
                       '${_summary['expenseCount'] ?? 0} işlem',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textMuted,
-                      ),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: AppColors.textMuted,
+                          ),
                     ),
                   ],
                 ),
@@ -267,12 +258,11 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Hızlı İşlemler',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
           ),
           const SizedBox(height: 16),
           Row(
@@ -346,12 +336,12 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppConstants.borderRadiusMedium,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppConstants.borderRadiusMedium,
         ),
         child: Column(
           children: [
@@ -359,11 +349,10 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
             const SizedBox(height: 8),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -393,10 +382,9 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
           ),
           const SizedBox(height: 16),
           ...sortedCategories.map((entry) {
@@ -413,51 +401,36 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
                     children: [
                       Text(
                         entry.key,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
                       ),
                       Text(
                         NumberFormat.currency(locale: 'tr_TR', symbol: '₺')
                             .format(amount),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: color,
-                        ),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: color,
+                            ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Stack(
-                    children: [
-                      Container(
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                      ),
-                      FractionallySizedBox(
-                        widthFactor: percentage / 100,
-                        child: Container(
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: color,
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        ),
-                      ),
-                    ],
+                  ClipRRect(
+                    borderRadius: AppConstants.borderRadiusSmall,
+                    child: LinearProgressIndicator(
+                      value: percentage / 100,
+                      minHeight: 6,
+                      backgroundColor: color.withOpacity(0.1),
+                      valueColor: AlwaysStoppedAnimation<Color>(color),
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${percentage.toStringAsFixed(1)}%',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textMuted,
-                    ),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: AppColors.textMuted,
+                        ),
                   ),
                 ],
               ),

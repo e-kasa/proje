@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/bulk_import_models.dart';
+import '../../core/widgets/widgets.dart';
 
 /// Eşleştirme Onay Modal - POTENTIAL_MATCH durumu için
 class MatchConfirmModal extends StatefulWidget {
@@ -283,14 +284,15 @@ class _MatchConfirmModalState extends State<MatchConfirmModal> {
                     child: const Text('İptal'),
                   ),
                   const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.link),
-                    label: const Text('Eşleştir'),
+                  AppButton.primary(
+
+                    text: 'Eşleştir',
+
+                    icon: Icons.link,
+
                     onPressed: _confirm,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF9800),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    ),
+
+                  ),
                   ),
                 ],
               ),

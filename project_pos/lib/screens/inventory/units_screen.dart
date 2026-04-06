@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
+import '../../services/service_locator.dart';
 
 class UnitsScreen extends ConsumerStatefulWidget {
   const UnitsScreen({super.key});
@@ -29,24 +32,29 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
 
   Future<void> _loadUnits() async {
     setState(() => _isLoading = true);
-
-    // Mock data - Replace with API call
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    setState(() {
-      _units = [
-        {'id': 1, 'name': 'Adet', 'code': 'AD', 'type': 'Sayılabilir', 'productCount': 156, 'active': true},
-        {'id': 2, 'name': 'Kilogram', 'code': 'KG', 'type': 'Tartılabilir', 'productCount': 45, 'active': true},
-        {'id': 3, 'name': 'Litre', 'code': 'LT', 'type': 'Ölçülebilir', 'productCount': 32, 'active': true},
-        {'id': 4, 'name': 'Metre', 'code': 'MT', 'type': 'Ölçülebilir', 'productCount': 28, 'active': true},
-        {'id': 5, 'name': 'Paket', 'code': 'PKT', 'type': 'Sayılabilir', 'productCount': 67, 'active': true},
-        {'id': 6, 'name': 'Kutu', 'code': 'KTU', 'type': 'Sayılabilir', 'productCount': 89, 'active': true},
-        {'id': 7, 'name': 'Gram', 'code': 'GR', 'type': 'Tartılabilir', 'productCount': 12, 'active': true},
-        {'id': 8, 'name': 'Metrekare', 'code': 'M²', 'type': 'Ölçülebilir', 'productCount': 8, 'active': false},
-      ];
-      _filteredUnits = List.from(_units);
-      _isLoading = false;
-    });
+    try {
+      final service = ref.read(unitServiceProvider);
+      final units = await service.getAllUnits();
+      setState(() {
+        _units = units;
+        _filteredUnits = List.from(_units);
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _units = [];
+        _filteredUnits = [];
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Veri yuklenemedi'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
   }
 
   void _filterUnits(String query) {
@@ -311,9 +319,7 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
+      appBar: AppAppBar.standard(
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -659,3 +665,4 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
     );
   }
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         

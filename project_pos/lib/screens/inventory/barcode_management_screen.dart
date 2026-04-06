@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
+import '../../services/service_locator.dart';
 
 class BarcodeManagementScreen extends ConsumerStatefulWidget {
   const BarcodeManagementScreen({super.key});
@@ -31,66 +34,45 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
 
   Future<void> _loadBarcodes() async {
     setState(() => _isLoading = true);
-
-    // Mock data - Replace with API call
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    setState(() {
-      _barcodes = [
-        {
-          'id': 1,
-          'barcode': '8690123456789',
-          'productName': 'Nike Air Max 90',
-          'sku': 'PRD001',
-          'type': 'EAN-13',
-          'price': 1299.90,
-          'stock': 45,
-          'status': 'active',
-        },
-        {
-          'id': 2,
-          'barcode': '1234567890123',
-          'productName': 'Adidas Ultraboost',
-          'sku': 'PRD002',
-          'type': 'EAN-13',
-          'price': 1499.90,
-          'stock': 32,
-          'status': 'active',
-        },
-        {
-          'id': 3,
-          'barcode': '5901234123457',
-          'productName': 'iPhone 15 Pro',
-          'sku': 'PRD003',
-          'type': 'EAN-13',
-          'price': 45999.00,
-          'stock': 8,
-          'status': 'active',
-        },
-        {
-          'id': 4,
-          'barcode': 'SKU-2024-001',
-          'productName': 'Samsung Galaxy S24',
-          'sku': 'PRD004',
-          'type': 'CODE-128',
-          'price': 38999.00,
-          'stock': 12,
-          'status': 'active',
-        },
-        {
-          'id': 5,
-          'barcode': '9876543210987',
-          'productName': 'Sony WH-1000XM5',
-          'sku': 'PRD005',
-          'type': 'EAN-13',
-          'price': 8999.00,
-          'stock': 0,
-          'status': 'inactive',
-        },
-      ];
-      _filteredBarcodes = List.from(_barcodes);
-      _isLoading = false;
-    });
+    try {
+      final service = ref.read(productServiceProvider);
+      final products = await service.getProducts();
+      // Transform products to barcode entries
+      final barcodeList = <Map<String, dynamic>>[];
+      for (final p in products) {
+        if (p['barcode'] != null && (p['barcode'] as String).isNotEmpty) {
+          barcodeList.add({
+            'id': p['id'],
+            'barcode': p['barcode'] ?? '',
+            'productName': p['name'] ?? '',
+            'sku': p['sku'] ?? '',
+            'type': 'EAN-13',
+            'price': (p['sellPrice'] ?? p['salePrice'] ?? 0).toDouble(),
+            'stock': p['stock'] ?? 0,
+            'status': (p['stock'] ?? 0) > 0 ? 'active' : 'inactive',
+          });
+        }
+      }
+      setState(() {
+        _barcodes = barcodeList;
+        _filteredBarcodes = List.from(_barcodes);
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _barcodes = [];
+        _filteredBarcodes = [];
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Veri yuklenemedi'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
   }
 
   void _filterBarcodes(String query) {
@@ -411,9 +393,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
+      appBar: AppAppBar.standard(
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -810,3 +790,4 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
     );
   }
 }
+                                                                                                                                                                                                                                                              

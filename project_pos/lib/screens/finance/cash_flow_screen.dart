@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 
@@ -46,55 +48,30 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
           _isLoading = false;
         });
       } else {
-        _useMockData();
+        setState(() {
+          _periodData = [];
+          _totalIncome = 0;
+          _totalExpense = 0;
+          _netFlow = 0;
+          _isLoading = false;
+        });
       }
     } catch (e) {
-      _useMockData();
-    }
-  }
-
-  void _useMockData() {
-    final mockPeriods = _getMockPeriodData();
-    double income = 0;
-    double expense = 0;
-    for (final p in mockPeriods) {
-      income += (p['income'] as num).toDouble();
-      expense += (p['expense'] as num).toDouble();
-    }
-    setState(() {
-      _periodData = mockPeriods;
-      _totalIncome = income;
-      _totalExpense = expense;
-      _netFlow = income - expense;
-      _isLoading = false;
-    });
-  }
-
-  List<Map<String, dynamic>> _getMockPeriodData() {
-    if (_selectedPeriod == 'daily') {
-      return [
-        {'period': '01 Nis', 'income': 4500.0, 'expense': 2200.0},
-        {'period': '02 Nis', 'income': 6800.0, 'expense': 3100.0},
-        {'period': '03 Nis', 'income': 3200.0, 'expense': 5400.0},
-        {'period': '04 Nis', 'income': 8100.0, 'expense': 1800.0},
-        {'period': '05 Nis', 'income': 5500.0, 'expense': 4200.0},
-        {'period': '06 Nis', 'income': 7200.0, 'expense': 2900.0},
-        {'period': '07 Nis', 'income': 4100.0, 'expense': 3600.0},
-      ];
-    } else if (_selectedPeriod == 'weekly') {
-      return [
-        {'period': 'Hafta 1', 'income': 28500.0, 'expense': 18200.0},
-        {'period': 'Hafta 2', 'income': 32100.0, 'expense': 21400.0},
-        {'period': 'Hafta 3', 'income': 26800.0, 'expense': 24100.0},
-        {'period': 'Hafta 4', 'income': 35200.0, 'expense': 19800.0},
-      ];
-    } else {
-      return [
-        {'period': 'Ocak', 'income': 125000.0, 'expense': 82000.0},
-        {'period': 'Subat', 'income': 118000.0, 'expense': 91000.0},
-        {'period': 'Mart', 'income': 142000.0, 'expense': 78000.0},
-        {'period': 'Nisan', 'income': 98000.0, 'expense': 65000.0},
-      ];
+      setState(() {
+        _periodData = [];
+        _totalIncome = 0;
+        _totalExpense = 0;
+        _netFlow = 0;
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Veri yuklenemedi'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
     }
   }
 
@@ -105,7 +82,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
+      appBar: AppAppBar.standard(
         title: const Text('Nakit Akisi'),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -491,3 +468,4 @@ class _BarRow extends StatelessWidget {
     );
   }
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  

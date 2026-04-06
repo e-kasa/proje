@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../models/wizard_state.dart';
+import '../../core/widgets/widgets.dart';
 
 /// Shows a dialog to add a new product attribute (e.g., Color, Size).
 void showAddAttributeDialog({

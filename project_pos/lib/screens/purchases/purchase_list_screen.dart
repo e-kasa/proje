@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 import '../../services/purchase_service.dart';
-import '../../core/theme/app_colors.dart';
 
 // ─── State ──────────────────────────────────────────────────────────────────
 
@@ -140,10 +142,8 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      appBar: AppBar(
-        title: const Text('Satın Alma'),
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
+      appBar: AppAppBar.standard(
+        title: 'Satın Alma',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
@@ -203,7 +203,7 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
               filled: true,
               fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppConstants.borderRadiusMedium,
                 borderSide: BorderSide.none,
               ),
               contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
@@ -261,7 +261,7 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
           margin: const EdgeInsets.only(bottom: 10),
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppConstants.borderRadiusMedium,
             side: BorderSide(
               color: cancelled
                   ? Colors.red.withOpacity(0.3)
@@ -269,7 +269,7 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
             ),
           ),
           child: InkWell(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppConstants.borderRadiusMedium,
             onTap: () async {
               await context.push('/purchases/detail/${p['id']}');
               if (mounted) ref.read(purchaseListProvider.notifier).load();
@@ -288,7 +288,7 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
                           color: cancelled
                               ? Colors.red.withOpacity(0.1)
                               : AppColors.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: AppConstants.borderRadiusSmall,
                         ),
                         child: Icon(
                           cancelled ? Icons.cancel_outlined : Icons.receipt_long_rounded,
@@ -382,7 +382,7 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: AppConstants.borderRadiusSmall,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -404,11 +404,11 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
           const SizedBox(height: 12),
           Text(error, textAlign: TextAlign.center),
           const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () => ref.read(purchaseListProvider.notifier).load(),
-            icon: const Icon(Icons.refresh),
-            label: const Text('Tekrar Dene'),
-          ),
+          AppButton.primary(
+                        text: 'Tekrar Dene',
+                        icon: Icons.refresh,
+                        onPressed: () => ref.read(purchaseListProvider.notifier).load(),
+                      ),
         ],
       ),
     );

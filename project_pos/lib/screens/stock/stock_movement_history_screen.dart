@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 
 class StockMovementHistoryScreen extends ConsumerStatefulWidget {
@@ -183,7 +185,7 @@ class _StockMovementHistoryScreenState
 
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
+      appBar: AppAppBar.standard(
         title: const Text('Stok Hareket Gecmisi'),
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
@@ -304,11 +306,11 @@ class _StockMovementHistoryScreenState
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 16),
-                            ElevatedButton.icon(
-                              onPressed: _loadMovements,
-                              icon: const Icon(Icons.refresh),
-                              label: const Text('Tekrar Dene'),
-                            ),
+                            AppButton.primary(
+                        text: 'Tekrar Dene',
+                        icon: Icons.refresh,
+                        onPressed: _loadMovements,
+                      ),
                           ],
                         ),
                       )

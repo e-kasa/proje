@@ -344,10 +344,9 @@ class ImagesStep extends StatelessWidget {
   }
 
   void _addProductImage(BuildContext context) {
-    state.productImages.add('mock_image_${state.productImages.length + 1}.jpg');
-    onChanged();
+    // TODO: Implement real image picker (image_picker package)
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('\u2705 \u00dcr\u00fcn g\u00f6rseli eklendi'), backgroundColor: AppColors.success),
+      const SnackBar(content: Text('Gorsel secici yaklasimda...'), backgroundColor: AppColors.info),
     );
   }
 

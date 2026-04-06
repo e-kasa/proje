@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/data/pos_mock_data.dart';
 import '../../core/theme/theme_aware_gradient.dart';
 import '../../core/utils/app_logger.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/navigation_provider.dart';
+import '../../services/service_locator.dart';
+import '../../core/widgets/widgets.dart';
 
 class PosSalesScreen extends ConsumerStatefulWidget {
   const PosSalesScreen({super.key});
@@ -37,21 +38,40 @@ class _PosSalesScreenState extends ConsumerState<PosSalesScreen> {
   }
 
   Future<void> _loadData() async {
-    // MOCK DATA - No Database!
-    AppLogger.debug('POS: Mock data yükleniyor...', tag: 'POS');
+    AppLogger.debug('POS: Veri yukleniyor...', tag: 'POS');
 
-    // Simulate async loading (like React)
-    await Future.delayed(const Duration(milliseconds: 100));
+    try {
+      final productService = ref.read(productServiceProvider);
+      final categoryService = ref.read(categoryServiceProvider);
 
-    if (mounted) {
-      setState(() {
-        _categories = PosMockData.categories;
-        _allProducts = PosMockData.products;
-        _filteredProducts = PosMockData.products;
-        _isLoading = false;
-      });
+      final results = await Future.wait([
+        categoryService.getCategories(),
+        productService.getProducts(),
+      ]);
 
-      AppLogger.debug('POS: ${_categories.length} kategori, ${_allProducts.length} ürün yüklendi', tag: 'POS');
+      if (mounted) {
+        setState(() {
+          _categories = results[0];
+          _allProducts = results[1];
+          _filteredProducts = results[1];
+          _isLoading = false;
+        });
+
+        AppLogger.debug('POS: ${_categories.length} kategori, ${_allProducts.length} urun yuklendi', tag: 'POS');
+      }
+    } catch (e) {
+      AppLogger.error('POS: Veri yuklenemedi: $e', tag: 'POS');
+      if (mounted) {
+        setState(() {
+          _categories = [];
+          _allProducts = [];
+          _filteredProducts = [];
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Veri yuklenemedi'), backgroundColor: AppColors.danger),
+        );
+      }
     }
   }
 
@@ -161,24 +181,35 @@ class _PosSalesScreenState extends ConsumerState<PosSalesScreen> {
 
   Future<void> _completeSale() async {
     if (_cartItems.isEmpty) {
-      _showSnackbar('❌ Sepet boş', AppColors.danger);
+      _showSnackbar('Sepet bos', AppColors.danger);
       return;
     }
 
-    final saleNumber = 'SAL-${DateTime.now().millisecondsSinceEpoch}';
+    try {
+      final salesService = ref.read(salesServiceProvider);
+      final saleData = {
+        'items': _cartItems.map((item) => {
+          'productId': item.product['id'],
+          'quantity': item.quantity,
+          'price': item.product['sellingPrice'],
+        }).toList(),
+        'paymentMethod': _paymentMethod,
+        'customerId': _selectedCustomer?['id'],
+        'orderNumber': _orderNumber,
+      };
 
-    // Mock sale - just update stock in memory
-    for (final item in _cartItems) {
-      final productIndex = _allProducts.indexWhere((p) => p['id'] == item.product['id']);
-      if (productIndex >= 0) {
-        _allProducts[productIndex]['stock'] = (_allProducts[productIndex]['stock'] as int) - item.quantity;
+      final result = await salesService.createSale(saleData);
+      final saleNumber = result['saleNumber'] ?? 'SAL-${DateTime.now().millisecondsSinceEpoch}';
+
+      if (mounted) {
+        _showReceiptDialog(saleNumber);
+        _clearCart();
+        _loadData(); // Refresh products from server
       }
-    }
-
-    if (mounted) {
-      _showReceiptDialog(saleNumber);
-      _clearCart();
-      _filterProducts(); // Refresh filtered products
+    } catch (e) {
+      if (mounted) {
+        _showSnackbar('Satis tamamlanamadi', AppColors.danger);
+      }
     }
   }
 
@@ -254,36 +285,47 @@ class _PosSalesScreenState extends ConsumerState<PosSalesScreen> {
   }
 
   Future<void> _selectCustomer() async {
-    final customers = PosMockData.customers;
+    List<Map<String, dynamic>> customers = [];
+    try {
+      final customerService = ref.read(customerServiceProvider);
+      customers = await customerService.getCustomers();
+    } catch (e) {
+      if (mounted) {
+        _showSnackbar('Musteriler yuklenemedi', AppColors.danger);
+      }
+      return;
+    }
 
     if (!mounted) return;
 
     final selected = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Müşteri Seç'),
+        title: const Text('Musteri Sec'),
         content: SizedBox(
           width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: customers.length,
-            itemBuilder: (context, index) {
-              final customer = customers[index];
-              return ListTile(
-                leading: CircleAvatar(
-                  child: Text(customer['name'].toString()[0].toUpperCase()),
+          child: customers.isEmpty
+              ? const Center(child: Text('Musteri bulunamadi'))
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: customers.length,
+                  itemBuilder: (context, index) {
+                    final customer = customers[index];
+                    return ListTile(
+                      leading: CircleAvatar(
+                        child: Text(customer['name'].toString()[0].toUpperCase()),
+                      ),
+                      title: Text(customer['name'].toString()),
+                      subtitle: Text(customer['phone']?.toString() ?? ''),
+                      onTap: () => Navigator.pop(context, customer),
+                    );
+                  },
                 ),
-                title: Text(customer['name'].toString()),
-                subtitle: Text(customer['phone']?.toString() ?? ''),
-                onTap: () => Navigator.pop(context, customer),
-              );
-            },
-          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('İptal'),
+            child: const Text('Iptal'),
           ),
         ],
       ),
@@ -1198,57 +1240,4 @@ class _PosSalesScreenState extends ConsumerState<PosSalesScreen> {
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 side: const BorderSide(color: AppColors.textSecondary),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 2,
-            child: ElevatedButton.icon(
-              onPressed: _cartItems.isEmpty ? null : _completeSale,
-              icon: const Icon(Icons.shopping_cart),
-              label: const Text('Sipariş Ver'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: AppColors.purple,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: Colors.grey.shade300,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  IconData _getCategoryIcon(String? iconName) {
-    switch (iconName) {
-      case 'devices':
-        return Icons.devices;
-      case 'checkroom':
-        return Icons.checkroom;
-      case 'sports_tennis':
-        return Icons.sports_tennis;
-      case 'home':
-        return Icons.home;
-      case 'fitness_center':
-        return Icons.fitness_center;
-      default:
-        return Icons.category;
-    }
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    _categoryScrollController.dispose();
-    super.dispose();
-  }
-}
-
-class CartItem {
-  final Map<String, dynamic> product;
-  final int quantity;
-
-  CartItem({required this.product, required this.quantity});
-}
+              

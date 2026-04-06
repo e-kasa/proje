@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../models/wizard_state.dart';
 import '../widgets/variant_dialogs.dart';
+import '../../core/widgets/widgets.dart';
 
 class VariantsStep extends StatelessWidget {
   final WizardState state;

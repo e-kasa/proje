@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 
 class SalesSummaryScreen extends ConsumerStatefulWidget {
@@ -31,71 +33,6 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
     _loadData();
   }
 
-  Map<String, dynamic> get _mockData {
-    final periodKey = _periodValues[_selectedPeriod];
-    final now = DateTime.now();
-    List<Map<String, dynamic>> periods;
-
-    if (periodKey == 'day') {
-      periods = List.generate(7, (i) {
-        final date = now.subtract(Duration(days: 6 - i));
-        final salesCount = 8 + (i * 2) + (i.isEven ? 3 : 0);
-        final revenue = salesCount * 450.0 + (i * 200.0);
-        return {
-          'period': DateFormat('dd.MM.yyyy').format(date),
-          'salesCount': salesCount,
-          'revenue': revenue,
-          'paidAmount': revenue * 0.85,
-          'trend': i > 3 ? 'up' : (i == 3 ? 'same' : 'down'),
-        };
-      });
-    } else if (periodKey == 'week') {
-      periods = List.generate(4, (i) {
-        final salesCount = 45 + (i * 12);
-        final revenue = salesCount * 420.0;
-        return {
-          'period': '${4 - i}. Hafta',
-          'salesCount': salesCount,
-          'revenue': revenue,
-          'paidAmount': revenue * 0.88,
-          'trend': i < 2 ? 'up' : 'down',
-        };
-      });
-    } else {
-      periods = List.generate(6, (i) {
-        final month = DateTime(now.year, now.month - (5 - i), 1);
-        final salesCount = 120 + (i * 25) + (i.isOdd ? 15 : 0);
-        final revenue = salesCount * 380.0;
-        return {
-          'period': DateFormat('MMMM yyyy', 'tr_TR').format(month),
-          'salesCount': salesCount,
-          'revenue': revenue,
-          'paidAmount': revenue * 0.9,
-          'trend': i >= 3 ? 'up' : 'down',
-        };
-      });
-    }
-
-    final totalSalesCount =
-        periods.fold<int>(0, (s, p) => s + (p['salesCount'] as int));
-    final totalRevenue =
-        periods.fold<double>(0, (s, p) => s + (p['revenue'] as double));
-
-    return {
-      'totalSalesCount': totalSalesCount,
-      'totalRevenue': totalRevenue,
-      'averageOrderValue': totalSalesCount > 0 ? totalRevenue / totalSalesCount : 0,
-      'totalPaidAmount': totalRevenue * 0.87,
-      'totalDebtAmount': totalRevenue * 0.13,
-      'paymentMethods': [
-        {'method': 'Nakit', 'amount': totalRevenue * 0.45, 'percentage': 45.0, 'color': 0xFF10b981},
-        {'method': 'Kart', 'amount': totalRevenue * 0.38, 'percentage': 38.0, 'color': 0xFF3b82f6},
-        {'method': 'Havale', 'amount': totalRevenue * 0.17, 'percentage': 17.0, 'color': 0xFF8b5cf6},
-      ],
-      'periodData': periods,
-    };
-  }
-
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
@@ -106,17 +43,23 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
         groupBy: _periodValues[_selectedPeriod],
       );
       if (result == null) throw Exception('Veri bulunamadi');
-      // Ensure paymentMethods exists
-      result['paymentMethods'] ??= _mockData['paymentMethods'];
       setState(() {
         _data = result;
         _isLoading = false;
       });
-    } catch (_) {
+    } catch (e) {
       setState(() {
-        _data = _mockData;
+        _data = null;
         _isLoading = false;
       });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Veri yuklenemedi'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
     }
   }
 
@@ -143,7 +86,7 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      appBar: AppBar(
+      appBar: AppAppBar.standard(
         title: const Text('Satis Ozeti'),
         actions: [
           IconButton(
@@ -206,39 +149,34 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
         const SizedBox(height: 16),
 
         // Period toggle
-        Card(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          elevation: 0,
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: SegmentedButton<int>(
-              segments: List.generate(
-                3,
-                (i) => ButtonSegment<int>(
-                  value: i,
-                  label: Text(_periodLabels[i]),
-                ),
+        AppCard(
+          padding: const EdgeInsets.all(8),
+          child: SegmentedButton<int>(
+            segments: List.generate(
+              3,
+              (i) => ButtonSegment<int>(
+                value: i,
+                label: Text(_periodLabels[i]),
               ),
-              selected: {_selectedPeriod},
-              onSelectionChanged: (selected) {
-                setState(() => _selectedPeriod = selected.first);
-                _loadData();
-              },
-              style: ButtonStyle(
-                backgroundColor: WidgetStateProperty.resolveWith((states) {
-                  if (states.contains(WidgetState.selected)) {
-                    return AppColors.primary;
-                  }
-                  return null;
-                }),
-                foregroundColor: WidgetStateProperty.resolveWith((states) {
-                  if (states.contains(WidgetState.selected)) {
-                    return Colors.white;
-                  }
-                  return AppColors.textSecondary;
-                }),
-              ),
+            ),
+            selected: {_selectedPeriod},
+            onSelectionChanged: (selected) {
+              setState(() => _selectedPeriod = selected.first);
+              _loadData();
+            },
+            style: ButtonStyle(
+              backgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return AppColors.primary;
+                }
+                return null;
+              }),
+              foregroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return Colors.white;
+                }
+                return AppColors.textSecondary;
+              }),
             ),
           ),
         ),
@@ -288,22 +226,17 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          Card(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            elevation: 0,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: paymentMethods.map((pm) {
-                  final method = pm['method']?.toString() ?? '-';
-                  final amount = (pm['amount'] ?? 0).toDouble();
-                  final percentage = (pm['percentage'] ?? 0).toDouble();
-                  final color = Color(pm['color'] as int? ?? 0xFF667eea);
-                  return _buildPaymentMethodRow(
-                      method, amount, percentage, color);
-                }).toList(),
-              ),
+          AppCard(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: paymentMethods.map((pm) {
+                final method = pm['method']?.toString() ?? '-';
+                final amount = (pm['amount'] ?? 0).toDouble();
+                final percentage = (pm['percentage'] ?? 0).toDouble();
+                final color = Color(pm['color'] as int? ?? 0xFF667eea);
+                return _buildPaymentMethodRow(
+                    method, amount, percentage, color);
+              }).toList(),
             ),
           ),
           const SizedBox(height: 24),
@@ -328,43 +261,39 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
 
   Widget _buildSummaryCard(
       String label, String value, IconData icon, Color color) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      elevation: 0,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 20),
+    return AppCard(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(height: 8),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                value,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 8),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: color,
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppColors.textSecondary,
-              ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.textSecondary,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -449,68 +378,4 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
       case 'up':
         trendIcon = Icons.trending_up;
         trendColor = AppColors.success;
-        break;
-      case 'down':
-        trendIcon = Icons.trending_down;
-        trendColor = AppColors.danger;
-        break;
-      default:
-        trendIcon = Icons.trending_flat;
-        trendColor = AppColors.textMuted;
-    }
-
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(trendIcon, color: trendColor, size: 20),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    period,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '$salesCount satis',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Text(
-              _currencyFormat.format(revenue),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.success,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+        brea

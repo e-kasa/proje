@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/widgets/widgets.dart';
+import '../../core/theme/app_constants.dart';
 import '../../services/service_locator.dart';
 
 // CustomerType backend enum değerleri
@@ -121,7 +122,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('✅ Müşteri güncellendi'),
-                backgroundColor: AppColors.success),
+                backgroundColor: Color(0xFF10B981)),
           );
         }
       } else {
@@ -129,7 +130,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('✅ Müşteri oluşturuldu'),
-                backgroundColor: AppColors.success),
+                backgroundColor: Color(0xFF10B981)),
           );
         }
       }
@@ -139,7 +140,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('❌ Hata: $e'),
-              backgroundColor: AppColors.danger),
+              backgroundColor: Color(0xFFEF4444)),
         );
       }
     } finally {
@@ -165,168 +166,179 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
     final isEdit = widget.customer != null || widget.customerId != null;
 
     return Scaffold(
-      backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        title: Text(isEdit ? 'Müşteri Düzenle' : 'Yeni Müşteri'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        actions: [
-          if (_isLoading)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: SizedBox(width: 20, height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
-              ),
-            ),
-        ],
-      ),
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      appBar: AppAppBar.primary(title: isEdit ? 'Müşteri Düzenle' : 'Yeni Müşteri'),
       body: _isLoading && isEdit && widget.customer == null
           ? const Center(child: CircularProgressIndicator())
           : Form(
               key: _formKey,
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: AppConstants.pagePadding,
                 children: [
                   // ── Müşteri Tipi ─────────────────────────────────
-                  _buildCard(
-                    title: 'Müşteri Tipi',
-                    icon: Icons.category_outlined,
-                    children: [
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 8,
-                        children: _customerTypes.map((type) {
-                          final selected = _customerType == type.value;
-                          return GestureDetector(
-                            onTap: () => setState(() => _customerType = type.value),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 150),
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: selected ? AppColors.primary : Colors.transparent,
-                                border: Border.all(
-                                    color: selected ? AppColors.primary : AppColors.border,
-                                    width: selected ? 1.5 : 1),
-                                borderRadius: BorderRadius.circular(20),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
+                    child: AppSectionCard(
+                      title: 'Müşteri Tipi',
+                      icon: Icons.category_outlined,
+                      children: [
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 8,
+                          children: _customerTypes.map((type) {
+                            final selected = _customerType == type.value;
+                            return GestureDetector(
+                              onTap: () => setState(() => _customerType = type.value),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 150),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: selected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                                  border: Border.all(
+                                      color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor,
+                                      width: selected ? 1.5 : 1),
+                                  borderRadius: BorderRadius.circular(AppConstants.borderRadiusXLarge),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(type.icon, size: 15,
+                                        color: selected ? Colors.white : Theme.of(context).textTheme.bodySmall?.color),
+                                    const SizedBox(width: 6),
+                                    Text(type.label,
+                                        style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                            color: selected ? Colors.white : Theme.of(context).textTheme.bodySmall?.color)),
+                                  ],
+                                ),
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(type.icon, size: 15,
-                                      color: selected ? Colors.white : AppColors.textSecondary),
-                                  const SizedBox(width: 6),
-                                  Text(type.label,
-                                      style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w500,
-                                          color: selected ? Colors.white : AppColors.textSecondary)),
-                                ],
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ],
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
                   ),
 
                   // ── Temel Bilgiler ────────────────────────────────
-                  _buildCard(
-                    title: 'Temel Bilgiler',
-                    icon: Icons.person_outline,
-                    children: [
-                      _buildTextField(
-                        controller: _nameController,
-                        label: 'Ad Soyad *',
-                        icon: Icons.person_outline,
-                        validator: (v) => (v == null || v.trim().isEmpty) ? 'Ad Soyad zorunludur' : null,
-                      ),
-                      _buildTextField(
-                        controller: _phoneController,
-                        label: 'Telefon',
-                        icon: Icons.phone_outlined,
-                        keyboardType: TextInputType.phone,
-                      ),
-                      _buildTextField(
-                        controller: _emailController,
-                        label: 'E-posta',
-                        icon: Icons.email_outlined,
-                        keyboardType: TextInputType.emailAddress,
-                        validator: (v) {
-                          if (v != null && v.trim().isNotEmpty &&
-                              !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(v)) {
-                            return 'Geçerli bir e-posta adresi girin';
-                          }
-                          return null;
-                        },
-                      ),
-                      _buildTextField(
-                        controller: _addressController,
-                        label: 'Adres',
-                        icon: Icons.location_on_outlined,
-                        maxLines: 2,
-                      ),
-                    ],
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
+                    child: AppSectionCard(
+                      title: 'Temel Bilgiler',
+                      icon: Icons.person_outline,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
+                          child: AppInput(
+                            label: 'Ad Soyad *',
+                            controller: _nameController,
+                            prefixIcon: Icons.person_outline,
+                            validator: (v) => (v == null || v.trim().isEmpty) ? 'Ad Soyad zorunludur' : null,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
+                          child: AppInput(
+                            label: 'Telefon',
+                            controller: _phoneController,
+                            prefixIcon: Icons.phone_outlined,
+                            keyboardType: TextInputType.phone,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
+                          child: AppInput(
+                            label: 'E-posta',
+                            controller: _emailController,
+                            prefixIcon: Icons.email_outlined,
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (v) {
+                              if (v != null && v.trim().isNotEmpty &&
+                                  !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(v)) {
+                                return 'Geçerli bir e-posta adresi girin';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
+                          child: AppInput(
+                            label: 'Adres',
+                            controller: _addressController,
+                            prefixIcon: Icons.location_on_outlined,
+                            maxLines: 2,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
 
                   // ── Vergi / Kurumsal Bilgiler ─────────────────────
                   if (_customerType == 'CORPORATE' || _customerType == 'DEALER' || _customerType == 'WHOLESALER')
-                    _buildCard(
-                      title: 'Kurumsal Bilgiler',
-                      icon: Icons.receipt_long_outlined,
-                      children: [
-                        _buildTextField(
-                          controller: _taxNumberController,
-                          label: 'Vergi Numarası',
-                          icon: Icons.numbers_outlined,
-                          keyboardType: TextInputType.number,
-                        ),
-                        _buildTextField(
-                          controller: _taxOfficeController,
-                          label: 'Vergi Dairesi',
-                          icon: Icons.account_balance_outlined,
-                        ),
-                      ],
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
+                      child: AppSectionCard(
+                        title: 'Kurumsal Bilgiler',
+                        icon: Icons.receipt_long_outlined,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
+                            child: AppInput(
+                              label: 'Vergi Numarası',
+                              controller: _taxNumberController,
+                              prefixIcon: Icons.numbers_outlined,
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
+                            child: AppInput(
+                              label: 'Vergi Dairesi',
+                              controller: _taxOfficeController,
+                              prefixIcon: Icons.account_balance_outlined,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
 
                   // ── Notlar ────────────────────────────────────────
-                  _buildCard(
-                    title: 'Notlar',
-                    icon: Icons.note_outlined,
-                    children: [
-                      _buildTextField(
-                        controller: _notesController,
-                        label: 'Notlar (opsiyonel)',
-                        icon: Icons.edit_note_outlined,
-                        maxLines: 3,
-                      ),
-                    ],
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
+                    child: AppSectionCard(
+                      title: 'Notlar',
+                      icon: Icons.note_outlined,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
+                          child: AppInput(
+                            label: 'Notlar (opsiyonel)',
+                            controller: _notesController,
+                            prefixIcon: Icons.edit_note_outlined,
+                            maxLines: 3,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
 
                   // ── Durum ─────────────────────────────────────────
-                  _buildStatusCard(),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
+                    child: _buildStatusCard(),
+                  ),
 
                   const SizedBox(height: 8),
 
                   // ── Kaydet ────────────────────────────────────────
-                  SizedBox(
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      onPressed: _isLoading ? null : _saveCustomer,
-                      icon: _isLoading
-                          ? const SizedBox(width: 20, height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Icon(Icons.save),
-                      label: Text(
-                        _isLoading ? 'Kaydediliyor...' : (isEdit ? 'Güncelle' : 'Kaydet'),
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
+                  AppButton.primary(
+                    text: isEdit ? 'Güncelle' : 'Kaydet',
+                    icon: Icons.save,
+                    onPressed: _isLoading ? null : _saveCustomer,
+                    isLoading: _isLoading,
+                    fullWidth: true,
+                    size: ButtonSize.large,
                   ),
                 ],
               ),
@@ -336,75 +348,21 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
 
   // ── Widgets ────────────────────────────────────────────────────────────────
 
-  Widget _buildCard({required String title, required IconData icon, required List<Widget> children}) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              Icon(icon, color: AppColors.primary, size: 20),
-              const SizedBox(width: 8),
-              Text(title,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary)),
-            ]),
-            const Divider(height: 20),
-            ...children,
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-    int maxLines = 1,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: TextFormField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon, color: AppColors.primary),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          filled: true,
-          fillColor: AppColors.bgLight,
-        ),
-        keyboardType: keyboardType,
-        validator: validator,
-        maxLines: maxLines,
-      ),
-    );
-  }
-
   Widget _buildStatusCard() {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return AppCard(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: AppConstants.pagePaddingValue, vertical: 12),
         child: Row(
           children: [
             Container(
               width: 40, height: 40,
               decoration: BoxDecoration(
-                color: (_isActive ? AppColors.success : AppColors.textMuted).withOpacity(0.12),
-                borderRadius: BorderRadius.circular(10),
+                color: (_isActive ? const Color(0xFF10B981) : Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
               ),
               child: Icon(
                 _isActive ? Icons.check_circle_outline : Icons.cancel_outlined,
-                color: _isActive ? AppColors.success : AppColors.textMuted,
+                color: _isActive ? const Color(0xFF10B981) : Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey,
                 size: 22,
               ),
             ),
@@ -413,15 +371,14 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Müşteri Durumu',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary)),
+                  Text('Müşteri Durumu',
+                      style: Theme.of(context).textTheme.titleSmall),
                   const SizedBox(height: 2),
                   Text(
                     _isActive ? 'Aktif — satış ve işlemlerde kullanılabilir'
                               : 'Pasif — işlemlerde görünmez',
                     style: TextStyle(fontSize: 12,
-                        color: _isActive ? AppColors.success : AppColors.textMuted),
+                        color: _isActive ? const Color(0xFF10B981) : Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey),
                   ),
                 ],
               ),
@@ -430,9 +387,9 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _statusBtn('Aktif',  _isActive,  AppColors.success, () => setState(() => _isActive = true)),
+                _statusBtn('Aktif',  _isActive,  const Color(0xFF10B981), () => setState(() => _isActive = true)),
                 const SizedBox(width: 6),
-                _statusBtn('Pasif', !_isActive, AppColors.danger,  () => setState(() => _isActive = false)),
+                _statusBtn('Pasif', !_isActive, const Color(0xFFEF4444),  () => setState(() => _isActive = false)),
               ],
             ),
           ],
@@ -449,12 +406,12 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: selected ? color : Colors.transparent,
-          border: Border.all(color: selected ? color : AppColors.border, width: 1.5),
-          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: selected ? color : Theme.of(context).dividerColor, width: 1.5),
+          borderRadius: BorderRadius.circular(AppConstants.borderRadiusXLarge),
         ),
         child: Text(label,
             style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-                color: selected ? Colors.white : AppColors.textSecondary)),
+                color: selected ? Colors.white : Theme.of(context).textTheme.bodySmall?.color)),
       ),
     );
   }

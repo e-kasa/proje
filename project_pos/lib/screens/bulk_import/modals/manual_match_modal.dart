@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/bulk_import_models.dart';
+import '../../core/widgets/widgets.dart';
 
 /// Manuel Eşleştirme Modal - NEW durumu için
 /// Kullanıcı sistemdeki tüm ürünleri görebilir ve istediğiyle eşleştirebilir
@@ -408,14 +409,15 @@ class _ManualMatchModalState extends State<ManualMatchModal> {
                     child: const Text('İptal'),
                   ),
                   const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.link),
-                    label: const Text('Eşleştir'),
+                  AppButton.primary(
+
+                    text: 'Eşleştir',
+
+                    icon: Icons.link,
+
                     onPressed: _selectedProduct != null ? _confirm : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    ),
+
+                  ),
                   ),
                 ],
               ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/utils/app_logger.dart';
 import '../../models/supplier_upload_models.dart';
+import '../../core/widgets/widgets.dart';
 
 /// Basitleştirilmiş Wizard - Her ürün için 3 seçenek
 class SupplierUploadWizardScreen extends StatefulWidget {
@@ -41,7 +42,7 @@ class _SupplierUploadWizardScreenState
     }
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppAppBar.standard(
         title: const Text('Tedarikçi Dosyası - Ürün Kararları'),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
@@ -402,7 +403,7 @@ class _SupplierUploadWizardScreenState
 
   Widget _buildSummaryScreen() {
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppAppBar.standard(
         title: const Text('Özet - Kararlarınızı Gözden Geçirin'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -913,60 +914,4 @@ class _SuccessScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(
-              Icons.check_circle,
-              color: Colors.green,
-              size: 100,
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Başarıyla Kaydedildi!',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Tedarikçi dosyası işlendi.',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).popUntil((route) => route.isFirst);
-              },
-              child: const Text('Ana Sayfaya Dön'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// DATA MODELS
-// ============================================================================
-
-enum DecisionAction {
-  createNew,
-  matchExisting,
-  addVariant,
-}
-
-class ProductDecision {
-  final int productIndex;
-  final DecisionAction action;
-  final Map<String, dynamic> data;
-
-  ProductDecision({
-    required this.productIndex,
-    required this.action,
-    required this.data,
-  });
-
-  Map<String, dynamic> toJson() {
-    return {
-      'productIndex': productIndex,
-      'action': action.toString().split('.').last,
-      'data': data,
-    };
-  }
-}
+              Icons.ch

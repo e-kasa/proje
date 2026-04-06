@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 
 class CustomerSalesAnalysisScreen extends ConsumerStatefulWidget {
@@ -87,7 +89,7 @@ class _CustomerSalesAnalysisScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
+      appBar: AppAppBar.standard(
         title: const Text('Musteri Satis Analizi'),
         actions: [
           IconButton(
@@ -142,10 +144,10 @@ class _CustomerSalesAnalysisScreenState
                                 style:
                                     const TextStyle(color: AppColors.danger)),
                             const SizedBox(height: 12),
-                            ElevatedButton(
-                              onPressed: _loadData,
-                              child: const Text('Tekrar Dene'),
-                            ),
+                            AppButton.primary(
+                        text: 'Tekrar Dene',
+                        onPressed: _loadData,
+                      ),
                           ],
                         ),
                       )

@@ -446,11 +446,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/bulk-import/supplier-wizard',
             builder: (context, state) {
-              // Extra data varsa kullan, yoksa mock data
               final extra = state.extra as supplier_models.SupplierUploadResponse?;
-              final mockResponse = extra ?? _getMockSupplierUploadResponse();
-
-              return SupplierUploadWizardScreen(uploadResponse: mockResponse);
+              if (extra == null) {
+                // No data provided, redirect to upload screen
+                return const Scaffold(
+                  body: Center(
+                    child: Text('Veri bulunamadi. Lutfen dosya yukleyin.'),
+                  ),
+                );
+              }
+              return SupplierUploadWizardScreen(uploadResponse: extra);
             },
           ),
           // ─── Cari Hesap Routes ────────────────────────────────────
@@ -533,139 +538,3 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-// ============================================================================
-// MOCK DATA - Test için geçici
-// ============================================================================
-
-supplier_models.SupplierUploadResponse _getMockSupplierUploadResponse() {
-  return supplier_models.SupplierUploadResponse(
-    productCount: 5,
-    products: [
-      // Ürün 1: Benzer ürün var
-      supplier_models.ReadProductItem(
-        readProductName: 'iPhone 15 Pro Max 256GB',
-        readStock: 10,
-        similarProducts: [
-          supplier_models.SimilarProduct(
-            sku: 'PROD-IPHONE-001',
-            name: 'iPhone 15 Pro Max',
-            slug: 'iphone-15-pro-max',
-            categoryId: 'CAT-001',
-            brand: 'Apple',
-            unit: 'Adet',
-            description: 'iPhone 15 Pro Max Akıllı Telefon',
-            variants: [
-              supplier_models.ProductVariant(
-                sku: 'VAR-IPHONE-256-BLUE',
-                name: '256GB Mavi',
-                attributes: {'kapasite': '256GB', 'renk': 'Mavi'},
-                pricing: supplier_models.VariantPricing(
-                  purchasePrice: 45000.0,
-                  salePrice: 52000.0,
-                ),
-                initialStocks: [],
-                barcodes: [],
-              ),
-              supplier_models.ProductVariant(
-                sku: 'VAR-IPHONE-256-BLACK',
-                name: '256GB Siyah',
-                attributes: {'kapasite': '256GB', 'renk': 'Siyah'},
-                pricing: supplier_models.VariantPricing(
-                  purchasePrice: 45000.0,
-                  salePrice: 52000.0,
-                ),
-                initialStocks: [],
-                barcodes: [],
-              ),
-            ],
-          ),
-        ],
-      ),
-
-      // Ürün 2: Benzer ürün yok (yeni ürün olacak)
-      supplier_models.ReadProductItem(
-        readProductName: 'Samsung Galaxy S24 Ultra 512GB',
-        readStock: 5,
-        similarProducts: [],
-      ),
-
-      // Ürün 3: Benzer ürün var, yeni varyant eklenebilir
-      supplier_models.ReadProductItem(
-        readProductName: 'MacBook Air M3 16GB',
-        readStock: 3,
-        similarProducts: [
-          supplier_models.SimilarProduct(
-            sku: 'PROD-MBA-001',
-            name: 'MacBook Air M3',
-            slug: 'macbook-air-m3',
-            categoryId: 'CAT-002',
-            brand: 'Apple',
-            unit: 'Adet',
-            description: 'MacBook Air M3 Dizüstü Bilgisayar',
-            variants: [
-              supplier_models.ProductVariant(
-                sku: 'VAR-MBA-8GB-SILVER',
-                name: '8GB Gümüş',
-                attributes: {'ram': '8GB', 'renk': 'Gümüş'},
-                pricing: supplier_models.VariantPricing(
-                  purchasePrice: 35000.0,
-                  salePrice: 42000.0,
-                ),
-                initialStocks: [],
-                barcodes: [],
-              ),
-            ],
-          ),
-        ],
-      ),
-
-      // Ürün 4: Kot Gömlek (benzer ürün var)
-      supplier_models.ReadProductItem(
-        readProductName: 'Kot Gömlek Erkek',
-        readStock: 20,
-        similarProducts: [
-          supplier_models.SimilarProduct(
-            sku: 'PROD-SHIRT-001',
-            name: 'Kot Gömlek',
-            slug: 'kot-gomlek',
-            categoryId: 'CAT-003',
-            brand: 'Mavi',
-            unit: 'Adet',
-            description: 'Erkek Kot Gömlek',
-            variants: [
-              supplier_models.ProductVariant(
-                sku: 'VAR-SHIRT-S-BLUE',
-                name: 'S Beden Mavi',
-                attributes: {'beden': 'S', 'renk': 'Mavi'},
-                pricing: supplier_models.VariantPricing(
-                  purchasePrice: 250.0,
-                  salePrice: 450.0,
-                ),
-                initialStocks: [],
-                barcodes: [],
-              ),
-              supplier_models.ProductVariant(
-                sku: 'VAR-SHIRT-M-BLUE',
-                name: 'M Beden Mavi',
-                attributes: {'beden': 'M', 'renk': 'Mavi'},
-                pricing: supplier_models.VariantPricing(
-                  purchasePrice: 250.0,
-                  salePrice: 450.0,
-                ),
-                initialStocks: [],
-                barcodes: [],
-              ),
-            ],
-          ),
-        ],
-      ),
-
-      // Ürün 5: Benzer ürün yok
-      supplier_models.ReadProductItem(
-        readProductName: 'Sony WH-1000XM5 Kulaklık',
-        readStock: 8,
-        similarProducts: [],
-      ),
-    ],
-  );
-}

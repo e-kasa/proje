@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 
 class StockAlertScreen extends ConsumerStatefulWidget {
@@ -61,7 +63,7 @@ class _StockAlertScreenState extends ConsumerState<StockAlertScreen> {
       length: 3,
       child: Scaffold(
         backgroundColor: AppColors.bgLight,
-        appBar: AppBar(
+        appBar: AppAppBar.standard(
           title: const Text('Stok Uyarilari'),
           backgroundColor: Colors.white,
           foregroundColor: AppColors.textPrimary,
@@ -93,10 +95,10 @@ class _StockAlertScreenState extends ConsumerState<StockAlertScreen> {
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 16),
-                        ElevatedButton.icon(
+                        AppButton.primary(
+                          text: 'Tekrar Dene',
+                          icon: Icons.refresh,
                           onPressed: _loadAlerts,
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Tekrar Dene'),
                         ),
                       ],
                     ),

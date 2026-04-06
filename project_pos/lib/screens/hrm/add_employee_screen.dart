@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/hrm_service.dart';
 import '../../core/api/api_client.dart';
@@ -142,10 +143,8 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Text(_isEditing ? 'Calisan Duzenle' : 'Yeni Calisan'),
+      appBar: AppAppBar.standard(
+        title: _isEditing ? 'Calisan Duzenle' : 'Yeni Calisan',
         actions: [
           if (!_isLoading)
             TextButton(
@@ -165,7 +164,7 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen> {
           : Form(
               key: _formKey,
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: AppConstants.pagePadding,
                 children: [
                   _sectionTitle('Kisisel Bilgiler'),
                   const SizedBox(height: 12),
@@ -223,25 +222,15 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen> {
                     maxLines: 3,
                   ),
                   const SizedBox(height: 32),
-                  ElevatedButton(
+                  AppButton.primary(
+                    text: _isSaving
+                        ? 'Kaydediliyor...'
+                        : _isEditing
+                            ? 'Guncelle'
+                            : 'Kaydet',
                     onPressed: _isSaving ? null : _save,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: Text(
-                      _isSaving
-                          ? 'Kaydediliyor...'
-                          : _isEditing
-                              ? 'Guncelle'
-                              : 'Kaydet',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600),
-                    ),
+                    fullWidth: true,
+                    isLoading: _isSaving,
                   ),
                   const SizedBox(height: 24),
                 ],
@@ -279,11 +268,11 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen> {
         filled: true,
         fillColor: Colors.white,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppConstants.borderRadiusMedium,
           borderSide: BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppConstants.borderRadiusMedium,
           borderSide: BorderSide(color: AppColors.border),
         ),
       ),
@@ -299,11 +288,11 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen> {
         filled: true,
         fillColor: Colors.white,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppConstants.borderRadiusMedium,
           borderSide: BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppConstants.borderRadiusMedium,
           borderSide: BorderSide(color: AppColors.border),
         ),
       ),
@@ -328,11 +317,11 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen> {
             filled: true,
             fillColor: Colors.white,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppConstants.borderRadiusMedium,
               borderSide: BorderSide(color: AppColors.border),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppConstants.borderRadiusMedium,
               borderSide: BorderSide(color: AppColors.border),
             ),
             hintText: DateFormat('dd.MM.yyyy').format(_hireDate),
@@ -349,7 +338,7 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppConstants.borderRadiusMedium,
         border: Border.all(color: AppColors.border),
       ),
       child: Row(

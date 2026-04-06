@@ -5,6 +5,7 @@ import '../theme/app_colors.dart';
 import '../utils/responsive.dart';
 import 'adaptive_sidebar.dart';
 import 'adaptive_bottom_nav.dart';
+import 'right_menu_drawer.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/navigation_provider.dart';
@@ -16,8 +17,7 @@ class NavigationItem {
   final String route;
   final int? badge;
 
-  /// Sidebar'da bu item'dan önce bir bölüm başlığı gösterir.
-  /// Yalnızca genişletilmiş sidebar'da görünür.
+  /// Sidebar'da bu item'dan once bir bolum basligi gosterir.
   final String? sectionLabel;
 
   NavigationItem({
@@ -29,53 +29,67 @@ class NavigationItem {
   });
 }
 
-/// Route → sayfa başlığı eşlemesi (AppBar ve breadcrumb için)
+/// Route -> sayfa basligi eslemesi
 const _routeTitles = <String, String>{
-  // Genel
   '/dashboard': 'Ana Sayfa',
-  '/menu': 'Menü',
+  '/menu': 'Menu',
   '/profile': 'Profil',
   '/settings': 'Ayarlar',
-  // Parça Arama
-  '/part-search': 'Parça Arama',
-  '/vehicles': 'Araçlar',
-  // Satış
-  '/pos': 'Satış / POS',
-  '/sales': 'Satış Geçmişi',
-  // Stok
-  '/stock': 'Stok Yönetimi',
-  '/stock/multi-warehouse': 'Çok Depo Stok',
-  '/stock/transfer-review': 'Stok Transfer',
-  '/stock/count-review': 'Stok Sayım',
-  // Ürün Kataloğu
+  '/settings/users': 'Kullanici Yonetimi',
+  '/settings/company': 'Isletme Bilgileri',
+  '/part-search': 'Parca Arama',
+  '/vehicles': 'Araclar',
+  '/pos': 'Satis / POS',
+  '/sales': 'Satis Gecmisi',
+  '/scanner': 'Barkod Tarayici',
+  '/stock': 'Stok Yonetimi',
+  '/stock/multi-warehouse': 'Cok Depo Stok',
+  '/stock/transfer': 'Stok Transfer Olustur',
+  '/stock/transfer-review': 'Transfer Onay',
+  '/stock/count-review': 'Stok Sayim',
+  '/stock/movements': 'Hareket Gecmisi',
+  '/stock/alerts': 'Stok Alarmlari',
+  '/stock/value-report': 'Stok Deger Raporu',
   '/inventory': 'Envanter',
-  '/inventory/products': 'Ürünler',
-  '/inventory/add-product': 'Ürün Ekle',
+  '/inventory/products': 'Urunler',
+  '/inventory/add-product': 'Urun Ekle',
+  '/inventory/batch-entry': 'Toplu Urun Girisi',
   '/inventory/categories': 'Kategoriler',
   '/inventory/brands': 'Markalar',
   '/inventory/units': 'Birimler',
   '/inventory/barcodes': 'Barkodlar',
-  '/categories/company-setup': 'Kategori Tanımla',
-  '/bulk-import': 'Toplu Ürün Yükleme',
-  // Satın Alma
-  '/purchases': 'Satın Alma',
-  '/purchases/create': 'Yeni Alım',
-  // Cari Hesaplar
-  '/customers': 'Müşteriler',
-  '/customers/add': 'Müşteri Ekle',
-  '/suppliers': 'Tedarikçiler',
-  '/suppliers/add': 'Tedarikçi Ekle',
-  // Depo
+  '/categories/company-setup': 'Kategori Tanimla',
+  '/bulk-import': 'Toplu Urun Yukleme',
+  '/bulk-import/review': 'Ice Aktarma Inceleme',
+  '/bulk-import/supplier': 'Tedarikci Ithalati',
+  '/bulk-import/supplier-wizard': 'Tedarikci Ithalati (Wizard)',
+  '/purchases': 'Satin Alma',
+  '/purchases/create': 'Yeni Alim',
+  '/customers': 'Musteriler',
+  '/customers/add': 'Musteri Ekle',
+  '/suppliers': 'Tedarikciler',
+  '/suppliers/add': 'Tedarikci Ekle',
+  '/accounts': 'Cari Hesap Ozeti',
+  '/accounts/statement': 'Hesap Ekstresi',
+  '/accounts/overdue': 'Vadesi Gecmis',
   '/warehouses': 'Depolar',
   '/warehouses/add': 'Depo Ekle',
-  '/stores': 'Mağazalar',
-  '/stores/add': 'Mağaza Ekle',
-  // Finans
+  '/stores': 'Magazalar',
+  '/stores/add': 'Magaza Ekle',
   '/finance': 'Finans',
   '/finance/expenses': 'Giderler',
   '/finance/expenses/add': 'Gider Ekle',
-  // Raporlar
+  '/finance/add-income': 'Gelir Ekle',
+  '/finance/payments': 'Odemeler',
+  '/finance/cash-flow': 'Nakit Akisi',
+  '/hrm/employees': 'Calisanlar',
+  '/hrm/employees/add': 'Calisan Ekle',
   '/reports': 'Raporlar',
+  '/reports/daily-summary': 'Gunluk Ozet',
+  '/reports/sales-summary': 'Satis Ozeti',
+  '/reports/product-analysis': 'Urun Satis Analizi',
+  '/reports/customer-analysis': 'Musteri Satis Analizi',
+  '/reports/profit-overview': 'Kar/Zarar Ozeti',
 };
 
 String _getPageTitle(String location) =>
@@ -83,7 +97,7 @@ String _getPageTitle(String location) =>
         .where((e) => location.startsWith(e.key))
         .fold('Panel', (_, e) => e.value);
 
-/// Main responsive layout — desktop sidebar, mobile bottom nav
+/// Main responsive layout — desktop: content + right sidebar, mobile: bottom nav + right drawer
 class ResponsiveLayout extends ConsumerStatefulWidget {
   final Widget child;
 
@@ -99,9 +113,10 @@ class ResponsiveLayout extends ConsumerStatefulWidget {
 class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
   int _selectedIndex = 0;
   bool _isSidebarExpanded = true;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final List<NavigationItem> _webNavItems = [
-    // ── GENEL ──
+    // -- GENEL --
     NavigationItem(
       icon: Icons.dashboard_outlined,
       label: 'Ana Sayfa',
@@ -110,31 +125,31 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
     ),
     NavigationItem(
       icon: Icons.search_outlined,
-      label: 'Parça Ara',
+      label: 'Parca Ara',
       route: '/part-search',
     ),
-    // ── SATIŞ ──
+    // -- SATIS --
     NavigationItem(
       icon: Icons.point_of_sale_outlined,
-      label: 'Satış / POS',
+      label: 'Satis / POS',
       route: '/pos',
-      sectionLabel: 'SATIŞ',
+      sectionLabel: 'SATIS',
     ),
     NavigationItem(
       icon: Icons.history_outlined,
-      label: 'Satış Geçmişi',
+      label: 'Satis Gecmisi',
       route: '/sales',
     ),
-    // ── ÜRÜN KATALOĞU ──
+    // -- URUN KATALOGU --
     NavigationItem(
       icon: Icons.list_alt_outlined,
-      label: 'Ürünler',
+      label: 'Urunler',
       route: '/inventory/products',
-      sectionLabel: 'ÜRÜN KATALOĞU',
+      sectionLabel: 'URUN KATALOGU',
     ),
     NavigationItem(
       icon: Icons.add_box_outlined,
-      label: 'Ürün Ekle',
+      label: 'Urun Ekle',
       route: '/inventory/add-product',
     ),
     NavigationItem(
@@ -142,63 +157,64 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
       label: 'Kategoriler',
       route: '/inventory/categories',
     ),
-    // ── STOK YÖNETİMİ ──
+    // -- STOK YONETIMI --
     NavigationItem(
       icon: Icons.inventory_2_outlined,
       label: 'Stok Durumu',
       route: '/stock',
-      sectionLabel: 'STOK YÖNETİMİ',
+      sectionLabel: 'STOK YONETIMI',
     ),
     NavigationItem(
       icon: Icons.warehouse_outlined,
       label: 'Depolar',
       route: '/warehouses',
     ),
-    // ── SATIN ALMA & TEDARİK ──
+    // -- TEDARIK --
     NavigationItem(
       icon: Icons.shopping_cart_outlined,
-      label: 'Satın Alma',
+      label: 'Satin Alma',
       route: '/purchases',
-      sectionLabel: 'TEDARİK',
+      sectionLabel: 'TEDARIK',
     ),
     NavigationItem(
       icon: Icons.business_outlined,
-      label: 'Tedarikçiler',
+      label: 'Tedarikciler',
       route: '/suppliers',
     ),
-    // ── CARİ HESAPLAR ──
+    // -- CARI HESAPLAR --
     NavigationItem(
       icon: Icons.people_outlined,
-      label: 'Müşteriler',
+      label: 'Musteriler',
       route: '/customers',
-      sectionLabel: 'CARİ HESAPLAR',
+      sectionLabel: 'CARI HESAPLAR',
     ),
-    // ── FİNANS ──
+    NavigationItem(
+      icon: Icons.account_balance_wallet_outlined,
+      label: 'Cari Hesaplar',
+      route: '/accounts',
+    ),
+    // -- FINANS --
     NavigationItem(
       icon: Icons.account_balance_outlined,
       label: 'Finans',
       route: '/finance',
-      sectionLabel: 'FİNANS',
+      sectionLabel: 'FINANS',
     ),
     NavigationItem(
       icon: Icons.analytics_outlined,
       label: 'Raporlar',
       route: '/reports',
     ),
-    // ── YÖNETİM ──
+    // -- YONETIM --
     NavigationItem(
       icon: Icons.settings_outlined,
       label: 'Ayarlar',
       route: '/settings',
-      sectionLabel: 'YÖNETİM',
-    ),
-    NavigationItem(
-      icon: Icons.grid_view_rounded,
-      label: 'Tüm Menü',
-      route: '/menu',
+      sectionLabel: 'YONETIM',
     ),
   ];
 
+  /// Mobil bottom nav — 4 item, "Menu" yok
   final List<NavigationItem> _mobileNavItems = [
     NavigationItem(
       icon: Icons.dashboard_outlined,
@@ -207,7 +223,7 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
     ),
     NavigationItem(
       icon: Icons.search_outlined,
-      label: 'Parça Ara',
+      label: 'Parca Ara',
       route: '/part-search',
     ),
     // CENTER: Barkod FAB (harici)
@@ -217,21 +233,16 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
       route: '/stock',
     ),
     NavigationItem(
-      icon: Icons.grid_view_rounded,
-      label: 'Menü',
-      route: '/menu',
+      icon: Icons.point_of_sale_outlined,
+      label: 'Satis',
+      route: '/pos',
     ),
   ];
 
-  /// Menü öğesine tıklanınca:
-  /// - Farklı route → git
-  /// - Aynı route → refresh sinyali gönder (servis çağrısını tetikler)
   void _onNavigationItemSelected(int index, String route) {
     final currentLocation = GoRouterState.of(context).matchedLocation;
 
     if (currentLocation == route) {
-      // Aynı sayfadayız — GoRouter'ı çağırmak rebuild yapmaz,
-      // bunun yerine refresh provider üzerinden ekrana sinyal gönder.
       ref.read(navigationRefreshProvider.notifier).refresh(route);
       return;
     }
@@ -244,12 +255,16 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
     setState(() => _isSidebarExpanded = !_isSidebarExpanded);
   }
 
+  void _openRightDrawer() {
+    _scaffoldKey.currentState?.openEndDrawer();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isMobile = !context.shouldShowSidebar;
     final navItems = isMobile ? _mobileNavItems : _webNavItems;
 
-    // Aktif route'a göre seçili index'i güncelle
+    // Aktif route'a gore secili index'i guncelle
     final location = GoRouterState.of(context).matchedLocation;
     final currentIndex = navItems.indexWhere((item) => item.route == location);
     if (currentIndex != -1 && currentIndex != _selectedIndex) {
@@ -259,16 +274,12 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
     }
 
     if (context.shouldShowSidebar) {
+      // DESKTOP: Content solda, sidebar sagda
       return Scaffold(
+        key: _scaffoldKey,
         body: Row(
           children: [
-            AdaptiveSidebar(
-              items: _webNavItems,
-              selectedIndex: _selectedIndex,
-              isExpanded: _isSidebarExpanded,
-              onItemSelected: _onNavigationItemSelected,
-              onToggle: _toggleSidebar,
-            ),
+            // Ana icerik alani (sol)
             Expanded(
               child: Column(
                 children: [
@@ -282,18 +293,28 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
                 ],
               ),
             ),
+            // Sag sidebar
+            AdaptiveSidebar(
+              items: _webNavItems,
+              selectedIndex: _selectedIndex,
+              isExpanded: _isSidebarExpanded,
+              onItemSelected: _onNavigationItemSelected,
+              onToggle: _toggleSidebar,
+            ),
           ],
         ),
       );
     }
 
-    // Mobil
+    // MOBIL: Bottom nav + sag drawer
     return Scaffold(
+      key: _scaffoldKey,
       appBar: _buildMobileAppBar(location),
       body: Container(
         color: AppColors.bgLight,
         child: widget.child,
       ),
+      endDrawer: const RightMenuDrawer(),
       floatingActionButton: FloatingActionButton(
         onPressed: _onBarcodeScanPressed,
         backgroundColor: AppColors.primary,
@@ -310,9 +331,9 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
     );
   }
 
-  // ──────────────────────────────────────────────────────────────────────────
+  // -----------------------------------------------------------------------
   // WEB APP BAR
-  // ──────────────────────────────────────────────────────────────────────────
+  // -----------------------------------------------------------------------
 
   Widget _buildWebAppBar(String location) {
     return Consumer(
@@ -342,7 +363,21 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(
               children: [
-                // Sayfa başlığı (breadcrumb gibi)
+                // Logo
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppColors.primary, AppColors.primaryDark],
+                    ),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: const Icon(Icons.build_circle, color: Colors.white, size: 20),
+                ),
+                const SizedBox(width: 12),
+
+                // Sayfa basligi
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,7 +409,7 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
                   height: 36,
                   child: TextField(
                     decoration: InputDecoration(
-                      hintText: 'Hızlı ara...',
+                      hintText: 'Hizli ara...',
                       hintStyle: const TextStyle(
                         fontSize: 13,
                         color: AppColors.textMuted,
@@ -412,13 +447,13 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
                   icon: isDark
                       ? Icons.light_mode_outlined
                       : Icons.dark_mode_outlined,
-                  tooltip: isDark ? 'Açık Tema' : 'Koyu Tema',
+                  tooltip: isDark ? 'Acik Tema' : 'Koyu Tema',
                   onPressed: () => ref.read(themeProvider.notifier).setThemeMode(
                         isDark ? AppThemeMode.light : AppThemeMode.dark,
                       ),
                 ),
 
-                // Bildirimler (badge ile)
+                // Bildirimler
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
@@ -531,7 +566,7 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
         PopupMenuItem(
           value: 'logout',
           child:
-              _popupItem(Icons.logout_outlined, 'Çıkış Yap', AppColors.danger),
+              _popupItem(Icons.logout_outlined, 'Cikis Yap', AppColors.danger),
         ),
       ],
     );
@@ -545,9 +580,9 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
         ],
       );
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // MOBİL APP BAR
-  // ──────────────────────────────────────────────────────────────────────────
+  // -----------------------------------------------------------------------
+  // MOBIL APP BAR
+  // -----------------------------------------------------------------------
 
   PreferredSizeWidget _buildMobileAppBar(String location) {
     final pageTitle = _getPageTitle(location);
@@ -556,6 +591,7 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
       backgroundColor: Colors.white,
       elevation: 0,
       titleSpacing: 20,
+      automaticallyImplyLeading: false,
       title: Row(
         children: [
           Container(
@@ -614,6 +650,11 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
             ),
           ],
         ),
+        // Menu butonu — sag drawer acar
+        _AppBarIconBtn(
+          icon: Icons.menu,
+          onPressed: _openRightDrawer,
+        ),
         const SizedBox(width: 4),
       ],
       bottom: PreferredSize(
@@ -623,19 +664,19 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
     );
   }
 
-  // ──────────────────────────────────────────────────────────────────────────
+  // -----------------------------------------------------------------------
   // BARKOD
-  // ──────────────────────────────────────────────────────────────────────────
+  // -----------------------------------------------------------------------
 
   void _onBarcodeScanPressed() {
     final currentRoute = GoRouterState.of(context).matchedLocation;
 
     if (currentRoute == '/pos') {
-      _showBarcodeScanDialog('Ürün Ekle', 'POS sepetine eklemek için barkod okutun');
+      _showBarcodeScanDialog('Urun Ekle', 'POS sepetine eklemek icin barkod okutun');
     } else if (currentRoute == '/stock') {
       _showBarcodeActionSheet();
     } else if (currentRoute.contains('/inventory')) {
-      _showBarcodeScanDialog('Ürün Ara', 'Ürün detaylarını görmek için barkod okutun');
+      _showBarcodeScanDialog('Urun Ara', 'Urun detaylarini gormek icin barkod okutun');
     } else {
       _showBarcodeActionSheet();
     }
@@ -676,7 +717,7 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('İptal'),
+            child: const Text('Iptal'),
           ),
           ElevatedButton.icon(
             onPressed: () {
@@ -717,24 +758,24 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
             ),
             const SizedBox(height: 20),
             const Text(
-              'Barkod İşlemleri',
+              'Barkod Islemleri',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             _barcodeAction(
-                Icons.shopping_cart_outlined, 'Hızlı Satış', 'Ürünü tara ve sat',
+                Icons.shopping_cart_outlined, 'Hizli Satis', 'Urunu tara ve sat',
                 AppColors.success, () {
               Navigator.pop(ctx);
               context.go('/pos');
             }),
             _barcodeAction(
-                Icons.search_outlined, 'Stok Sorgula', 'Ürün stok durumunu gör',
+                Icons.search_outlined, 'Stok Sorgula', 'Urun stok durumunu gor',
                 AppColors.info, () {
               Navigator.pop(ctx);
               context.go('/stock');
             }),
             _barcodeAction(
-                Icons.edit_outlined, 'Ürün Düzenle', 'Ürün bilgilerini güncelle',
+                Icons.edit_outlined, 'Urun Duzenle', 'Urun bilgilerini guncelle',
                 AppColors.warning, () {
               Navigator.pop(ctx);
               context.go('/inventory/products');
@@ -794,7 +835,7 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
   }
 }
 
-/// AppBar'da küçük icon buton
+/// AppBar'da kucuk icon buton
 class _AppBarIconBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback onPressed;

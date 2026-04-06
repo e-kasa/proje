@@ -4,6 +4,7 @@ import 'package:animate_do/animate_do.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/common/stat_card.dart';
 import '../../widgets/common/section_header.dart';
+import '../../core/widgets/widgets.dart';
 
 class SalesScreen extends ConsumerWidget {
   const SalesScreen({super.key});
@@ -91,14 +92,10 @@ class SalesScreen extends ConsumerWidget {
                                   label: const Text('Filter'),
                                 ),
                                 const SizedBox(width: 12),
-                                ElevatedButton.icon(
+                                AppButton.primary(
+                                  text: 'New Sale',
+                                  icon: Icons.add, size: 18,
                                   onPressed: () {},
-                                  icon: const Icon(Icons.add, size: 18),
-                                  label: const Text('New Sale'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppTheme.primaryColor,
-                                    foregroundColor: Colors.white,
-                                  ),
                                 ),
                               ],
                             ),

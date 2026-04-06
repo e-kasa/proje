@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../core/widgets/widgets.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -168,36 +169,16 @@ class ProfileScreen extends ConsumerWidget {
               // Logout Button
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
-                child: ElevatedButton(
+                child: AppButton.danger(
+                  text: 'Çıkış Yap',
+                  icon: Icons.logout,
                   onPressed: () async {
                     await ref.read(authProvider.notifier).logout();
                     if (context.mounted) {
                       context.go('/login');
                     }
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.danger,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    minimumSize: const Size(double.infinity, 50),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.logout),
-                      SizedBox(width: 8),
-                      Text(
-                        'Çıkış Yap',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
+                  fullWidth: true,
                 ),
               ),
 

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/warehouse_service.dart';
 import '../../core/api/api_client.dart';
@@ -136,15 +137,13 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        title: Text(widget.warehouseId != null ? 'Depo Düzenle' : 'Yeni Depo Ekle'),
-        backgroundColor: Colors.white,
-        elevation: 0,
+      appBar: AppAppBar.standard(
+        title: widget.warehouseId != null ? 'Depo Düzenle' : 'Yeni Depo Ekle',
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: AppConstants.pagePadding,
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -160,7 +159,7 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
                           margin: const EdgeInsets.only(bottom: 8),
                           color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppConstants.borderRadiusMedium,
                             side: BorderSide(
                               color: isSelected ? AppColors.primary : AppColors.border,
                               width: isSelected ? 2 : 1,
@@ -168,7 +167,7 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
                           ),
                           child: InkWell(
                             onTap: () => setState(() => _selectedType = type['value']),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppConstants.borderRadiusMedium,
                             child: Padding(
                               padding: const EdgeInsets.all(16),
                               child: Row(

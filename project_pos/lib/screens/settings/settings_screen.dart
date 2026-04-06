@@ -39,10 +39,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        title: const Text('Ayarlar'),
-        backgroundColor: Colors.white,
-        elevation: 0,
+      appBar: AppAppBar.standard(
+        title: 'Ayarlar',
         bottom: TabBar(
           controller: _tabController,
           isScrollable: isMobile,
@@ -69,7 +67,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   // PROFILE SETTINGS
   Widget _buildProfileSettings() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: AppConstants.pagePadding,
       child: Column(
         children: [
           // Profile Picture
@@ -90,7 +88,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                         decoration: BoxDecoration(
                           color: AppColors.primary,
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
+                          border: Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
                         ),
                         child: IconButton(
                           icon: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
@@ -103,13 +101,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   ],
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Admin Kullanıcı',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 Text(
                   'admin@example.com',
-                  style: TextStyle(fontSize: 14, color: AppColors.textMuted),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textMuted,
+                      ),
                 ),
               ],
             ),
@@ -122,9 +124,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Kişisel Bilgiler',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 16),
                 _buildSettingItem(
@@ -156,9 +160,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Güvenlik',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 16),
                 _buildSettingItem(
@@ -192,7 +198,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     final currentThemeMode = themeSettings.themeMode;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: AppConstants.pagePadding,
       child: Column(
         children: [
           // Theme
@@ -200,9 +206,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Tema',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 16),
                 RadioListTile<AppThemeMode>(
@@ -243,9 +251,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Görünüm',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 16),
                 _buildSettingItem(
@@ -286,7 +296,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   // BUSINESS SETTINGS
   Widget _buildBusinessSettings() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: AppConstants.pagePadding,
       child: Column(
         children: [
           // Company Info
@@ -294,9 +304,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Şirket Bilgileri',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 16),
                 _buildSettingItem(
@@ -328,9 +340,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Mağaza Ayarları',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 16),
                 _buildSettingItem(
@@ -368,9 +382,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Yonetim',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 16),
                 _buildSettingItem(
@@ -398,9 +414,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Bildirimler',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 16),
                 _buildSettingItem(
@@ -432,7 +450,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   // SYSTEM SETTINGS
   Widget _buildSystemSettings() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: AppConstants.pagePadding,
       child: Column(
         children: [
           // Data & Privacy
@@ -440,9 +458,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Veri & Gizlilik',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 16),
                 _buildSettingItem(
@@ -466,7 +486,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   subtitle: '128 MB',
                   onTap: () async {
                     final confirmed = await AppConfirmationDialog.showWarning(
-      
                       context: context,
                       title: 'Önbelleği Temizle',
                       message: 'Tüm önbellek verileri silinecek. Devam etmek istiyor musunuz?',
@@ -487,9 +506,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Hakkında',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 16),
                 _buildSettingItem(
@@ -525,9 +546,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Tehlikeli Alan',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.danger),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.danger,
+                      ),
                 ),
                 const SizedBox(height: 16),
                 _buildSettingItem(
@@ -536,7 +560,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   textColor: AppColors.danger,
                   onTap: () async {
                     final confirmed = await AppConfirmationDialog.show(
-      
                       context: context,
                       title: 'Çıkış Yap',
                       message: 'Çıkış yapmak istediğinizden emin misiniz?',
@@ -556,7 +579,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   subtitle: 'Tüm verileriniz kalıcı olarak silinecek',
                   onTap: () async {
                     final confirmed = await AppConfirmationDialog.showDelete(
-      
                       context: context,
                       title: 'Hesabı Sil',
                       message: 'Hesabınızı ve tüm verilerinizi kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!',
@@ -586,7 +608,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: AppConstants.borderRadiusMedium,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
@@ -599,20 +621,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: textColor,
-                    ),
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: textColor,
+                        ),
                   ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textMuted,
-                      ),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textMuted,
+                          ),
                     ),
                   ],
                 ],
@@ -640,12 +660,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             onPressed: () => Navigator.pop(context),
             child: const Text('İptal'),
           ),
-          TextButton(
+          AppButton.text(
+            label: 'Kaydet',
             onPressed: () {
               Navigator.pop(context);
               AppToast.success(this.context, '$label güncellendi');
             },
-            child: const Text('Kaydet'),
           ),
         ],
       ),
@@ -653,6 +673,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   }
 
   void _showPasswordDialog() {
+    final currentPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -661,18 +685,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
+              controller: currentPasswordController,
               obscureText: true,
               decoration: const InputDecoration(labelText: 'Mevcut Şifre'),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             TextField(
+              controller: newPasswordController,
               obscureText: true,
               decoration: const InputDecoration(labelText: 'Yeni Şifre'),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             TextField(
+              controller: confirmPasswordController,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'Yeni Şifre (Tekrar)'),
+              decoration: const InputDecoration(labelText: 'Şifreyi Onayla'),
             ),
           ],
         ),
@@ -681,12 +708,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             onPressed: () => Navigator.pop(context),
             child: const Text('İptal'),
           ),
-          TextButton(
+          AppButton.text(
+            label: 'Kaydet',
             onPressed: () {
               Navigator.pop(context);
-              AppToast.success(this.context, 'Şifre değiştirildi');
+              AppToast.success(context, 'Şifre değiştirildi');
             },
-            child: const Text('Değiştir'),
           ),
         ],
       ),

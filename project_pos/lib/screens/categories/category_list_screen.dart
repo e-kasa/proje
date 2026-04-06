@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 import 'add_category_screen.dart';
 
@@ -139,12 +141,9 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
               child: const Text('İptal')),
-          ElevatedButton(
+          AppButton.danger(
+            text: 'Sil',
             onPressed: () => Navigator.pop(ctx, true),
-            style:
-                ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-            child:
-                const Text('Sil', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -184,12 +183,9 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
               child: const Text('İptal')),
-          ElevatedButton(
+          AppButton.danger(
+            text: 'Sil',
             onPressed: () => Navigator.pop(ctx, true),
-            style:
-                ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-            child:
-                const Text('Sil', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -225,11 +221,8 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        title: const Text('Kategoriler'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 0,
+      appBar: AppAppBar.primary(
+        title: 'Kategoriler',
         actions: [
           if (_isSelectionMode) ...[
             IconButton(
@@ -310,7 +303,7 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
               filled: true,
               fillColor: AppColors.bgLight,
               border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppConstants.borderRadiusMedium,
                   borderSide: BorderSide.none),
               contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16, vertical: 12),
@@ -483,7 +476,7 @@ class _CategoryTile extends StatelessWidget {
     return Card(
       margin: EdgeInsets.only(bottom: 8, left: indent),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppConstants.borderRadiusMedium,
         side: isSelected
             ? const BorderSide(color: AppColors.primary, width: 2)
             : BorderSide(
@@ -494,7 +487,7 @@ class _CategoryTile extends StatelessWidget {
       child: InkWell(
         onTap: isSelectionMode ? onSelect : onEdit,
         onLongPress: onLongPress,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppConstants.borderRadiusMedium,
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(
@@ -528,7 +521,7 @@ class _CategoryTile extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppConstants.borderRadiusSmall,
                 ),
                 child: Center(
                   child: Text(
@@ -580,7 +573,7 @@ class _CategoryTile extends StatelessWidget {
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: color.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: AppConstants.borderRadiusSmall,
                             border: Border.all(
                                 color: color.withValues(alpha: 0.3)),
                           ),
@@ -602,7 +595,7 @@ class _CategoryTile extends StatelessWidget {
                                     ? AppColors.success
                                     : AppColors.textMuted)
                                 .withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: AppConstants.borderRadiusSmall,
                           ),
                           child: Text(
                             isActive ? 'Aktif' : 'Pasif',

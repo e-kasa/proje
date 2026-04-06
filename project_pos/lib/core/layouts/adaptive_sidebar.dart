@@ -29,7 +29,7 @@ class AdaptiveSidebar extends ConsumerWidget {
       width: isExpanded ? 240 : 68,
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(right: BorderSide(color: AppColors.border)),
+        border: Border(left: BorderSide(color: AppColors.border)),
       ),
       child: Column(
         children: [
@@ -115,7 +115,7 @@ class AdaptiveSidebar extends ConsumerWidget {
             child: IconButton(
               padding: EdgeInsets.zero,
               icon: AnimatedRotation(
-                turns: isExpanded ? 0 : 0.5,
+                turns: isExpanded ? 0.5 : 0,
                 duration: const Duration(milliseconds: 220),
                 child: const Icon(Icons.chevron_left, size: 20),
               ),

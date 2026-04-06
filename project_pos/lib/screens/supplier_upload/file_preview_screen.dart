@@ -250,23 +250,8 @@ class _FilePreviewScreenState extends State<FilePreviewScreen> {
                     ),
                   ),
                 ),
-                ElevatedButton.icon(
+                AppButton.primary(
+                  text: _isProcessing ? 'İşleniyor...' : 'Doğru, Devam Et',,
+                  icon: Icons.check,
                   onPressed: _isProcessing ? null : _confirmAndProceed,
-                  icon: _isProcessing
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Icon(Icons.check_circle),
-                  label: Text(
-                    _isProcessing ? 'İşleniyor...' : 'Doğru, Devam Et',
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                 
+                ),

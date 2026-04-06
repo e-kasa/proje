@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_constants.dart';
+import '../../../core/widgets/widgets.dart';
 import '../../../services/service_locator.dart';
 import 'providers/batch_entry_provider.dart';
 import 'models/batch_entry_models.dart';
@@ -278,8 +280,8 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen> {
         if (shouldPop && context.mounted) Navigator.of(context).pop();
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Toplu Urun Girisi'),
+        appBar: AppAppBar.standard(
+          title: 'Toplu Urun Girisi',
           actions: [
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),

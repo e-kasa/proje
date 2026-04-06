@@ -398,24 +398,4 @@ Color _getSidebarColor(ThemeSettings settings, Brightness brightness) {
   }
 }
 
-Color _getTopbarColor(ThemeSettings settings, Brightness brightness) {
-  switch (settings.topbarAppearance) {
-    case TopbarAppearance.light:
-      return Colors.white;
-    case TopbarAppearance.dark:
-      return const Color(0xFF1E1E1E);
-    case TopbarAppearance.colored:
-      return settings.customTopbarColor ?? settings.primaryColor.color;
-  }
-}
-
-Color _getTopbarForeground(ThemeSettings settings, Brightness brightness) {
-  switch (settings.topbarAppearance) {
-    case TopbarAppearance.light:
-      return Colors.black87;
-    case TopbarAppearance.dark:
-      return Colors.white;
-    case TopbarAppearance.colored:
-      return Colors.white;
-  }
-}
+Color _getTopbarColor(ThemeSettings sett

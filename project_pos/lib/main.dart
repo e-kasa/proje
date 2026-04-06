@@ -15,33 +15,4 @@ void main() {
     debugPrint('║ Ortam   : ${EnvConfig.environmentName}');
     debugPrint('║ Base URL: ${EnvConfig.baseUrl}');
     debugPrint('║ Logging : ${EnvConfig.enableLogging ? "Aktif" : "Kapalı"}');
-    debugPrint('╚══════════════════════════════════════════');
-  }
-
-  runApp(
-    const ProviderScope(
-      child: MyApp(),
-    ),
-  );
-}
-
-class MyApp extends ConsumerWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final router = ref.watch(routerProvider);
-    final themeMode = ref.watch(themeModeProvider);
-    final lightTheme = ref.watch(lightThemeProvider);
-    final darkTheme = ref.watch(darkThemeProvider);
-
-    return MaterialApp.router(
-      title: 'Flutter Admin App',
-      debugShowCheckedModeBanner: false,
-      theme: lightTheme,
-      darkTheme: darkTheme,
-      themeMode: themeMode,
-      routerConfig: router,
-    );
-  }
-}
+    debugPrint('╚══════════════════════════�

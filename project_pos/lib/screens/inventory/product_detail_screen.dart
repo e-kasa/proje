@@ -886,4 +886,32 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   'variantId': int.tryParse(variantId) ?? variantId,
                   'crossRefNumber': codeController.text.trim(),
                   'crossRefBrand': brandController.text.trim(),
-                  'notes': notesController.t
+                  'notes': notesController.text.trim(),
+                });
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Hata: $e')),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.white,
+            ),
+            child: const Text('Kaydet'),
+          ),
+        ],
+      ),
+    ).then((_) {
+      codeController.dispose();
+      brandController.dispose();
+      notesController.dispose();
+    });
+  }
+
+  void _loadOemNumbers() {
+    _loadTabData();
+  }
+}

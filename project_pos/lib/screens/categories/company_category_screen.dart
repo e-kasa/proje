@@ -469,44 +469,13 @@ class _CompanyCategoryScreenState extends ConsumerState<CompanyCategoryScreen> {
         child: SizedBox(
           width: double.infinity,
           height: 50,
-          child: ElevatedButton.icon(
-            onPressed: state.isSaving
-                ? null
-                : () async {
-                    final success = await notifier.saveSelection();
-                    if (!mounted) return;
-                    if (success) {
-                      AppToast.show(
-                        context,
-                        message: '${state.selectedIds.length} kategori seçimi kaydedildi',
-                        type: ToastType.success,
-                      );
-                    } else {
-                      AppToast.show(
-                        context,
-                        message: state.error ?? 'Kaydetme başarısız',
-                        type: ToastType.error,
-                      );
-                    }
-                  },
-            icon: state.isSaving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                  )
-                : const Icon(Icons.save_outlined),
-            label: Text(
-              state.isSaving
+          AppButton.success(
+            text: state.isSaving
                   ? 'Kaydediliyor...'
                   : '${state.selectedIds.length} Kategori Seçimini Kaydet',
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
+            icon: Icons.check,
+            onPressed: state.isSaving,
           ),
         ),
       ),

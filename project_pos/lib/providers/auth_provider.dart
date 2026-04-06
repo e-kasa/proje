@@ -136,21 +136,4 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
     final sessionInstanceStr = jwtPayload['sessionInstance'] as String;
     final sessionInstance = jsonDecode(sessionInstanceStr) as Map<String, dynamic>;
-    final userInfo = sessionInstance['userInformation'] as Map<String, dynamic>;
-    final roles = (sessionInstance['roles'] as List).cast<String>();
-
-    return User(
-      id: userInfo['userId'] as String,
-      username: userInfo['userName'] as String,
-      displayName: userInfo['displayName'] as String,
-      selectedCompanyCode: userInfo['selectedCompanyCode'] as String? ?? '',
-      languageVal: userInfo['languageVal'] as String? ?? 'TR',
-      roles: roles,
-    );
-  }
-}
-
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  final authService = ref.watch(authServiceProvider);
-  return AuthNotifier(authService);
-});
+    final userInfo = sessionInstance['userInformation'] as Map<String, 

@@ -261,18 +261,4 @@ extension WizardImageHelpers on WizardState {
       default: return Icons.label;
     }
   }
-
-  Color getColorForAttribute(String color) {
-    switch (color.toLowerCase()) {
-      case 'k\u0131rm\u0131z\u0131': case 'red': return Colors.red;
-      case 'mavi': case 'blue': return Colors.blue;
-      case 'ye\u015fil': case 'green': return Colors.green;
-      case 'sar\u0131': case 'yellow': return Colors.yellow.shade700;
-      case 'siyah': case 'black': return Colors.black;
-      case 'beyaz': case 'white': return Colors.grey.shade400;
-      case 'turuncu': case 'orange': return Colors.orange;
-      case 'mor': case 'purple': return Colors.purple;
-      default: return AppColors.primary;
-    }
-  }
 }

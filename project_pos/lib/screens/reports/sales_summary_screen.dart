@@ -378,4 +378,59 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
       case 'up':
         trendIcon = Icons.trending_up;
         trendColor = AppColors.success;
-        brea
+        break;
+      case 'down':
+        trendIcon = Icons.trending_down;
+        trendColor = AppColors.danger;
+        break;
+      default:
+        trendIcon = Icons.trending_flat;
+        trendColor = AppColors.textMuted;
+    }
+
+    return AppCard(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                period,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Satis: ${(item['salesCount'] ?? 0)}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                _currencyFormat.format(revenue),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: trendColor,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Icon(trendIcon, color: trendColor, size: 20),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}

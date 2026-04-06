@@ -209,13 +209,13 @@ class CartItemRow extends StatelessWidget {
             onPressed: () => Navigator.pop(ctx),
             child: const Text('İptal'),
           ),
-          ElevatedButton(
+          AppButton.primary(
+            text: 'Uygula',
             onPressed: () {
               final val = double.tryParse(controller.text) ?? 0;
               onDiscountChanged(val.clamp(0, 100));
               Navigator.pop(ctx);
             },
-            child: const Text('Uygula'),
           ),
         ],
       ),

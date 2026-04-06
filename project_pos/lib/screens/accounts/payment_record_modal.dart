@@ -119,30 +119,10 @@ class PaymentRecordModal {
           actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Iptal')),
-            ElevatedButton.icon(
-              onPressed: () {
-                final amount = double.tryParse(amountCtrl.text);
-                if (amount == null || amount <= 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Gecerli bir tutar girin'), backgroundColor: AppColors.danger),
-                  );
-                  return;
-                }
-                Navigator.pop(ctx, {
-                  'amount': amount,
-                  'paymentType': paymentType,
-                  if (descCtrl.text.isNotEmpty) 'description': descCtrl.text,
-                  if (refCtrl.text.isNotEmpty) 'referenceNumber': refCtrl.text,
-                  if (bankCtrl.text.isNotEmpty) 'bankName': bankCtrl.text,
-                });
-              },
-              icon: const Icon(Icons.check, color: Colors.white, size: 18),
-              label: Text(buttonLabel, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accentColor,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
+            AppButton.danger(
+              text: buttonLabel, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600,
+              icon: Icons.check, color: Colors.white, size: 18,
+              onPressed: () {,
             ),
           ],
         ),

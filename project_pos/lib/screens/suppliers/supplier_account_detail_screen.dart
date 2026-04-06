@@ -757,4 +757,81 @@ class _SupplierAccountDetailScreenState
               }
               Navigator.pop(ctx);
               await _updateSupplierBasicInfo(
-                name: na
+                name: nameCtrl.text.trim(),
+                taxNumber: taxNumberCtrl.text.trim(),
+                taxOffice: taxOfficeCtrl.text.trim(),
+                contactName: contactNameCtrl.text.trim(),
+                phone: phoneCtrl.text.trim(),
+                email: emailCtrl.text.trim(),
+                address: addressCtrl.text.trim(),
+                notes: notesCtrl.text.trim(),
+              );
+              _loadAll();
+            },
+            child: const Text('Kaydet'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditAccountDialog() {
+    // Implementation for account settings edit dialog
+  }
+
+  Future<void> _updateSupplierBasicInfo({
+    required String name,
+    required String taxNumber,
+    required String taxOffice,
+    required String contactName,
+    required String phone,
+    required String email,
+    required String address,
+    required String notes,
+  }) async {
+    try {
+      await ref.read(supplierServiceProvider).updateSupplier(
+        widget.supplierId,
+        {
+          'name': name,
+          'taxNumber': taxNumber,
+          'taxOffice': taxOffice,
+          'contactName': contactName,
+          'phone': phone,
+          'email': email,
+          'address': address,
+          'notes': notes,
+        },
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Bilgiler güncellendi'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Hata: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
+  double _toDouble(dynamic value) {
+    if (value == null) return 0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0;
+    return 0;
+  }
+
+  String _formatCurrency(double value) {
+    return value.toStringAsFixed(2);
+  }
+}

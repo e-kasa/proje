@@ -81,14 +81,4 @@ class CustomerService {
       rethrow;
     }
   }
-
-  /// Müşteri istatistiklerini getirir.
-  Future<Map<String, dynamic>> getCustomerStats() async {
-    try {
-      final response = await _apiClient.get('$_base/stats');
-      return response.data['data'] as Map<String, dynamic>;
-    } catch (e) {
-      rethrow;
-    }
-  }
 }

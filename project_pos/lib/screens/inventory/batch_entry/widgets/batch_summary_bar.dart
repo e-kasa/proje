@@ -118,25 +118,11 @@ class BatchSummaryBar extends StatelessWidget {
   }
 
   Widget _saveButton() {
-    return ElevatedButton.icon(
+    AppButton.primary(
+      text: isSubmitting ? 'Kaydediliyor...' : 'Tumunu Kaydet ($totalItems,
+      icon: Icons.check,
       onPressed: isValid && !isSubmitting ? onSubmit : null,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      ),
-      icon: isSubmitting
-          ? const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                  strokeWidth: 2, color: Colors.white),
-            )
-          : const Icon(Icons.save, size: 18),
-      label: Text(
-        isSubmitting ? 'Kaydediliyor...' : 'Tumunu Kaydet ($totalItems)',
-      ),
-    );
+    ),
   }
 
   Widget _statChip(String count, String label, Color color) {

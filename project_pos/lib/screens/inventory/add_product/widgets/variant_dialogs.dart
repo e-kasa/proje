@@ -85,16 +85,9 @@ void showAddAttributeDialog({
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('\u0130ptal')),
-          ElevatedButton(
-            onPressed: () {
-              if (nameController.text.trim().isNotEmpty) {
-                state.addAttribute(nameController.text.trim(), selectedIcon);
-                onChanged();
-                Navigator.pop(context);
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('Ekle'),
+          AppButton.primary(
+            text: 'Ekle',
+            onPressed: () {,
           ),
         ],
       ),
@@ -140,16 +133,9 @@ void showAddValueDialog({
       ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('\u0130ptal')),
-        ElevatedButton(
-          onPressed: () {
-            if (valueController.text.trim().isNotEmpty) {
-              state.addValueToAttribute(attrIndex, valueController.text.trim());
-              onChanged();
-              Navigator.pop(context);
-            }
-          },
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-          child: const Text('Ekle'),
+        AppButton.primary(
+          text: 'Ekle',
+          onPressed: () {,
         ),
       ],
     ),

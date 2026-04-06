@@ -385,27 +385,10 @@ class VariantsStep extends StatelessWidget {
   Widget _buildGenerateButton(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: () {
-          final ok = state.generateVariants(context);
-          if (!ok) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('\u26a0\ufe0f En az bir \u00f6zellik ve de\u011fer ekleyin'), backgroundColor: AppColors.warning),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('\u2713 ${state.variants.length} varyant olu\u015fturuldu!'), backgroundColor: AppColors.success),
-            );
-            onChanged();
-          }
-        },
-        icon: const Icon(Icons.bolt),
-        label: Text('Varyantlar\u0131 Olu\u015ftur (${state.calculateTotalVariants()} varyant)'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
+      AppButton.success(
+        text: 'Varyantlar\u0131 Olu\u015ftur (${state.calculateTotalVariants(,
+        icon: Icons.bolt,
+        onPressed: () {,
       ),
     );
   }

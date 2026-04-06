@@ -94,7 +94,8 @@ class SalesScreen extends ConsumerWidget {
                                 const SizedBox(width: 12),
                                 AppButton.primary(
                                   text: 'New Sale',
-                                  icon: Icons.add, size: 18,
+                                  icon: Icons.add,
+                                  size: ButtonSize.small,
                                   onPressed: () {},
                                 ),
                               ],

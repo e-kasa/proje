@@ -48,27 +48,19 @@ enum PaymentMethod { cash, creditCard, bankTransfer, mixed }
 extension PaymentMethodExt on PaymentMethod {
   String get label {
     switch (this) {
-      case PaymentMethod.cash:
-        return 'Nakit';
-      case PaymentMethod.creditCard:
-        return 'Kredi Kartı';
-      case PaymentMethod.bankTransfer:
-        return 'Havale/EFT';
-      case PaymentMethod.mixed:
-        return 'Karma Ödeme';
+      case PaymentMethod.cash: return 'Nakit';
+      case PaymentMethod.creditCard: return 'Kredi Kartı';
+      case PaymentMethod.bankTransfer: return 'Havale/EFT';
+      case PaymentMethod.mixed: return 'Karma Ödeme';
     }
   }
 
   String get apiValue {
     switch (this) {
-      case PaymentMethod.cash:
-        return 'cash';
-      case PaymentMethod.creditCard:
-        return 'credit_card';
-      case PaymentMethod.bankTransfer:
-        return 'bank_transfer';
-      case PaymentMethod.mixed:
-        return 'mixed';
+      case PaymentMethod.cash: return 'cash';
+      case PaymentMethod.creditCard: return 'credit_card';
+      case PaymentMethod.bankTransfer: return 'bank_transfer';
+      case PaymentMethod.mixed: return 'mixed';
     }
   }
 }
@@ -86,7 +78,6 @@ class PosState {
   final String? error;
   final String? successMessage;
 
-  // Product search
   final List<Map<String, dynamic>> products;
   final List<Map<String, dynamic>> categories;
   final int? selectedCategoryId;
@@ -111,20 +102,11 @@ class PosState {
     this.isLoadingProducts = false,
   });
 
-  // ─── Computed ──────────────────────────────────────────────────
   int get totalItems => cartItems.fold(0, (s, i) => s + i.quantity);
-
-  double get subtotal =>
-      cartItems.fold(0.0, (s, i) => s + i.afterDiscount);
-
-  double get totalTax =>
-      cartItems.fold(0.0, (s, i) => s + i.taxAmount);
-
-  double get totalDiscount =>
-      cartItems.fold(0.0, (s, i) => s + i.discountAmount);
-
-  double get grandTotal =>
-      cartItems.fold(0.0, (s, i) => s + i.totalWithTax);
+  double get subtotal => cartItems.fold(0.0, (s, i) => s + i.afterDiscount);
+  double get totalTax => cartItems.fold(0.0, (s, i) => s + i.taxAmount);
+  double get totalDiscount => cartItems.fold(0.0, (s, i) => s + i.discountAmount);
+  double get grandTotal => cartItems.fold(0.0, (s, i) => s + i.totalWithTax);
 
   double get changeAmount {
     if (paymentMethod == PaymentMethod.cash) {
@@ -139,28 +121,20 @@ class PosState {
 
   bool get isPaymentSufficient {
     switch (paymentMethod) {
-      case PaymentMethod.cash:
-        return cashReceived >= grandTotal;
+      case PaymentMethod.cash: return cashReceived >= grandTotal;
       case PaymentMethod.creditCard:
-      case PaymentMethod.bankTransfer:
-        return true;
-      case PaymentMethod.mixed:
-        return (cashReceived + cardAmount + transferAmount) >= grandTotal;
+      case PaymentMethod.bankTransfer: return true;
+      case PaymentMethod.mixed: return (cashReceived + cardAmount + transferAmount) >= grandTotal;
     }
   }
 
-  bool get canSubmit =>
-      cartItems.isNotEmpty && isPaymentSufficient && !isSubmitting;
+  bool get canSubmit => cartItems.isNotEmpty && isPaymentSufficient && !isSubmitting;
 
   List<Map<String, dynamic>> get filteredProducts {
     var filtered = List<Map<String, dynamic>>.from(products);
-
     if (selectedCategoryId != null) {
-      filtered = filtered
-          .where((p) => p['categoryId']?.toString() == selectedCategoryId.toString())
-          .toList();
+      filtered = filtered.where((p) => p['categoryId']?.toString() == selectedCategoryId.toString()).toList();
     }
-
     if (searchQuery.isNotEmpty) {
       final q = searchQuery.toLowerCase();
       filtered = filtered.where((p) {
@@ -169,7 +143,6 @@ class PosState {
             (p['barcode']?.toString().toLowerCase() ?? '').contains(q);
       }).toList();
     }
-
     return filtered;
   }
 
@@ -197,8 +170,7 @@ class PosState {
   }) {
     return PosState(
       cartItems: cartItems ?? this.cartItems,
-      selectedCustomer:
-          clearCustomer ? null : (selectedCustomer ?? this.selectedCustomer),
+      selectedCustomer: clearCustomer ? null : (selectedCustomer ?? this.selectedCustomer),
       paymentMethod: paymentMethod ?? this.paymentMethod,
       cashReceived: cashReceived ?? this.cashReceived,
       cardAmount: cardAmount ?? this.cardAmount,
@@ -206,58 +178,168 @@ class PosState {
       note: clearNote ? null : (note ?? this.note),
       isSubmitting: isSubmitting ?? this.isSubmitting,
       error: clearError ? null : (error ?? this.error),
-      successMessage:
-          clearSuccess ? null : (successMessage ?? this.successMessage),
+      successMessage: clearSuccess ? null : (successMessage ?? this.successMessage),
       products: products ?? this.products,
       categories: categories ?? this.categories,
-      selectedCategoryId:
-          clearCategory ? null : (selectedCategoryId ?? this.selectedCategoryId),
+      selectedCategoryId: clearCategory ? null : (selectedCategoryId ?? this.selectedCategoryId),
       searchQuery: searchQuery ?? this.searchQuery,
       isLoadingProducts: isLoadingProducts ?? this.isLoadingProducts,
     );
   }
 }
 
-// ─── POS Notifier ──────────────────────────────────────────────────
 class PosNotifier extends StateNotifier<PosState> {
   PosNotifier(this._ref) : super(const PosState()) {
-    _loadProducts();
-    _loadCategories();
+    _loadInitialData();
   }
 
   final Ref _ref;
 
-  // ─── Data Loading ────────────────────────────────────────────
-  Future<void> _loadProducts() async {
+  Future<void> _loadInitialData() async {
     state = state.copyWith(isLoadingProducts: true);
     try {
-      final products =
-          await _ref.read(productServiceProvider).getProducts(size: 200);
-      state = state.copyWith(products: products, isLoadingProducts: false);
+      final results = await Future.wait([
+        _ref.read(productServiceProvider).getProducts(size: 100),
+        _ref.read(categoryServiceProvider).getCategories(),
+      ]);
+      state = state.copyWith(
+        products: results[0] as List<Map<String, dynamic>>,
+        categories: results[1] as List<Map<String, dynamic>>,
+        isLoadingProducts: false,
+      );
     } catch (e) {
-      AppLogger.error('Ürünler yüklenemedi', tag: 'POS', error: e);
       state = state.copyWith(isLoadingProducts: false, error: e.toString());
     }
   }
 
-  Future<void> _loadCategories() async {
-    try {
-      final categories =
-          await _ref.read(categoryServiceProvider).getCategories();
-      state = state.copyWith(categories: categories);
-    } catch (e) {
-      AppLogger.warning('Kategoriler yüklenemedi, devam ediliyor',
-          tag: 'POS');
+  Future<void> setSearchQuery(String query) async {
+    state = state.copyWith(searchQuery: query);
+    if (query.length >= 3) {
+      try {
+        final apiProducts = await _ref.read(productServiceProvider).getProducts(search: query, size: 50);
+        final List<Map<String, dynamic>> updatedProducts = List.from(state.products);
+        for (var apiP in apiProducts) {
+          if (!updatedProducts.any((p) => p['id'] == apiP['id'])) {
+            updatedProducts.add(apiP);
+          }
+        }
+        state = state.copyWith(products: updatedProducts);
+      } catch (e) {
+        AppLogger.error('API arama hatası', tag: 'POS', error: e);
+      }
     }
   }
 
-  Future<void> refreshProducts() async {
-    await _loadProducts();
+  void addToCart(Map<String, dynamic> product) {
+    final items = List<CartItem>.from(state.cartItems);
+    final productId = product['id'].toString();
+    final index = items.indexWhere((i) => i.productId == productId);
+
+    if (index >= 0) {
+      items[index] = items[index].copyWith(quantity: items[index].quantity + 1);
+    } else {
+      items.add(CartItem(product: product));
+    }
+    state = state.copyWith(cartItems: items, clearError: true);
   }
 
-  // ─── Search & Filter ─────────────────────────────────────────
-  void setSearchQuery(String query) {
-    state = state.copyWith(searchQuery: query);
+  Future<void> addToCartByBarcode(String barcode) async {
+    final products = state.products;
+    final found = products.firstWhere(
+      (p) => p['barcode']?.toString() == barcode || p['sku']?.toString() == barcode,
+      orElse: () => {},
+    );
+    if (found.isNotEmpty) {
+      addToCart(found);
+    } else {
+      // Barcode ile ürün bulunamadı — API'den ara
+      try {
+        final product = await _ref.read(productServiceProvider).getProducts(search: barcode);
+        if (product.isNotEmpty) {
+          addToCart(product.first);
+          // Cache ürünü listeye ekle
+          state = state.copyWith(products: [...state.products, product.first]);
+        } else {
+          state = state.copyWith(error: 'Barkod bulunamadı: $barcode');
+        }
+      } catch (e) {
+        state = state.copyWith(error: 'Barkod arama hatası: $e');
+      }
+    }
+  }
+
+  void removeFromCart(String productId) {
+    state = state.copyWith(cartItems: state.cartItems.where((i) => i.productId != productId).toList());
+  }
+
+  void updateQuantity(String productId, int quantity) {
+    if (quantity <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+    final items = List<CartItem>.from(state.cartItems);
+    final index = items.indexWhere((i) => i.productId == productId);
+    if (index >= 0) {
+      items[index] = items[index].copyWith(quantity: quantity);
+      state = state.copyWith(cartItems: items);
+    }
+  }
+
+  void updateDiscount(String productId, double discount) {
+    final items = List<CartItem>.from(state.cartItems);
+    final index = items.indexWhere((i) => i.productId == productId);
+    if (index >= 0) {
+      items[index] = items[index].copyWith(discount: discount.clamp(0, 100));
+      state = state.copyWith(cartItems: items);
+    }
+  }
+
+  void clearCart() {
+    state = state.copyWith(cartItems: [], clearCustomer: true, cashReceived: 0, cardAmount: 0, transferAmount: 0, clearNote: true, paymentMethod: PaymentMethod.cash);
+  }
+
+  void selectCustomer(Map<String, dynamic>? customer) {
+    if (customer == null) {
+      state = state.copyWith(clearCustomer: true);
+    } else {
+      state = state.copyWith(selectedCustomer: customer);
+    }
+  }
+
+  void setPaymentMethod(PaymentMethod method) {
+    state = state.copyWith(paymentMethod: method);
+  }
+
+  void setCashReceived(double amount) => state = state.copyWith(cashReceived: amount);
+  void setCardAmount(double amount) => state = state.copyWith(cardAmount: amount);
+  void setTransferAmount(double amount) => state = state.copyWith(transferAmount: amount);
+  void setNote(String? note) => note == null || note.isEmpty ? state.copyWith(clearNote: true) : state.copyWith(note: note);
+
+  Future<bool> submitSale() async {
+    if (!state.canSubmit) return false;
+    state = state.copyWith(isSubmitting: true, clearError: true);
+    try {
+      final saleData = {
+        'paidAmount': state.grandTotal,
+        'customerId': state.selectedCustomer?['id']?.toString(),
+        'paymentMethod': state.paymentMethod.apiValue,
+        'notes': state.note,
+        'items': state.cartItems.map((item) => {
+          'variantId': item.variantId,
+          'quantity': item.quantity,
+          'unitPrice': item.unitPrice,
+          'discountRate': item.discount,
+        }).toList(),
+      };
+      await _ref.read(salesServiceProvider).createSale(saleData);
+      state = state.copyWith(isSubmitting: false, successMessage: 'Satış tamamlandı!');
+      clearCart();
+      _loadInitialData();
+      return true;
+    } catch (e) {
+      state = state.copyWith(isSubmitting: false, error: e.toString());
+      return false;
+    }
   }
 
   void selectCategory(int? categoryId) {
@@ -268,197 +350,8 @@ class PosNotifier extends StateNotifier<PosState> {
     }
   }
 
-  // ─── Cart Operations ─────────────────────────────────────────
-  void addToCart(Map<String, dynamic> product) {
-    final items = List<CartItem>.from(state.cartItems);
-    final productId = product['id'].toString();
-    final index = items.indexWhere((i) => i.productId == productId);
-
-    if (index >= 0) {
-      final item = items[index];
-      final newQty = item.quantity + 1;
-      if (newQty > item.stock && item.stock > 0) {
-        state = state.copyWith(error: 'Stok yetersiz! Mevcut: ${item.stock}');
-        return;
-      }
-      items[index] = item.copyWith(quantity: newQty);
-    } else {
-      items.add(CartItem(product: product));
-    }
-
-    state = state.copyWith(cartItems: items, clearError: true);
-  }
-
-  void addToCartByBarcode(String barcode) {
-    final product = state.products.firstWhere(
-      (p) =>
-          p['barcode']?.toString() == barcode ||
-          p['sku']?.toString() == barcode,
-      orElse: () => <String, dynamic>{},
-    );
-
-    if (product.isEmpty) {
-      state = state.copyWith(error: 'Barkod bulunamadı: $barcode');
-      return;
-    }
-
-    addToCart(product);
-  }
-
-  void removeFromCart(String productId) {
-    final items = state.cartItems
-        .where((i) => i.productId != productId)
-        .toList();
-    state = state.copyWith(cartItems: items);
-  }
-
-  void updateQuantity(String productId, int quantity) {
-    if (quantity <= 0) {
-      removeFromCart(productId);
-      return;
-    }
-
-    final items = List<CartItem>.from(state.cartItems);
-    final index = items.indexWhere((i) => i.productId == productId);
-    if (index >= 0) {
-      final item = items[index];
-      if (quantity > item.stock && item.stock > 0) {
-        state = state.copyWith(error: 'Stok yetersiz! Mevcut: ${item.stock}');
-        return;
-      }
-      items[index] = item.copyWith(quantity: quantity);
-      state = state.copyWith(cartItems: items, clearError: true);
-    }
-  }
-
-  void updateDiscount(String productId, double discount) {
-    final items = List<CartItem>.from(state.cartItems);
-    final index = items.indexWhere((i) => i.productId == productId);
-    if (index >= 0) {
-      items[index] =
-          items[index].copyWith(discount: discount.clamp(0, 100));
-      state = state.copyWith(cartItems: items);
-    }
-  }
-
-  void clearCart() {
-    state = state.copyWith(
-      cartItems: [],
-      clearCustomer: true,
-      cashReceived: 0,
-      cardAmount: 0,
-      transferAmount: 0,
-      clearNote: true,
-      paymentMethod: PaymentMethod.cash,
-    );
-  }
-
-  // ─── Customer ─────────────────────────────────────────────────
-  void selectCustomer(Map<String, dynamic>? customer) {
-    if (customer == null) {
-      state = state.copyWith(clearCustomer: true);
-    } else {
-      state = state.copyWith(selectedCustomer: customer);
-    }
-  }
-
-  // ─── Payment ──────────────────────────────────────────────────
-  void setPaymentMethod(PaymentMethod method) {
-    state = state.copyWith(paymentMethod: method, cashReceived: 0, cardAmount: 0, transferAmount: 0);
-  }
-
-  void setCashReceived(double amount) {
-    state = state.copyWith(cashReceived: amount);
-  }
-
-  void setCardAmount(double amount) {
-    state = state.copyWith(cardAmount: amount);
-  }
-
-  void setTransferAmount(double amount) {
-    state = state.copyWith(transferAmount: amount);
-  }
-
-  void setNote(String? note) {
-    if (note == null || note.isEmpty) {
-      state = state.copyWith(clearNote: true);
-    } else {
-      state = state.copyWith(note: note);
-    }
-  }
-
-  // ─── Submit Sale ──────────────────────────────────────────────
-  Future<bool> submitSale() async {
-    if (!state.canSubmit) return false;
-
-    state = state.copyWith(isSubmitting: true, clearError: true);
-
-    try {
-      final saleData = _buildSalePayload();
-      await _ref.read(salesServiceProvider).createSale(saleData);
-
-      state = state.copyWith(
-        isSubmitting: false,
-        successMessage: 'Satış başarıyla tamamlandı!',
-      );
-
-      // Satış sonrası sepeti temizle
-      clearCart();
-      // Stok güncellemesi için ürünleri yeniden yükle
-      _loadProducts();
-
-      return true;
-    } catch (e) {
-      AppLogger.error('Satış kaydedilemedi', tag: 'POS', error: e);
-      state = state.copyWith(
-        isSubmitting: false,
-        error: 'Satış kaydedilemedi: $e',
-      );
-      return false;
-    }
-  }
-
-  Map<String, dynamic> _buildSalePayload() {
-    // Otomatik satış numarası: SLS-yyyyMMdd-HHmmss
-    final now = DateTime.now();
-    final saleNumber =
-        'SLS-${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}'
-        '-${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
-
-    // İlk ürünün depo/mağaza bilgisini varsayılan olarak al
-    final firstItem = state.cartItems.first;
-    final defaultWarehouseId =
-        firstItem.product['warehouseId']?.toString() ?? '';
-    final defaultStoreId =
-        firstItem.product['storeId']?.toString() ?? '';
-
-    return {
-      // Backend zorunlu alanlar
-      'saleNumber': saleNumber,
-      'storeId': defaultStoreId,
-      'warehouseId': defaultWarehouseId,
-      'paidAmount': state.grandTotal,
-      'customerId': state.selectedCustomer?['id']?.toString(),
-      'paymentMethod': state.paymentMethod.apiValue,
-      'notes': state.note,
-      'items': state.cartItems.map((item) {
-        return {
-          'variantId': item.variantId,
-          'quantity': item.quantity,
-          'unitPrice': item.unitPrice,
-          'discountRate': item.discount,
-          'notes': '',
-        };
-      }).toList(),
-    };
-  }
-
-  void clearMessages() {
-    state = state.copyWith(clearError: true, clearSuccess: true);
-  }
+  Future<void> refreshProducts() async => _loadInitialData();
+  void clearMessages() => state = state.copyWith(clearError: true, clearSuccess: true);
 }
 
-// ─── Provider ──────────────────────────────────────────────────────
-final posProvider = StateNotifierProvider.autoDispose<PosNotifier, PosState>(
-  (ref) => PosNotifier(ref),
-);
+final posProvider = StateNotifierProvider.autoDispose<PosNotifier, PosState>((ref) => PosNotifier(ref));

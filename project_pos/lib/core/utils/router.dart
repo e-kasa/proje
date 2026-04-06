@@ -42,12 +42,13 @@ import '../../screens/finance/cash_flow_screen.dart';
 import '../../screens/settings/settings_screen.dart';
 import '../../screens/settings/user_management_screen.dart';
 import '../../screens/settings/company_settings_screen.dart';
+import '../../screens/settings/sector_settings_screen.dart';
 import '../../screens/hrm/employee_list_screen.dart';
 import '../../screens/hrm/add_employee_screen.dart';
 import '../../screens/bulk_import/bulk_import_upload_screen.dart';
 import '../../screens/bulk_import/bulk_import_review_screen_v2.dart';
 import '../../screens/bulk_import/supplier_import_review_screen.dart';
-// import '../../screens/bulk_import/supplier_import_table_dropdown_screen.dart'; // DISABLED: Has compile errors
+import '../../screens/bulk_import/supplier_import_upload_screen.dart';
 import '../../screens/supplier_upload/supplier_upload_wizard_screen.dart';
 import '../../models/supplier_upload_models.dart' as supplier_models;
 import '../../screens/stock/multi_warehouse_stock_screen.dart';
@@ -75,11 +76,8 @@ import '../../screens/reports/product_sales_analysis_screen.dart';
 import '../../screens/reports/customer_sales_analysis_screen.dart';
 import '../../screens/reports/profit_overview_screen.dart';
 import '../../screens/reports/daily_summary_screen.dart';
-import '../layouts/responsive_layout.dart';  // Changed from main_layout.dart
+import '../layouts/responsive_layout.dart';
 
-/// Auth değişimlerini GoRouter'a iletmek için ChangeNotifier.
-/// routerProvider GoRouter'ı SADECE BİR KEZ oluşturur;
-/// auth state değişince notifyListeners() ile redirect yeniden hesaplanır.
 class _AuthChangeNotifier extends ChangeNotifier {
   _AuthChangeNotifier(Ref ref) {
     ref.listen(authProvider, (_, __) => notifyListeners());
@@ -93,7 +91,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/login',
     refreshListenable: authNotifier,
     redirect: (context, state) {
-      // ref.read — sadece okuma, izleme değil (yeniden oluşturmayı önler)
       final isAuthenticated = ref.read(authProvider).isAuthenticated;
       final isLoginRoute = state.matchedLocation == '/login';
 
@@ -102,13 +99,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      // Auth Routes
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
       ),
 
-      // Main App Routes
       ShellRoute(
         builder: (context, state, child) => ResponsiveLayout(child: child),
         routes: [
@@ -202,7 +197,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'add-product',
                 builder: (context, state) {
-                  // Extract bulk import parameters if provided
                   final extra = state.extra as Map<String, dynamic>?;
                   final fromBulkImport = extra?['fromBulkImport'] as bool? ?? false;
                   final importData = extra?['importData'] as Map<String, dynamic>?;
@@ -237,7 +231,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Warehouse Routes
           GoRoute(
             path: '/warehouses',
             builder: (context, state) => const WarehouseListScreen(),
@@ -253,7 +246,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               return AddWarehouseScreen(warehouseId: id);
             },
           ),
-          // Store Routes
           GoRoute(
             path: '/stores',
             builder: (context, state) => const StoreListScreen(),
@@ -269,7 +261,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               return AddStoreScreen(storeId: id);
             },
           ),
-          // Customer Routes
           GoRoute(
             path: '/customers/detail/:id',
             builder: (context, state) {
@@ -288,7 +279,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               return AddCustomerScreen(customerId: id);
             },
           ),
-          // Purchase Routes
           GoRoute(
             path: '/purchases',
             builder: (context, state) => const PurchaseListScreen(),
@@ -311,7 +301,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               return PurchaseReturnScreen(purchaseId: purchaseId);
             },
           ),
-          // Supplier Routes
           GoRoute(
             path: '/suppliers/detail/:id',
             builder: (context, state) {
@@ -337,7 +326,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               return SupplierAccountDetailScreen(supplierId: id);
             },
           ),
-          // Vehicle & Part Search Routes
           GoRoute(
             path: '/part-search',
             builder: (context, state) => const PartSearchScreen(),
@@ -357,7 +345,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               );
             },
           ),
-          // Category Routes
           GoRoute(
             path: '/categories/add',
             builder: (context, state) => const AddCategoryScreen(),
@@ -365,19 +352,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/categories/edit/:id',
             builder: (context, state) {
-              // Kategori verisi extra olarak Map<String, dynamic> gönderilir.
-              // Sadece ID varsa boş Map ile geç; kategori ekranı kendi yükler.
               final extra = state.extra;
               final category = extra is Map<String, dynamic> ? extra : null;
               return AddCategoryScreen(category: category);
             },
           ),
-          // Firma Kategori Tanımla — Hangi kategorileri kullanacağını seçer
           GoRoute(
             path: '/categories/company-setup',
             builder: (context, state) => const CompanyCategoryScreen(),
           ),
-          // Finance Routes
           GoRoute(
             path: '/finance',
             builder: (context, state) => const FinanceDashboardScreen(),
@@ -409,7 +392,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/finance/cash-flow',
             builder: (context, state) => const CashFlowScreen(),
           ),
-          // HRM Routes
           GoRoute(
             path: '/hrm/employees',
             builder: (context, state) => const EmployeeListScreen(),
@@ -425,10 +407,13 @@ final routerProvider = Provider<GoRouter>((ref) {
               return AddEmployeeScreen(employeeId: id);
             },
           ),
-          // Bulk Import Routes
           GoRoute(
             path: '/bulk-import',
             builder: (context, state) => const BulkImportUploadScreen(),
+          ),
+          GoRoute(
+            path: '/bulk-import/supplier-upload',
+            builder: (context, state) => const SupplierImportUploadScreen(),
           ),
           GoRoute(
             path: '/bulk-import/review',
@@ -438,17 +423,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/bulk-import/supplier',
             builder: (context, state) => const SupplierImportReviewScreen(),
           ),
-          // DISABLED: supplier-dropdown route has compile errors
-          // GoRoute(
-          //   path: '/bulk-import/supplier-dropdown',
-          //   builder: (context, state) => const SupplierImportTableDropdownScreen(),
-          // ),
           GoRoute(
             path: '/bulk-import/supplier-wizard',
             builder: (context, state) {
               final extra = state.extra as supplier_models.SupplierUploadResponse?;
               if (extra == null) {
-                // No data provided, redirect to upload screen
                 return const Scaffold(
                   body: Center(
                     child: Text('Veri bulunamadi. Lutfen dosya yukleyin.'),
@@ -458,7 +437,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               return SupplierUploadWizardScreen(uploadResponse: extra);
             },
           ),
-          // ─── Cari Hesap Routes ────────────────────────────────────
           GoRoute(
             path: '/customers/account/:id',
             builder: (context, state) {
@@ -485,7 +463,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/accounts/overdue',
             builder: (context, state) => const OverdueTrackingScreen(),
           ),
-          // ─── Stok Rapor Routes ─────────────────────────────────────
           GoRoute(
             path: '/stock/movements',
             builder: (context, state) => const StockMovementHistoryScreen(),
@@ -498,7 +475,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/stock/value-report',
             builder: (context, state) => const StockValueReportScreen(),
           ),
-          // ─── Satis Rapor Routes ────────────────────────────────────
           GoRoute(
             path: '/reports/sales-summary',
             builder: (context, state) => const SalesSummaryScreen(),
@@ -519,7 +495,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/reports/daily-summary',
             builder: (context, state) => const DailySummaryScreen(),
           ),
-          // Settings Route
           GoRoute(
             path: '/settings',
             builder: (context, state) => const SettingsScreen(),
@@ -532,9 +507,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/settings/company',
             builder: (context, state) => const CompanySettingsScreen(),
           ),
+          GoRoute(
+            path: '/settings/sector',
+            builder: (context, state) => const SectorSettingsScreen(),
+          ),
         ],
       ),
     ],
   );
 });
-

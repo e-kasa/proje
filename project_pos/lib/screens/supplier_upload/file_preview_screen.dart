@@ -257,8 +257,8 @@ class _FilePreviewScreenState extends State<FilePreviewScreen> {
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

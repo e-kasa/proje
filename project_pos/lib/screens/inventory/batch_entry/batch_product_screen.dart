@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../core/config/sector_config.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_constants.dart';
+import '../../../core/theme/app_gradients.dart';
 import '../../../core/widgets/widgets.dart';
-import '../../../services/service_locator.dart';
+import '../../../providers/sector_provider.dart';
 import 'providers/batch_entry_provider.dart';
 import 'models/batch_entry_models.dart';
 import 'widgets/batch_header_form.dart';
@@ -16,581 +18,1632 @@ class BatchProductScreen extends ConsumerStatefulWidget {
   ConsumerState<BatchProductScreen> createState() => _BatchProductScreenState();
 }
 
-class _BatchProductScreenState extends ConsumerState<BatchProductScreen> {
+class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
+    with SingleTickerProviderStateMixin {
   final _barcodeController = TextEditingController();
   final _barcodeFocus = FocusNode();
+  late final TabController _tabController;
+  final _currency = NumberFormat.currency(locale: 'tr_TR', symbol: '₺');
+
+  static const _tabs = [
+    _Tab('Tümü', null),
+    _Tab('Yeni', RowStatus.newProduct),
+    _Tab('Mevcut', RowStatus.existing),
+    _Tab('Hata', RowStatus.error),
+    _Tab('Kaydedildi', RowStatus.saved),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: _tabs.length, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _barcodeFocus.requestFocus();
+    });
+  }
 
   @override
   void dispose() {
     _barcodeController.dispose();
     _barcodeFocus.dispose();
+    _tabController.dispose();
     super.dispose();
-  }
-
-  Future<bool> _onWillPop() async {
-    final state = ref.read(batchEntryProvider);
-    if (state.rows.isEmpty) return true;
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Sayfadan Ayril'),
-        content: const Text(
-          'Kaydedilmemis veriler var. Cikmak istediginize emin misiniz?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Iptal'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Cik'),
-          ),
-        ],
-      ),
-    );
-    return result ?? false;
   }
 
   Future<void> _addByBarcode() async {
     final input = _barcodeController.text.trim();
     if (input.isEmpty) return;
-    final notifier = ref.read(batchEntryProvider.notifier);
-    final msg = await notifier.addByBarcode(input);
+    final msg =
+        await ref.read(batchEntryProvider.notifier).addByBarcode(input);
     _barcodeController.clear();
     _barcodeFocus.requestFocus();
     if (msg != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
+        SnackBar(
+          content: Text(msg),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(12),
+        ),
       );
     }
   }
 
-  void _showVatDialog() {
-    const vatRates = [0.0, 1.0, 8.0, 10.0, 18.0, 20.0];
-    showDialog(
+  Future<void> _submit(BatchEntryState state) async {
+    // Validasyon
+    final err = ref.read(batchEntryProvider.notifier).validateAll();
+    if (err != null) {
+      _showError(err);
+      return;
+    }
+
+    final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => SimpleDialog(
-        title: const Text('KDV Orani Sec'),
-        children: vatRates.map((rate) {
-          return SimpleDialogOption(
-            onPressed: () {
-              ref.read(batchEntryProvider.notifier).applyVatToAll(rate);
-              Navigator.pop(ctx);
-            },
-            child: Text('%${rate.toStringAsFixed(0)}'),
+      builder: (ctx) => _ConfirmDialog(state: state, currency: _currency),
+    );
+    if (ok != true || !mounted) return;
+
+    try {
+      final result =
+          await ref.read(batchEntryProvider.notifier).submitAll();
+      if (!mounted) return;
+      _showResultSheet(result);
+    } catch (e) {
+      if (mounted) _showError(e.toString());
+    }
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(children: [
+          const Icon(Icons.error_outline, color: Colors.white, size: 18),
+          const SizedBox(width: 8),
+          Expanded(child: Text(msg)),
+        ]),
+        backgroundColor: AppColors.danger,
+        behavior: SnackBarBehavior.floating,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(12),
+      ),
+    );
+  }
+
+  void _showResultSheet(BatchSaveResult result) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _ResultSheet(result: result, currency: _currency),
+    );
+  }
+
+  List<BatchEntryRow> _filteredRows(
+      List<BatchEntryRow> rows, RowStatus? filter) {
+    if (filter == null) return rows;
+    if (filter == RowStatus.existing) {
+      return rows.where((r) => r.isExisting).toList();
+    }
+    return rows.where((r) => r.status == filter).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(batchEntryProvider);
+    final cfg = ref.watch(sectorConfigProvider);
+    final isDesktop = MediaQuery.sizeOf(context).width > 800;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF0F2F8),
+      body: Column(
+        children: [
+          _buildTopBar(state, isDesktop),
+          const BatchHeaderForm(),
+          _buildSearchBar(cfg),
+          _buildTabBar(state),
+          Expanded(child: _buildBody(state, cfg, isDesktop)),
+          _buildSummaryBar(state),
+        ],
+      ),
+    );
+  }
+
+  // ── TOP BAR ─────────────────────────────────────────────────────────────────
+  Widget _buildTopBar(BatchEntryState state, bool isDesktop) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: AppGradients.primaryGradient,
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+          child: Row(
+            children: [
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                    color: Colors.white, size: 20),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Toplu Ürün Girişi',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (state.supplierName != null)
+                      Text(
+                        state.supplierName!,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 12,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              // Stats chips
+              if (state.rows.isNotEmpty) ...[
+                _TopChip(
+                    label: '${state.totalItems}',
+                    icon: Icons.list_alt_rounded),
+                const SizedBox(width: 8),
+                _TopChip(
+                    label: '${state.newItems} yeni',
+                    icon: Icons.add_circle_outline),
+              ],
+              const SizedBox(width: 8),
+              // Clear button
+              if (state.rows.isNotEmpty)
+                IconButton(
+                  onPressed: _confirmClear,
+                  icon: const Icon(Icons.delete_sweep_outlined,
+                      color: Colors.white),
+                  tooltip: 'Listeyi Temizle',
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _confirmClear() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Listeyi Temizle'),
+        content: const Text('Tüm satırlar silinecek. Emin misiniz?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('İptal')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: const Text('Temizle'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) ref.read(batchEntryProvider.notifier).clearAll();
+  }
+
+  // ── SEARCH / BARCODE BAR ──────────────────────────────────────────────────
+  Widget _buildSearchBar(SectorConfig cfg) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              height: 46,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0F2F8),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: TextField(
+                controller: _barcodeController,
+                focusNode: _barcodeFocus,
+                onSubmitted: (_) => _addByBarcode(),
+                style: const TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w500),
+                decoration: InputDecoration(
+                  hintText: cfg.barcodeHint,
+                  hintStyle: const TextStyle(
+                      color: AppColors.textMuted, fontSize: 13),
+                  prefixIcon: const Icon(Icons.qr_code_scanner_rounded,
+                      color: AppColors.primary, size: 22),
+                  border: InputBorder.none,
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 13, horizontal: 4),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Search button
+          _ActionBtn(
+            icon: Icons.search_rounded,
+            color: AppColors.primary,
+            onTap: _addByBarcode,
+            tooltip: 'Ara ve Ekle',
+          ),
+          const SizedBox(width: 8),
+          // Manual add button
+          _ActionBtn(
+            icon: Icons.add_rounded,
+            color: AppColors.success,
+            onTap: () =>
+                ref.read(batchEntryProvider.notifier).addManualRow(),
+            tooltip: 'Manuel Satır Ekle',
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── TAB BAR ──────────────────────────────────────────────────────────────
+  Widget _buildTabBar(BatchEntryState state) {
+    int _count(RowStatus? s) {
+      if (s == null) return state.rows.length;
+      if (s == RowStatus.existing) {
+        return state.rows.where((r) => r.isExisting).length;
+      }
+      return state.rows.where((r) => r.status == s).length;
+    }
+
+    return Container(
+      color: Colors.white,
+      child: TabBar(
+        controller: _tabController,
+        isScrollable: true,
+        tabAlignment: TabAlignment.start,
+        labelColor: AppColors.primary,
+        unselectedLabelColor: AppColors.textMuted,
+        indicatorColor: AppColors.primary,
+        indicatorWeight: 2.5,
+        labelStyle: const TextStyle(
+            fontSize: 13, fontWeight: FontWeight.w600),
+        tabs: _tabs.map((t) {
+          final count = _count(t.status);
+          return Tab(
+            child: Row(
+              children: [
+                Text(t.label),
+                if (count > 0) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: _tabBadgeColor(t.status)
+                          .withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '$count',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: _tabBadgeColor(t.status),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           );
         }).toList(),
       ),
     );
   }
 
-  Future<void> _showCategoryPicker() async {
-    try {
-      final categories =
-          await ref.read(companyCategoryServiceProvider).getMyCategoryList();
-      if (!mounted) return;
-      await showDialog(
-        context: context,
-        builder: (ctx) => SimpleDialog(
-          title: const Text('Kategori Sec'),
-          children: categories.map((c) {
-            final id = c['id']?.toString() ?? '';
-            final name = c['name']?.toString() ?? '';
-            return SimpleDialogOption(
-              onPressed: () {
-                ref
-                    .read(batchEntryProvider.notifier)
-                    .applyCategoryToAll(id, name);
-                Navigator.pop(ctx);
-              },
-              child: Text(name),
-            );
-          }).toList(),
-        ),
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Kategoriler yuklenemedi: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _showBrandPicker() async {
-    try {
-      final brands = await ref.read(brandServiceProvider).getActiveBrands();
-      if (!mounted) return;
-      await showDialog(
-        context: context,
-        builder: (ctx) => SimpleDialog(
-          title: const Text('Marka Sec'),
-          children: brands.map((b) {
-            final id = b['id']?.toString() ?? '';
-            final name = b['name']?.toString() ?? '';
-            return SimpleDialogOption(
-              onPressed: () {
-                ref.read(batchEntryProvider.notifier).applyBrandToAll(id, name);
-                Navigator.pop(ctx);
-              },
-              child: Text(name),
-            );
-          }).toList(),
-        ),
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Markalar yuklenemedi: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _handleSubmit() async {
-    final notifier = ref.read(batchEntryProvider.notifier);
-    final error = notifier.validateAll();
-    if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error),
-          backgroundColor: AppColors.danger,
-        ),
-      );
-      return;
-    }
-
-    final state = ref.read(batchEntryProvider);
-    final pendingCount = state.rows.where((r) => !r.isSaved).length;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Kaydet'),
-        content: Text('$pendingCount urun kaydedilecek. Onayliyor musunuz?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Iptal'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Kaydet'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-
-    try {
-      final result = await notifier.submitAll();
-      if (mounted) _showResultDialog(result);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Hata: $e'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
-      }
-    }
-  }
-
-  void _showResultDialog(BatchSaveResult result) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              result.errors == 0 ? Icons.check_circle : Icons.warning,
-              color: result.errors == 0 ? AppColors.success : AppColors.warning,
-            ),
-            const SizedBox(width: 8),
-            const Expanded(child: Text('Sonuc')),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('${result.totalProcessed} urun islendi'),
-            if (result.newCreated > 0)
-              Text('  * ${result.newCreated} yeni urun olusturuldu'),
-            if (result.stockUpdated > 0)
-              Text('  * ${result.stockUpdated} mevcut urunun stogu guncellendi'),
-            if (result.errors > 0) ...[
-              const SizedBox(height: 8),
-              Text(
-                '${result.errors} hata olustu',
-                style: const TextStyle(color: AppColors.danger),
-              ),
-              ...result.errorMessages.take(5).map(
-                    (m) => Padding(
-                      padding: const EdgeInsets.only(left: 8, top: 2),
-                      child: Text(
-                        '- $m',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ),
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              ref.read(batchEntryProvider.notifier).clearSavedRows();
-            },
-            child: const Text('Yeni Giris Yap'),
-          ),
-          if (result.purchaseId != null)
-            FilledButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                // context.push('/purchases/${result.purchaseId}');
-              },
-              child: const Text('Satin Alma Detayi'),
-            ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final state = ref.watch(batchEntryProvider);
-    final numberFormat = NumberFormat.currency(
-      locale: 'tr_TR',
-      symbol: '\u20BA',
-      decimalDigits: 2,
-    );
-
-    return PopScope(
-      canPop: state.rows.isEmpty,
-      onPopInvokedWithResult: (didPop, _) async {
-        if (didPop) return;
-        final shouldPop = await _onWillPop();
-        if (shouldPop && context.mounted) Navigator.of(context).pop();
-      },
-      child: Scaffold(
-        appBar: AppAppBar.standard(
-          title: 'Toplu Urun Girisi',
-          actions: [
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
-              tooltip: 'Toplu Islemler',
-              onSelected: (value) {
-                switch (value) {
-                  case 'vat':
-                    _showVatDialog();
-                    break;
-                  case 'category':
-                    _showCategoryPicker();
-                    break;
-                  case 'brand':
-                    _showBrandPicker();
-                    break;
-                }
-              },
-              itemBuilder: (_) => const [
-                PopupMenuItem(
-                  value: 'vat',
-                  child: ListTile(
-                    leading: Icon(Icons.percent),
-                    title: Text('Tumune KDV Uygula'),
-                    dense: true,
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'category',
-                  child: ListTile(
-                    leading: Icon(Icons.category),
-                    title: Text('Tumune Kategori Uygula'),
-                    dense: true,
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'brand',
-                  child: ListTile(
-                    leading: Icon(Icons.branding_watermark),
-                    title: Text('Tumune Marka Uygula'),
-                    dense: true,
-                  ),
-                ),
-              ],
-            ),
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              tooltip: 'Temizle',
-              onPressed: () {
-                ref.read(batchEntryProvider.notifier).clearAll();
-              },
-            ),
-          ],
-        ),
-        body: Column(
-          children: [
-            const BatchHeaderForm(),
-            // Barcode input
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _barcodeController,
-                      focusNode: _barcodeFocus,
-                      decoration: const InputDecoration(
-                        hintText: 'Barkod veya urun adi girin...',
-                        prefixIcon: Icon(Icons.qr_code_scanner),
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      onSubmitted: (_) => _addByBarcode(),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    onPressed: _addByBarcode,
-                    icon: const Icon(Icons.search),
-                    tooltip: 'Ara',
-                  ),
-                  const SizedBox(width: 4),
-                  IconButton.outlined(
-                    onPressed: () {
-                      ref.read(batchEntryProvider.notifier).addManualRow();
-                    },
-                    icon: const Icon(Icons.add),
-                    tooltip: 'Manuel Satir Ekle',
-                  ),
-                ],
-              ),
-            ),
-            // Product list
-            Expanded(
-              child: state.rows.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.inventory_2_outlined,
-                              size: 64, color: AppColors.textMuted),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Henuz urun eklenmedi',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Barkod okutun veya manuel satir ekleyin',
-                            style: TextStyle(
-                              color: AppColors.textMuted,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      itemCount: state.rows.length,
-                      itemBuilder: (context, index) {
-                        final row = state.rows[index];
-                        return _buildRowCard(row, numberFormat);
-                      },
-                    ),
-            ),
-            // Summary bar
-            _buildSummaryBar(state, numberFormat),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRowCard(BatchEntryRow row, NumberFormat fmt) {
-    final statusColor = switch (row.status) {
+  Color _tabBadgeColor(RowStatus? s) {
+    if (s == null) return AppColors.primary;
+    return switch (s) {
       RowStatus.newProduct => AppColors.info,
-      RowStatus.existing || RowStatus.matched => AppColors.primary,
-      RowStatus.saved => AppColors.success,
+      RowStatus.existing || RowStatus.matched => AppColors.success,
       RowStatus.error => AppColors.danger,
+      RowStatus.saved => AppColors.success,
       RowStatus.saving => AppColors.warning,
     };
-    final statusLabel = switch (row.status) {
-      RowStatus.newProduct => 'Yeni',
-      RowStatus.existing || RowStatus.matched => 'Mevcut',
-      RowStatus.saved => 'Kaydedildi',
-      RowStatus.error => 'Hata',
-      RowStatus.saving => 'Kaydediliyor',
-    };
+  }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: statusColor.withValues(alpha: 0.4)),
-      ),
+  // ── BODY ─────────────────────────────────────────────────────────────────
+  Widget _buildBody(BatchEntryState state, SectorConfig cfg, bool isDesktop) {
+    return TabBarView(
+      controller: _tabController,
+      children: _tabs.map((t) {
+        final rows = _filteredRows(state.rows, t.status);
+        if (rows.isEmpty) return _buildEmptyState(t.status);
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+          itemCount: rows.length,
+          itemBuilder: (_, i) =>
+              _BatchRowCard(row: rows[i], currency: _currency, cfg: cfg),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildEmptyState(RowStatus? status) {
+    final (icon, title, sub) = status == null
+        ? (
+            Icons.inventory_2_outlined,
+            'Henüz ürün eklenmedi',
+            'Barkod okutarak veya manuel satır ekleyerek başlayın'
+          )
+        : (
+            Icons.filter_list_off_rounded,
+            'Bu kategoride ürün yok',
+            'Farklı bir sekme seçin'
+          );
+
+    return Center(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(32),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Row(
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    statusLabel,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: statusColor,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    row.productName.isNotEmpty
-                        ? row.productName
-                        : row.barcode.isNotEmpty
-                            ? row.barcode
-                            : 'Yeni Urun',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 20),
-                  onPressed: () => ref
-                      .read(batchEntryProvider.notifier)
-                      .removeRow(row.id),
-                  visualDensity: VisualDensity.compact,
-                  color: AppColors.danger,
-                ),
-              ],
-            ),
-            if (row.hasError && row.errorMessage != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  row.errorMessage!,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.danger,
-                  ),
-                ),
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(24),
               ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                _infoChip('Adet: ${row.quantity}'),
-                const SizedBox(width: 8),
-                _infoChip('Alis: ${fmt.format(row.purchasePrice)}'),
-                const SizedBox(width: 8),
-                _infoChip('Satis: ${fmt.format(row.salePrice)}'),
-              ],
+              child:
+                  Icon(icon, size: 40, color: AppColors.primary.withValues(alpha: 0.5)),
             ),
+            const SizedBox(height: 20),
+            Text(title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textSecondary,
+                )),
+            const SizedBox(height: 8),
+            Text(sub,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 13, color: AppColors.textMuted)),
           ],
         ),
       ),
     );
   }
 
-  Widget _infoChip(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: AppColors.bgLight,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Text(text, style: const TextStyle(fontSize: 11)),
-    );
-  }
+  // ── SUMMARY BAR ──────────────────────────────────────────────────────────
+  Widget _buildSummaryBar(BatchEntryState state) {
+    final totalQty =
+        state.rows.fold(0, (s, r) => s + r.quantity);
+    final margin = state.totalSale > 0
+        ? (state.totalProfit / state.totalSale * 100)
+        : 0.0;
 
-  Widget _buildSummaryBar(BatchEntryState state, NumberFormat fmt) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.border)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, -2),
-          ),
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, -4)),
         ],
       ),
       child: SafeArea(
         top: false,
-        child: Row(
-          children: [
-            Expanded(
-              child: Wrap(
-                spacing: 16,
-                runSpacing: 4,
-                children: [
-                  Text(
-                    '${state.totalItems} urun',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  Text(
-                    'Maliyet: ${fmt.format(state.totalCost)}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  Text(
-                    'Kar: ${fmt.format(state.totalProfit)}',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: state.totalProfit >= 0
-                          ? AppColors.success
-                          : AppColors.danger,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: Row(
+            children: [
+              // Metrics
+              Expanded(
+                child: Wrap(
+                  spacing: 16,
+                  runSpacing: 6,
+                  children: [
+                    _Metric(
+                        label: 'Ürün',
+                        value: '${state.totalItems}',
+                        color: AppColors.primary),
+                    _Metric(
+                        label: 'Adet',
+                        value: '$totalQty',
+                        color: AppColors.info),
+                    _Metric(
+                        label: 'Maliyet',
+                        value: _currency.format(state.totalCost),
+                        color: AppColors.warning),
+                    _Metric(
+                        label: 'Satış',
+                        value: _currency.format(state.totalSale),
+                        color: AppColors.success),
+                    _Metric(
+                        label: 'Kâr %',
+                        value: '%${margin.toStringAsFixed(1)}',
+                        color: margin >= 20
+                            ? AppColors.success
+                            : AppColors.danger),
+                  ],
+                ),
               ),
-            ),
-            FilledButton.icon(
-              onPressed: state.isSubmitting || state.rows.isEmpty
-                  ? null
-                  : _handleSubmit,
-              icon: state.isSubmitting
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
+              const SizedBox(width: 12),
+              // Save button
+              SizedBox(
+                height: 48,
+                child: state.isSubmitting
+                    ? Container(
+                        width: 140,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          gradient: AppGradients.primaryGradient,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
+                          ),
+                        ),
+                      )
+                    : GestureDetector(
+                        onTap: state.rows.isEmpty
+                            ? null
+                            : () => _submit(state),
+                        child: Container(
+                          width: 140,
+                          decoration: BoxDecoration(
+                            gradient: state.rows.isEmpty
+                                ? const LinearGradient(
+                                    colors: [
+                                      Color(0xFFc8ccd8),
+                                      Color(0xFFc8ccd8)
+                                    ],
+                                  )
+                                : AppGradients.primaryGradient,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: state.rows.isEmpty
+                                ? []
+                                : [
+                                    BoxShadow(
+                                      color: AppColors.primary
+                                          .withValues(alpha: 0.35),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    )
+                                  ],
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.cloud_upload_rounded,
+                                  color: Colors.white, size: 18),
+                              SizedBox(width: 8),
+                              Text(
+                                'Kaydet',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    )
-                  : const Icon(Icons.save),
-              label: Text(state.isSubmitting ? 'Kaydediliyor...' : 'Kaydet'),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+// ── BATCH ROW CARD ────────────────────────────────────────────────────────────
+class _BatchRowCard extends ConsumerStatefulWidget {
+  final BatchEntryRow row;
+  final NumberFormat currency;
+  final SectorConfig cfg;
+  const _BatchRowCard({required this.row, required this.currency, required this.cfg});
+
+  @override
+  ConsumerState<_BatchRowCard> createState() => _BatchRowCardState();
+}
+
+class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _barcodeCtrl;
+  late final TextEditingController _oemCtrl;
+  late final TextEditingController _purchaseCtrl;
+  late final TextEditingController _saleCtrl;
+  late final TextEditingController _categoryCtrl;
+  late final TextEditingController _brandCtrl;
+  late final TextEditingController _shelfCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    final r = widget.row;
+    _nameCtrl = TextEditingController(text: r.productName);
+    _barcodeCtrl = TextEditingController(text: r.barcode);
+    _oemCtrl = TextEditingController(text: r.oemNumber ?? '');
+    _purchaseCtrl = TextEditingController(
+        text: r.purchasePrice > 0 ? r.purchasePrice.toString() : '');
+    _saleCtrl = TextEditingController(
+        text: r.salePrice > 0 ? r.salePrice.toString() : '');
+    _categoryCtrl = TextEditingController(text: r.categoryName ?? '');
+    _brandCtrl = TextEditingController(text: r.brandName ?? '');
+    _shelfCtrl = TextEditingController(text: r.shelfLocation ?? '');
+  }
+
+  @override
+  void dispose() {
+    for (final c in [
+      _nameCtrl, _barcodeCtrl, _oemCtrl, _purchaseCtrl,
+      _saleCtrl, _categoryCtrl, _brandCtrl, _shelfCtrl
+    ]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  void _update({
+    String? productName,
+    String? barcode,
+    String? oemNumber,
+    double? purchasePrice,
+    double? salePrice,
+    int? quantity,
+    String? categoryName,
+    String? brandName,
+    String? shelfLocation,
+    bool? isExpanded,
+  }) {
+    ref.read(batchEntryProvider.notifier).updateRow(
+          widget.row.id,
+          productName: productName,
+          barcode: barcode,
+          oemNumber: oemNumber,
+          purchasePrice: purchasePrice,
+          salePrice: salePrice,
+          quantity: quantity,
+          categoryName: categoryName,
+          brandName: brandName,
+          shelfLocation: shelfLocation,
+          isExpanded: isExpanded,
+        );
+  }
+
+  Color get _statusColor => switch (widget.row.status) {
+        RowStatus.newProduct => AppColors.info,
+        RowStatus.existing || RowStatus.matched => AppColors.success,
+        RowStatus.error => AppColors.danger,
+        RowStatus.saving => AppColors.warning,
+        RowStatus.saved => AppColors.success,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final row = widget.row;
+    final margin = row.salePrice > 0
+        ? ((row.salePrice - row.purchasePrice) / row.salePrice * 100)
+        : 0.0;
+    final isExpanded = row.isExpanded;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _statusColor.withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // ── Collapsed header ──────────────────────────────────────────────
+          InkWell(
+            onTap: () => _update(isExpanded: !isExpanded),
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Status indicator
+                  Container(
+                    width: 4,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: _statusColor,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Product info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            _StatusBadge(status: row.status),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                row.productName.isNotEmpty
+                                    ? row.productName
+                                    : row.barcode.isNotEmpty
+                                        ? row.barcode
+                                        : 'Ürün adı giriniz...',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: row.productName.isEmpty
+                                      ? AppColors.textMuted
+                                      : AppColors.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            if (row.barcode.isNotEmpty) ...[
+                              Icon(Icons.qr_code_rounded,
+                                  size: 12,
+                                  color: AppColors.textMuted),
+                              const SizedBox(width: 3),
+                              Text(row.barcode,
+                                  style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.textMuted)),
+                              const SizedBox(width: 10),
+                            ],
+                            if (row.categoryName != null &&
+                                row.categoryName!.isNotEmpty) ...[
+                              Icon(Icons.category_outlined,
+                                  size: 12,
+                                  color: AppColors.textMuted),
+                              const SizedBox(width: 3),
+                              Text(row.categoryName!,
+                                  style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.textMuted)),
+                            ],
+                          ],
+                        ),
+                        if (row.errorMessage != null) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(Icons.error_outline,
+                                  size: 12, color: AppColors.danger),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  row.errorMessage!,
+                                  style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.danger),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Right side: prices + quantity control
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      // Prices row
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (row.purchasePrice > 0)
+                            Text(
+                              widget.currency.format(row.purchasePrice),
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textMuted,
+                                  decoration: TextDecoration.none),
+                            ),
+                          if (row.purchasePrice > 0 && row.salePrice > 0)
+                            const Text(' → ',
+                                style: TextStyle(
+                                    color: AppColors.textMuted,
+                                    fontSize: 12)),
+                          if (row.salePrice > 0)
+                            Text(
+                              widget.currency.format(row.salePrice),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.success,
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      // Margin badge
+                      if (margin > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: (margin >= 20
+                                    ? AppColors.success
+                                    : AppColors.warning)
+                                .withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'Kar %${margin.toStringAsFixed(1)}',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: margin >= 20
+                                  ? AppColors.success
+                                  : AppColors.warning,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 6),
+                      // Quantity control
+                      _QuantityControl(
+                        quantity: row.quantity,
+                        onChanged: (q) => _update(quantity: q),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    isExpanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: AppColors.textMuted,
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // ── Expanded form ─────────────────────────────────────────────────
+          if (isExpanded) ...[
+            Divider(
+                height: 1,
+                color: _statusColor.withValues(alpha: 0.2)),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Row 1: Ürün adı + Barkod
+                  _FormRow(children: [
+                    _Field(
+                      label: '${widget.cfg.labels.productName} Adı *',
+                      ctrl: _nameCtrl,
+                      onChanged: (v) => _update(productName: v),
+                      hint: '${widget.cfg.labels.productName} adı girin',
+                    ),
+                    _Field(
+                      label: widget.cfg.labels.barcodeLabel,
+                      ctrl: _barcodeCtrl,
+                      onChanged: (v) => _update(barcode: v),
+                      hint: 'EAN13 / QR',
+                    ),
+                  ]),
+                  const SizedBox(height: 10),
+                  // Row 2: Alış / Satış
+                  _FormRow(children: [
+                    _Field(
+                      label: 'Alış Fiyatı ₺',
+                      ctrl: _purchaseCtrl,
+                      onChanged: (v) =>
+                          _update(purchasePrice: double.tryParse(v) ?? 0),
+                      keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true),
+                      hint: '0.00',
+                    ),
+                    _Field(
+                      label: '${widget.cfg.labels.salePriceLabel} ₺ *',
+                      ctrl: _saleCtrl,
+                      onChanged: (v) =>
+                          _update(salePrice: double.tryParse(v) ?? 0),
+                      keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true),
+                      hint: '0.00',
+                    ),
+                  ]),
+                  const SizedBox(height: 10),
+                  // Row 3: OEM (sektöre göre) + Raf
+                  _FormRow(children: [
+                    if (widget.cfg.fields.showOem)
+                      _Field(
+                        label: widget.cfg.labels.oemField +
+                            (widget.cfg.fields.oemRequired ? ' *' : ''),
+                        ctrl: _oemCtrl,
+                        onChanged: (v) => _update(oemNumber: v),
+                        hint: widget.cfg.type == SectorType.technology
+                            ? 'IMEI / Seri No'
+                            : 'Orijinal parça no',
+                      )
+                    else
+                      const SizedBox.shrink(),
+                    if (widget.cfg.fields.showShelf)
+                      _Field(
+                        label: widget.cfg.labels.shelfField +
+                            (widget.cfg.fields.shelfRequired ? ' *' : ''),
+                        ctrl: _shelfCtrl,
+                        onChanged: (v) => _update(shelfLocation: v),
+                        hint: 'A-12-3',
+                      )
+                    else
+                      const SizedBox.shrink(),
+                  ]),
+                  const SizedBox(height: 10),
+                  // Row 4: Kategori + Marka
+                  _FormRow(children: [
+                    _Field(
+                      label: widget.cfg.labels.categoryName,
+                      ctrl: _categoryCtrl,
+                      onChanged: (v) => _update(categoryName: v),
+                      hint: widget.cfg.type == SectorType.autoParts
+                          ? 'Fren, Motor, Filtre...'
+                          : widget.cfg.type == SectorType.footwear
+                              ? 'Spor, Günlük, Bot...'
+                              : 'Kategori',
+                    ),
+                    if (widget.cfg.fields.showBrand)
+                      _Field(
+                        label: 'Marka' +
+                            (widget.cfg.fields.brandRequired ? ' *' : ''),
+                        ctrl: _brandCtrl,
+                        onChanged: (v) => _update(brandName: v),
+                        hint: widget.cfg.type == SectorType.autoParts
+                            ? 'Bosch / NGK / Brembo'
+                            : 'Marka adı',
+                      )
+                    else
+                      const SizedBox.shrink(),
+                  ]),
+                  // Row 5: Sektöre özel ekstra alanlar
+                  if (widget.cfg.fields.showVariantSize ||
+                      widget.cfg.fields.showVariantColor ||
+                      widget.cfg.fields.showWarranty) ...[
+                    const SizedBox(height: 10),
+                    _SectorExtraFields(cfg: widget.cfg, row: widget.row, onUpdate: _update),
+                  ],
+                  const SizedBox(height: 14),
+                  // Actions
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Profit summary
+                      if (row.salePrice > 0 && row.purchasePrice > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.success.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.trending_up_rounded,
+                                  size: 14, color: AppColors.success),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Birim kâr: ${widget.currency.format(row.salePrice - row.purchasePrice)}  •  Toplam: ${widget.currency.format(row.lineProfit)}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.success,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        const SizedBox.shrink(),
+                      // Remove button
+                      TextButton.icon(
+                        onPressed: () => ref
+                            .read(batchEntryProvider.notifier)
+                            .removeRow(row.id),
+                        icon: const Icon(Icons.delete_outline_rounded,
+                            size: 16, color: AppColors.danger),
+                        label: const Text('Kaldır',
+                            style: TextStyle(color: AppColors.danger)),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ── QUANTITY CONTROL ──────────────────────────────────────────────────────────
+class _QuantityControl extends StatelessWidget {
+  final int quantity;
+  final ValueChanged<int> onChanged;
+  const _QuantityControl(
+      {required this.quantity, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F2F8),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _QBtn(
+            icon: Icons.remove_rounded,
+            onTap: quantity > 1
+                ? () => onChanged(quantity - 1)
+                : null,
+          ),
+          Container(
+            constraints: const BoxConstraints(minWidth: 36),
+            alignment: Alignment.center,
+            child: Text(
+              '$quantity',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          _QBtn(
+            icon: Icons.add_rounded,
+            onTap: () => onChanged(quantity + 1),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QBtn extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+  const _QBtn({required this.icon, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 28,
+        height: 28,
+        alignment: Alignment.center,
+        child: Icon(
+          icon,
+          size: 16,
+          color: onTap == null ? AppColors.border : AppColors.primary,
+        ),
+      ),
+    );
+  }
+}
+
+// ── FORM HELPERS ──────────────────────────────────────────────────────────────
+class _FormRow extends StatelessWidget {
+  final List<Widget> children;
+  const _FormRow({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: children
+          .map((c) => Expanded(child: c))
+          .toList()
+          .fold<List<Widget>>([], (acc, w) {
+        if (acc.isNotEmpty) acc.add(const SizedBox(width: 10));
+        acc.add(w);
+        return acc;
+      }),
+    );
+  }
+}
+
+class _Field extends StatelessWidget {
+  final String label;
+  final TextEditingController ctrl;
+  final ValueChanged<String> onChanged;
+  final String? hint;
+  final TextInputType? keyboardType;
+  const _Field({
+    required this.label,
+    required this.ctrl,
+    required this.onChanged,
+    this.hint,
+    this.keyboardType,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary)),
+        const SizedBox(height: 4),
+        SizedBox(
+          height: 40,
+          child: TextField(
+            controller: ctrl,
+            onChanged: onChanged,
+            keyboardType: keyboardType,
+            inputFormatters: keyboardType ==
+                    const TextInputType.numberWithOptions(decimal: true)
+                ? [
+                    FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d*\.?\d*'))
+                  ]
+                : null,
+            style: const TextStyle(fontSize: 13),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: const TextStyle(
+                  fontSize: 12, color: AppColors.textMuted),
+              contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 10, vertical: 10),
+              filled: true,
+              fillColor: const Color(0xFFF7F8FC),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(9),
+                borderSide:
+                    const BorderSide(color: AppColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(9),
+                borderSide:
+                    const BorderSide(color: Color(0xFFE8E9F0)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(9),
+                borderSide: const BorderSide(
+                    color: AppColors.primary, width: 1.5),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── STATUS BADGE ──────────────────────────────────────────────────────────────
+class _StatusBadge extends StatelessWidget {
+  final RowStatus status;
+  const _StatusBadge({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color, icon) = switch (status) {
+      RowStatus.newProduct => ('YENİ', AppColors.info, Icons.add_circle_outline),
+      RowStatus.existing => ('MEVCUT', AppColors.success, Icons.check_circle_outline),
+      RowStatus.matched => ('EŞLEŞTİ', AppColors.primary, Icons.link_rounded),
+      RowStatus.error => ('HATA', AppColors.danger, Icons.error_outline),
+      RowStatus.saving => ('...', AppColors.warning, Icons.hourglass_top_rounded),
+      RowStatus.saved => ('✓ OK', AppColors.success, Icons.check_circle),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 10, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+              color: color,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── SMALL WIDGETS ─────────────────────────────────────────────────────────────
+class _TopChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  const _TopChip({required this.label, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: Colors.white),
+          const SizedBox(width: 5),
+          Text(label,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionBtn extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+  final String tooltip;
+  const _ActionBtn(
+      {required this.icon,
+      required this.color,
+      required this.onTap,
+      required this.tooltip});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Icon(icon, color: Colors.white, size: 22),
+        ),
+      ),
+    );
+  }
+}
+
+class _Metric extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  const _Metric(
+      {required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(label,
+            style: const TextStyle(
+                fontSize: 10, color: AppColors.textMuted)),
+        Text(value,
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: color)),
+      ],
+    );
+  }
+}
+
+// ── CONFIRM DIALOG ────────────────────────────────────────────────────────────
+class _ConfirmDialog extends StatelessWidget {
+  final BatchEntryState state;
+  final NumberFormat currency;
+  const _ConfirmDialog({required this.state, required this.currency});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Row(
+        children: [
+          Icon(Icons.save_alt_rounded, color: AppColors.primary),
+          SizedBox(width: 10),
+          Text('Kaydı Tamamla'),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _ConfirmRow('Toplam ürün',
+              '${state.totalItems} kalem'),
+          _ConfirmRow('Yeni ürün', '${state.newItems} adet'),
+          _ConfirmRow(
+              'Mevcut ürün', '${state.existingItems} adet stok'),
+          const Divider(height: 16),
+          _ConfirmRow('Toplam maliyet',
+              currency.format(state.totalCost)),
+          _ConfirmRow(
+              'Toplam satış', currency.format(state.totalSale),
+              bold: true),
+          if (state.supplierName != null)
+            _ConfirmRow('Tedarikçi', state.supplierName!),
+          if (state.warehouseName != null)
+            _ConfirmRow('Depo', state.warehouseName!),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('İptal'),
+        ),
+        ElevatedButton.icon(
+          onPressed: () => Navigator.pop(context, true),
+          icon: const Icon(Icons.check_rounded, size: 18),
+          label: const Text('Kaydet'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ConfirmRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool bold;
+  const _ConfirmRow(this.label, this.value, {this.bold = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: const TextStyle(color: AppColors.textSecondary)),
+          Text(value,
+              style: TextStyle(
+                  fontWeight: bold
+                      ? FontWeight.bold
+                      : FontWeight.w500,
+                  color: AppColors.textPrimary)),
+        ],
+      ),
+    );
+  }
+}
+
+// ── RESULT SHEET ──────────────────────────────────────────────────────────────
+class _ResultSheet extends StatelessWidget {
+  final BatchSaveResult result;
+  final NumberFormat currency;
+  const _ResultSheet({required this.result, required this.currency});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasErrors = result.errors > 0;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.border,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: (hasErrors ? AppColors.warning : AppColors.success)
+                  .withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              hasErrors
+                  ? Icons.warning_amber_rounded
+                  : Icons.check_circle_rounded,
+              size: 36,
+              color: hasErrors ? AppColors.warning : AppColors.success,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            hasErrors ? 'Kısmen Tamamlandı' : 'Başarıyla Kaydedildi!',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color:
+                  hasErrors ? AppColors.warning : AppColors.success,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _ResultStat('İşlenen', '${result.totalProcessed}',
+                  AppColors.primary),
+              _ResultStat('Yeni Ürün', '${result.newCreated}',
+                  AppColors.success),
+              _ResultStat('Stok Güncellendi',
+                  '${result.stockUpdated}', AppColors.info),
+              if (result.errors > 0)
+                _ResultStat('Hata', '${result.errors}',
+                    AppColors.danger),
+            ],
+          ),
+          if (result.errorMessages.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.danger.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: result.errorMessages
+                    .map((e) => Padding(
+                          padding:
+                              const EdgeInsets.symmetric(vertical: 2),
+                          child: Row(
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.error_outline,
+                                  size: 14,
+                                  color: AppColors.danger),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                  child: Text(e,
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.danger))),
+                            ],
+                          ),
+                        ))
+                    .toList(),
+              ),
+            ),
+          ],
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+              ),
+              child: const Text('Kapat',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 15)),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+class _ResultStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  const _ResultStat(this.label, this.value, this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(value,
+            style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: color)),
+        Text(label,
+            style: const TextStyle(
+                fontSize: 11, color: AppColors.textMuted)),
+      ],
+    );
+  }
+}
+
+// ── SECTOR EXTRA FIELDS ───────────────────────────────────────────────────────
+class _SectorExtraFields extends StatefulWidget {
+  final SectorConfig cfg;
+  final BatchEntryRow row;
+  final Function({
+    String? shelfLocation,
+    String? oemNumber,
+    String? brandName,
+  }) onUpdate;
+
+  const _SectorExtraFields({
+    required this.cfg,
+    required this.row,
+    required this.onUpdate,
+  });
+
+  @override
+  State<_SectorExtraFields> createState() => _SectorExtraFieldsState();
+}
+
+class _SectorExtraFieldsState extends State<_SectorExtraFields> {
+  late final TextEditingController _sizeCtrl;
+  late final TextEditingController _colorCtrl;
+  late final TextEditingController _warrantyCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _sizeCtrl = TextEditingController();
+    _colorCtrl = TextEditingController();
+    _warrantyCtrl = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _sizeCtrl.dispose();
+    _colorCtrl.dispose();
+    _warrantyCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fields = <Widget>[];
+
+    if (widget.cfg.fields.showVariantSize) {
+      fields.add(_Field(
+        label: widget.cfg.labels.variantField,
+        ctrl: _sizeCtrl,
+        onChanged: (_) {},
+        hint: '36 / 37 / 38...',
+      ));
+    }
+
+    if (widget.cfg.fields.showVariantColor) {
+      fields.add(_Field(
+        label: 'Renk',
+        ctrl: _colorCtrl,
+        onChanged: (_) {},
+        hint: 'Siyah / Beyaz / Kırmızı',
+      ));
+    }
+
+    if (widget.cfg.fields.showWarranty) {
+      fields.add(_Field(
+        label: 'Garanti Süresi' +
+            (widget.cfg.fields.warrantyRequired ? ' *' : ''),
+        ctrl: _warrantyCtrl,
+        onChanged: (_) {},
+        hint: '12 ay / 24 ay',
+      ));
+    }
+
+    if (fields.isEmpty) return const SizedBox.shrink();
+
+    // Her satırda max 2 alan
+    final rows = <Widget>[];
+    for (int i = 0; i < fields.length; i += 2) {
+      final rowFields = fields.sublist(i, i + 2 > fields.length ? fields.length : i + 2);
+      rows.add(_FormRow(children: rowFields));
+      if (i + 2 < fields.length) rows.add(const SizedBox(height: 10));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          Icon(Icons.tune_rounded, size: 13, color: AppColors.primary),
+          const SizedBox(width: 6),
+          Text(
+            '${widget.cfg.type.displayName} Alanları',
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primary,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ]),
+        const SizedBox(height: 8),
+        ...rows,
+      ],
+    );
+  }
+}
+
+// ── TAB DATA ──────────────────────────────────────────────────────────────────
+class _Tab {
+  final String label;
+  final RowStatus? status;
+  const _Tab(this.label, this.status);
 }

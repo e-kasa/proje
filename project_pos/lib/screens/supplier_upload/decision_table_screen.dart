@@ -728,7 +728,7 @@ class _CreateNewProductDialogState extends State<CreateNewProductDialog> {
                     child: const Text('İptal'),
                   ),
                   ElevatedButton(
-                    onPressed: _saveNewProduct,
+                    onPressed: _save,
                     child: const Text('Oluştur'),
                   ),
                 ],
@@ -740,92 +740,6 @@ class _CreateNewProductDialogState extends State<CreateNewProductDialog> {
     );
   }
 
-  void _saveNewProduct() {
-    if (_formKey.currentState!.validate()) {
-      final newProduct = ProductDecisionItem(
-        readProductName: _nameController.text,
-        readQuantity: double.tryParse(_quantityController.text) ?? 0,
-        readCostPrice: double.tryParse(_costPriceController.text) ?? 0,
-        readSellPrice: double.tryParse(_sellPriceController.text) ?? 0,
-        sku: '',
-      );
-      widget.onProductCreated(newProduct);
-      Navigator.pop(context);
-    }
-  }
-
-  void _showAddVariantModal(int index) {
-    showDialog(
-      context: context,
-      builder: (context) => AddVariantDialog(
-        productName: _products[index].readProductName,
-        onSave: (variant) {
-          setState(() {
-            _products[index].userDecision = 'ADD_VARIANT';
-            _products[index].decisionData = variant;
-          });
-        },
-      ),
-    );
-  }
-
-  Widget _buildDecisionButtons(int index) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        ElevatedButton(
-          onPressed: () => _handleDecision(index, 'ADD_STOCK'),
-          child: const Text('Stok Ekle'),
-        ),
-        ElevatedButton(
-          onPressed: () => _handleDecision(index, 'ADD_VARIANT'),
-          child: const Text('Varyant Ekle'),
-        ),
-        ElevatedButton(
-          onPressed: () => _handleDecision(index, 'CREATE_NEW'),
-          child: const Text('Yeni Ürün'),
-        ),
-        ElevatedButton(
-          onPressed: () => _handleDecision(index, 'SKIP'),
-          child: const Text('Atla'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProductTable() {
-    return DataTable(
-      columns: const [
-        DataColumn(label: Text('Ürün Adı')),
-        DataColumn(label: Text('SKU')),
-        DataColumn(label: Text('Miktar')),
-        DataColumn(label: Text('Karar')),
-      ],
-      rows: List.generate(_products.length, (index) {
-        final product = _products[index];
-        return DataRow(
-          cells: [
-            DataCell(Text(product.readProductName)),
-            DataCell(Text(product.sku)),
-            DataCell(Text('${product.readQuantity}')),
-            DataCell(
-              Text(product.userDecision ?? 'Beklemede'),
-            ),
-          ],
-        );
-      }),
-    );
-  }
-
-  void _saveSummary() {
-    final results = _products.map((p) => {
-      'productName': p.readProductName,
-      'decision': p.userDecision,
-      'data': p.decisionData,
-    }).toList();
-
-    Navigator.pop(context, results);
-  }
 }
 
 // ─── Product Decision Item Model ───────────────────────────────────────────
@@ -836,6 +750,9 @@ class ProductDecisionItem {
   final double readCostPrice;
   final double readSellPrice;
   final String sku;
+  final bool isNewProduct;
+  final double matchScore;
+  final String? matchedProductName;
   String? userDecision;
   Map<String, dynamic>? decisionData;
 
@@ -845,6 +762,9 @@ class ProductDecisionItem {
     required this.readCostPrice,
     required this.readSellPrice,
     required this.sku,
+    this.isNewProduct = true,
+    this.matchScore = 0,
+    this.matchedProductName,
     this.userDecision,
     this.decisionData,
   });

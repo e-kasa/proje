@@ -13,609 +13,248 @@ class ModernDashboardScreen extends ConsumerStatefulWidget {
   const ModernDashboardScreen({super.key});
 
   @override
-  ConsumerState<ModernDashboardScreen> createState() => _ModernDashboardScreenState();
+  ConsumerState<ModernDashboardScreen> createState() =>
+      _ModernDashboardScreenState();
 }
 
-class _ModernDashboardScreenState extends ConsumerState<ModernDashboardScreen> {
+class _ModernDashboardScreenState
+    extends ConsumerState<ModernDashboardScreen> {
   bool _isLoading = true;
-  Map<String, dynamic> _dashboardStats = {};
+  Map<String, dynamic> _stats = {};
   String _error = '';
 
   @override
   void initState() {
     super.initState();
-    _loadDashboardData();
+    _load();
   }
 
-  Future<void> _loadDashboardData() async {
-    setState(() => _isLoading = true);
-
+  Future<void> _load() async {
+    setState(() {
+      _isLoading = true;
+      _error = '';
+    });
     try {
-      final reportService = ref.read(reportServiceProvider);
-      final stats = await reportService.getDashboardStats();
-
-      setState(() {
-        _dashboardStats = stats;
-        _isLoading = false;
-        _error = '';
-      });
+      final data = await ref.read(reportServiceProvider).getDashboardStats();
+      if (mounted) setState(() { _stats = data; _isLoading = false; });
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _error = e.toString();
-      });
+      if (mounted) setState(() { _error = e.toString(); _isLoading = false; });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Aynı menüye ikinci tıklanınca refresh tetikle
-    ref.listen(navigationRefreshProvider, (prev, next) {
-      if (next.route == '/dashboard') _loadDashboardData();
+    ref.listen(navigationRefreshProvider, (_, next) {
+      if (next.route == '/dashboard') _load();
     });
 
+    if (_isLoading) return _buildSkeleton();
+    if (_error.isNotEmpty) {
+      return AppEmptyState.error(description: _error, onAction: _load);
+    }
+
     return Scaffold(
-      backgroundColor: AppColors.bgLight,
-      body: _isLoading
-          ? _buildSkeleton()
-          : _error.isNotEmpty
-              ? AppEmptyState.error(
-                  description: _error,
-                  onAction: _loadDashboardData,
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadDashboardData,
-                  child: SingleChildScrollView(
-                    padding: AppConstants.paddingMedium,
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildHeader(),
-                        const SizedBox(height: AppConstants.spacing24),
-                        _buildQuickActions(context),
-                        const SizedBox(height: AppConstants.spacing24),
-                        _buildQuickStats(),
-                        const SizedBox(height: AppConstants.spacing24),
-                        _buildAlerts(),
-                        const SizedBox(height: AppConstants.spacing24),
-                        _buildModuleCards(context),
-                        const SizedBox(height: AppConstants.spacing24),
-                        _buildRecentActivity(),
-                      ],
-                    ),
-                  ),
-                ),
-    );
-  }
-
-  // -------------------------------------------------------------------------
-  // Skeleton yükleme ekranı
-  // -------------------------------------------------------------------------
-  Widget _buildSkeleton() {
-    return SingleChildScrollView(
-      padding: AppConstants.paddingMedium,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header skeleton
-          AppShimmer(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppSkeletonItem(width: 120, height: 18),
-                const SizedBox(height: 8),
-                AppSkeletonItem(width: 220, height: 32),
-                const SizedBox(height: 6),
-                AppSkeletonItem(width: 150, height: 14),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppConstants.spacing24),
-
-          // Quick stats skeleton
-          Row(
-            children: List.generate(
-              3,
-              (_) => Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: const AppSkeletonStatCard(),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: AppConstants.spacing24),
-
-          // Quick actions skeleton
-          AppShimmer(
-            child: AppSkeletonItem(width: 160, height: 20),
-          ),
-          const SizedBox(height: 16),
-          GridView.count(
-            crossAxisCount: 3,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.0,
-            children: List.generate(
-              6,
-              (_) => AppShimmer(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: AppConstants.borderRadiusMedium,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: AppConstants.spacing24),
-
-          // Module cards skeleton
-          Row(
-            children: List.generate(
-              2,
-              (_) => Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: AppShimmer(
-                    child: Container(
-                      height: 140,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: AppConstants.borderRadiusLarge,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+      backgroundColor: const Color(0xFFF0F2F8),
+      body: RefreshIndicator(
+        onRefresh: _load,
+        color: AppColors.primary,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(child: _buildHeroHeader()),
+            SliverToBoxAdapter(child: _buildKpiRow()),
+            SliverToBoxAdapter(child: _buildSectionTitle('Hızlı Aksiyonlar')),
+            SliverToBoxAdapter(child: _buildQuickActions()),
+            SliverToBoxAdapter(child: _buildSectionTitle('Modüller')),
+            SliverToBoxAdapter(child: _buildModules()),
+            SliverToBoxAdapter(child: _buildSectionTitle('Son Aktiviteler')),
+            SliverToBoxAdapter(child: _buildActivity()),
+            const SliverToBoxAdapter(child: SizedBox(height: 32)),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  // ── HERO HEADER ─────────────────────────────────────────────────────────────
+  Widget _buildHeroHeader() {
     final now = DateTime.now();
-    final greeting = now.hour < 12
-        ? '🌅 Günaydın'
-        : now.hour < 18
-            ? '☀️ İyi günler'
-            : '🌙 İyi akşamlar';
-
+    final hour = now.hour;
+    final greeting = hour < 12
+        ? 'Günaydın'
+        : hour < 18
+            ? 'İyi Günler'
+            : 'İyi Akşamlar';
+    final icon = hour < 12 ? '🌅' : hour < 18 ? '☀️' : '🌙';
     final user = ref.watch(authProvider).user;
     final name = user?.displayName ?? 'Admin';
     final company = user?.selectedCompanyCode ?? '';
+    final months = [
+      'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+      'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+    ];
+    final dateStr =
+        '${now.day} ${months[now.month - 1]} ${now.year}';
 
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '$greeting, $name',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: AppConstants.spacing8),
-              const Text(
-                'Yönetim Paneli',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: AppConstants.spacing4),
-              Text(
-                '${now.day} ${_getMonthName(now.month)} ${now.year}'
-                '${company.isNotEmpty ? '  •  $company' : ''}',
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textMuted,
-                ),
-              ),
-            ],
-          ),
-        ),
-        // Yenile butonu
-        IconButton(
-          onPressed: _loadDashboardData,
-          icon: const Icon(
-            Icons.refresh_outlined,
-            color: AppColors.textSecondary,
-          ),
-          tooltip: 'Verileri Yenile',
-        ),
-      ],
-    );
-  }
-
-  Widget _buildQuickActions(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Hızlı Aksiyonlar',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: AppConstants.spacing16),
-        GridView.count(
-          crossAxisCount: 3,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 1.0,
-          children: [
-            _buildQuickActionCard(
-              icon: Icons.qr_code_scanner,
-              label: 'Barkod\nTara',
-              color: AppColors.primary,
-              onTap: () => context.go('/scanner'),
-            ),
-            _buildQuickActionCard(
-              icon: Icons.add_shopping_cart,
-              label: 'Hızlı\nSatış',
-              color: AppColors.success,
-              onTap: () => context.go('/pos'),
-            ),
-            _buildQuickActionCard(
-              icon: Icons.receipt_long,
-              label: 'Satış\nGeçmişi',
-              color: AppColors.info,
-              onTap: () => context.go('/sales'),
-            ),
-            _buildQuickActionCard(
-              icon: Icons.warning_amber,
-              label: 'Kritik\nStok',
-              color: AppColors.danger,
-              onTap: () => context.go('/stock'),
-            ),
-            _buildQuickActionCard(
-              icon: Icons.inventory,
-              label: 'Stok\nSayım',
-              color: Colors.purple,
-              onTap: () => context.go('/stock'),
-            ),
-            _buildQuickActionCard(
-              icon: Icons.add_box,
-              label: 'Yeni\nÜrün',
-              color: Colors.teal,
-              onTap: () => context.go('/inventory/add-product'),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildQuickActionCard({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
     return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: AppConstants.borderRadiusMedium,
-        border: Border.all(color: AppColors.border),
+        gradient: AppGradients.primaryGradient,
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: AppColors.primary.withValues(alpha: 0.4),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: AppConstants.borderRadiusMedium,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: color, size: 28),
+      child: Stack(
+        children: [
+          // decorative circles
+          Positioned(
+            right: -20,
+            top: -20,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.07),
               ),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                  height: 1.2,
-                ),
+            ),
+          ),
+          Positioned(
+            right: 40,
+            bottom: -30,
+            child: Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.05),
               ),
-            ],
+            ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAlerts() {
-    final lowStockCount = _dashboardStats['lowStockProducts'] ?? 0;
-
-    if (lowStockCount == 0) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Uyarılar',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: AppConstants.spacing12),
-        Container(
-          padding: AppConstants.paddingMedium,
-          decoration: BoxDecoration(
-            color: AppColors.warning.withOpacity(0.1),
-            borderRadius: AppConstants.borderRadiusMedium,
-            border: Border.all(color: AppColors.warning.withOpacity(0.3)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.warning,
-                  borderRadius: BorderRadius.circular(8),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            '$icon $greeting,',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white.withValues(alpha: 0.85),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today_outlined,
+                            size: 13,
+                            color: Colors.white.withValues(alpha: 0.7),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            dateStr,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.white.withValues(alpha: 0.7),
+                            ),
+                          ),
+                          if (company.isNotEmpty) ...[
+                            const SizedBox(width: 12),
+                            Container(
+                              width: 4,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Icon(
+                              Icons.business_outlined,
+                              size: 13,
+                              color: Colors.white.withValues(alpha: 0.7),
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              company,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.white.withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                child: const Icon(
-                  Icons.warning_amber,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                // Refresh + avatar
+                Column(
                   children: [
-                    const Text(
-                      'Düşük Stok Uyarısı',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                    GestureDetector(
+                      onTap: _load,
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.refresh_outlined,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$lowStockCount ürün kritik stok seviyesinde',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
+                    const SizedBox(height: 10),
+                    GestureDetector(
+                      onTap: () => context.go('/profile'),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.person_outline,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-              IconButton(
-                onPressed: () => context.go('/stock'),
-                icon: const Icon(Icons.arrow_forward, color: AppColors.warning),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildQuickStats() {
-    final totalSales = _dashboardStats['totalSales'] ?? 0;
-    final totalRevenue = _dashboardStats['totalRevenue'] ?? 0.0;
-    final totalProducts = _dashboardStats['totalProducts'] ?? 0;
-    final totalCustomers = _dashboardStats['totalCustomers'] ?? 0;
-
-    return Row(
-      children: [
-        Expanded(
-          child: AppStatCard(
-            title: 'Toplam Satış',
-            value: totalSales.toString(),
-            icon: Icons.shopping_cart,
-            color: AppColors.success,
-          ),
-        ),
-        const SizedBox(width: AppConstants.spacing12),
-        Expanded(
-          child: AppStatCard(
-            title: 'Toplam Gelir',
-            value: '₺${totalRevenue.toStringAsFixed(0)}',
-            icon: Icons.attach_money,
-            color: AppColors.primary,
-          ),
-        ),
-        const SizedBox(width: AppConstants.spacing12),
-        Expanded(
-          child: AppStatCard(
-            title: 'Ürünler',
-            value: totalProducts.toString(),
-            icon: Icons.inventory_2,
-            color: AppColors.info,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildModuleCards(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Hızlı Erişim',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            Row(
-              children: [
-                _buildQuickStatChip(
-                  'Müşteri',
-                  (_dashboardStats['totalCustomers'] ?? 0).toString(),
-                  Icons.people,
-                  AppColors.info,
-                ),
-                const SizedBox(width: 8),
-                _buildQuickStatChip(
-                  'Düşük Stok',
-                  (_dashboardStats['lowStockProducts'] ?? 0).toString(),
-                  Icons.warning_amber,
-                  AppColors.warning,
-                ),
               ],
-            ),
-          ],
-        ),
-        const SizedBox(height: AppConstants.spacing16),
-
-        // Row 1: POS + Ürünler
-        Row(
-          children: [
-            Expanded(
-              child: _buildModuleCard(
-                context: context,
-                title: 'POS Satış',
-                subtitle: 'Hızlı satış işlemleri',
-                icon: Icons.point_of_sale,
-                gradient: AppGradients.primaryGradient,
-                onTap: () => context.go('/pos'),
-              ),
-            ),
-            const SizedBox(width: AppConstants.spacing12),
-            Expanded(
-              child: _buildModuleCard(
-                context: context,
-                title: 'Ürünler',
-                subtitle: '${_dashboardStats['totalProducts'] ?? 0} ürün',
-                icon: Icons.shopping_bag,
-                gradient: AppGradients.coralGradient,
-                onTap: () => context.go('/inventory/products'),
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: AppConstants.spacing12),
-
-        // Row 2: Kategoriler + Müşteriler
-        Row(
-          children: [
-            Expanded(
-              child: _buildModuleCard(
-                context: context,
-                title: 'Kategoriler',
-                subtitle: 'Kategori yönetimi',
-                icon: Icons.category,
-                gradient: AppGradients.purpleGradient,
-                onTap: () => context.go('/inventory/categories'),
-              ),
-            ),
-            const SizedBox(width: AppConstants.spacing12),
-            Expanded(
-              child: _buildModuleCard(
-                context: context,
-                title: 'Müşteriler',
-                subtitle: '${_dashboardStats['totalCustomers'] ?? 0} müşteri',
-                icon: Icons.people_outline,
-                gradient: AppGradients.blueGradient,
-                onTap: () => context.go('/customers'),
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: AppConstants.spacing12),
-
-        // Row 3: Stok + Raporlar
-        Row(
-          children: [
-            Expanded(
-              child: _buildModuleCard(
-                context: context,
-                title: 'Stok Yönetimi',
-                subtitle: '${_dashboardStats['lowStockProducts'] ?? 0} düşük stok',
-                icon: Icons.inventory,
-                gradient: AppGradients.mintGradient,
-                onTap: () => context.go('/stock'),
-              ),
-            ),
-            const SizedBox(width: AppConstants.spacing12),
-            Expanded(
-              child: _buildModuleCard(
-                context: context,
-                title: 'Raporlar',
-                subtitle: 'Analiz ve raporlar',
-                icon: Icons.analytics,
-                gradient: AppGradients.sunsetGradient,
-                onTap: () => context.go('/reports'),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildQuickStatChip(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 6),
-          Text(
-            '$value $label',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: color,
             ),
           ),
         ],
@@ -623,244 +262,591 @@ class _ModernDashboardScreenState extends ConsumerState<ModernDashboardScreen> {
     );
   }
 
-  Widget _buildModuleCard({
-    required BuildContext context,
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Gradient gradient,
-    required VoidCallback onTap,
-  }) {
-    return Container(
-      height: 140,
-      decoration: BoxDecoration(
-        gradient: gradient,
-        borderRadius: AppConstants.borderRadiusLarge,
-        boxShadow: [
-          BoxShadow(
-            color: gradient.colors.first.withOpacity(0.4),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: AppConstants.borderRadiusLarge,
-          child: Padding(
-            padding: AppConstants.paddingMedium,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: AppConstants.borderRadiusMedium,
-                  ),
-                  child: Icon(
-                    icon,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: AppConstants.spacing4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  // ── KPI ROW ─────────────────────────────────────────────────────────────────
+  Widget _buildKpiRow() {
+    final revenue = (_stats['totalRevenue'] as num?)?.toDouble() ?? 0;
+    final sales = (_stats['totalSales'] as num?)?.toInt() ?? 0;
+    final customers = (_stats['totalCustomers'] as num?)?.toInt() ?? 0;
+    final lowStock = (_stats['lowStockProducts'] as num?)?.toInt() ?? 0;
 
-  Widget _buildRecentActivity() {
-    final recentSales = _dashboardStats['recentSales'] as List? ?? [];
-    final lowStockItems = _dashboardStats['lowStockItems'] as List? ?? [];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Son Aktiviteler',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            TextButton.icon(
-              onPressed: () => context.go('/reports'),
-              icon: const Icon(Icons.arrow_forward, size: 16),
-              label: const Text('Tümünü Gör'),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppConstants.spacing12),
-        AppCard(
-          child: Column(
-            children: [
-              if (recentSales.isNotEmpty)
-                ...recentSales.take(3).map((sale) => Column(
-                      children: [
-                        _buildActivityItem(
-                          icon: Icons.shopping_cart,
-                          title: 'Yeni satış',
-                          subtitle:
-                              'SAT-${sale['id']} - ₺${(sale['totalAmount'] ?? 0).toStringAsFixed(2)}',
-                          time: _getTimeAgo(sale['date']),
-                          iconColor: AppColors.success,
-                        ),
-                        if (sale != recentSales.take(3).last)
-                          const Divider(height: 1),
-                      ],
-                    ))
-              else
-                const Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Text(
-                    'Henüz satış yok',
-                    style: TextStyle(color: AppColors.textMuted),
-                  ),
-                ),
-              if (lowStockItems.isNotEmpty) ...[
-                const Divider(height: 1),
-                ...lowStockItems.take(2).map((product) => Column(
-                      children: [
-                        _buildActivityItem(
-                          icon: Icons.warning_amber,
-                          title: 'Düşük stok',
-                          subtitle:
-                              '${product['name']} - ${product['stock']} adet kaldı',
-                          time: 'Şimdi',
-                          iconColor: AppColors.warning,
-                        ),
-                        if (product != lowStockItems.take(2).last)
-                          const Divider(height: 1),
-                      ],
-                    )),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActivityItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required String time,
-    required Color iconColor,
-  }) {
     return Padding(
-      padding: AppConstants.paddingMedium,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: _kpiCard(
+              label: 'Günlük Gelir',
+              value: '₺${_fmt(revenue)}',
+              icon: Icons.payments_outlined,
+              color: AppColors.success,
+              gradient: AppGradients.successGradient,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _kpiCard(
+              label: 'Satış Adedi',
+              value: sales.toString(),
+              icon: Icons.shopping_cart_outlined,
+              color: AppColors.primary,
+              gradient: AppGradients.primaryGradient,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _kpiCard(
+              label: 'Müşteriler',
+              value: customers.toString(),
+              icon: Icons.people_outline,
+              color: AppColors.info,
+              gradient: AppGradients.infoGradient,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _kpiCard(
+              label: 'Düşük Stok',
+              value: lowStock.toString(),
+              icon: Icons.warning_amber_outlined,
+              color: lowStock > 0 ? AppColors.danger : AppColors.success,
+              gradient: lowStock > 0
+                  ? AppGradients.dangerGradient
+                  : AppGradients.successGradient,
+              onTap: () => context.go('/stock/alerts'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _kpiCard({
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color color,
+    required Gradient gradient,
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                gradient: gradient,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: Colors.white, size: 18),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 10,
+                color: AppColors.textMuted,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── QUICK ACTIONS ────────────────────────────────────────────────────────────
+  Widget _buildQuickActions() {
+    final actions = [
+      _Action('POS Satış', Icons.point_of_sale, AppGradients.successGradient, '/pos'),
+      _Action('Barkod Tara', Icons.qr_code_scanner, AppGradients.primaryGradient, '/scanner'),
+      _Action('Satış Geçmişi', Icons.receipt_long_outlined, AppGradients.infoGradient, '/sales'),
+      _Action('Stok Durumu', Icons.inventory_2_outlined, AppGradients.mintGradient, '/stock'),
+      _Action('Yeni Ürün', Icons.add_box_outlined, AppGradients.purpleGradient, '/inventory/add-product'),
+      _Action('Raporlar', Icons.bar_chart_rounded, AppGradients.sunsetGradient, '/reports'),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: actions.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio: 1.1,
+        ),
+        itemBuilder: (_, i) => _quickActionTile(actions[i]),
+      ),
+    );
+  }
+
+  Widget _quickActionTile(_Action a) {
+    return GestureDetector(
+      onTap: () => context.go(a.route),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                gradient: a.gradient,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(a.icon, color: Colors.white, size: 24),
+            ),
+            const SizedBox(height: 9),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                a.label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                  height: 1.2,
+                ),
+                maxLines: 2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── MODULES ──────────────────────────────────────────────────────────────────
+  Widget _buildModules() {
+    final products = (_stats['totalProducts'] as num?)?.toInt() ?? 0;
+    final customers = (_stats['totalCustomers'] as num?)?.toInt() ?? 0;
+    final lowStock = (_stats['lowStockProducts'] as num?)?.toInt() ?? 0;
+
+    final modules = [
+      _Module('Ürün Kataloğu', '$products ürün', Icons.shopping_bag_outlined,
+          AppGradients.coralGradient, '/inventory/products'),
+      _Module('Müşteriler', '$customers kayıt', Icons.people_outline,
+          AppGradients.blueGradient, '/customers'),
+      _Module('Tedarikçiler', 'Hesap yönetimi', Icons.local_shipping_outlined,
+          AppGradients.primaryGradient, '/suppliers'),
+      _Module('Stok Alarmları', '$lowStock ürün kritik', Icons.notifications_active_outlined,
+          lowStock > 0 ? AppGradients.dangerGradient : AppGradients.mintGradient,
+          '/stock/alerts'),
+      _Module('Cari Hesaplar', 'Bakiye takibi', Icons.account_balance_wallet_outlined,
+          AppGradients.warningGradient, '/accounts'),
+      _Module('Satış Analizi', 'Günlük rapor', Icons.analytics_outlined,
+          AppGradients.sunsetGradient, '/reports/sales-summary'),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: modules.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 1.7,
+        ),
+        itemBuilder: (_, i) => _moduleTile(modules[i]),
+      ),
+    );
+  }
+
+  Widget _moduleTile(_Module m) {
+    return GestureDetector(
+      onTap: () => context.go(m.route),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: m.gradient,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: (m.gradient.colors.first).withValues(alpha: 0.35),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -8,
+              bottom: -8,
+              child: Icon(m.icon, size: 60,
+                  color: Colors.white.withValues(alpha: 0.12)),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child:
+                        Icon(m.icon, color: Colors.white, size: 20),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        m.title,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        m.subtitle,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.white.withValues(alpha: 0.82),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── ACTIVITY ─────────────────────────────────────────────────────────────────
+  Widget _buildActivity() {
+    final recentSales = _stats['recentSales'] as List? ?? [];
+    final lowStockItems = _stats['lowStockItems'] as List? ?? [];
+
+    final items = <_ActivityItem>[];
+
+    for (final s in recentSales.take(4)) {
+      final amount = (s['totalAmount'] as num?)?.toDouble() ?? 0;
+      items.add(_ActivityItem(
+        icon: Icons.shopping_cart_checkout,
+        color: AppColors.success,
+        title: 'Satış tamamlandı',
+        subtitle: 'SAT-${s['id']} — ₺${amount.toStringAsFixed(2)}',
+        time: _timeAgo(s['date']),
+      ));
+    }
+    for (final p in lowStockItems.take(3)) {
+      items.add(_ActivityItem(
+        icon: Icons.warning_amber_rounded,
+        color: AppColors.warning,
+        title: 'Düşük stok uyarısı',
+        subtitle: '${p['name']} — ${p['stock']} adet kaldı',
+        time: 'Şimdi',
+      ));
+    }
+
+    if (items.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 32),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Center(
+            child: Text('Henüz aktivite yok',
+                style: TextStyle(color: AppColors.textMuted)),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Son Aktiviteler',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => context.go('/reports'),
+                    child: const Text(
+                      'Tümünü gör →',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            ...items.asMap().entries.map((entry) {
+              final i = entry.key;
+              final item = entry.value;
+              return Column(
+                children: [
+                  _activityRow(item),
+                  if (i < items.length - 1)
+                    Divider(
+                      height: 1,
+                      indent: 64,
+                      color: AppColors.border.withValues(alpha: 0.5),
+                    ),
+                ],
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _activityRow(_ActivityItem item) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
           Container(
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
-              borderRadius: AppConstants.borderRadiusMedium,
+              color: item.color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: iconColor, size: 20),
+            child: Icon(item.icon, color: item.color, size: 20),
           ),
-          const SizedBox(width: AppConstants.spacing12),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
+                Text(item.title,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    )),
                 const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                Text(item.subtitle,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
-          Text(
-            time,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.textMuted,
-            ),
-          ),
+          Text(item.time,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.textMuted,
+              )),
         ],
       ),
     );
   }
 
-  String _getTimeAgo(String? dateStr) {
-    if (dateStr == null) return 'Bilinmiyor';
-    try {
-      final date = DateTime.parse(dateStr);
-      final now = DateTime.now();
-      final difference = now.difference(date);
+  // ── SECTION TITLE ────────────────────────────────────────────────────────────
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.bold,
+          color: AppColors.textPrimary,
+          letterSpacing: -0.3,
+        ),
+      ),
+    );
+  }
 
-      if (difference.inDays > 0) {
-        return '${difference.inDays} gün önce';
-      } else if (difference.inHours > 0) {
-        return '${difference.inHours} saat önce';
-      } else if (difference.inMinutes > 0) {
-        return '${difference.inMinutes} dakika önce';
-      } else {
-        return 'Şimdi';
-      }
-    } catch (e) {
-      return 'Bilinmiyor';
+  // ── SKELETON ─────────────────────────────────────────────────────────────────
+  Widget _buildSkeleton() {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF0F2F8),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppShimmer(
+              child: Container(
+                height: 140,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: List.generate(4, (_) => Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: AppShimmer(
+                    child: Container(
+                      height: 90,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ),
+              )),
+            ),
+            const SizedBox(height: 24),
+            AppShimmer(child: AppSkeletonItem(width: 150, height: 18)),
+            const SizedBox(height: 12),
+            GridView.count(
+              crossAxisCount: 3,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 1.1,
+              children: List.generate(6, (_) => AppShimmer(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              )),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── HELPERS ──────────────────────────────────────────────────────────────────
+  String _fmt(double v) {
+    if (v >= 1000000) return '${(v / 1000000).toStringAsFixed(1)}M';
+    if (v >= 1000) return '${(v / 1000).toStringAsFixed(1)}B';
+    return v.toStringAsFixed(0);
+  }
+
+  String _timeAgo(dynamic dateStr) {
+    if (dateStr == null) return '';
+    try {
+      final d = DateTime.parse(dateStr.toString());
+      final diff = DateTime.now().difference(d);
+      if (diff.inDays > 0) return '${diff.inDays}g önce';
+      if (diff.inHours > 0) return '${diff.inHours}s önce';
+      if (diff.inMinutes > 0) return '${diff.inMinutes}dk';
+      return 'Şimdi';
+    } catch (_) {
+      return '';
     }
   }
+}
 
-  String _getMonthName(int month) {
-    const months = [
-      'Ocak',
-      'Şubat',
-      'Mart',
-      'Nisan',
-      'Mayıs',
-      'Haziran',
-      'Temmuz',
-      'Ağustos',
-      'Eylül',
-      'Ekim',
-      'Kasım',
-      'Aralık'
-    ];
-    return months[month - 1];
-  }
+// ── MODELS ───────────────────────────────────────────────────────────────────
+class _Action {
+  final String label;
+  final IconData icon;
+  final Gradient gradient;
+  final String route;
+  const _Action(this.label, this.icon, this.gradient, this.route);
+}
+
+class _Module {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final LinearGradient gradient;
+  final String route;
+  const _Module(this.title, this.subtitle, this.icon, this.gradient, this.route);
+}
+
+class _ActivityItem {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final String time;
+  const _ActivityItem({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.time,
+  });
 }

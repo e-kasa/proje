@@ -143,4 +143,6 @@ class SupplierService {
       rethrow;
     }
   }
+
+  Future<void> recordSupplierPayment(String supplierId, Map<String, dynamic> result) async {}
 }

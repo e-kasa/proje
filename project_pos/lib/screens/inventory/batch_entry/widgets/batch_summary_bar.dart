@@ -118,11 +118,11 @@ class BatchSummaryBar extends StatelessWidget {
   }
 
   Widget _saveButton() {
-    AppButton.primary(
-      text: isSubmitting ? 'Kaydediliyor...' : 'Tumunu Kaydet ($totalItems,
+    return AppButton.primary(
+      text: isSubmitting ? 'Kaydediliyor...' : 'Tümünü Kaydet ($totalItems ürün)',
       icon: Icons.check,
       onPressed: isValid && !isSubmitting ? onSubmit : null,
-    ),
+    );
   }
 
   Widget _statChip(String count, String label, Color color) {

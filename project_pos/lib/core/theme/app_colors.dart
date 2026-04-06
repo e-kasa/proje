@@ -5,6 +5,7 @@ class AppColors {
   static const Color primary = Color(0xFF667eea); // Purple-Blue
   static const Color primaryDark = Color(0xFF5568d3);
   static const Color primaryLight = Color(0xFF8896f0);
+  static const Color secondary = Color(0xFF8b5cf6); // Purple
 
   // === STATUS COLORS - Bright & Clear ===
   static const Color success = Color(0xFF10b981); // Emerald
@@ -16,6 +17,7 @@ class AppColors {
   static const Color dark = Color(0xFF1f2937);
   static const Color light = Color(0xFFf9fafb);
   static const Color white = Color(0xFFFFFFFF);
+  static const Color bgWhite = Color(0xFFFFFFFF);
   static const Color border = Color(0xFFe5e7eb);
 
   // === TEXT COLORS ===

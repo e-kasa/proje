@@ -404,6 +404,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push('/settings/company'),
                 ),
+                _buildSettingItem(
+                  icon: Icons.category_outlined,
+                  title: 'Sektör Ayarları',
+                  subtitle: 'Ürün formu alanlarını sektörünüze göre özelleştirin',
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/settings/sector'),
+                ),
               ],
             ),
           ),

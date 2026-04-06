@@ -4,7 +4,6 @@ import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 
 /// Reference data helpers for product edit form dropdowns.
-/// TODO: Replace with API-driven reference data when backend endpoints are available.
 class _ReferenceData {
   static List<String> getCategories() => [
     'Giyim', 'Elektronik', 'Gida', 'Kozmetik', 'Ev & Yasam',
@@ -35,11 +34,10 @@ class _ReferenceData {
   ];
 }
 
-/// Toplu İçe Aktarma - Ürün Düzenleme ve Manuel Eşleştirme Modal
 class EditProductModal extends StatefulWidget {
   final Map<String, dynamic> product;
   final Function(Map<String, dynamic>) onSave;
-  final List<Map<String, dynamic>>? existingProducts; // Sistemdeki mevcut ürünler
+  final List<Map<String, dynamic>>? existingProducts;
 
   const EditProductModal({
     super.key,
@@ -55,7 +53,6 @@ class EditProductModal extends StatefulWidget {
 class _EditProductModalState extends State<EditProductModal> {
   final _formKey = GlobalKey<FormState>();
 
-  // Form controllers
   late TextEditingController _nameController;
   late TextEditingController _skuController;
   late TextEditingController _barcodeController;
@@ -64,20 +61,17 @@ class _EditProductModalState extends State<EditProductModal> {
   late TextEditingController _stockController;
   late TextEditingController _descriptionController;
 
-  // Dropdown values
   String? _selectedCategory;
   String? _selectedBrand;
   String? _selectedUnit;
   double? _selectedTaxRate;
 
-  // Conflict resolution
-  String? _selectedExistingProductId; // Manuel eşleştirme için
-  String _resolutionMode = 'edit'; // 'edit' veya 'match'
+  String? _selectedExistingProductId;
+  String _resolutionMode = 'edit';
 
   @override
   void initState() {
-
-    // Initialize controllers with product data
+    super.initState();
     _nameController = TextEditingController(text: widget.product['name']);
     _skuController = TextEditingController(text: widget.product['sku']);
     _barcodeController = TextEditingController(text: widget.product['barcode']);
@@ -90,13 +84,11 @@ class _EditProductModalState extends State<EditProductModal> {
     _stockController = TextEditingController(text: widget.product['stock'].toString());
     _descriptionController = TextEditingController(text: widget.product['description'] ?? '');
 
-    // Initialize dropdown values
     _selectedCategory = widget.product['category'];
     _selectedBrand = widget.product['brand'];
     _selectedUnit = widget.product['unit'];
     _selectedTaxRate = widget.product['taxRate'];
 
-    // If conflict exists, default to match mode
     if (widget.product['status'] == 'conflict') {
       _resolutionMode = 'match';
       _selectedExistingProductId = widget.product['existingProduct']?['id'];
@@ -127,7 +119,6 @@ class _EditProductModalState extends State<EditProductModal> {
         return;
       }
 
-      // Match with existing product
       final updatedProduct = Map<String, dynamic>.from(widget.product);
       updatedProduct['status'] = 'matched';
       updatedProduct['matchedProductId'] = _selectedExistingProductId;
@@ -138,11 +129,9 @@ class _EditProductModalState extends State<EditProductModal> {
       return;
     }
 
-    // Edit mode - validate form
     if (_formKey.currentState!.validate()) {
       final updatedProduct = Map<String, dynamic>.from(widget.product);
 
-      // Update all fields
       updatedProduct['name'] = _nameController.text.trim();
       updatedProduct['sku'] = _skuController.text.trim();
       updatedProduct['barcode'] = _barcodeController.text.trim();
@@ -155,7 +144,6 @@ class _EditProductModalState extends State<EditProductModal> {
       updatedProduct['stock'] = int.tryParse(_stockController.text) ?? 0;
       updatedProduct['description'] = _descriptionController.text.trim();
 
-      // Re-validate product status
       final errors = <String>[];
       if (updatedProduct['sku'].isEmpty) errors.add('SKU alanı boş');
       if (updatedProduct['barcode'].isEmpty) errors.add('Barkod alanı boş');
@@ -163,7 +151,7 @@ class _EditProductModalState extends State<EditProductModal> {
       if (updatedProduct['sellPrice'] == 0.0) errors.add('Satış fiyatı belirtilmemiş');
 
       if (errors.isEmpty) {
-        updatedProduct['status'] = 'new'; // Fixed - now valid
+        updatedProduct['status'] = 'new';
         updatedProduct['errors'] = null;
       } else {
         updatedProduct['status'] = 'error';
@@ -197,7 +185,6 @@ class _EditProductModalState extends State<EditProductModal> {
           ),
           body: Column(
             children: [
-              // Mode Toggle (for conflict products)
               if (isConflict && hasExistingProducts) ...[
                 Container(
                   color: AppColors.bgLight,
@@ -231,8 +218,6 @@ class _EditProductModalState extends State<EditProductModal> {
                 ),
                 const Divider(height: 1),
               ],
-
-              // Content
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
@@ -241,8 +226,6 @@ class _EditProductModalState extends State<EditProductModal> {
                       : _buildEditMode(),
                 ),
               ),
-
-              // Bottom Actions
               const Divider(height: 1),
               Container(
                 padding: const EdgeInsets.all(16),
@@ -255,14 +238,9 @@ class _EditProductModalState extends State<EditProductModal> {
                     ),
                     const SizedBox(width: 12),
                     AppButton.success(
-
                       text: _resolutionMode == 'match' ? 'Eşleştir' : 'Kaydet',
-
                       icon: Icons.save,
-
                       onPressed: _saveProduct,
-
-                    ),
                     ),
                   ],
                 ),
@@ -275,10 +253,11 @@ class _EditProductModalState extends State<EditProductModal> {
   }
 
   Widget _buildMatchingMode() {
+    final hasExistingProducts = widget.existingProducts != null && widget.existingProducts!.isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Info Banner
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -288,7 +267,7 @@ class _EditProductModalState extends State<EditProductModal> {
           ),
           child: Row(
             children: [
-              Icon(Icons.info, color: AppColors.info),
+              const Icon(Icons.info, color: AppColors.info),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -300,8 +279,6 @@ class _EditProductModalState extends State<EditProductModal> {
           ),
         ),
         const SizedBox(height: 24),
-
-        // Current Product Info
         const Text(
           'İçe Aktarılan Ürün:',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -309,15 +286,11 @@ class _EditProductModalState extends State<EditProductModal> {
         const SizedBox(height: 12),
         _buildProductInfoCard(widget.product, AppColors.primary),
         const SizedBox(height: 24),
-
-        // Existing Products Selection
         const Text(
           'Eşleştirilecek Mevcut Ürün:',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-
-        // Show default matched product if exists
         if (widget.product['existingProduct'] != null) ...[
           const Text(
             'Sistem Önerisi (Otomatik Tespit):',
@@ -335,8 +308,6 @@ class _EditProductModalState extends State<EditProductModal> {
           ),
           const SizedBox(height: 16),
         ],
-
-        // Show other available products
         if (hasExistingProducts) ...[
           const Text(
             'Diğer Mevcut Ürünler:',
@@ -344,11 +315,9 @@ class _EditProductModalState extends State<EditProductModal> {
           ),
           const SizedBox(height: 8),
           ...widget.existingProducts!.map((product) {
-            // Skip if it's the auto-detected one (already shown above)
             if (product['id'] == widget.product['existingProduct']?['id']) {
               return const SizedBox.shrink();
             }
-
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: _buildSelectableProductCard(
@@ -373,7 +342,6 @@ class _EditProductModalState extends State<EditProductModal> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Error warnings if any
           if (widget.product['errors'] != null) ...[
             Container(
               padding: const EdgeInsets.all(16),
@@ -385,7 +353,7 @@ class _EditProductModalState extends State<EditProductModal> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  const Row(
                     children: [
                       Icon(Icons.warning, color: AppColors.danger),
                       const SizedBox(width: 12),
@@ -406,263 +374,117 @@ class _EditProductModalState extends State<EditProductModal> {
             ),
             const SizedBox(height: 24),
           ],
-
-          // Basic Information
-          const Text(
-            'Temel Bilgiler',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          const Text('Temel Bilgiler', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-
           TextFormField(
             controller: _nameController,
-            decoration: const InputDecoration(
-              labelText: 'Ürün Adı *',
-              border: OutlineInputBorder(),
-            ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Ürün adı gerekli';
-              }
-              return null;
-            },
+            decoration: const InputDecoration(labelText: 'Ürün Adı *', border: OutlineInputBorder()),
+            validator: (value) => (value == null || value.trim().isEmpty) ? 'Ürün adı gerekli' : null,
           ),
           const SizedBox(height: 16),
-
           Row(
             children: [
               Expanded(
                 child: TextFormField(
                   controller: _skuController,
-                  decoration: const InputDecoration(
-                    labelText: 'SKU *',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'SKU gerekli';
-                    }
-                    return null;
-                  },
+                  decoration: const InputDecoration(labelText: 'SKU *', border: OutlineInputBorder()),
+                  validator: (value) => (value == null || value.trim().isEmpty) ? 'SKU gerekli' : null,
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: TextFormField(
                   controller: _barcodeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Barkod *',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Barkod gerekli';
-                    }
-                    return null;
-                  },
+                  decoration: const InputDecoration(labelText: 'Barkod *', border: OutlineInputBorder()),
+                  validator: (value) => (value == null || value.trim().isEmpty) ? 'Barkod gerekli' : null,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 24),
-
-          // Category & Brand
-          const Text(
-            'Kategori ve Marka',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          const Text('Kategori ve Marka', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-
           Row(
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
                   value: _selectedCategory,
-                  decoration: const InputDecoration(
-                    labelText: 'Kategori',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: _ReferenceData.getCategories().map((category) {
-                    return DropdownMenuItem(
-                      value: category,
-                      child: Text(category),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedCategory = value;
-                    });
-                  },
+                  decoration: const InputDecoration(labelText: 'Kategori', border: OutlineInputBorder()),
+                  items: _ReferenceData.getCategories().map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                  onChanged: (v) => setState(() => _selectedCategory = v),
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: DropdownButtonFormField<String>(
                   value: _selectedBrand,
-                  decoration: const InputDecoration(
-                    labelText: 'Marka',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: _ReferenceData.getBrands().map((brand) {
-                    return DropdownMenuItem(
-                      value: brand,
-                      child: Text(brand),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedBrand = value;
-                    });
-                  },
+                  decoration: const InputDecoration(labelText: 'Marka', border: OutlineInputBorder()),
+                  items: _ReferenceData.getBrands().map((b) => DropdownMenuItem(value: b, child: Text(b))).toList(),
+                  onChanged: (v) => setState(() => _selectedBrand = v),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 24),
-
-          // Pricing
-          const Text(
-            'Fiyatlandırma',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          const Text('Fiyatlandırma', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-
           Row(
             children: [
               Expanded(
                 child: TextFormField(
                   controller: _buyPriceController,
-                  decoration: const InputDecoration(
-                    labelText: 'Alış Fiyatı (₺) *',
-                    border: OutlineInputBorder(),
-                    prefixText: '₺ ',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Alış Fiyatı (₺) *', border: OutlineInputBorder(), prefixText: '₺ '),
                   keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Alış fiyatı gerekli';
-                    }
-                    final price = double.tryParse(value);
-                    if (price == null || price <= 0) {
-                      return 'Geçerli bir fiyat girin';
-                    }
-                    return null;
-                  },
+                  validator: (v) => (double.tryParse(v ?? '') ?? 0) <= 0 ? 'Geçerli fiyat girin' : null,
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: TextFormField(
                   controller: _sellPriceController,
-                  decoration: const InputDecoration(
-                    labelText: 'Satış Fiyatı (₺) *',
-                    border: OutlineInputBorder(),
-                    prefixText: '₺ ',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Satış Fiyatı (₺) *', border: OutlineInputBorder(), prefixText: '₺ '),
                   keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Satış fiyatı gerekli';
-                    }
-                    final price = double.tryParse(value);
-                    if (price == null || price <= 0) {
-                      return 'Geçerli bir fiyat girin';
-                    }
-                    return null;
-                  },
+                  validator: (v) => (double.tryParse(v ?? '') ?? 0) <= 0 ? 'Geçerli fiyat girin' : null,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-
           Row(
             children: [
               Expanded(
                 child: DropdownButtonFormField<double>(
                   value: _selectedTaxRate,
-                  decoration: const InputDecoration(
-                    labelText: 'KDV Oranı',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: _ReferenceData.getTaxRates().map((rate) {
-                    return DropdownMenuItem(
-                      value: rate['value'] as double,
-                      child: Text(rate['label'] as String),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedTaxRate = value;
-                    });
-                  },
+                  decoration: const InputDecoration(labelText: 'KDV Oranı', border: OutlineInputBorder()),
+                  items: _ReferenceData.getTaxRates().map((r) => DropdownMenuItem(value: r['value'] as double, child: Text(r['label'] as String))).toList(),
+                  onChanged: (v) => setState(() => _selectedTaxRate = v),
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: DropdownButtonFormField<String>(
                   value: _selectedUnit,
-                  decoration: const InputDecoration(
-                    labelText: 'Birim',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: _ReferenceData.getUnits().map((unit) {
-                    return DropdownMenuItem(
-                      value: unit['value'],
-                      child: Text(unit['label']!),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedUnit = value;
-                    });
-                  },
+                  decoration: const InputDecoration(labelText: 'Birim', border: OutlineInputBorder()),
+                  items: _ReferenceData.getUnits().map((u) => DropdownMenuItem(value: u['value'], child: Text(u['label']!))).toList(),
+                  onChanged: (v) => setState(() => _selectedUnit = v),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 24),
-
-          // Stock
-          const Text(
-            'Stok Bilgisi',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          const Text('Stok Bilgisi', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-
           TextFormField(
             controller: _stockController,
-            decoration: const InputDecoration(
-              labelText: 'Stok Miktarı',
-              border: OutlineInputBorder(),
-            ),
+            decoration: const InputDecoration(labelText: 'Stok Miktarı', border: OutlineInputBorder()),
             keyboardType: TextInputType.number,
-            validator: (value) {
-              if (value != null && value.isNotEmpty) {
-                final stock = int.tryParse(value);
-                if (stock == null || stock < 0) {
-                  return 'Geçerli bir stok miktarı girin';
-                }
-              }
-              return null;
-            },
           ),
           const SizedBox(height: 24),
-
-          // Description
-          const Text(
-            'Açıklama',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          const Text('Açıklama', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-
           TextFormField(
             controller: _descriptionController,
-            decoration: const InputDecoration(
-              labelText: 'Ürün Açıklaması',
-              border: OutlineInputBorder(),
-              hintText: 'Ürün hakkında detaylı bilgi...',
-            ),
+            decoration: const InputDecoration(labelText: 'Ürün Açıklaması', border: OutlineInputBorder()),
             maxLines: 3,
           ),
         ],
@@ -681,15 +503,11 @@ class _EditProductModalState extends State<EditProductModal> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            product['name'],
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          Text(product['name'], style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           _buildInfoRow('SKU', product['sku'].isEmpty ? '-' : product['sku']),
           _buildInfoRow('Barkod', product['barcode'].isEmpty ? '-' : product['barcode']),
           _buildInfoRow('Kategori', product['category'] ?? '-'),
-          _buildInfoRow('Marka', product['brand'] ?? '-'),
           _buildInfoRow('Alış Fiyatı', '₺${product['buyPrice']}'),
           _buildInfoRow('Satış Fiyatı', '₺${product['sellPrice']}'),
           _buildInfoRow('Stok', '${product['stock']}'),
@@ -700,79 +518,37 @@ class _EditProductModalState extends State<EditProductModal> {
 
   Widget _buildInfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              color: AppColors.textMuted,
-              fontSize: 13,
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-                fontSize: 13,
-              ),
-            ),
-          ),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textMuted, fontSize: 13)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
         ],
       ),
     );
   }
 
-  Widget _buildSelectableProductCard(
-    Map<String, dynamic> product, {
-    required bool isSelected,
-    required VoidCallback onSelect,
-  }) {
+  Widget _buildSelectableProductCard(Map<String, dynamic> product, {required bool isSelected, required VoidCallback onSelect}) {
     return InkWell(
       onTap: onSelect,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          border: Border.all(
-            color: isSelected ? AppColors.success : AppColors.border,
-            width: isSelected ? 2 : 1,
-          ),
+          border: Border.all(color: isSelected ? AppColors.success : AppColors.border, width: isSelected ? 2 : 1),
           borderRadius: BorderRadius.circular(8),
           color: isSelected ? AppColors.success.withOpacity(0.05) : Colors.white,
         ),
         child: Row(
           children: [
-            Radio<bool>(
-              value: true,
-              groupValue: isSelected,
-              onChanged: (_) => onSelect(),
-              activeColor: AppColors.success,
-            ),
+            Radio<bool>(value: true, groupValue: isSelected, onChanged: (_) => onSelect(), activeColor: AppColors.success),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    product['name'],
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'SKU: ${product['sku']} | Barkod: ${product['barcode']}',
-                    style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-                  ),
-                  Text(
-                    'Stok: ${product['stock']} | Alış: ₺${product['buyPrice']} | Satış: ₺${product['sellPrice']}',
-                    style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-                  ),
+                  Text(product['name'], style: TextStyle(fontSize: 14, fontWeight: isSelected ? FontWeight.bold : FontWeight.w600)),
+                  Text('SKU: ${product['sku']} | Barkod: ${product['barcode']}', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
                 ],
               ),
             ),

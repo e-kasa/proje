@@ -7,6 +7,7 @@ import '../../providers/theme_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../services/service_locator.dart';
 import '../../core/widgets/widgets.dart';
+import 'providers/pos_provider.dart';
 
 class PosSalesScreen extends ConsumerStatefulWidget {
   const PosSalesScreen({super.key});
@@ -154,15 +155,15 @@ class _PosSalesScreenState extends ConsumerState<PosSalesScreen> {
 
   double get _subtotal {
     return _cartItems.fold(0.0, (sum, item) {
-      final price = item.product['sellingPrice'] as double;
+      final price = (item.product['sellingPrice'] as num?)?.toDouble() ?? 0.0;
       return sum + (price * item.quantity);
     });
   }
 
   double get _taxAmount {
     return _cartItems.fold(0.0, (sum, item) {
-      final price = item.product['sellingPrice'] as double;
-      final taxRate = (item.product['taxRate'] as double?) ?? 0.0;
+      final price = (item.product['sellingPrice'] as num?)?.toDouble() ?? 0.0;
+      final taxRate = (item.product['taxRate'] as num?)?.toDouble() ?? 0.0;
       return sum + (price * item.quantity * taxRate / 100);
     });
   }
@@ -474,6 +475,20 @@ class _PosSalesScreenState extends ConsumerState<PosSalesScreen> {
         },
       ),
     );
+  }
+
+  IconData _getCategoryIcon(String? iconName) {
+    switch (iconName) {
+      case 'build': return Icons.build;
+      case 'directions_car': return Icons.directions_car;
+      case 'electrical_services': return Icons.electrical_services;
+      case 'local_gas_station': return Icons.local_gas_station;
+      case 'tire_repair': return Icons.tire_repair;
+      case 'oil_barrel': return Icons.water_drop;
+      case 'settings': return Icons.settings;
+      case 'category': return Icons.category;
+      default: return Icons.inventory_2;
+    }
   }
 
   Widget _buildCategoryItem(String name, IconData icon, int? categoryId, Color color) {

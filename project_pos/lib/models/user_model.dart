@@ -7,6 +7,10 @@ class User {
   final List<String> roles;
   final String? email;
 
+  /// Backend'den gelen sektör kodu: "AUTO_PARTS", "TECHNOLOGY", "FOOTWEAR", "GENERAL"
+  /// JWT payload'unda veya company-settings endpoint'inden okunur.
+  final String? sectorType;
+
   User({
     required this.id,
     required this.username,
@@ -15,6 +19,7 @@ class User {
     this.languageVal = 'TR',
     this.roles = const [],
     this.email,
+    this.sectorType,
   });
 
   User copyWith({
@@ -25,6 +30,7 @@ class User {
     String? languageVal,
     List<String>? roles,
     String? email,
+    String? sectorType,
   }) {
     return User(
       id: id ?? this.id,
@@ -34,6 +40,7 @@ class User {
       languageVal: languageVal ?? this.languageVal,
       roles: roles ?? this.roles,
       email: email ?? this.email,
+      sectorType: sectorType ?? this.sectorType,
     );
   }
 
@@ -45,6 +52,7 @@ class User {
         'languageVal': languageVal,
         'roles': roles,
         'email': email,
+        'sectorType': sectorType,
       };
 
   factory User.fromJson(Map<String, dynamic> json) => User(
@@ -55,5 +63,8 @@ class User {
         languageVal: json['languageVal'] as String? ?? 'TR',
         roles: (json['roles'] as List?)?.cast<String>() ?? [],
         email: json['email'] as String?,
+        sectorType: json['sectorType'] as String? ??
+            json['companySectorType'] as String? ??
+            json['sector'] as String?,
       );
 }

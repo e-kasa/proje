@@ -7,6 +7,7 @@ import '../../services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
 import '../../core/theme/app_constants.dart';
+import '../../core/widgets/app_app_bar.dart';
 
 // ─── Satır modeli ────────────────────────────────────────────────────────────
 
@@ -129,7 +130,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
                 ),
                 child: Text(
                   _fmt.format(_grandTotal),
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
@@ -434,69 +435,71 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
         child: Padding(
           padding: AppConstants.paddingSmall,
           child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.variantName,
-                        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      Text(
-                        'SKU: ${item.variantSku}',
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                      ),
-                    ],
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.variantName,
+                          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        Text(
+                          'SKU: ${item.variantSku}',
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.remove_circle_outline_rounded, color: Colors.red, size: 20),
-                  onPressed: () => setState(() => _items.removeAt(index)),
-                  tooltip: 'Kalemi Kaldır',
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                // Miktar
-                _buildNumberField(
-                  label: 'Miktar',
-                  value: item.quantity.toString(),
-                  onChanged: (v) {
-                    final n = int.tryParse(v);
-                    if (n != null && n > 0) setState(() => item.quantity = n);
-                  },
-                ),
-                const SizedBox(width: 12),
-                // Birim Fiyat
-                _buildNumberField(
-                  label: 'Birim Fiyat (₺)',
-                  value: item.unitPrice == 0 ? '' : item.unitPrice.toStringAsFixed(2),
-                  onChanged: (v) {
-                    final n = double.tryParse(v.replaceAll(',', '.'));
-                    if (n != null) setState(() => item.unitPrice = n);
-                  },
-                  isDecimal: true,
-                ),
-                const Spacer(),
-                // Satır toplamı
-                Text(
-                  _fmt.format(item.lineTotal),
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                  IconButton(
+                    icon: const Icon(Icons.remove_circle_outline_rounded, color: Colors.red, size: 20),
+                    onPressed: () => setState(() => _items.removeAt(index)),
+                    tooltip: 'Kalemi Kaldır',
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  // Miktar
+                  _buildNumberField(
+                    label: 'Miktar',
+                    value: item.quantity.toString(),
+                    onChanged: (v) {
+                      final n = int.tryParse(v);
+                      if (n != null && n > 0) setState(() => item.quantity = n);
+                    },
+                  ),
+                  const SizedBox(width: 12),
+                  // Birim Fiyat
+                  _buildNumberField(
+                    label: 'Birim Fiyat (₺)',
+                    value: item.unitPrice == 0 ? '' : item.unitPrice.toStringAsFixed(2),
+                    onChanged: (v) {
+                      final n = double.tryParse(v.replaceAll(',', '.'));
+                      if (n != null) setState(() => item.unitPrice = n);
+                    },
+                    isDecimal: true,
+                  ),
+                  const Spacer(),
+                  // Satır toplamı
+                  Text(
+                    _fmt.format(item.lineTotal),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
+      ),
     );
   }
 

@@ -36,6 +36,7 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
     bool automaticallyImplyLeading = true,
     PreferredSizeWidget? bottom,
     bool centerTitle = false,
+    double? elevation,
   }) {
     return AppAppBar(
       title: title,
@@ -45,6 +46,7 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
       automaticallyImplyLeading: automaticallyImplyLeading,
       bottom: bottom,
       centerTitle: centerTitle,
+      elevation: elevation,
     );
   }
 
@@ -56,6 +58,7 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
     bool automaticallyImplyLeading = true,
     PreferredSizeWidget? bottom,
     bool centerTitle = false,
+    double? elevation,
   }) {
     return AppAppBar(
       title: title,
@@ -65,6 +68,7 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
       automaticallyImplyLeading: automaticallyImplyLeading,
       bottom: bottom,
       centerTitle: centerTitle,
+      elevation: elevation,
     );
   }
 
@@ -76,6 +80,7 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
     bool automaticallyImplyLeading = true,
     PreferredSizeWidget? bottom,
     bool centerTitle = false,
+    double? elevation,
   }) {
     return AppAppBar(
       title: title,
@@ -85,6 +90,7 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
       automaticallyImplyLeading: automaticallyImplyLeading,
       bottom: bottom,
       centerTitle: centerTitle,
+      elevation: elevation,
     );
   }
 

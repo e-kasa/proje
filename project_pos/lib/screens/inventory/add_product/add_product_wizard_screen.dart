@@ -7,7 +7,6 @@ import 'steps/variants_step.dart';
 import 'steps/stock_barcode_step.dart';
 import 'steps/images_step.dart';
 import 'steps/preview_step.dart';
-import 'package:project_pos/core/widgets/widgets.dart';
 
 class AddProductWizardScreen extends ConsumerStatefulWidget {
   final bool fromBulkImport;
@@ -64,7 +63,7 @@ class _AddProductWizardScreenState extends ConsumerState<AddProductWizardScreen>
     }
     if (_currentStep == 1 && _state.variants.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('\u26a0\ufe0f Varyant olu\u015fturulmad\u0131, varsay\u0131lan varyant kullan\u0131lacak'), backgroundColor: AppColors.warning),
+        const SnackBar(content: Text('⚠️ Varyant oluşturulmadı, varsayılan varyant kullanılacak'), backgroundColor: AppColors.warning),
       );
     }
     if (_currentStep < _totalSteps - 1) {
@@ -117,18 +116,18 @@ class _AddProductWizardScreenState extends ConsumerState<AddProductWizardScreen>
           final shouldPop = await showDialog<bool>(
             context: context,
             builder: (ctx) => AlertDialog(
-              title: const Text('\u00c7\u0131kmak istedi\u011finize emin misiniz?'),
+              title: const Text('Çıkmak istediğinize emin misiniz?'),
               content: Text(
                 _savedCount > 0
-                    ? '$_savedCount \u00fcr\u00fcn kaydedildi. Mevcut formdaki de\u011fi\u015fiklikler kaybolacak.'
-                    : 'Formdaki de\u011fi\u015fiklikler kaybolacak.',
+                    ? '$_savedCount ürün kaydedildi. Mevcut formdaki değişiklikler kaybolacak.'
+                    : 'Formdaki değişiklikler kaybolacak.',
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('\u0130ptal')),
+                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('İptal')),
                 ElevatedButton(
                   onPressed: () => Navigator.pop(ctx, true),
                   style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-                  child: const Text('\u00c7\u0131k', style: TextStyle(color: Colors.white)),
+                  child: const Text('Çık', style: TextStyle(color: Colors.white)),
                 ),
               ],
             ),
@@ -179,11 +178,11 @@ class _AddProductWizardScreenState extends ConsumerState<AddProductWizardScreen>
 
   PreferredSizeWidget _buildModernHeader() {
     final stepSubtitles = [
-      '\u00dcr\u00fcn ad\u0131, kategori, fiyat',
-      'Renk, beden, \u00f6zellikler',
-      'Depo, stok, tedarik\u00e7i',
-      '\u00dcr\u00fcn resimleri',
-      'Kontrol ve kay\u0131t'
+      'Ürün adı, kategori, fiyat',
+      'Renk, beden, özellikler',
+      'Depo, stok, tedarikçi',
+      'Ürün resimleri',
+      'Kontrol ve kayıt'
     ];
 
     return AppBar(
@@ -196,14 +195,14 @@ class _AddProductWizardScreenState extends ConsumerState<AddProductWizardScreen>
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(_savedCount > 0 ? '\u00dcr\u00fcn Ekle ($_savedCount kaydedildi)' : 'Yeni \u00dcr\u00fcn Ekle', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          Text(_savedCount > 0 ? 'Ürün Ekle ($_savedCount kaydedildi)' : 'Yeni Ürün Ekle', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           Row(
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4)),
                 child: Text(
-                  'Ad\u0131m ${_currentStep + 1} / $_totalSteps',
+                  'Adım ${_currentStep + 1} / $_totalSteps',
                   style: const TextStyle(color: Color(0xFF667eea), fontSize: 11, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -253,7 +252,7 @@ class _AddProductWizardScreenState extends ConsumerState<AddProductWizardScreen>
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              '%${percent.round()} Tamamland\u0131',
+              '%${percent.round()} Tamamlandı',
               style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
             ),
           ),
@@ -271,11 +270,11 @@ class _AddProductWizardScreenState extends ConsumerState<AddProductWizardScreen>
 
   Widget _buildMobileStepIndicator() {
     final stepData = [
-      {'title': 'T\u00fcm\u00fc Bilgiler', 'icon': Icons.info, 'color': const Color(0xFF667eea)},
+      {'title': 'Tüm Bilgiler', 'icon': Icons.info, 'color': const Color(0xFF667eea)},
       {'title': 'Varyantlar', 'icon': Icons.layers, 'color': const Color(0xFF764ba2)},
       {'title': 'Barkod', 'icon': Icons.qr_code_2, 'color': const Color(0xFFf093fb)},
-      {'title': 'G\u00f6rseller', 'icon': Icons.image, 'color': const Color(0xFF4facfe)},
-      {'title': '\u00d6nizleme', 'icon': Icons.visibility, 'color': const Color(0xFF43e97b)},
+      {'title': 'Görseller', 'icon': Icons.image, 'color': const Color(0xFF4facfe)},
+      {'title': 'Önizleme', 'icon': Icons.visibility, 'color': const Color(0xFF43e97b)},
     ];
 
     return Container(
@@ -347,8 +346,8 @@ class _AddProductWizardScreenState extends ConsumerState<AddProductWizardScreen>
       {'title': 'Temel\nBilgiler', 'icon': Icons.info, 'color': const Color(0xFF667eea)},
       {'title': 'Varyantlar', 'icon': Icons.layers, 'color': const Color(0xFF764ba2)},
       {'title': 'Stok &\nBarkod', 'icon': Icons.inventory_2, 'color': const Color(0xFFf093fb)},
-      {'title': 'G\u00f6rseller', 'icon': Icons.image, 'color': const Color(0xFF4facfe)},
-      {'title': '\u00d6nizleme', 'icon': Icons.visibility, 'color': const Color(0xFF43e97b)},
+      {'title': 'Görseller', 'icon': Icons.image, 'color': const Color(0xFF4facfe)},
+      {'title': 'Önizleme', 'icon': Icons.visibility, 'color': const Color(0xFF43e97b)},
     ];
 
     return Container(
@@ -460,7 +459,7 @@ class _AddProductWizardScreenState extends ConsumerState<AddProductWizardScreen>
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(color: AppColors.bgLight, borderRadius: BorderRadius.circular(6)),
           child: Text(
-            ['Temel Bilgiler', 'Varyantlar', 'Stok & Barkod', 'G\u00f6rseller', '\u00d6nizleme'][_currentStep],
+            ['Temel Bilgiler', 'Varyantlar', 'Stok & Barkod', 'Görseller', 'Önizleme'][_currentStep],
             style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
           ),
         ),
@@ -478,7 +477,20 @@ class _AddProductWizardScreenState extends ConsumerState<AddProductWizardScreen>
                 ),
               ),
             if (_currentStep > 0) const SizedBox(width: 8),
-            if (_currentStep == _totalSteps - 1) ...[
+            if (_currentStep < _totalSteps - 1)
+              Expanded(
+                flex: 2,
+                child: ElevatedButton.icon(
+                  onPressed: _handleNext,
+                  icon: const Icon(Icons.arrow_forward, size: 16),
+                  label: const Text('İleri', style: TextStyle(fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                ),
+              )
+            else ...[
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: _state.isSaving ? null : _handleSaveAndContinue,
@@ -511,9 +523,10 @@ class _AddProductWizardScreenState extends ConsumerState<AddProductWizardScreen>
                 ),
               ),
             ],
-          ),
-        ],
-      );
+          ],
+        ),
+      ],
+    );
   }
 
   Widget _buildDesktopNavigation() {

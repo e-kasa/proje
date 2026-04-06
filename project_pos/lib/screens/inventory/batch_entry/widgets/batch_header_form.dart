@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../services/service_locator.dart';
+import '../models/batch_entry_models.dart';
 import '../providers/batch_entry_provider.dart';
 
 class BatchHeaderForm extends ConsumerStatefulWidget {
@@ -18,8 +19,8 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
   List<Map<String, dynamic>> _stores = [];
   bool _loading = true;
 
-  final _invoiceController = TextEditingController();
-  final _deliveryNoteController = TextEditingController();
+  final _invoiceCtrl = TextEditingController();
+  final _deliveryCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -29,8 +30,8 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
 
   @override
   void dispose() {
-    _invoiceController.dispose();
-    _deliveryNoteController.dispose();
+    _invoiceCtrl.dispose();
+    _deliveryCtrl.dispose();
     super.dispose();
   }
 
@@ -54,18 +55,11 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
     }
   }
 
-  void _toggleCollapse() {
-    final state = ref.read(batchEntryProvider);
-    ref.read(batchEntryProvider.notifier).updateHeader(
-          headerCollapsed: !state.headerCollapsed,
-        );
-  }
-
   Future<void> _pickDate() async {
-    final state = ref.read(batchEntryProvider);
+    final st = ref.read(batchEntryProvider);
     final picked = await showDatePicker(
       context: context,
-      initialDate: state.purchaseDate,
+      initialDate: st.purchaseDate,
       firstDate: DateTime(2020),
       lastDate: DateTime.now().add(const Duration(days: 30)),
       locale: const Locale('tr', 'TR'),
@@ -79,248 +73,452 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
   Widget build(BuildContext context) {
     final state = ref.watch(batchEntryProvider);
     final isCollapsed = state.headerCollapsed;
-    final isWide = MediaQuery.sizeOf(context).width > 600;
     final dateFmt = DateFormat('dd.MM.yyyy');
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
         children: [
-          // Header toggle
+          // ── Toggle header ────────────────────────────────────────────────
           InkWell(
-            onTap: _toggleCollapse,
+            onTap: () => ref
+                .read(batchEntryProvider.notifier)
+                .updateHeader(headerCollapsed: !isCollapsed),
+            borderRadius: isCollapsed
+                ? BorderRadius.circular(16)
+                : const BorderRadius.vertical(top: Radius.circular(16)),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  Icon(
-                    isCollapsed
-                        ? Icons.expand_more
-                        : Icons.expand_less,
-                    size: 20,
-                    color: AppColors.textSecondary,
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Icon(
+                      Icons.receipt_long_outlined,
+                      size: 18,
+                      color: AppColors.primary,
+                    ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: isCollapsed
-                        ? Text(
-                            'Tedarikci: ${state.supplierName ?? "-"}'
-                            ' | Fatura: ${state.invoiceNumber ?? "-"}'
-                            ' | Depo: ${state.warehouseName ?? "-"}',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          )
+                        ? _buildCollapsedSummary(state, dateFmt)
                         : const Text(
-                            'Fatura Bilgileri',
+                            'Fatura & Teslimat Bilgileri',
                             style: TextStyle(
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
                               fontSize: 14,
+                              color: AppColors.textPrimary,
                             ),
                           ),
+                  ),
+                  // Validation indicator
+                  if (state.supplierId != null &&
+                      state.warehouseId != null &&
+                      state.storeId != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.check_circle_outline,
+                              size: 12, color: AppColors.success),
+                          SizedBox(width: 4),
+                          Text('Hazır',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.success,
+                                fontWeight: FontWeight.w600,
+                              )),
+                        ],
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.info_outline,
+                              size: 12, color: AppColors.warning),
+                          SizedBox(width: 4),
+                          Text('Eksik',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.warning,
+                                fontWeight: FontWeight.w600,
+                              )),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    isCollapsed
+                        ? Icons.keyboard_arrow_down_rounded
+                        : Icons.keyboard_arrow_up_rounded,
+                    color: AppColors.textMuted,
+                    size: 22,
                   ),
                 ],
               ),
             ),
           ),
-          // Content
+
+          // ── Form ─────────────────────────────────────────────────────────
           AnimatedCrossFade(
             firstChild: const SizedBox.shrink(),
             secondChild: _loading
                 ? const Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                : Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: Column(
-                      children: [
-                        // Row 1: Supplier
-                        DropdownButtonFormField<String>(
-                          initialValue: state.supplierId,
-                          decoration: const InputDecoration(
-                            labelText: 'Tedarikci',
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                          ),
-                          isExpanded: true,
-                          items: _suppliers.map((s) {
-                            return DropdownMenuItem<String>(
-                              value: s['id']?.toString(),
-                              child: Text(
-                                s['name']?.toString() ?? '',
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (val) {
-                            final supplier = _suppliers.firstWhere(
-                              (s) => s['id']?.toString() == val,
-                              orElse: () => {},
-                            );
-                            ref
-                                .read(batchEntryProvider.notifier)
-                                .updateHeader(
-                                  supplierId: val,
-                                  supplierName:
-                                      supplier['name']?.toString(),
-                                );
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        // Row 2: Invoice + Delivery note
-                        _buildRow(
-                          isWide: isWide,
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _invoiceController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Fatura No',
-                                  border: OutlineInputBorder(),
-                                  isDense: true,
-                                ),
-                                onChanged: (val) => ref
-                                    .read(batchEntryProvider.notifier)
-                                    .updateHeader(invoiceNumber: val),
-                              ),
-                            ),
-                            SizedBox(width: isWide ? 12 : 0, height: isWide ? 0 : 12),
-                            Expanded(
-                              child: TextField(
-                                controller: _deliveryNoteController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Irsaliye No',
-                                  border: OutlineInputBorder(),
-                                  isDense: true,
-                                ),
-                                onChanged: (val) => ref
-                                    .read(batchEntryProvider.notifier)
-                                    .updateHeader(deliveryNoteNumber: val),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        // Row 3: Date + Warehouse + Store
-                        _buildRow(
-                          isWide: isWide,
-                          children: [
-                            Expanded(
-                              child: InkWell(
-                                onTap: _pickDate,
-                                child: InputDecorator(
-                                  decoration: const InputDecoration(
-                                    labelText: 'Tarih',
-                                    border: OutlineInputBorder(),
-                                    isDense: true,
-                                    suffixIcon:
-                                        Icon(Icons.calendar_today, size: 18),
-                                  ),
-                                  child: Text(
-                                    dateFmt.format(state.purchaseDate),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: isWide ? 12 : 0, height: isWide ? 0 : 12),
-                            Expanded(
-                              child: DropdownButtonFormField<String>(
-                                initialValue: state.warehouseId,
-                                decoration: const InputDecoration(
-                                  labelText: 'Depo',
-                                  border: OutlineInputBorder(),
-                                  isDense: true,
-                                ),
-                                isExpanded: true,
-                                items: _warehouses.map((w) {
-                                  return DropdownMenuItem<String>(
-                                    value: w['id']?.toString(),
-                                    child: Text(
-                                      w['name']?.toString() ?? '',
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (val) {
-                                  final wh = _warehouses.firstWhere(
-                                    (w) => w['id']?.toString() == val,
-                                    orElse: () => {},
-                                  );
-                                  ref
-                                      .read(batchEntryProvider.notifier)
-                                      .updateHeader(
-                                        warehouseId: val,
-                                        warehouseName:
-                                            wh['name']?.toString(),
-                                      );
-                                },
-                              ),
-                            ),
-                            SizedBox(width: isWide ? 12 : 0, height: isWide ? 0 : 12),
-                            Expanded(
-                              child: DropdownButtonFormField<String>(
-                                initialValue: state.storeId,
-                                decoration: const InputDecoration(
-                                  labelText: 'Magaza',
-                                  border: OutlineInputBorder(),
-                                  isDense: true,
-                                ),
-                                isExpanded: true,
-                                items: _stores.map((s) {
-                                  return DropdownMenuItem<String>(
-                                    value: s['id']?.toString(),
-                                    child: Text(
-                                      s['name']?.toString() ?? '',
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (val) {
-                                  final st = _stores.firstWhere(
-                                    (s) => s['id']?.toString() == val,
-                                    orElse: () => {},
-                                  );
-                                  ref
-                                      .read(batchEntryProvider.notifier)
-                                      .updateHeader(
-                                        storeId: val,
-                                        storeName:
-                                            st['name']?.toString(),
-                                      );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                    padding: EdgeInsets.all(20),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                          color: AppColors.primary),
                     ),
-                  ),
+                  )
+                : _buildForm(state, dateFmt),
             crossFadeState: isCollapsed
                 ? CrossFadeState.showFirst
                 : CrossFadeState.showSecond,
-            duration: const Duration(milliseconds: 250),
+            duration: const Duration(milliseconds: 220),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRow({
-    required bool isWide,
-    required List<Widget> children,
-  }) {
-    if (isWide) {
-      return Row(children: children);
-    }
-    return Column(
-      children: children.map((c) {
-        if (c is SizedBox) return const SizedBox(height: 12);
-        if (c is Expanded) return SizedBox(width: double.infinity, child: c.child);
-        return c;
-      }).toList(),
+  Widget _buildCollapsedSummary(
+      BatchEntryState state, DateFormat dateFmt) {
+    final parts = <String>[];
+    if (state.supplierName != null) parts.add(state.supplierName!);
+    if (state.invoiceNumber != null)
+      parts.add('Fatura: ${state.invoiceNumber}');
+    if (state.warehouseName != null) parts.add(state.warehouseName!);
+    parts.add(dateFmt.format(state.purchaseDate));
+
+    return Text(
+      parts.join('  ·  '),
+      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  Widget _buildForm(BatchEntryState state, DateFormat dateFmt) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+      child: Column(
+        children: [
+          Divider(height: 1, color: AppColors.border.withValues(alpha: 0.5)),
+          const SizedBox(height: 14),
+
+          // Supplier
+          _DropdownField<String>(
+            label: 'Tedarikçi *',
+            icon: Icons.local_shipping_outlined,
+            value: state.supplierId,
+            items: _suppliers.map((s) {
+              return DropdownMenuItem<String>(
+                value: s['id']?.toString(),
+                child: Text(s['name']?.toString() ?? '',
+                    overflow: TextOverflow.ellipsis),
+              );
+            }).toList(),
+            onChanged: (val) {
+              if (val == null) return;
+              final supplier = _suppliers.firstWhere(
+                (s) => s['id']?.toString() == val,
+                orElse: () => {},
+              );
+              ref.read(batchEntryProvider.notifier).updateHeader(
+                    supplierId: val,
+                    supplierName: supplier['name']?.toString(),
+                  );
+            },
+          ),
+          const SizedBox(height: 10),
+
+          // Invoice + Delivery note
+          Row(
+            children: [
+              Expanded(
+                child: _TextField(
+                  label: 'Fatura No',
+                  icon: Icons.receipt_outlined,
+                  ctrl: _invoiceCtrl,
+                  hint: 'FTR-2025-001',
+                  onChanged: (v) => ref
+                      .read(batchEntryProvider.notifier)
+                      .updateHeader(invoiceNumber: v),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _TextField(
+                  label: 'İrsaliye No',
+                  icon: Icons.description_outlined,
+                  ctrl: _deliveryCtrl,
+                  hint: 'IRS-2025-001',
+                  onChanged: (v) => ref
+                      .read(batchEntryProvider.notifier)
+                      .updateHeader(deliveryNoteNumber: v),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Date + Warehouse + Store
+          Row(
+            children: [
+              // Date picker
+              Expanded(
+                child: GestureDetector(
+                  onTap: _pickDate,
+                  child: Container(
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF7F8FC),
+                      borderRadius: BorderRadius.circular(12),
+                      border:
+                          Border.all(color: const Color(0xFFE8E9F0)),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.calendar_today_outlined,
+                            size: 16, color: AppColors.textMuted),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text('Tarih',
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      color: AppColors.textMuted,
+                                      fontWeight: FontWeight.w500)),
+                              Text(
+                                dateFmt.format(state.purchaseDate),
+                                style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.edit_calendar_outlined,
+                            size: 14, color: AppColors.primary),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              // Warehouse
+              Expanded(
+                child: _DropdownField<String>(
+                  label: 'Depo *',
+                  icon: Icons.warehouse_outlined,
+                  value: state.warehouseId,
+                  items: _warehouses.map((w) {
+                    return DropdownMenuItem<String>(
+                      value: w['id']?.toString(),
+                      child: Text(w['name']?.toString() ?? '',
+                          overflow: TextOverflow.ellipsis),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val == null) return;
+                    final wh = _warehouses.firstWhere(
+                      (w) => w['id']?.toString() == val,
+                      orElse: () => {},
+                    );
+                    ref.read(batchEntryProvider.notifier).updateHeader(
+                          warehouseId: val,
+                          warehouseName: wh['name']?.toString(),
+                        );
+                  },
+                ),
+              ),
+              const SizedBox(width: 10),
+              // Store
+              Expanded(
+                child: _DropdownField<String>(
+                  label: 'Mağaza *',
+                  icon: Icons.store_outlined,
+                  value: state.storeId,
+                  items: _stores.map((s) {
+                    return DropdownMenuItem<String>(
+                      value: s['id']?.toString(),
+                      child: Text(s['name']?.toString() ?? '',
+                          overflow: TextOverflow.ellipsis),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val == null) return;
+                    final st = _stores.firstWhere(
+                      (s) => s['id']?.toString() == val,
+                      orElse: () => {},
+                    );
+                    ref.read(batchEntryProvider.notifier).updateHeader(
+                          storeId: val,
+                          storeName: st['name']?.toString(),
+                        );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── REUSABLE FIELD WIDGETS ────────────────────────────────────────────────────
+class _DropdownField<T> extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final T? value;
+  final List<DropdownMenuItem<T>> items;
+  final ValueChanged<T?> onChanged;
+
+  const _DropdownField({
+    required this.label,
+    required this.icon,
+    required this.value,
+    required this.items,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F8FC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE8E9F0)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<T>(
+          value: value,
+          isExpanded: true,
+          icon: const Icon(Icons.keyboard_arrow_down_rounded,
+              size: 18, color: AppColors.textMuted),
+          hint: Row(
+            children: [
+              Icon(icon, size: 15, color: AppColors.textMuted),
+              const SizedBox(width: 6),
+              Text(label,
+                  style: const TextStyle(
+                      fontSize: 12, color: AppColors.textMuted)),
+            ],
+          ),
+          selectedItemBuilder: (ctx) => items
+              .map((item) => Align(
+                    alignment: Alignment.centerLeft,
+                    child: item.child,
+                  ))
+              .toList(),
+          items: items,
+          onChanged: onChanged,
+          style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary),
+        ),
+      ),
+    );
+  }
+}
+
+class _TextField extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final TextEditingController ctrl;
+  final String hint;
+  final ValueChanged<String> onChanged;
+
+  const _TextField({
+    required this.label,
+    required this.icon,
+    required this.ctrl,
+    required this.hint,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 48,
+      child: TextField(
+        controller: ctrl,
+        onChanged: onChanged,
+        style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(
+              fontSize: 12, color: AppColors.textMuted),
+          hintText: hint,
+          hintStyle:
+              const TextStyle(fontSize: 12, color: AppColors.textMuted),
+          prefixIcon:
+              Icon(icon, size: 16, color: AppColors.textMuted),
+          prefixIconConstraints:
+              const BoxConstraints(minWidth: 40, minHeight: 0),
+          contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12, vertical: 12),
+          filled: true,
+          fillColor: const Color(0xFFF7F8FC),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.border),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFE8E9F0)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+                color: AppColors.primary, width: 1.5),
+          ),
+        ),
+      ),
     );
   }
 }

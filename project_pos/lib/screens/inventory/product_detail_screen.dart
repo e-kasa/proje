@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
+import '../../core/widgets/app_app_bar.dart';
 import '../../services/service_locator.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
@@ -186,13 +187,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
             onPressed: () => context.go('/inventory/products'),
           ),
-          title: Text(
-            productName,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          title: productName,
           actions: [
             OutlinedButton.icon(
               onPressed: () {
@@ -220,6 +215,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             _buildGeneralInfoTab(product),
             _buildOemTab(),
             _buildCrossRefTab(),
+            _buildVehicleCompatTab(),
           ],
         ),
       ),
@@ -241,85 +237,84 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           AppCard(
             padding: const EdgeInsets.all(24),
             child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product['name']?.toString() ?? '-',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  product['name']?.toString() ?? '-',
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
-                  const SizedBox(height: 8),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'SKU: ${product['sku'] ?? '-'}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                if (product['barcode'] != null) ...[
+                  const SizedBox(height: 4),
                   Text(
-                    'SKU: ${product['sku'] ?? '-'}',
+                    'Barkod: ${product['barcode']}',
                     style: const TextStyle(
                       fontSize: 14,
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  if (product['barcode'] != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      'Barkod: ${product['barcode']}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
+                ],
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    _buildInfoChip(
+                      'Marka',
+                      product['brand']?.toString() ?? '-',
+                      Icons.local_offer_outlined,
+                    ),
+                    const SizedBox(width: 12),
+                    _buildInfoChip(
+                      'Kategori',
+                      product['categoryId']?.toString() ?? '-',
+                      Icons.category_outlined,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Divider(),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatItem(
+                        'Fiyat',
+                        '${product['basePrice'] ?? 0} TL',
+                        Icons.attach_money,
+                        AppColors.primary,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildStatItem(
+                        'Stok',
+                        '${product['stock'] ?? 0}',
+                        Icons.inventory_2_outlined,
+                        AppColors.success,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildStatItem(
+                        'Durum',
+                        product['isActive'] == true ? 'Aktif' : 'Pasif',
+                        Icons.circle,
+                        product['isActive'] == true
+                            ? AppColors.success
+                            : AppColors.danger,
                       ),
                     ),
                   ],
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      _buildInfoChip(
-                        'Marka',
-                        product['brand']?.toString() ?? '-',
-                        Icons.local_offer_outlined,
-                      ),
-                      const SizedBox(width: 12),
-                      _buildInfoChip(
-                        'Kategori',
-                        product['categoryId']?.toString() ?? '-',
-                        Icons.category_outlined,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  const Divider(),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatItem(
-                          'Fiyat',
-                          '${product['basePrice'] ?? 0} TL',
-                          Icons.attach_money,
-                          AppColors.primary,
-                        ),
-                      ),
-                      Expanded(
-                        child: _buildStatItem(
-                          'Stok',
-                          '${product['stock'] ?? 0}',
-                          Icons.inventory_2_outlined,
-                          AppColors.success,
-                        ),
-                      ),
-                      Expanded(
-                        child: _buildStatItem(
-                          'Durum',
-                          product['isActive'] == true ? 'Aktif' : 'Pasif',
-                          Icons.circle,
-                          product['isActive'] == true
-                              ? AppColors.success
-                              : AppColors.danger,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
@@ -330,27 +325,26 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             AppCard(
               padding: const EdgeInsets.all(24),
               child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Aciklama',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Aciklama',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      product['description'].toString(),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
-                        height: 1.6,
-                      ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    product['description'].toString(),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                      height: 1.6,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
 
@@ -360,20 +354,20 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             AppCard(
               padding: const EdgeInsets.all(24),
               child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Varyantlar (${variants.length})',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Varyantlar (${variants.length})',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
                     ),
-                    const SizedBox(height: 16),
-                    ...variants.map((v) => _buildVariantRow(v)),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 16),
+                  ...variants.map((v) => _buildVariantRow(v)),
+                ],
+              ),
             ),
           ],
         ],
@@ -742,6 +736,78 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     );
   }
 
+  // ─── Tab 4: Arac Uyumlulugu ──────────────────────────────────────────────
+
+  Widget _buildVehicleCompatTab() {
+    if (_vehicleCompatLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Uyumlu Araclar (${_vehicleCompats.length})',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _vehicleCompats.isEmpty
+              ? const Center(
+                  child: Text(
+                    'Henuz arac uyumlulugu eklenmemis',
+                    style: TextStyle(color: AppColors.textMuted),
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.all(20),
+                  itemCount: _vehicleCompats.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final vc = _vehicleCompats[index];
+                    return Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppConstants.borderRadiusSmall,
+                        side: const BorderSide(color: AppColors.border),
+                      ),
+                      child: ListTile(
+                        leading: const Icon(Icons.directions_car,
+                            color: AppColors.primary, size: 24),
+                        title: Text(
+                          '${vc['make'] ?? ''} ${vc['model'] ?? ''} ${vc['engine'] ?? ''}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'Yil: ${vc['yearStart'] ?? ''} - ${vc['yearEnd'] ?? 'Guncel'}',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
   // ─── Dialogs ─────────────────────────────────────────────────────────────
 
   void _showAddOemDialog() {
@@ -886,6 +952,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   'crossRefBrand': brandController.text.trim(),
                   'notes': notesController.text.trim(),
                 });
+                if (ctx.mounted) Navigator.of(ctx).pop();
+                _loadTabData();
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(

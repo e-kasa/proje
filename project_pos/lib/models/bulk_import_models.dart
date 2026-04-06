@@ -321,6 +321,15 @@ class AnalyzedProduct {
   final int stock;
   final String? description;
 
+  // Sektör bilgileri
+  final String? sector;
+  final Map<String, dynamic>? metadata;
+
+  // Parçacı-specific
+  final List<Map<String, String>>? oemNumbers;
+  final List<Map<String, String>>? crossReferences;
+  final String? shelfLocation;
+
   // Backend analiz sonuçları
   final ProductStatus status;
   final double confidence;
@@ -356,6 +365,11 @@ class AnalyzedProduct {
     required this.taxRate,
     required this.stock,
     this.description,
+    this.sector,
+    this.metadata,
+    this.oemNumbers,
+    this.crossReferences,
+    this.shelfLocation,
     required this.status,
     required this.confidence,
     this.matchedProduct,
@@ -382,6 +396,15 @@ class AnalyzedProduct {
       taxRate: (json['taxRate'] as num).toDouble(),
       stock: json['stock'] as int,
       description: json['description'] as String?,
+      sector: json['sector'] as String?,
+      metadata: json['metadata'] != null ? Map<String, dynamic>.from(json['metadata'] as Map) : null,
+      oemNumbers: (json['oemNumbers'] as List?)
+          ?.map((o) => Map<String, String>.from((o as Map).map((k, v) => MapEntry(k.toString(), v.toString()))))
+          .toList(),
+      crossReferences: (json['crossReferences'] as List?)
+          ?.map((c) => Map<String, String>.from((c as Map).map((k, v) => MapEntry(k.toString(), v.toString()))))
+          .toList(),
+      shelfLocation: json['shelfLocation'] as String?,
       status: ProductStatus.values.firstWhere(
         (e) => e.name == json['status'],
         orElse: () => ProductStatus.ERROR,
@@ -420,6 +443,11 @@ class AnalyzedProduct {
       'taxRate': taxRate,
       'stock': stock,
       if (description != null) 'description': description,
+      if (sector != null) 'sector': sector,
+      if (metadata != null) 'metadata': metadata,
+      if (oemNumbers != null) 'oemNumbers': oemNumbers,
+      if (crossReferences != null) 'crossReferences': crossReferences,
+      if (shelfLocation != null) 'shelfLocation': shelfLocation,
       'status': status.name,
       'confidence': confidence,
       if (matchedProduct != null) 'matchedProduct': matchedProduct!.toJson(),
@@ -450,6 +478,11 @@ class AnalyzedProduct {
       taxRate: taxRate,
       stock: stock,
       description: description,
+      sector: sector,
+      metadata: metadata,
+      oemNumbers: oemNumbers,
+      crossReferences: crossReferences,
+      shelfLocation: shelfLocation,
       status: status ?? this.status,
       confidence: confidence,
       matchedProduct: matchedProduct,
@@ -945,45 +978,68 @@ class BulkSavePayloadBuilder {
         'sku': product.sku,
         'name': product.name,
         'slug': product.name.toLowerCase().replaceAll(' ', '-'),
-        'categoryId': int.tryParse(product.category ?? '0') ?? 0,
-        'brand': product.brand ?? '',
-        'unit': product.unit ?? 'pcs',
+        'categoryId': product.category,
+        'brand': product.brand,
+        'unit': product.unit.isNotEmpty ? product.unit : 'adet',
         'description': product.description ?? '',
+        'sector': product.sector ?? 'genel',
+        'metadata': product.metadata,
       },
+      'oemNumbers': product.oemNumbers
+              ?.where((o) => (o['oemNumber'] ?? '').isNotEmpty)
+              .map((o) => {
+                    'oemNumber': o['oemNumber'],
+                    'manufacturer': o['manufacturer'] ?? '',
+                    'isPrimary': o == product.oemNumbers!.first,
+                  })
+              .toList() ??
+          [],
+      'crossReferences': product.crossReferences
+              ?.where((c) => (c['crossRefNumber'] ?? '').isNotEmpty)
+              .map((c) => {
+                    'crossRefNumber': c['crossRefNumber'],
+                    'crossRefBrand': c['crossRefBrand'] ?? '',
+                    'notes': c['notes'] ?? '',
+                  })
+              .toList() ??
+          [],
       'variants': [
         {
           'sku': product.sku,
           'name': 'Varsayılan Varyant',
+          'shelfLocationCode': product.shelfLocation,
           'attributes': {},
           'pricing': {
-            'purchasePrice': product.buyPrice ?? 0,
-            'salePrice': product.sellPrice ?? 0,
+            'purchasePrice': product.buyPrice,
+            'salePrice': product.sellPrice,
           },
           'initialStocks': [
             {
               'storeId': null,
               'warehouseId': 'WH-001',
-              'quantity': product.stock ?? 0,
+              'quantity': product.stock,
             }
           ],
-          'barcodes': product.barcode != null && product.barcode!.isNotEmpty
+          'barcodes': product.barcode.isNotEmpty
               ? [
                   {
                     'code': product.barcode,
                     'type': 'EAN13',
-                    'primary': true,
+                    'isPrimary': true,
                   }
                 ]
               : [],
         }
       ],
-      'purchase': {
-        'supplierId': supplierId ?? '',
-        'invoiceNumber': invoiceNumber ?? '',
-        'deliveryNoteNumber': deliveryNote ?? '',
-        'purchaseDate': purchaseDate ?? DateTime.now().toIso8601String(),
-        'notes': notes ?? '',
-      },
+      'purchase': (supplierId != null && supplierId.isNotEmpty)
+          ? {
+              'supplierId': supplierId,
+              'invoiceNumber': invoiceNumber ?? '',
+              'deliveryNoteNumber': deliveryNote,
+              'purchaseDate': purchaseDate ?? DateTime.now().toIso8601String(),
+              'notes': notes,
+            }
+          : null,
     };
   }
 
@@ -1042,81 +1098,6 @@ class BulkSavePayloadBuilder {
           'salePrice': product.sellPrice,
         },
       },
-    };
-  }
-
-  /// Varyant ekleme/güncelleme payload'u
-  static Map<String, dynamic> _buildVariantPayload(
-    AnalyzedProduct product,
-    UserDecision decision,
-  ) {
-    final variantData = decision.data;
-    return {
-      'tempId': product.tempId,
-      'action': decision.action.name,
-      'productId': variantData['productId'],
-      'variant': {
-        'sku': product.sku,
-        'name': variantData['variantName'] ?? product.name,
-        'attributes': variantData['attributes'] ?? {},
-        'pricing': {
-          'purchasePrice': product.buyPrice ?? 0,
-          'salePrice': product.sellPrice ?? 0,
-        },
-        'initialStocks': [
-          {
-            'storeId': null,
-            'warehouseId': 'WH-001',
-            'quantity': product.stock ?? 0,
-          }
-        ],
-        'barcodes': product.barcode != null && product.barcode!.isNotEmpty
-            ? [
-                {
-                  'code': product.barcode,
-                  'type': 'EAN13',
-                  'primary': true,
-                }
-              ]
-            : [],
-      },
-    };
-  }
-
-  /// Payload özeti (debug/preview için)
-  static Map<String, dynamic> getSummary(List<Map<String, dynamic>> payloads) {
-    final summary = <String, int>{};
-    var totalProducts = 0;
-    var totalVariants = 0;
-    var totalStock = 0;
-
-    for (final payload in payloads) {
-      final action = payload['action'] as String?;
-      summary[action ?? 'UNKNOWN'] = (summary[action ?? 'UNKNOWN'] ?? 0) + 1;
-
-      if (action == 'CREATE') {
-        totalProducts++;
-        final variants = payload['variants'] as List?;
-        if (variants != null) {
-          totalVariants += variants.length;
-          for (final variant in variants) {
-            final stocks = variant['initialStocks'] as List?;
-            if (stocks != null) {
-              for (final stock in stocks) {
-                totalStock += (stock['quantity'] as num?)?.toInt() ?? 0;
-              }
-            }
-          }
-        }
-      }
-    }
-
-    return {
-      'totalPayloads': payloads.length,
-      'totalProducts': totalProducts,
-      'totalVariants': totalVariants,
-      'totalStock': totalStock,
-      'actionBreakdown': summary,
     };
   }
 }

@@ -417,7 +417,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/bulk-import/review',
-            builder: (context, state) => const BulkImportReviewScreenV2(),
+            builder: (context, state) {
+              final extra = state.extra as Map<String, dynamic>?;
+              return BulkImportReviewScreenV2(
+                importId: extra?['importId'] as String?,
+                sector: extra?['sector'] as String? ?? 'genel',
+              );
+            },
           ),
           GoRoute(
             path: '/bulk-import/supplier',

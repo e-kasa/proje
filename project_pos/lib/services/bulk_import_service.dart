@@ -1,44 +1,50 @@
 import 'dart:io';
+import 'package:dio/dio.dart';
 import '../core/api/api_client.dart';
-import '../models/bulk_import_models.dart';
 
 /// Bulk Import Service - Backend API entegrasyonu
 ///
-/// Backend akisi:
-/// 1. POST /bulk-import/upload -> Dosya yukle
-/// 2. GET /bulk-import/analyze/{id} -> Analiz sonucu al
-/// 3. POST /bulk-import/save -> Kararlari kaydet
+/// Backend akışı:
+/// 1. POST /bulk-import/upload       → Dosya yükle (sektör bilgisiyle)
+/// 2. GET  /bulk-import/analyze/{id} → Analiz sonucu al
+/// 3. POST /bulk-import/save         → Kararları kaydet
+/// 4. GET  /bulk-import/template/{sector} → Sektöre özel şablon indir
 class BulkImportService {
   final ApiClient _apiClient;
 
   BulkImportService(this._apiClient);
 
-  /// 1. Tedarikci dosyasini backend'e yukle (Excel/CSV)
+  /// 1. Dosyayı backend'e yükle (multipart/form-data)
   ///
-  /// Backend dosyayi okur, analiz eder ve import ID doner
-  Future<String> uploadFile(File file) async {
+  /// [sector]: parcaci / giyim / genel — Backend hangi kolonları beklediğini bilir
+  Future<String> uploadFile(File file, {String sector = 'genel'}) async {
     try {
-      // FormData ile dosya gonderimi (multipart/form-data)
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          file.path,
+          filename: file.path.split(Platform.pathSeparator).last,
+        ),
+        'sector': sector,
+      });
+
       final response = await _apiClient.post(
         'bulk-import/upload',
-        data: {
-          'file': file,
-        },
+        data: formData,
       );
 
       return response.data['data']['importId'] as String;
     } catch (e) {
-      throw Exception('Dosya yuklenemedi: ${e.toString()}');
+      throw Exception('Dosya yüklenemedi: ${_extractError(e)}');
     }
   }
 
   /// 2. Analiz sonucunu al
   ///
-  /// Backend sunlari doner:
-  /// - YENI urunler (sistemde yok)
-  /// - CAKISAN urunler (SKU/Barcode var ama fiyat farkli)
-  /// - MEVCUT urunler (birebir ayni)
-  /// - BENZER urunler (isim benzerligi)
+  /// Backend döner:
+  /// - YENI ürünler (sistemde yok)
+  /// - ÇAKIŞAN ürünler (SKU/Barcode var ama fiyat farklı)
+  /// - MEVCUT ürünler (birebir aynı)
+  /// - BENZER ürünler (isim benzerliği)
   Future<Map<String, dynamic>> getAnalysisResult(String importId) async {
     try {
       final response = await _apiClient.get(
@@ -47,25 +53,26 @@ class BulkImportService {
 
       return response.data['data'] as Map<String, dynamic>;
     } catch (e) {
-      throw Exception('Analiz sonucu alinamadi: ${e.toString()}');
+      throw Exception('Analiz sonucu alınamadı: ${_extractError(e)}');
     }
   }
 
-  /// 3. Kararlari backend'e gonder ve kaydet
+  /// 3. Kararları backend'e gönder ve kaydet
   ///
-  /// Format:
+  /// [products] listesi CreateProductRequest yapısında olmalıdır:
   /// ```json
-  /// [
-  ///   {
-  ///     "product": {...},
-  ///     "variants": [{...}],
-  ///     "purchase": {...}
-  ///   }
-  /// ]
+  /// {
+  ///   "product": { "sku", "name", "categoryId", "brand", "unit", "sector", "metadata" },
+  ///   "variants": [{ "sku", "name", "pricing", "initialStocks", "barcodes" }],
+  ///   "oemNumbers": [{ "oemNumber", "manufacturer", "isPrimary" }],
+  ///   "crossReferences": [{ "crossRefNumber", "crossRefBrand", "notes" }],
+  ///   "purchase": { "supplierId", "invoiceNumber", "purchaseDate" }
+  /// }
   /// ```
   Future<BulkSaveResult> saveDecisions({
     required String importId,
     required List<Map<String, dynamic>> products,
+    String? sector,
     void Function(int current, int total)? onProgress,
   }) async {
     try {
@@ -73,19 +80,33 @@ class BulkImportService {
         'bulk-import/save',
         data: {
           'importId': importId,
+          'sector': sector,
           'products': products,
         },
       );
 
       return BulkSaveResult.fromJson(response.data['data']);
     } catch (e) {
-      throw Exception('Kayit basarisiz: ${e.toString()}');
+      throw Exception('Kayıt başarısız: ${_extractError(e)}');
+    }
+  }
+
+  /// 4. Sektöre özel Excel şablonu indir
+  Future<void> downloadTemplate(String sector) async {
+    try {
+      await _apiClient.get(
+        'bulk-import/template/$sector',
+        // options: Options(responseType: ResponseType.bytes),
+      );
+      // TODO: Save file to downloads directory
+    } catch (e) {
+      throw Exception('Şablon indirilemedi: ${_extractError(e)}');
     }
   }
 
   /// Polling ile analiz durumunu kontrol et
   ///
-  /// Backend dosyayi async isliyorsa kullanilir
+  /// Backend dosyayı async işliyorsa kullanılır
   Future<Map<String, dynamic>> waitForAnalysis({
     required String importId,
     Duration pollInterval = const Duration(seconds: 2),
@@ -98,13 +119,25 @@ class BulkImportService {
           return result;
         }
       } catch (e) {
-        // Henuz hazir degil, tekrar dene
+        // Henüz hazır değil, tekrar dene
       }
 
       await Future.delayed(pollInterval);
     }
 
-    throw Exception('Analiz zaman asimina ugradi');
+    throw Exception('Analiz zaman aşımına uğradı (${maxAttempts * pollInterval.inSeconds}s)');
+  }
+
+  /// Hata mesajı çıkarma
+  String _extractError(dynamic e) {
+    if (e is DioException) {
+      final data = e.response?.data;
+      if (data is Map) {
+        return data['message']?.toString() ?? e.message ?? e.toString();
+      }
+      return e.message ?? e.toString();
+    }
+    return e.toString();
   }
 }
 

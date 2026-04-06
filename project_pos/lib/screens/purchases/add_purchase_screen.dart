@@ -7,7 +7,6 @@ import '../../services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
 import '../../core/theme/app_constants.dart';
-import '../../core/widgets/app_app_bar.dart';
 
 // ─── Satır modeli ────────────────────────────────────────────────────────────
 

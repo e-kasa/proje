@@ -19,6 +19,7 @@ public class ProductVariantRequest {
 
         private String sku;
         private String name;
+        private String shelfLocationCode;
         private Map<String, String> attributes;
         private PricingRequest pricing;
         private List<BarcodeRequest> barcodes;

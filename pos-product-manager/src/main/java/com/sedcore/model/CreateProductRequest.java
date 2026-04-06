@@ -17,5 +17,9 @@ public class CreateProductRequest {
 
     private List<ProductVariantRequest> variants;
 
+    private List<OemNumberRequest> oemNumbers;
+
+    private List<CrossReferenceRequest> crossReferences;
+
     private PurchaseRequest purchase;
 }

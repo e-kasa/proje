@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sedcore.entity.Barcode;
 import com.sedcore.entity.Category;
+import com.sedcore.entity.CrossReference;
+import com.sedcore.entity.OemNumber;
 import com.sedcore.entity.Supplier;
 import com.sedcore.entity.VariantPricing;
 import com.sedcore.entity.InventoryView;
@@ -25,8 +27,10 @@ import com.sedcore.enums.StockMovementType;
 import com.sedcore.model.BarcodeRequest;
 import com.sedcore.model.BarcodeResponse;
 import com.sedcore.model.CreateProductRequest;
+import com.sedcore.model.CrossReferenceRequest;
 import com.sedcore.model.InitialStocksRequest;
 import com.sedcore.model.InventoryResponse;
+import com.sedcore.model.OemNumberRequest;
 import com.sedcore.model.ProductResponse;
 import com.sedcore.model.ProductVariantRequest;
 import com.sedcore.model.ProductVariantResponse;
@@ -41,6 +45,8 @@ import com.sedcore.service.SupplierService;
 import com.sedcore.service.InventoryService;
 import com.sedcore.service.PricingService;
 import com.sedcore.service.ProductService;
+import com.sedcore.service.OemNumberService;
+import com.sedcore.service.CrossReferenceService;
 import com.sedcore.service.ProductVariantAttributeValueService;
 import com.sedcore.service.ProductVariantService;
 import com.sedcore.service.PurchaseService;
@@ -67,6 +73,8 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
     private final BarcodeService barcodeService;
     private final CategoryService categoryService;
     private final InventoryService inventoryService;
+    private final OemNumberService oemNumberService;
+    private final CrossReferenceService crossReferenceService;
 
     /**
      * Ürün Oluştur (Tüm Detaylarıyla)
@@ -82,6 +90,9 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                 .brand(dto.getProduct().getBrand())
                 .unit(dto.getProduct().getUnit())
                 .categoryId(dto.getProduct().getCategoryId())
+                .description(dto.getProduct().getDescription())
+                .sector(dto.getProduct().getSector())
+                .metadata(dto.getProduct().getMetadata())
                 .status(ProductStatus.ACTIVE)
                 .isDeleted(false)
                 .build();
@@ -112,6 +123,10 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                 variant.setName(v.getName());
                 variant.setAttributes(v.getAttributes());
                 variant.setProduct(product);
+                // Raf konumu (oto parça için)
+                if (v.getShelfLocationCode() != null && !v.getShelfLocationCode().isBlank()) {
+                    variant.setShelfLocationCode(v.getShelfLocationCode());
+                }
                 variantService.save(variant);
 
                 // PRICING
@@ -159,6 +174,57 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
             }
         }
 
+        // 5. OEM NUMBERS — ilk varyanta bağla (parçacı sektörü)
+        if (dto.getOemNumbers() != null && !dto.getOemNumbers().isEmpty()) {
+            ProductVariant firstVariant = product.getVariants() != null && !product.getVariants().isEmpty()
+                    ? product.getVariants().get(0)
+                    : null;
+            if (firstVariant == null) {
+                // Varyantları DB'den yeniden yükle
+                Product reloaded = productRepository.findById(product.getId()).orElse(product);
+                firstVariant = reloaded.getVariants() != null && !reloaded.getVariants().isEmpty()
+                        ? reloaded.getVariants().get(0) : null;
+            }
+            if (firstVariant != null) {
+                for (OemNumberRequest oemReq : dto.getOemNumbers()) {
+                    if (oemReq.getOemNumber() == null || oemReq.getOemNumber().isBlank()) continue;
+                    OemNumber oem = OemNumber.builder()
+                            .variant(firstVariant)
+                            .oemNumber(oemReq.getOemNumber())
+                            .manufacturer(oemReq.getManufacturer())
+                            .isPrimary(oemReq.getIsPrimary() != null ? oemReq.getIsPrimary() : false)
+                            .build();
+                    oemNumberService.save(oem);
+                }
+                log.info("OEM numaraları kaydedildi: {} adet", dto.getOemNumbers().size());
+            }
+        }
+
+        // 6. CROSS REFERENCES — ilk varyanta bağla
+        if (dto.getCrossReferences() != null && !dto.getCrossReferences().isEmpty()) {
+            ProductVariant firstVariant = product.getVariants() != null && !product.getVariants().isEmpty()
+                    ? product.getVariants().get(0)
+                    : null;
+            if (firstVariant == null) {
+                Product reloaded = productRepository.findById(product.getId()).orElse(product);
+                firstVariant = reloaded.getVariants() != null && !reloaded.getVariants().isEmpty()
+                        ? reloaded.getVariants().get(0) : null;
+            }
+            if (firstVariant != null) {
+                for (CrossReferenceRequest crReq : dto.getCrossReferences()) {
+                    if (crReq.getCrossRefNumber() == null || crReq.getCrossRefNumber().isBlank()) continue;
+                    CrossReference cr = CrossReference.builder()
+                            .variant(firstVariant)
+                            .crossRefNumber(crReq.getCrossRefNumber())
+                            .crossRefBrand(crReq.getCrossRefBrand())
+                            .notes(crReq.getNotes())
+                            .build();
+                    crossReferenceService.save(cr);
+                }
+                log.info("Çapraz referanslar kaydedildi: {} adet", dto.getCrossReferences().size());
+            }
+        }
+
         log.info("Ürün başarıyla oluşturuldu: id={}, name={}", product.getId(), product.getName());
         return mapToResponse(product);
     }
@@ -178,6 +244,9 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
             if (dto.getProduct().getUnit() != null) product.setUnit(dto.getProduct().getUnit());
             if (dto.getProduct().getCategoryId() != null) product.setCategoryId(dto.getProduct().getCategoryId());
             if (dto.getProduct().getSku() != null) product.setSku(dto.getProduct().getSku());
+            if (dto.getProduct().getDescription() != null) product.setDescription(dto.getProduct().getDescription());
+            if (dto.getProduct().getSector() != null) product.setSector(dto.getProduct().getSector());
+            if (dto.getProduct().getMetadata() != null) product.setMetadata(dto.getProduct().getMetadata());
         }
 
         product = save(product);
@@ -295,6 +364,8 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                 .name(product.getName())
                 .slug(product.getSlug())
                 .description(product.getDescription())
+                .sector(product.getSector())
+                .metadata(product.getMetadata())
                 .categoryId(product.getCategoryId())
                 .categoryName(categoryName)
                 .brand(product.getBrand())

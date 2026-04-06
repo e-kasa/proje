@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../models/wizard_state.dart';
 import '../widgets/wizard_common_widgets.dart';
+import '../widgets/variant_image_widgets.dart';
 
 class PreviewStep extends StatelessWidget {
   final WizardState state;
@@ -15,163 +16,282 @@ class PreviewStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalStock = state.variants.fold<int>(0, (sum, v) => sum + (v.inventory?.physicalQuantity ?? 0));
-    final totalPurchaseValue = state.variants.fold<double>(0, (sum, v) {
-      final qty = v.inventory?.physicalQuantity ?? 0;
-      return sum + (qty * v.purchasePrice);
-    });
-    final totalSaleValue = state.variants.fold<double>(0, (sum, v) {
-      final qty = v.inventory?.physicalQuantity ?? 0;
-      return sum + (qty * v.salePrice);
-    });
-    final totalProfit = totalSaleValue - totalPurchaseValue;
-    final profitMargin = totalPurchaseValue > 0 ? (totalProfit / totalPurchaseValue) * 100 : 0;
+    final totalStock = state.variants
+        .fold<int>(0, (sum, v) => sum + (v.inventory?.physicalQuantity ?? 0));
+    final totalPurchase = state.variants.fold<double>(
+        0, (s, v) => s + ((v.inventory?.physicalQuantity ?? 0) * v.purchasePrice));
+    final totalSale = state.variants.fold<double>(
+        0, (s, v) => s + ((v.inventory?.physicalQuantity ?? 0) * v.salePrice));
+    final profit = totalSale - totalPurchase;
 
-    final summaryCards = [
-      {'value': '${state.variants.length}', 'label': 'Toplam Varyant', 'color': const Color(0xFF667eea)},
-      {'value': '$totalStock', 'label': 'Toplam Stok', 'color': AppColors.success},
-      {'value': '\u20ba${totalPurchaseValue.toStringAsFixed(2)}', 'label': 'Al\u0131\u015f De\u011feri', 'color': AppColors.danger},
-      {'value': '\u20ba${totalSaleValue.toStringAsFixed(2)}', 'label': 'Sat\u0131\u015f De\u011feri', 'color': AppColors.info},
-      {'value': '\u20ba${totalProfit.toStringAsFixed(2)}', 'label': 'Toplam K\u00e2r', 'color': totalProfit >= 0 ? AppColors.success : AppColors.danger},
-      {'value': '${profitMargin.toStringAsFixed(1)}%', 'label': 'K\u00e2r Marj\u0131', 'color': totalProfit >= 0 ? AppColors.success : AppColors.danger},
+    return Column(
+      children: [
+        _buildSummaryRow(totalStock, totalPurchase, totalSale, profit),
+        const SizedBox(height: 16),
+        _buildProductInfo(),
+        const SizedBox(height: 16),
+        if (state.isParcaci &&
+            (state.oemNumbers.isNotEmpty ||
+                state.crossReferences.isNotEmpty ||
+                state.shelfNumberController.text.isNotEmpty)) ...[
+          _buildAutoPartsInfo(),
+          const SizedBox(height: 16),
+        ],
+        _buildLocationInfo(),
+        const SizedBox(height: 16),
+        _buildVariantsTable(context),
+        const SizedBox(height: 16),
+        _buildImagesSection(context),
+        const SizedBox(height: 16),
+        _buildJsonPayload(context),
+      ],
+    );
+  }
+
+  // ─── Summary Row ──────────────────────────────────────────────────────────
+
+  Widget _buildSummaryRow(
+      int stock, double purchase, double sale, double profit) {
+    final items = [
+      _SummaryItem(
+          label: 'Varyant',
+          value: '${state.variants.length}',
+          color: AppColors.primary),
+      _SummaryItem(
+          label: 'Stok', value: '$stock', color: AppColors.info),
+      _SummaryItem(
+          label: 'Alış',
+          value: '₺${purchase.toStringAsFixed(0)}',
+          color: AppColors.danger),
+      _SummaryItem(
+          label: 'Satış',
+          value: '₺${sale.toStringAsFixed(0)}',
+          color: AppColors.success),
+      _SummaryItem(
+          label: 'Kâr',
+          value: '₺${profit.toStringAsFixed(0)}',
+          color: profit >= 0 ? AppColors.success : AppColors.danger),
     ];
 
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          buildResponsiveSummaryGrid(summaryCards, isMobile: isMobile),
-          const SizedBox(height: 16),
-
-          // Product Info
-          buildInfoCard(
-            '\u00dcr\u00fcn Bilgileri',
-            [
-              buildInfoRow('\u00dcr\u00fcn Ad\u0131', state.productNameController.text),
-              buildInfoRow('SKU', state.skuController.text),
-              buildInfoRow('Kategori', state.categories.firstWhere((c) => c['value'] == state.selectedCategory, orElse: () => <String, String>{'label': '-'})['label'] ?? '-'),
-              buildInfoRow('Marka', state.brandController.text.isEmpty ? '-' : state.brandController.text),
-              buildInfoRow('Birim', state.selectedUnit),
-              buildInfoRow('Al\u0131\u015f Fiyat\u0131', '\u20ba${state.basePurchasePriceController.text}'),
-              buildInfoRow('Sat\u0131\u015f Fiyat\u0131', '\u20ba${state.basePriceController.text}'),
-              buildInfoRow('KDV Oran\u0131', '% ${state.selectedVatRate}${state.vatIncluded ? " (Dahil)" : " (Hari\u00e7)"}'),
-              if (state.specialTaxRateController.text.isNotEmpty)
-                buildInfoRow('\u00d6TV Oran\u0131', '% ${state.specialTaxRateController.text}'),
-              if (state.withholdingTaxRateController.text.isNotEmpty)
-                buildInfoRow('Stopaj', '% ${state.withholdingTaxRateController.text}'),
-              if (state.taxExempt)
-                buildInfoRow('Vergi Durumu', '\u26a1 Vergiden Muaf'),
-            ],
-            isMobile: isMobile,
-          ),
-          const SizedBox(height: 16),
-
-          // Auto parts info
-          if (state.oemNumbers.isNotEmpty || state.crossReferences.isNotEmpty || state.shelfNumberController.text.isNotEmpty)
-            buildInfoCard(
-              'Oto Parca Bilgileri',
-              [
-                if (state.shelfNumberController.text.isNotEmpty)
-                  buildInfoRow('Raf Konumu', state.shelfNumberController.text),
-                if (state.oemNumbers.isNotEmpty)
-                  buildInfoRow('OEM Numaralari', state.oemNumbers.map((o) => o['oemNumber']).where((s) => s != null && s.isNotEmpty).join(', ')),
-                if (state.crossReferences.isNotEmpty)
-                  buildInfoRow('Capraz Referanslar', state.crossReferences.map((c) => '${c['crossRefNumber']} (${c['crossRefBrand']})').where((s) => s.isNotEmpty).join(', ')),
-              ],
-              isMobile: isMobile,
+    return Row(
+      children: items.map((item) {
+        return Expanded(
+          child: Container(
+            margin: EdgeInsets.only(right: item != items.last ? 8 : 0),
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+            decoration: BoxDecoration(
+              color: item.color.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: item.color.withOpacity(0.2)),
             ),
-          if (state.oemNumbers.isNotEmpty || state.crossReferences.isNotEmpty || state.shelfNumberController.text.isNotEmpty)
-            const SizedBox(height: 16),
-
-          // Store & Warehouse
-          buildInfoCard(
-            'Depo & Ma\u011faza',
-            [
-              buildInfoRow('Ma\u011faza', state.selectedStores.isEmpty ? '-' : state.selectedStores.map((v) => state.stores.firstWhere((s) => s['value'] == v, orElse: () => <String, dynamic>{'label': v})['label']?.toString() ?? v).join(', ')),
-              buildInfoRow('Depo', state.selectedWarehouses.isEmpty ? '-' : state.selectedWarehouses.map((v) => state.warehouses.firstWhere((w) => w['value'] == v, orElse: () => <String, dynamic>{'label': v})['label']?.toString() ?? v).join(', ')),
-            ],
-            isMobile: isMobile,
+            child: Column(
+              children: [
+                Text(item.value,
+                    style: TextStyle(
+                        fontSize: isMobile ? 14 : 16,
+                        fontWeight: FontWeight.w700,
+                        color: item.color)),
+                const SizedBox(height: 2),
+                Text(item.label,
+                    style: TextStyle(
+                        fontSize: 10, color: item.color.withOpacity(0.7))),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
+        );
+      }).toList(),
+    );
+  }
 
-          // Variants Table
-          _buildVariantsTable(context, totalProfit),
-          const SizedBox(height: 16),
+  // ─── Product Info ─────────────────────────────────────────────────────────
 
-          // JSON Payload
-          _buildJsonPayload(context),
+  Widget _buildProductInfo() {
+    final categoryLabel = state.categories
+        .firstWhere((c) => c['value'] == state.selectedCategory,
+            orElse: () => <String, String>{'label': '-'})['label']
+        ?.toString() ?? '-';
+
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _header(Icons.info_outline_rounded, 'Ürün Bilgileri'),
+          const SizedBox(height: 12),
+          _infoRow('Ürün Adı', state.productNameController.text),
+          _infoRow('SKU', state.skuController.text),
+          _infoRow('Kategori', categoryLabel),
+          _infoRow('Marka', state.brandController.text.isEmpty
+              ? '-'
+              : state.brandController.text),
+          _infoRow('Birim', state.selectedUnit),
+          _infoRow('Alış Fiyatı', '₺${state.basePurchasePriceController.text}'),
+          _infoRow('Satış Fiyatı', '₺${state.basePriceController.text}'),
+          _infoRow(
+              'KDV',
+              '% ${state.selectedVatRate}'
+              '${state.vatIncluded ? " (Dahil)" : " (Hariç)"}'),
+          _infoRow('Sektör', state.sectorType.displayName),
         ],
       ),
     );
   }
 
-  Widget _buildVariantsTable(BuildContext context, double totalProfit) {
-    return Container(
-      padding: EdgeInsets.all(isMobile ? 12 : 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: isMobile ? 6 : 10)],
-      ),
+  // ─── Auto Parts Info ──────────────────────────────────────────────────────
+
+  Widget _buildAutoPartsInfo() {
+    return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Varyantlar (${state.variants.length})', style: TextStyle(fontSize: isMobile ? 14 : 16, fontWeight: FontWeight.bold)),
-          SizedBox(height: isMobile ? 12 : 16),
+          _header(Icons.build_circle_rounded, 'Oto Parça Bilgileri'),
+          const SizedBox(height: 12),
+          if (state.shelfNumberController.text.isNotEmpty)
+            _infoRow('Raf Konumu', state.shelfNumberController.text),
+          if (state.oemNumbers.isNotEmpty)
+            _infoRow(
+                'OEM Numaraları',
+                state.oemNumbers
+                    .map((o) => o['oemNumber'])
+                    .where((s) => s != null && s.isNotEmpty)
+                    .join(', ')),
+          if (state.crossReferences.isNotEmpty)
+            _infoRow(
+                'Çapraz Referanslar',
+                state.crossReferences
+                    .map((c) =>
+                        '${c['crossRefNumber']} (${c['crossRefBrand']})')
+                    .where((s) => s.isNotEmpty)
+                    .join(', ')),
+        ],
+      ),
+    );
+  }
+
+  // ─── Location Info ────────────────────────────────────────────────────────
+
+  Widget _buildLocationInfo() {
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _header(Icons.location_on_rounded, 'Konum'),
+          const SizedBox(height: 12),
+          _infoRow(
+              'Mağaza',
+              state.selectedStores.isEmpty
+                  ? '-'
+                  : state.selectedStores
+                      .map((v) => state.stores
+                          .firstWhere((s) => s['value'] == v,
+                              orElse: () =>
+                                  <String, dynamic>{'label': v})['label']
+                          ?.toString() ?? v)
+                      .join(', ')),
+          _infoRow(
+              'Depo',
+              state.selectedWarehouses.isEmpty
+                  ? '-'
+                  : state.selectedWarehouses
+                      .map((v) => state.warehouses
+                          .firstWhere((w) => w['value'] == v,
+                              orElse: () =>
+                                  <String, dynamic>{'label': v})['label']
+                          ?.toString() ?? v)
+                      .join(', ')),
+        ],
+      ),
+    );
+  }
+
+  // ─── Variants Table ───────────────────────────────────────────────────────
+
+  Widget _buildVariantsTable(BuildContext context) {
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _header(Icons.table_chart_rounded,
+              'Varyantlar (${state.variants.length})'),
+          const SizedBox(height: 12),
           if (isMobile)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFF667eea).withOpacity(0.1),
+                color: AppColors.info.withOpacity(0.06),
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.swipe, size: 14, color: Color(0xFF667eea)),
-                  SizedBox(width: 4),
-                  Text('Kayd\u0131rarak t\u00fcm s\u00fctunlar\u0131 g\u00f6r\u00fcn', style: TextStyle(fontSize: 10, color: Color(0xFF667eea))),
+                  Icon(Icons.swipe_rounded, size: 14, color: AppColors.info),
+                  const SizedBox(width: 4),
+                  Text('Kaydırarak tüm sütunları görün',
+                      style:
+                          TextStyle(fontSize: 10, color: AppColors.info)),
                 ],
               ),
             ),
-          SizedBox(height: isMobile ? 8 : 0),
+          const SizedBox(height: 8),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
-              headingRowColor: WidgetStateProperty.all(const Color(0xFF667eea).withOpacity(0.1)),
-              dataRowHeight: isMobile ? 40 : 48,
-              headingRowHeight: isMobile ? 36 : 44,
-              columnSpacing: isMobile ? 12 : 32,
-              horizontalMargin: isMobile ? 6 : 16,
-              columns: [
-                DataColumn(label: Text('#', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 10 : 12))),
-                DataColumn(label: Text('Varyant', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 10 : 12))),
-                DataColumn(label: Text('SKU', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 10 : 12))),
-                DataColumn(label: Text('Stok', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 10 : 12))),
-                DataColumn(label: Text('Al\u0131\u015f Fiyat', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 10 : 12))),
-                DataColumn(label: Text('Sat\u0131\u015f Fiyat', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 10 : 12))),
-                DataColumn(label: Text('Toplam K\u00e2r', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 10 : 12))),
+              headingRowColor:
+                  WidgetStateProperty.all(AppColors.primary.withOpacity(0.04)),
+              dataRowMinHeight: 36,
+              dataRowMaxHeight: 44,
+              headingRowHeight: 40,
+              columnSpacing: isMobile ? 16 : 32,
+              horizontalMargin: 8,
+              columns: const [
+                DataColumn(
+                    label: Text('#',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 12))),
+                DataColumn(
+                    label: Text('Varyant',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 12))),
+                DataColumn(
+                    label: Text('SKU',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 12))),
+                DataColumn(
+                    label: Text('Stok',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 12))),
+                DataColumn(
+                    label: Text('Alış',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 12))),
+                DataColumn(
+                    label: Text('Satış',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 12))),
               ],
               rows: state.variants.asMap().entries.map((entry) {
-                final index = entry.key;
                 final v = entry.value;
                 final qty = v.inventory?.physicalQuantity ?? 0;
-                final profitPerUnit = v.salePrice - v.purchasePrice;
-                final variantTotalProfit = qty * profitPerUnit;
-                final textSize = isMobile ? 10.0 : 12.0;
                 return DataRow(cells: [
-                  DataCell(Text('${index + 1}', style: TextStyle(fontSize: textSize))),
-                  DataCell(Text(v.name, style: TextStyle(fontSize: textSize, fontWeight: FontWeight.w600))),
-                  DataCell(Text(v.sku, style: TextStyle(fontFamily: 'monospace', fontSize: isMobile ? 9 : 10))),
-                  DataCell(Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: qty > 0 ? AppColors.success.withOpacity(0.1) : AppColors.danger.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text('$qty', style: TextStyle(fontSize: textSize, fontWeight: FontWeight.bold, color: qty > 0 ? AppColors.success : AppColors.danger)),
-                  )),
-                  DataCell(Text('\u20ba${v.purchasePrice.toStringAsFixed(2)}', style: TextStyle(color: AppColors.danger, fontSize: textSize))),
-                  DataCell(Text('\u20ba${v.salePrice.toStringAsFixed(2)}', style: TextStyle(color: AppColors.success, fontSize: textSize))),
-                  DataCell(Text('\u20ba${variantTotalProfit.toStringAsFixed(2)}', style: TextStyle(color: variantTotalProfit >= 0 ? AppColors.success : AppColors.danger, fontSize: textSize, fontWeight: FontWeight.bold))),
+                  DataCell(Text('${entry.key + 1}',
+                      style: const TextStyle(fontSize: 12))),
+                  DataCell(Text(v.name,
+                      style: const TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.w500))),
+                  DataCell(Text(v.sku,
+                      style: const TextStyle(
+                          fontFamily: 'monospace', fontSize: 10))),
+                  DataCell(Text('$qty',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: qty > 0
+                              ? AppColors.success
+                              : AppColors.danger))),
+                  DataCell(Text('₺${v.purchasePrice.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.danger))),
+                  DataCell(Text('₺${v.salePrice.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.success))),
                 ]);
               }).toList(),
             ),
@@ -181,66 +301,183 @@ class PreviewStep extends StatelessWidget {
     );
   }
 
+  // ─── Images Section ───────────────────────────────────────────────────────
+
+  Widget _buildImagesSection(BuildContext context) {
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _header(Icons.image_rounded, 'Görseller'),
+              const Spacer(),
+              Text('${state.productImages.length} görsel',
+                  style: TextStyle(
+                      fontSize: 11, color: AppColors.textMuted)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: isMobile ? 4 : 6,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: 1,
+            ),
+            itemCount: state.productImages.length + 1,
+            itemBuilder: (context, index) {
+              if (index == state.productImages.length) {
+                return buildAddImageButton(() {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Görsel seçici yakında eklenecek...'),
+                      backgroundColor: AppColors.info,
+                    ),
+                  );
+                }, isMobile: isMobile);
+              }
+              return buildImagePreview(state.productImages[index], () {
+                state.productImages.removeAt(index);
+              });
+            },
+          ),
+          if (state.productImages.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(24),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(Icons.add_photo_alternate_rounded,
+                        size: 40, color: AppColors.textMuted.withOpacity(0.4)),
+                    const SizedBox(height: 8),
+                    Text('Henüz görsel eklenmedi',
+                        style: TextStyle(
+                            fontSize: 12, color: AppColors.textMuted)),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ─── JSON Payload ─────────────────────────────────────────────────────────
+
   Widget _buildJsonPayload(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(isMobile ? 12 : 20),
+      padding: EdgeInsets.all(isMobile ? 14 : 20),
       decoration: BoxDecoration(
-        color: const Color(0xFF2d3748),
-        borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
+        color: const Color(0xFF1e293b),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.code, color: Colors.white, size: 20),
-                  const SizedBox(width: 8),
-                  Text('Backend Payload (JSON)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: isMobile ? 13 : 14)),
-                ],
-              ),
+              const Icon(Icons.code_rounded, color: Colors.white70, size: 18),
+              const SizedBox(width: 8),
+              const Text('API Payload',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13)),
+              const Spacer(),
               IconButton(
-                icon: const Icon(Icons.copy, color: Colors.white, size: 20),
+                icon:
+                    const Icon(Icons.copy_rounded, color: Colors.white54, size: 18),
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('JSON kopyanland\u0131!'), backgroundColor: AppColors.success),
+                    const SnackBar(
+                        content: Text('JSON kopyalandı!'),
+                        backgroundColor: AppColors.success),
                   );
                 },
+                tooltip: 'Kopyala',
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Container(
-            constraints: const BoxConstraints(maxHeight: 300),
+            constraints: const BoxConstraints(maxHeight: 200),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black26,
               borderRadius: BorderRadius.circular(8),
             ),
             child: SingleChildScrollView(
               child: Text(
                 state.buildJsonPreview(),
-                style: const TextStyle(color: Colors.white70, fontFamily: 'monospace', fontSize: 11),
+                style: const TextStyle(
+                    color: Colors.white60, fontFamily: 'monospace', fontSize: 10),
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(Icons.info_outline, color: Colors.white60, size: 14),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  'Bu JSON POST /api/v1/products endpoint\'ine g\u00f6nderilecek',
-                  style: TextStyle(color: Colors.white60, fontSize: isMobile ? 10 : 11),
-                ),
-              ),
-            ],
           ),
         ],
       ),
     );
   }
+
+  // ─── Helpers ──────────────────────────────────────────────────────────────
+
+  Widget _card({required Widget child}) {
+    return Container(
+      padding: EdgeInsets.all(isMobile ? 14 : 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border.withOpacity(0.5)),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _header(IconData icon, String title) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: AppColors.primary),
+        const SizedBox(width: 8),
+        Text(title,
+            style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary)),
+      ],
+    );
+  }
+
+  Widget _infoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 130,
+            child: Text(label,
+                style: TextStyle(
+                    fontSize: 12, color: AppColors.textSecondary)),
+          ),
+          Expanded(
+            child: Text(value,
+                style: const TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w500)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryItem {
+  final String label;
+  final String value;
+  final Color color;
+
+  _SummaryItem(
+      {required this.label, required this.value, required this.color});
 }

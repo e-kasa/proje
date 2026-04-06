@@ -5,6 +5,7 @@ import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/services/service_locator.dart';
 import '../providers/pos_provider.dart';
 import 'cart_item_row.dart';
+import 'quick_customer_dialog.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 
 class CartPanel extends ConsumerWidget {
@@ -92,7 +93,23 @@ class CartPanel extends ConsumerWidget {
               ),
             ),
           const Spacer(),
-          if (posState.cartItems.isNotEmpty)
+          if (posState.cartItems.isNotEmpty) ...[
+            TextButton.icon(
+              onPressed: () => _showParkDialog(context, notifier),
+              icon: const Icon(Icons.pause_circle_outline,
+                  size: 16, color: AppColors.primary),
+              label: const Text(
+                'Park',
+                style: TextStyle(fontSize: 12, color: AppColors.primary),
+              ),
+              style: TextButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+            const SizedBox(width: 4),
             TextButton.icon(
               onPressed: () => _confirmClearCart(context, notifier),
               icon: const Icon(Icons.delete_outline,
@@ -108,6 +125,7 @@ class CartPanel extends ConsumerWidget {
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ),
+          ],
         ],
       ),
     );
@@ -322,6 +340,53 @@ class CartPanel extends ConsumerWidget {
     );
   }
 
+  void _showParkDialog(BuildContext context, PosNotifier notifier) {
+    final labelController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Siparişi Park Et'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Bu siparişe bir etiket vermek istiyorsanız yazın (opsiyonel):'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: labelController,
+              decoration: InputDecoration(
+                hintText: 'Örn: Masa 5, VIP müşteri, vb...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
+              maxLength: 50,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('İptal'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              notifier.parkCurrentOrder(label: labelController.text.isNotEmpty ? labelController.text : null);
+              Navigator.pop(ctx);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+            ),
+            child: const Text('Park Et'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _confirmClearCart(BuildContext context, PosNotifier notifier) {
     showDialog(
       context: context,
@@ -422,6 +487,24 @@ class _CustomerPickerSheetState extends State<_CustomerPickerSheet> {
     });
   }
 
+  Future<void> _showQuickCustomerDialog() async {
+    final newCustomer = await QuickCustomerDialog.show(
+      context,
+      onCustomerCreated: (customer) {
+        // Add the new customer to the list and auto-select
+        setState(() {
+          _customers.insert(0, customer);
+          _filtered = _customers;
+        });
+      },
+    );
+
+    if (newCustomer != null && mounted) {
+      // Auto-select the newly created customer
+      widget.onSelected(newCustomer);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
@@ -442,15 +525,39 @@ class _CustomerPickerSheetState extends State<_CustomerPickerSheet> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            // Title
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Text(
-                'Müşteri Seç',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
+            // Title with Create Button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  const Text(
+                    'Müşteri Seç',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const Spacer(),
+                  SizedBox(
+                    height: 36,
+                    child: ElevatedButton.icon(
+                      onPressed: _showQuickCustomerDialog,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                      ),
+                      icon: const Icon(Icons.person_add, size: 16),
+                      label: const Text(
+                        'Yeni Ekle',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             // Search

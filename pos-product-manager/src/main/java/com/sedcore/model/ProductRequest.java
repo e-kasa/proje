@@ -38,4 +38,10 @@ public class ProductRequest {
 
     private String description;
 
+    /** Sektör: parcaci, giyim, genel */
+    private String sector;
+
+    /** Sektöre özel metadata (kumaş, sezon vb.) */
+    private Map<String, Object> metadata;
+
 }

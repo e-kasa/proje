@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POS Ekranı - Mevcut vs İdeal Tasarım</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; color: #1a1a2e; }
+
+  .page-header { background: linear-gradient(135deg, #6366F1, #8B5CF6); color: white; padding: 32px; text-align: center; }
+  .page-header h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+  .page-header p { opacity: 0.85; font-size: 15px; }
+
+  .section { max-width: 1400px; margin: 0 auto; padding: 32px 24px; }
+  .section-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+  .section-subtitle { color: #64748b; font-size: 14px; margin-bottom: 24px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-current { background: #fef3c7; color: #92400e; }
+  .badge-ideal { background: #dcfce7; color: #166534; }
+  .badge-new { background: #dbeafe; color: #1e40af; }
+
+  /* DESKTOP MOCKUP */
+  .desktop-mockup { background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; }
+
+  .mock-appbar { display: flex; align-items: center; padding: 12px 20px; background: white; border-bottom: 1px solid #e2e8f0; }
+  .mock-appbar .back-btn { width: 36px; height: 36px; border-radius: 10px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-right: 12px; font-size: 16px; color: #64748b; }
+  .mock-appbar .title-area { flex: 1; }
+  .mock-appbar .title-area h2 { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+  .mock-appbar .title-area small { font-size: 11px; color: #94a3b8; }
+  .mock-appbar .actions { display: flex; gap: 8px; }
+  .mock-appbar .action-btn { width: 36px; height: 36px; border-radius: 10px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: #64748b; border: none; }
+
+  .mock-body { display: flex; height: 680px; }
+
+  /* SOL PANEL - Ürünler */
+  .product-panel { flex: 7; display: flex; flex-direction: column; background: #f8fafc; }
+  .search-area { padding: 16px; background: white; border-bottom: 1px solid #e2e8f0; }
+  .search-bar { display: flex; align-items: center; background: #f1f5f9; border-radius: 12px; padding: 10px 14px; border: 1px solid #e2e8f0; }
+  .search-bar input { border: none; background: transparent; flex: 1; font-size: 14px; outline: none; margin-left: 8px; }
+  .search-bar .icon { color: #6366f1; font-size: 18px; }
+
+  .categories { display: flex; gap: 8px; padding: 12px 16px 4px; overflow-x: auto; background: white; }
+  .cat-chip { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; border: 1.5px solid #e2e8f0; background: white; color: #64748b; transition: all 0.2s; }
+  .cat-chip.active { background: #6366f1; color: white; border-color: #6366f1; box-shadow: 0 2px 8px rgba(99,102,241,0.3); }
+  .cat-chip:hover { border-color: #6366f1; }
+
+  .product-grid { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 16px; overflow-y: auto; align-content: start; }
+  .product-card { background: white; border-radius: 12px; padding: 14px; border: 1.5px solid #e2e8f0; cursor: pointer; transition: all 0.2s; position: relative; }
+  .product-card:hover { border-color: #6366f1; box-shadow: 0 4px 12px rgba(99,102,241,0.15); transform: translateY(-2px); }
+  .product-card .p-icon { width: 40px; height: 40px; border-radius: 10px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 8px; }
+  .product-card .p-name { font-size: 13px; font-weight: 600; line-height: 1.3; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .product-card .p-sku { font-size: 10px; color: #94a3b8; margin-bottom: 6px; }
+  .product-card .p-cat { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #ede9fe; color: #6366f1; margin-bottom: 6px; }
+  .product-card .p-price { font-size: 16px; font-weight: 800; color: #6366f1; }
+  .product-card .p-stock { position: absolute; top: 8px; right: 8px; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+  .stock-ok { background: #dcfce7; color: #166534; }
+  .stock-low { background: #fef3c7; color: #92400e; }
+  .stock-out { background: #fee2e2; color: #991b1b; }
+
+  /* SAĞ PANEL - Sepet */
+  .cart-panel { flex: 3; display: flex; flex-direction: column; background: white; border-left: 1px solid #e2e8f0; min-width: 340px; }
+  .cart-header { display: flex; align-items: center; padding: 14px 16px; background: rgba(99,102,241,0.05); border-bottom: 1px solid #e2e8f0; }
+  .cart-header .cart-icon { font-size: 18px; color: #6366f1; margin-right: 8px; }
+  .cart-header .cart-title { font-size: 15px; font-weight: 700; }
+  .cart-header .cart-count { margin-left: 8px; padding: 1px 8px; border-radius: 10px; background: #6366f1; color: white; font-size: 11px; font-weight: 600; }
+  .cart-header .clear-btn { margin-left: auto; font-size: 12px; color: #ef4444; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+
+  .customer-section { display: flex; align-items: center; padding: 10px 16px; border-bottom: 1px solid #e2e8f0; cursor: pointer; }
+  .customer-section .cust-icon { font-size: 16px; color: #94a3b8; margin-right: 8px; }
+  .customer-section .cust-text { font-size: 13px; color: #94a3b8; flex: 1; }
+  .customer-section .cust-arrow { font-size: 16px; color: #94a3b8; }
+
+  .cart-items { flex: 1; overflow-y: auto; }
+  .cart-item { display: flex; align-items: center; padding: 10px 16px; border-bottom: 1px solid #f1f5f9; }
+  .cart-item .ci-info { flex: 1; }
+  .cart-item .ci-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .cart-item .ci-price { font-size: 11px; color: #94a3b8; }
+  .cart-item .ci-qty { display: flex; align-items: center; gap: 8px; }
+  .cart-item .qty-btn { width: 26px; height: 26px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: white; display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; }
+  .cart-item .qty-btn:hover { border-color: #6366f1; color: #6366f1; }
+  .cart-item .qty-num { font-size: 14px; font-weight: 700; min-width: 24px; text-align: center; }
+  .cart-item .ci-total { font-size: 14px; font-weight: 700; color: #1a1a2e; min-width: 70px; text-align: right; margin-left: 12px; }
+
+  .cart-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; }
+  .cart-empty .empty-icon { font-size: 48px; opacity: 0.3; margin-bottom: 8px; }
+
+  .cart-total { padding: 16px; background: white; border-top: 1px solid #e2e8f0; box-shadow: 0 -4px 12px rgba(0,0,0,0.04); }
+  .summary-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 13px; color: #64748b; }
+  .summary-row .val { font-weight: 600; color: #1a1a2e; }
+  .grand-total { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
+  .grand-total .label { font-size: 17px; font-weight: 800; }
+  .grand-total .amount { font-size: 22px; font-weight: 800; color: #6366f1; }
+  .pay-btn { width: 100%; padding: 14px; border: none; border-radius: 12px; background: #22c55e; color: white; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; transition: all 0.2s; }
+  .pay-btn:hover { background: #16a34a; box-shadow: 0 4px 12px rgba(34,197,94,0.3); }
+
+  /* Feature comparison */
+  .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px; }
+  .comp-card { background: white; border-radius: 14px; padding: 24px; border: 1px solid #e2e8f0; }
+  .comp-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .comp-card ul { list-style: none; }
+  .comp-card li { padding: 8px 0; font-size: 13px; display: flex; align-items: flex-start; gap: 8px; border-bottom: 1px solid #f1f5f9; }
+  .comp-card li:last-child { border: none; }
+  .check { color: #22c55e; font-size: 16px; flex-shrink: 0; }
+  .cross { color: #ef4444; font-size: 16px; flex-shrink: 0; }
+  .warn { color: #f59e0b; font-size: 16px; flex-shrink: 0; }
+
+  /* Improvement cards */
+  .improvements { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; }
+  .imp-card { background: white; border-radius: 14px; padding: 20px; border: 1px solid #e2e8f0; }
+  .imp-card .imp-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 12px; }
+  .imp-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .imp-card p { font-size: 12px; color: #64748b; line-height: 1.5; }
+
+  .divider { height: 1px; background: #e2e8f0; margin: 32px 0; }
+
+  @media (max-width: 900px) {
+    .product-grid { grid-template-columns: repeat(2, 1fr); }
+    .comparison, .improvements { grid-template-columns: 1fr; }
+    .mock-body { flex-direction: column; height: auto; }
+    .cart-panel { min-width: unset; border-left: none; border-top: 1px solid #e2e8f0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>POS Ekranı Tasarım Analizi</h1>
+  <p>Mevcut durum ve ideal tasarım karşılaştırması</p>
+</div>
+
+<!-- BÖLÜM 1: MEVCUT EKRAN MOCKUP -->
+<div class="section">
+  <div class="section-title">
+    <span>🖥️</span> Mevcut Desktop Görünüm
+    <span class="badge badge-current">Mevcut</span>
+  </div>
+  <div class="section-subtitle">Şu an kodda bulunan POS ekranının yaklaşık görünümü (Desktop - 2 panel layout)</div>
+
+  <div class="desktop-mockup">
+    <div class="mock-appbar">
+      <div class="back-btn">←</div>
+      <div class="title-area">
+        <h2>POS Satış Paneli</h2>
+        <small>Aktif Terminal: #01</small>
+      </div>
+      <div class="actions">
+        <button class="action-btn" title="Senkronize Et">🔄</button>
+      </div>
+    </div>
+
+    <div class="mock-body">
+      <!-- SOL: Ürünler -->
+      <div class="product-panel">
+        <div class="search-area">
+          <div class="search-bar">
+            <span class="icon">🔍</span>
+            <input type="text" placeholder="Ürün adı, SKU veya barkod okutun...">
+            <span style="color:#94a3b8">📷</span>
+          </div>
+        </div>
+        <div class="categories">
+          <div class="cat-chip active">Tümü</div>
+          <div class="cat-chip">Yağlar</div>
+          <div class="cat-chip">Filtreler</div>
+          <div class="cat-chip">Fren Sistemleri</div>
+          <div class="cat-chip">Elektrik</div>
+          <div class="cat-chip">Motor Parçaları</div>
+        </div>
+        <div class="product-grid">
+          <div class="product-card">
+            <span class="p-stock stock-ok">Stok: 45</span>
+            <div class="p-icon">📦</div>
+            <div class="p-name">Castrol 5W-30 Motor Yağı 4L</div>
+            <div class="p-sku">SKU: CST-5W30-4L</div>
+            <div class="p-cat">Yağlar</div>
+            <div class="p-price">₺485,00</div>
+          </div>
+          <div class="product-card">
+            <span class="p-stock stock-ok">Stok: 32</span>
+            <div class="p-icon">📦</div>
+            <div class="p-name">Mann Yağ Filtresi W712/73</div>
+            <div class="p-sku">SKU: MN-W712</div>
+            <div class="p-cat">Filtreler</div>
+            <div class="p-price">₺145,00</div>
+          </div>
+          <div class="product-card">
+            <span class="p-stock stock-low">Stok: 3</span>
+            <div class="p-icon">📦</div>
+            <div class="p-name">Bosch Ön Fren Balatası Set</div>
+            <div class="p-sku">SKU: BSH-FRN-01</div>
+            <div class="p-cat">Fren Sistemleri</div>
+            <div class="p-price">₺890,00</div>
+          </div>
+          <div class="product-card">
+            <span class="p-stock stock-ok">Stok: 18</span>
+            <div class="p-icon">📦</div>
+            <div class="p-name">NGK Buji BKR6E</div>
+            <div class="p-sku">SKU: NGK-BKR6E</div>
+            <div class="p-cat">Motor Parçaları</div>
+            <div class="p-price">₺65,00</div>
+          </div>
+          <div class="product-card">
+            <span class="p-stock stock-out">Stok: 0</span>
+            <div class="p-icon" style="opacity:0.4">📦</div>
+            <div class="p-name" style="opacity:0.4">Hella Far Ampulü H7</div>
+            <div class="p-sku">SKU: HLA-H7</div>
+            <div class="p-cat">Elektrik</div>
+            <div class="p-price" style="opacity:0.4">₺120,00</div>
+          </div>
+          <div class="product-card">
+            <span class="p-stock stock-ok">Stok: 25</span>
+            <div class="p-icon">📦</div>
+            <div class="p-name">Mobil 1 ESP 5W-30 1L</div>
+            <div class="p-sku">SKU: MB1-5W30</div>
+            <div class="p-cat">Yağlar</div>
+            <div class="p-price">₺245,00</div>
+          </div>
+          <div class="product-card">
+            <span class="p-stock stock-ok">Stok: 12</span>
+            <div class="p-icon">📦</div>
+            <div class="p-name">Denso İridium Buji IK20</div>
+            <div class="p-sku">SKU: DNS-IK20</div>
+            <div class="p-cat">Motor Parçaları</div>
+            <div class="p-price">₺95,00</div>
+          </div>
+          <div class="product-card">
+            <span class="p-stock stock-low">Stok: 4</span>
+            <div class="p-icon">📦</div>
+            <div class="p-name">ATE Fren Diski Ön</div>
+            <div class="p-sku">SKU: ATE-FD01</div>
+            <div class="p-cat">Fren Sistemleri</div>
+            <div class="p-price">₺650,00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SAĞ: Sepet -->
+      <div class="cart-panel">
+        <div class="cart-header">
+          <span class="cart-icon">🛒</span>
+          <span class="cart-title">Sepet</span>
+          <span class="cart-count">3</span>
+          <span class="clear-btn">🗑️ Temizle</span>
+        </div>
+
+        <div class="customer-section">
+          <span class="cust-icon">👤</span>
+          <span class="cust-text">Müşteri Seç (Opsiyonel)</span>
+          <span class="cust-arrow">›</span>
+        </div>
+
+        <div class="cart-items">
+          <div class="cart-item">
+            <div class="ci-info">
+              <div class="ci-name">Castrol 5W-30 4L</div>
+              <div class="ci-price">₺485,00 × 2</div>
+            </div>
+            <div class="ci-qty">
+              <button class="qty-btn">−</button>
+              <span class="qty-num">2</span>
+              <button class="qty-btn">+</button>
+            </div>
+            <div class="ci-total">₺970,00</div>
+          </div>
+          <div class="cart-item">
+            <div class="ci-info">
+              <div class="ci-name">Mann Yağ Filtresi</div>
+              <div class="ci-price">₺145,00 × 1</div>
+            </div>
+            <div class="ci-qty">
+              <button class="qty-btn">−</button>
+              <span class="qty-num">1</span>
+              <button class="qty-btn">+</button>
+            </div>
+            <div class="ci-total">₺145,00</div>
+          </div>
+          <div class="cart-item">
+            <div class="ci-info">
+              <div class="ci-name">NGK Buji BKR6E</div>
+              <div class="ci-price">₺65,00 × 4</div>
+            </div>
+            <div class="ci-qty">
+              <button class="qty-btn">−</button>
+              <span class="qty-num">4</span>
+              <button class="qty-btn">+</button>
+            </div>
+            <div class="ci-total">₺260,00</div>
+          </div>
+        </div>
+
+        <div class="cart-total">
+          <div class="summary-row"><span>Ara Toplam</span><span class="val">₺1.375,00</span></div>
+          <div class="summary-row"><span>KDV (%18)</span><span class="val">₺247,50</span></div>
+          <hr style="border:none;border-top:1px solid #e2e8f0;margin:8px 0">
+          <div class="grand-total">
+            <span class="label">TOPLAM</span>
+            <span class="amount">₺1.622,50</span>
+          </div>
+          <button class="pay-btn">💳 Ödeme Yap</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BÖLÜM 2: MEVCUT DURUM vs İDEAL -->
+<div class="section">
+  <div class="section-title">📊 Mevcut Durum vs İdeal Tasarım</div>
+  <div class="section-subtitle">Hangi özellikler var, hangileri eksik</div>
+
+  <div class="comparison">
+    <div class="comp-card">
+      <h3><span class="badge badge-current">Mevcut</span> Şu An Var Olan Özellikler</h3>
+      <ul>
+        <li><span class="check">✓</span> Responsive 2-panel desktop layout (70/30)</li>
+        <li><span class="check">✓</span> Mobil layout + FAB ile sepet erişimi</li>
+        <li><span class="check">✓</span> Ürün arama (isim, SKU, barkod) + API entegrasyonu</li>
+        <li><span class="check">✓</span> Kategori filtreleme (horizontal chips)</li>
+        <li><span class="check">✓</span> Sepete ekleme, miktar değiştirme, silme</li>
+        <li><span class="check">✓</span> Yüzdelik indirim uygulama</li>
+        <li><span class="check">✓</span> Müşteri seçimi (bottom sheet)</li>
+        <li><span class="check">✓</span> 4 ödeme yöntemi (Nakit, Kart, Havale, Karma)</li>
+        <li><span class="check">✓</span> Para üstü hesaplama</li>
+        <li><span class="check">✓</span> Hızlı tutar butonları (nakit)</li>
+        <li><span class="check">✓</span> Satış API'ye gönderme</li>
+        <li><span class="check">✓</span> Loading/error state yönetimi</li>
+        <li><span class="warn">⚠</span> Barkod girişi (sadece manual input)</li>
+        <li><span class="warn">⚠</span> Ürün görselleri yok (placeholder ikon)</li>
+      </ul>
+    </div>
+
+    <div class="comp-card">
+      <h3><span class="badge badge-ideal">İdeal</span> Olması Gereken Özellikler</h3>
+      <ul>
+        <li><span class="cross">✗</span> <strong>Varyant seçimi</strong> — Birden fazla varyantı olan ürünlerde seçim yapabilme</li>
+        <li><span class="cross">✗</span> <strong>Stok kontrolü</strong> — Sepete eklerken stok aşımı engelleme</li>
+        <li><span class="cross">✗</span> <strong>Sabit tutar indirimi</strong> — Yüzde yerine ₺ bazında indirim</li>
+        <li><span class="cross">✗</span> <strong>Fiş/Fatura yazdırma</strong> — Satış sonrası yazdırma seçeneği</li>
+        <li><span class="cross">✗</span> <strong>Son satışlar</strong> — POS ekranında son satış geçmişi görüntüleme</li>
+        <li><span class="cross">✗</span> <strong>Bekleyen sipariş (Park)</strong> — Satışı bekletip başka müşteriye geçme</li>
+        <li><span class="cross">✗</span> <strong>Klavye kısayolları</strong> — F1: Ödeme, F2: Müşteri, F5: Yenile</li>
+        <li><span class="cross">✗</span> <strong>Ürün görselleri</strong> — Gerçek ürün fotoğrafları</li>
+        <li><span class="cross">✗</span> <strong>Kasa açılış/kapanış</strong> — Vardiya/kasa yönetimi</li>
+        <li><span class="cross">✗</span> <strong>Offline modu</strong> — İnternet kesintisinde satış yapabilme</li>
+        <li><span class="cross">✗</span> <strong>Müşteri oluşturma</strong> — POS'tan yeni müşteri ekleyebilme</li>
+        <li><span class="cross">✗</span> <strong>Ondalık miktar desteği</strong> — Kilogram bazlı ürünler için</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- BÖLÜM 3: ÖNERİLEN İYİLEŞTİRMELER -->
+<div class="section">
+  <div class="section-title">🚀 Önerilen İyileştirmeler</div>
+  <div class="section-subtitle">Öncelik sırasına göre yapılması gerekenler</div>
+
+  <div class="improvements">
+    <div class="imp-card">
+      <div class="imp-icon" style="background:#fef3c7">🔴</div>
+      <h4>1. Derleme Hatalarını Düzelt</h4>
+      <p>Şu an POS ekranında ~15+ derleme hatası var. Önce bunların düzeltilmesi gerekiyor (pos_screen, pos_sales_screen, widget dosyaları).</p>
+    </div>
+    <div class="imp-card">
+      <div class="imp-icon" style="background:#dbeafe">🎯</div>
+      <h4>2. Varyant Seçimi Ekle</h4>
+      <p>Ürün kartına tıklayınca varyant varsa seçim dialog'u göster. Renk, boyut gibi seçenekler.</p>
+    </div>
+    <div class="imp-card">
+      <div class="imp-icon" style="background:#dcfce7">📊</div>
+      <h4>3. Stok Kontrolü Güçlendir</h4>
+      <p>Sepete eklerken ve miktar artırırken stok aşımını engelle. Kullanıcıya uyarı göster.</p>
+    </div>
+    <div class="imp-card">
+      <div class="imp-icon" style="background:#fce7f3">🧾</div>
+      <h4>4. Fiş/Fatura Yazdırma</h4>
+      <p>Satış tamamlandıktan sonra fiş yazdırma seçeneği. Termal yazıcı veya PDF desteği.</p>
+    </div>
+    <div class="imp-card">
+      <div class="imp-icon" style="background:#ede9fe">⏸️</div>
+      <h4>5. Bekleyen Sipariş (Park)</h4>
+      <p>Mevcut sepeti kaydedip yeni müşteriye geçme. Birden fazla açık sipariş yönetimi.</p>
+    </div>
+    <div class="imp-card">
+      <div class="imp-icon" style="background:#f0fdf4">⌨️</div>
+      <h4>6. Klavye Kısayolları</h4>
+      <p>F1: Ödeme, F2: Müşteri, F5: Yenile, Escape: İptal, Enter: Sepete ekle, Barkod: auto-focus.</p>
+    </div>
+  </div>
+</div>
+
+<!-- BÖLÜM 4: EKRAN AKIŞI -->
+<div class="section">
+  <div class="section-title">🔄 Mevcut Ekran Akışı</div>
+  <div class="section-subtitle">POS ekranında kullanıcı senaryosu</div>
+
+  <div style="background:white;border-radius:14px;padding:24px;border:1px solid #e2e8f0;">
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="flex:1;min-width:200px;text-align:center;padding:16px;">
+        <div style="width:48px;height:48px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 8px">1</div>
+        <strong style="font-size:13px">Ürün Ara/Seç</strong>
+        <p style="font-size:11px;color:#64748b;margin-top:4px">Arama çubuğu veya kategoriden ürün bul ve tıkla</p>
+      </div>
+      <div style="display:flex;align-items:center;font-size:24px;color:#94a3b8;padding-top:20px">→</div>
+      <div style="flex:1;min-width:200px;text-align:center;padding:16px;">
+        <div style="width:48px;height:48px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 8px">2</div>
+        <strong style="font-size:13px">Sepeti Düzenle</strong>
+        <p style="font-size:11px;color:#64748b;margin-top:4px">Miktar ayarla, indirim uygula, müşteri seç</p>
+      </div>
+      <div style="display:flex;align-items:center;font-size:24px;color:#94a3b8;padding-top:20px">→</div>
+      <div style="flex:1;min-width:200px;text-align:center;padding:16px;">
+        <div style="width:48px;height:48px;border-radius:50%;background:#fef3c7;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 8px">3</div>
+        <strong style="font-size:13px">Ödeme Yap</strong>
+        <p style="font-size:11px;color:#64748b;margin-top:4px">Ödeme yöntemini seç, tutarı gir</p>
+      </div>
+      <div style="display:flex;align-items:center;font-size:24px;color:#94a3b8;padding-top:20px">→</div>
+      <div style="flex:1;min-width:200px;text-align:center;padding:16px;">
+        <div style="width:48px;height:48px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 8px">4</div>
+        <strong style="font-size:13px">Tamamla</strong>
+        <p style="font-size:11px;color:#64748b;margin-top:4px">Satışı kaydet, başarı mesajı</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BÖLÜM 5: DOSYA YAPISI -->
+<div class="section">
+  <div class="section-title">📁 POS Dosya Yapısı</div>
+  <div style="background:white;border-radius:14px;padding:24px;border:1px solid #e2e8f0;font-family:monospace;font-size:13px;line-height:2;">
+    <div>lib/screens/pos/</div>
+    <div style="padding-left:20px">├── <strong>pos_screen.dart</strong> <span style="color:#6366f1">(Ana POS ekranı - Riverpod)</span></div>
+    <div style="padding-left:20px">├── <strong>pos_sales_screen.dart</strong> <span style="color:#94a3b8">(Eski/legacy satış ekranı)</span></div>
+    <div style="padding-left:20px">├── providers/</div>
+    <div style="padding-left:40px">│   └── <strong>pos_provider.dart</strong> <span style="color:#22c55e">(State yönetimi - PosNotifier)</span></div>
+    <div style="padding-left:20px">└── widgets/</div>
+    <div style="padding-left:40px">    ├── <strong>cart_panel.dart</strong> <span style="color:#6366f1">(Sepet paneli)</span></div>
+    <div style="padding-left:40px">    ├── <strong>cart_item_row.dart</strong> <span style="color:#6366f1">(Sepet satırı)</span></div>
+    <div style="padding-left:40px">    ├── <strong>payment_panel.dart</strong> <span style="color:#6366f1">(Ödeme bottom sheet)</span></div>
+    <div style="padding-left:40px">    ├── <strong>product_grid_item.dart</strong> <span style="color:#6366f1">(Ürün kartı)</span></div>
+    <div style="padding-left:40px">    ├── <strong>product_search_panel.dart</strong> <span style="color:#94a3b8">(Alternatif arama - kullanılmıyor)</span></div>
+    <div style="padding-left:40px">    └── <strong>category_filter_bar.dart</strong> <span style="color:#6366f1">(Kategori chip'leri)</span></div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -3,11 +3,13 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/config/sector_config.dart';
 import '../../../../services/service_locator.dart';
 import '../../../../models/bulk_import_models.dart';
 import 'data_models.dart';
 
 export 'data_models.dart';
+export '../../../../core/config/sector_config.dart' show SectorType, SectorTypeExt;
 
 part 'wizard_actions.dart';
 
@@ -46,6 +48,24 @@ class RetainedFields {
 class WizardState extends ChangeNotifier {
   /// Public trigger for notifyListeners, used by extensions in wizard_actions.dart.
   void notify() => notifyListeners();
+
+  // Sector — kullanıcının şirket sektörüne göre otomatik belirlenir
+  SectorType sectorType = SectorType.general;
+
+  /// API/payload'a gönderilecek sektör string'i
+  String get sector => switch (sectorType) {
+    SectorType.autoParts  => 'parcaci',
+    SectorType.footwear   => 'giyim',
+    SectorType.technology => 'genel',
+    SectorType.general    => 'genel',
+  };
+
+  /// Parçacı sektörü mü?
+  bool get isParcaci => sectorType == SectorType.autoParts;
+
+  /// Giyim/tekstil sektörü mü?
+  bool get isGiyim => sectorType == SectorType.footwear;
+
   // Step 1: Basic Info
   final productNameController = TextEditingController();
   final skuController = TextEditingController();
@@ -62,6 +82,10 @@ class WizardState extends ChangeNotifier {
   final specialTaxRateController = TextEditingController();
   final withholdingTaxRateController = TextEditingController();
   bool taxExempt = false;
+
+  // Giyim-specific
+  final fabricController = TextEditingController();
+  final seasonController = TextEditingController();
 
   // Step 2: Variants
   String productType = 'simple';
@@ -120,6 +144,10 @@ class WizardState extends ChangeNotifier {
 
   Map<String, List<ProductAttribute>> getPresetTemplates() {
     return {
+      'auto_parts': [
+        ProductAttribute(name: 'Marka', icon: Icons.build_circle, values: ['Orijinal', 'Muadil', 'Yan Sanayi']),
+        ProductAttribute(name: 'Araç Grubu', icon: Icons.directions_car, values: []),
+      ],
       'clothing': [
         ProductAttribute(name: 'Renk', icon: Icons.palette, values: ['K\u0131rm\u0131z\u0131', 'Mavi', 'Siyah', 'Beyaz']),
         ProductAttribute(name: 'Beden', icon: Icons.straighten, values: ['XS', 'S', 'M', 'L', 'XL', 'XXL']),
@@ -134,6 +162,20 @@ class WizardState extends ChangeNotifier {
         ProductAttribute(name: 'Numara', icon: Icons.straighten, values: ['38', '39', '40', '41', '42', '43', '44', '45']),
       ],
     };
+  }
+
+  /// Returns sector-appropriate presets
+  List<String> getSectorPresets() {
+    switch (sectorType) {
+      case SectorType.autoParts:
+        return ['auto_parts', 'custom'];
+      case SectorType.footwear:
+        return ['clothing', 'shoes', 'custom'];
+      case SectorType.technology:
+        return ['electronics', 'custom'];
+      case SectorType.general:
+        return ['clothing', 'electronics', 'shoes', 'auto_parts', 'custom'];
+    }
   }
 
   // ─── Init / Load ─────────────────────────────────────────────────────────
@@ -340,31 +382,30 @@ class WizardState extends ChangeNotifier {
   /// Returns null if valid, or an error message string.
   String? validateStep(int step) {
     switch (step) {
-      case 0:
+      case 0: // Ürün Bilgileri
         if (productNameController.text.trim().isEmpty) {
-          return '\u26a0\ufe0f \u00dcr\u00fcn ad\u0131 zorunludur';
+          return 'Ürün adı zorunludur';
         }
         if (productNameController.text.trim().length < 3) {
-          return '\u26a0\ufe0f \u00dcr\u00fcn ad\u0131 en az 3 karakter olmal\u0131d\u0131r';
+          return 'Ürün adı en az 3 karakter olmalıdır';
         }
         if (selectedCategory == null) {
-          return '\u26a0\ufe0f Kategori se\u00e7imi zorunludur';
+          return 'Kategori seçimi zorunludur';
         }
         final basePrice = double.tryParse(basePriceController.text) ?? 0;
         if (basePrice <= 0) {
-          return '\u26a0\ufe0f Ge\u00e7erli bir fiyat giriniz (0\'dan b\u00fcy\u00fck olmal\u0131)';
+          return 'Geçerli bir satış fiyatı giriniz';
         }
         return null;
-      case 1:
-        // Warning only, not blocking
-        return null;
-      case 2:
+      case 1: // Varyant & Stok
         if (selectedStores.isEmpty) {
-          return '\u26a0\ufe0f En az bir ma\u011faza se\u00e7imi zorunludur';
+          return 'En az bir mağaza seçimi zorunludur';
         }
         if (selectedWarehouses.isEmpty) {
-          return '\u26a0\ufe0f En az bir depo se\u00e7imi zorunludur';
+          return 'En az bir depo seçimi zorunludur';
         }
+        return null;
+      case 2: // Önizleme
         return null;
       default:
         return null;
@@ -376,6 +417,7 @@ class WizardState extends ChangeNotifier {
   /// Captures fields that should be retained when adding multiple products
   Map<String, dynamic> captureRetainedFields() {
     return {
+      'sectorType': sectorType.name,
       'categoryId': selectedCategory,
       'unit': selectedUnit,
       'vatRate': selectedVatRate,
@@ -390,6 +432,13 @@ class WizardState extends ChangeNotifier {
 
   /// Applies previously captured retained fields
   void applyRetainedFields(Map<String, dynamic> retained) {
+    final sectorName = retained['sectorType'] as String?;
+    if (sectorName != null) {
+      sectorType = SectorType.values.firstWhere(
+        (e) => e.name == sectorName,
+        orElse: () => SectorType.general,
+      );
+    }
     selectedCategory = retained['categoryId'] as String?;
     selectedUnit = retained['unit'] as String? ?? 'pcs';
     selectedVatRate = retained['vatRate'] as double? ?? 20.0;
@@ -434,6 +483,8 @@ class WizardState extends ChangeNotifier {
     oemNumbers = [];
     crossReferences = [];
     productImages = [];
+    fabricController.clear();
+    seasonController.clear();
 
     generateSKU();
     initializeDefaultVariant();

@@ -34,6 +34,8 @@ public class ProductResponse {
     private BigDecimal basePrice;
 	private ProductStatus status;
     private String description;
+    private String sector;
+    private Map<String, Object> metadata;
 
     // Stok & Konum bilgileri
     private String storeId;

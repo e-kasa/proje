@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import '../providers/pos_provider.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'receipt_preview_dialog.dart';
 
 class PaymentPanel extends ConsumerStatefulWidget {
   const PaymentPanel({super.key});
@@ -620,6 +621,9 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
   }
 
   void _showSuccessDialog(BuildContext context) {
+    final posState = ref.read(posProvider);
+    final saleData = posState.lastSaleData;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -631,7 +635,7 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
             Container(
               width: 64,
               height: 64,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.bgSuccess,
                 shape: BoxShape.circle,
               ),
@@ -661,18 +665,46 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
           ],
         ),
         actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => Navigator.pop(ctx),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text('Kapat'),
                 ),
               ),
-              child: const Text('Tamam'),
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 2,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    if (saleData != null) {
+                      showDialog(
+                        context: context,
+                        builder: (_) => ReceiptPreviewDialog(saleData: saleData),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.receipt_long, size: 18),
+                  label: const Text('Fiş Görüntüle'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

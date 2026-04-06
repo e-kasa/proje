@@ -65,6 +65,25 @@ extension WizardCategoryTree on WizardState {
 }
 
 extension WizardPayload on WizardState {
+  /// Sektöre özel metadata oluşturur
+  Map<String, dynamic>? _buildSectorMetadata() {
+    switch (sector) {
+      case 'giyim':
+        final meta = <String, dynamic>{};
+        if (fabricController.text.isNotEmpty) meta['fabric'] = fabricController.text;
+        if (seasonController.text.isNotEmpty) meta['season'] = seasonController.text;
+        return meta.isEmpty ? null : meta;
+      case 'parcaci':
+        final meta = <String, dynamic>{};
+        if (shelfNumberController.text.isNotEmpty) meta['shelfLocation'] = shelfNumberController.text;
+        if (oemNumbers.isNotEmpty) meta['oemCount'] = oemNumbers.length;
+        if (crossReferences.isNotEmpty) meta['crossRefCount'] = crossReferences.length;
+        return meta.isEmpty ? null : meta;
+      default:
+        return null;
+    }
+  }
+
   Map<String, dynamic> buildPayload() {
     final hasPurchase = (selectedSupplier?.isNotEmpty == true) &&
         invoiceNumberController.text.isNotEmpty &&
@@ -77,6 +96,8 @@ extension WizardPayload on WizardState {
         'brand': brandController.text,
         'unit': selectedUnit,
         'description': descriptionController.text,
+        'sector': sector,
+        'metadata': _buildSectorMetadata(),
       },
       'oemNumbers': oemNumbers
           .where((o) => (o['oemNumber'] ?? '').isNotEmpty)

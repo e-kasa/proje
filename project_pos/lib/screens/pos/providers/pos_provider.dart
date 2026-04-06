@@ -2,6 +2,40 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../services/service_locator.dart';
 import '../../../core/utils/app_logger.dart';
 
+// ─── Parked Order Model ────────────────────────────────────────────
+class ParkedOrder {
+  final List<CartItem> items;
+  final Map<String, dynamic>? customer;
+  final DateTime parkedAt;
+  final String? label;
+  final double total;
+
+  ParkedOrder({
+    required this.items,
+    this.customer,
+    required this.parkedAt,
+    this.label,
+    required this.total,
+  });
+
+  String get displayLabel => label ?? 'Sipariş #${parkedAt.millisecondsSinceEpoch ~/ 1000}';
+
+  String get timeAgo {
+    final now = DateTime.now();
+    final diff = now.difference(parkedAt);
+
+    if (diff.inSeconds < 60) {
+      return '${diff.inSeconds}s önce';
+    } else if (diff.inMinutes < 60) {
+      return '${diff.inMinutes}dk önce';
+    } else if (diff.inHours < 24) {
+      return '${diff.inHours}s önce';
+    } else {
+      return '${diff.inDays}g önce';
+    }
+  }
+}
+
 // ─── Cart Item Model ───────────────────────────────────────────────
 class CartItem {
   final Map<String, dynamic> product;
@@ -84,6 +118,10 @@ class PosState {
   final String searchQuery;
   final bool isLoadingProducts;
 
+  final List<ParkedOrder> parkedOrders;
+  final String? lastSaleId;
+  final Map<String, dynamic>? lastSaleData;
+
   const PosState({
     this.cartItems = const [],
     this.selectedCustomer,
@@ -100,6 +138,9 @@ class PosState {
     this.selectedCategoryId,
     this.searchQuery = '',
     this.isLoadingProducts = false,
+    this.parkedOrders = const [],
+    this.lastSaleId,
+    this.lastSaleData,
   });
 
   int get totalItems => cartItems.fold(0, (s, i) => s + i.quantity);
@@ -167,6 +208,10 @@ class PosState {
     bool clearCategory = false,
     String? searchQuery,
     bool? isLoadingProducts,
+    List<ParkedOrder>? parkedOrders,
+    String? lastSaleId,
+    bool clearLastSale = false,
+    Map<String, dynamic>? lastSaleData,
   }) {
     return PosState(
       cartItems: cartItems ?? this.cartItems,
@@ -184,6 +229,9 @@ class PosState {
       selectedCategoryId: clearCategory ? null : (selectedCategoryId ?? this.selectedCategoryId),
       searchQuery: searchQuery ?? this.searchQuery,
       isLoadingProducts: isLoadingProducts ?? this.isLoadingProducts,
+      parkedOrders: parkedOrders ?? this.parkedOrders,
+      lastSaleId: clearLastSale ? null : (lastSaleId ?? this.lastSaleId),
+      lastSaleData: clearLastSale ? null : (lastSaleData ?? this.lastSaleData),
     );
   }
 }
@@ -230,15 +278,34 @@ class PosNotifier extends StateNotifier<PosState> {
     }
   }
 
-  void addToCart(Map<String, dynamic> product) {
+  void addToCart(Map<String, dynamic> product, {Map<String, dynamic>? variant}) {
+    // Use variant if provided, otherwise use product
+    final productData = variant ?? product;
+    final stock = (productData['stock'] as num?)?.toInt() ?? 0;
     final items = List<CartItem>.from(state.cartItems);
     final productId = product['id'].toString();
-    final index = items.indexWhere((i) => i.productId == productId);
+    final variantId = variant?['id']?.toString() ?? productId;
+
+    // Check if product/variant is already in cart
+    final index = items.indexWhere((i) => i.variantId == variantId);
 
     if (index >= 0) {
-      items[index] = items[index].copyWith(quantity: items[index].quantity + 1);
+      final currentQty = items[index].quantity;
+      final newQty = currentQty + 1;
+
+      // Check if new quantity exceeds stock
+      if (newQty > stock) {
+        state = state.copyWith(error: 'Stok yetersiz! Mevcut stok: $stock');
+        return;
+      }
+      items[index] = items[index].copyWith(quantity: newQty);
     } else {
-      items.add(CartItem(product: product));
+      // Check if stock is available for new item
+      if (stock <= 0) {
+        state = state.copyWith(error: 'Ürün stokta yok!');
+        return;
+      }
+      items.add(CartItem(product: productData));
     }
     state = state.copyWith(cartItems: items, clearError: true);
   }
@@ -250,13 +317,28 @@ class PosNotifier extends StateNotifier<PosState> {
       orElse: () => {},
     );
     if (found.isNotEmpty) {
-      addToCart(found);
+      final variants = found['variants'] as List? ?? [];
+      if (variants.length > 1) {
+        // Multiple variants - cannot auto-add by barcode
+        state = state.copyWith(error: 'Ürün birden fazla varyanta sahip. Lütfen manuel olarak seçin.');
+      } else if (variants.length == 1) {
+        addToCart(found, variant: variants[0]);
+      } else {
+        addToCart(found);
+      }
     } else {
       // Barcode ile ürün bulunamadı — API'den ara
       try {
         final product = await _ref.read(productServiceProvider).getProducts(search: barcode);
         if (product.isNotEmpty) {
-          addToCart(product.first);
+          final variants = product.first['variants'] as List? ?? [];
+          if (variants.length > 1) {
+            state = state.copyWith(error: 'Ürün birden fazla varyanta sahip. Lütfen manuel olarak seçin.');
+          } else if (variants.length == 1) {
+            addToCart(product.first, variant: variants[0]);
+          } else {
+            addToCart(product.first);
+          }
           // Cache ürünü listeye ekle
           state = state.copyWith(products: [...state.products, product.first]);
         } else {
@@ -280,8 +362,17 @@ class PosNotifier extends StateNotifier<PosState> {
     final items = List<CartItem>.from(state.cartItems);
     final index = items.indexWhere((i) => i.productId == productId);
     if (index >= 0) {
-      items[index] = items[index].copyWith(quantity: quantity);
-      state = state.copyWith(cartItems: items);
+      final item = items[index];
+      final stock = item.stock;
+
+      // Check if quantity exceeds available stock
+      if (quantity > stock) {
+        state = state.copyWith(error: 'Stok yetersiz! Mevcut stok: $stock');
+        return;
+      }
+
+      items[index] = item.copyWith(quantity: quantity);
+      state = state.copyWith(cartItems: items, clearError: true);
     }
   }
 
@@ -319,6 +410,32 @@ class PosNotifier extends StateNotifier<PosState> {
     if (!state.canSubmit) return false;
     state = state.copyWith(isSubmitting: true, clearError: true);
     try {
+      // Capture sale summary before clearing cart
+      final saleSummary = {
+        'customer': state.selectedCustomer,
+        'paymentMethod': state.paymentMethod.label,
+        'paymentMethodApi': state.paymentMethod.apiValue,
+        'subtotal': state.subtotal,
+        'totalDiscount': state.totalDiscount,
+        'totalTax': state.totalTax,
+        'grandTotal': state.grandTotal,
+        'cashReceived': state.cashReceived,
+        'changeAmount': state.changeAmount,
+        'note': state.note,
+        'items': state.cartItems.map((item) => {
+          'name': item.name,
+          'variantId': item.variantId,
+          'quantity': item.quantity,
+          'unitPrice': item.unitPrice,
+          'discountRate': item.discount,
+          'lineTotal': item.totalWithTax,
+          'sku': item.sku,
+          'barcode': item.barcode,
+        }).toList(),
+        'totalItems': state.totalItems,
+        'saleDate': DateTime.now().toIso8601String(),
+      };
+
       final saleData = {
         'paidAmount': state.grandTotal,
         'customerId': state.selectedCustomer?['id']?.toString(),
@@ -331,13 +448,35 @@ class PosNotifier extends StateNotifier<PosState> {
           'discountRate': item.discount,
         }).toList(),
       };
-      await _ref.read(salesServiceProvider).createSale(saleData);
-      state = state.copyWith(isSubmitting: false, successMessage: 'Satış tamamlandı!');
+      final result = await _ref.read(salesServiceProvider).createSale(saleData);
+      final saleId = result['id']?.toString() ?? result['_id']?.toString();
+
+      saleSummary['saleId'] = saleId;
+      saleSummary['saleNumber'] = result['saleNumber']?.toString() ?? saleId;
+
+      state = state.copyWith(
+        isSubmitting: false,
+        successMessage: 'Satış tamamlandı!',
+        lastSaleId: saleId,
+        lastSaleData: saleSummary,
+      );
       clearCart();
       _loadInitialData();
       return true;
     } catch (e) {
       state = state.copyWith(isSubmitting: false, error: e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> printLastReceipt() async {
+    final saleId = state.lastSaleId;
+    if (saleId == null) return false;
+    try {
+      await _ref.read(salesServiceProvider).printReceipt(saleId);
+      return true;
+    } catch (e) {
+      state = state.copyWith(error: 'Fiş yazdırılamadı: $e');
       return false;
     }
   }
@@ -352,6 +491,58 @@ class PosNotifier extends StateNotifier<PosState> {
 
   Future<void> refreshProducts() async => _loadInitialData();
   void clearMessages() => state = state.copyWith(clearError: true, clearSuccess: true);
+
+  // ─── Parked Orders Methods ─────────────────────────────────────
+  void parkCurrentOrder({String? label}) {
+    if (state.cartItems.isEmpty) {
+      state = state.copyWith(error: 'Sepet boş, park edilecek sipariş yok');
+      return;
+    }
+
+    final parkedOrder = ParkedOrder(
+      items: List<CartItem>.from(state.cartItems),
+      customer: state.selectedCustomer,
+      parkedAt: DateTime.now(),
+      label: label,
+      total: state.grandTotal,
+    );
+
+    final updatedParked = List<ParkedOrder>.from(state.parkedOrders);
+    updatedParked.add(parkedOrder);
+
+    state = state.copyWith(
+      parkedOrders: updatedParked,
+      clearError: true,
+      successMessage: '${label ?? "Sipariş"} park edildi!',
+    );
+
+    clearCart();
+  }
+
+  void restoreParkedOrder(int index) {
+    if (index < 0 || index >= state.parkedOrders.length) return;
+
+    final parked = state.parkedOrders[index];
+
+    state = state.copyWith(
+      cartItems: List<CartItem>.from(parked.items),
+      selectedCustomer: parked.customer,
+      clearError: true,
+    );
+
+    // Remove from parked
+    final updated = List<ParkedOrder>.from(state.parkedOrders);
+    updated.removeAt(index);
+    state = state.copyWith(parkedOrders: updated);
+  }
+
+  void deleteParkedOrder(int index) {
+    if (index < 0 || index >= state.parkedOrders.length) return;
+
+    final updated = List<ParkedOrder>.from(state.parkedOrders);
+    updated.removeAt(index);
+    state = state.copyWith(parkedOrders: updated);
+  }
 }
 
 final posProvider = StateNotifierProvider.autoDispose<PosNotifier, PosState>((ref) => PosNotifier(ref));

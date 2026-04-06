@@ -902,30 +902,74 @@ VALUES
      'cus-00001-0000-0000-0000-000000000002','sal-00001-0000-0000-0000-000000000002',
      'BANK_TRANSFER',10000.00,CURRENT_TIMESTAMP,'SAL-2026-002 kapora odemesi',false,false)
 ON CONFLICT (id) DO NOTHING;
-insert into role_def (id, create_time, create_user, last_modified_time, update_user, company_code, code, description,
-                      is_active, is_system_role, name)
-values ('6d728059-90fb-4753-b295-953c3c5b2035', '2011-05-16 15:36:38', 'sedat', '2011-05-16 15:36:38', null, 'SEDCORE',
-        'USER', 'user role', true, true, 'sedat');
+-- ============================================================
+-- ROLLER
+-- ============================================================
+INSERT INTO role_def (id, create_time, create_user, last_modified_time, update_user, company_code, code, description, is_active, is_system_role, name)
+VALUES
+    ('role-admin-0000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE', 'ADMIN',         'Tam yetkili yönetici',      true, true,  'Yönetici'),
+    ('role-kasiy-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE', 'CASHIER',       'POS satış işlemleri',       true, false, 'Kasiyer'),
+    ('role-depo0-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE', 'WAREHOUSE',     'Stok ve depo yönetimi',     true, false, 'Depo Sorumlusu'),
+    ('role-mgzyn-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE', 'STORE_MANAGER', 'Mağaza yönetimi',           true, false, 'Mağaza Yöneticisi'),
+    -- eski sedat kaydıyla uyumluluk
+    ('6d728059-90fb-4753-b295-953c3c5b2035',   '2011-05-16 15:36:38', 'sedat', '2011-05-16 15:36:38', NULL, 'SEDCORE', 'USER', 'user role', true, true, 'sedat')
+ON CONFLICT (id) DO NOTHING;
 
-insert into user_def (id, create_time, create_user, last_modified_time, update_user, company_code, generic_identifier,
-                      is_active, language_val, user_def_generic_id_type, user_display_name, user_name, user_type)
-values ('6d728059-90fb-4753-b295-953c3c5b2036', '2011-05-16 15:36:38', 'sedat', '2011-05-16 15:36:38', null, 'SEDCORE',
-        'generic_identifier', true, 'TR', 'AGENCY_ID', 'user display name', 'sedat', 'USER');
+-- ============================================================
+-- KULLANICI TANIMLAMALARI
+-- ============================================================
+INSERT INTO user_def (id, create_time, create_user, last_modified_time, update_user, company_code,
+                      generic_identifier, is_active, language_val, user_def_generic_id_type,
+                      user_display_name, user_name, user_type)
+VALUES
+    ('udef-admin-0000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE', 'admin',         true, 'TR', 'AGENCY_ID', 'Admin Kullanıcı',       'admin',         'USER'),
+    ('udef-kasiy-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE', 'kasiyer',       true, 'TR', 'AGENCY_ID', 'Kasiyer Kullanıcı',     'kasiyer',       'USER'),
+    ('udef-depo0-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE', 'depo',          true, 'TR', 'AGENCY_ID', 'Depo Sorumlusu',         'depo',          'USER'),
+    ('udef-mgzad-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE', 'magaza_admin',  true, 'TR', 'AGENCY_ID', 'Mağaza Yöneticisi',     'magaza_admin',  'USER'),
+    ('udef-gkasy-0000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE', 'giyim_kasiyer', true, 'TR', 'AGENCY_ID', 'Giyim Kasiyer',         'giyim_kasiyer', 'USER'),
+    ('udef-gdep0-0000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE', 'giyim_depo',    true, 'TR', 'AGENCY_ID', 'Giyim Depo Sorumlusu',  'giyim_depo',    'USER'),
+    -- eski sedat kaydı
+    ('6d728059-90fb-4753-b295-953c3c5b2036',   '2011-05-16 15:36:38', 'sedat', '2011-05-16 15:36:38', NULL, 'SEDCORE', 'generic_identifier', true, 'TR', 'AGENCY_ID', 'user display name', 'sedat', 'USER')
+ON CONFLICT (id) DO NOTHING;
 
-insert into user_def_access (id, create_time, create_user, last_modified_time, update_user, company_code, access_type,
-                             can_login, has_ip_restriction, ip_restriction, is_force_password_change, last_change_time,
+-- ============================================================
+-- ERİŞİM BİLGİLERİ — şifreler (PBKDF2WithHmacSHA1 · 1024 · 256-bit)
+-- admin        → admin123
+-- kasiyer      → kasiyer123
+-- depo         → depo123
+-- magaza_admin → magaza123
+-- giyim_kasiyer→ giyim123
+-- giyim_depo   → giyim456
+-- ============================================================
+INSERT INTO user_def_access (id, create_time, create_user, last_modified_time, update_user,
+                             company_code, access_type, can_login, has_ip_restriction,
+                             ip_restriction, is_force_password_change, last_change_time,
                              password_hash, salt_key, user_def_id)
-values ('6d728059-90fb-4753-b295-953c3c5b2037', '2011-05-16 15:36:38', 'sedat', '2011-05-16 15:36:38', null, 'SEDCORE',
-        'INTERNAL', true, true, true, true, '2011-05-16 15:36:38', 'icerwJaNuMo0cknO9Ue/PfwtvuzD3FMs32OrjN8H8p0=',
-        'sedcore', '6d728059-90fb-4753-b295-953c3c5b2036');
+VALUES
+    ('uacc-admin-0000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE', 'INTERNAL', true, false, false, false, CURRENT_TIMESTAMP, 'JI1KzWlPRvgcsVO/Y/dR7gDxxDuFlAHbxiQxj7QGjcw=', 'YWRtaW5zYWx0MTIzNDU2', 'udef-admin-0000-0000-0000-000000000001'),
+    ('uacc-kasiy-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE', 'INTERNAL', true, false, false, false, CURRENT_TIMESTAMP, 'bfV/PaJuohhVbz7cLZzThRiawQ/W4o7ohh+qdvvnvc4=', 'a2FzaXllcnNhbHQxMjM0', 'udef-kasiy-0000-0000-0000-000000000002'),
+    ('uacc-depo0-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE', 'INTERNAL', true, false, false, false, CURRENT_TIMESTAMP, 'waEXHxvD4c7l7iGYPXbIbzHkS8Z2JM/8D7eQrKSjxrg=', 'ZGVwb3NhbHQxMjM0NTY3', 'udef-depo0-0000-0000-0000-000000000003'),
+    ('uacc-mgzad-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE', 'INTERNAL', true, false, false, false, CURRENT_TIMESTAMP, 'Y/p9TrRU1R5JyK63MNVb3d6fVrxxFQJL2NVMjJ4QGtY=', 'bWFnYXphc2FsdDEyMzQ1', 'udef-mgzad-0000-0000-0000-000000000004'),
+    ('uacc-gkasy-0000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE', 'INTERNAL', true, false, false, false, CURRENT_TIMESTAMP, '5HnDv9SwRQHjg+aDu37NhtSOa3AteGYzfFNVIsB1ipo=', 'Z2l5aW1zYWx0MTIzNDU2', 'udef-gkasy-0000-0000-0000-000000000005'),
+    ('uacc-gdep0-0000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE', 'INTERNAL', true, false, false, false, CURRENT_TIMESTAMP, 'ESsw/Y8pJi1jdeSAIwXfwiewoWPRAvIX/oDtnbmZvyA=', 'Z2l5aW1kZXBvc2FsdDEy', 'udef-gdep0-0000-0000-0000-000000000006'),
+    -- eski sedat kaydı
+    ('6d728059-90fb-4753-b295-953c3c5b2037',   '2011-05-16 15:36:38', 'sedat', '2011-05-16 15:36:38', NULL, 'SEDCORE', 'INTERNAL', true, true, true, true, '2011-05-16 15:36:38', 'icerwJaNuMo0cknO9Ue/PfwtvuzD3FMs32OrjN8H8p0=', 'sedcore', '6d728059-90fb-4753-b295-953c3c5b2036')
+ON CONFLICT (id) DO NOTHING;
 
-insert into user_role (id, create_time, create_user, last_modified_time, update_user, company_code, role_def_id,
-                       user_def_id)
-values ('6d728059-90fb-4753-b295-953c3c5b2038', '2011-05-16 15:36:38', 'sedat', '2011-05-16 15:36:38', null, 'SEDCORE',
-        '6d728059-90fb-4753-b295-953c3c5b2035', '6d728059-90fb-4753-b295-953c3c5b2036');
-
-
-
+-- ============================================================
+-- ROL ATAMALARI
+-- ============================================================
+INSERT INTO user_role (id, create_time, create_user, last_modified_time, update_user, company_code, role_def_id, user_def_id)
+VALUES
+    ('urol-admin-0000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE', 'role-admin-0000-0000-0000-000000000001', 'udef-admin-0000-0000-0000-000000000001'),
+    ('urol-kasiy-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE', 'role-kasiy-0000-0000-0000-000000000002', 'udef-kasiy-0000-0000-0000-000000000002'),
+    ('urol-depo0-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE', 'role-depo0-0000-0000-0000-000000000003', 'udef-depo0-0000-0000-0000-000000000003'),
+    ('urol-mgzad-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE', 'role-mgzyn-0000-0000-0000-000000000004', 'udef-mgzad-0000-0000-0000-000000000004'),
+    ('urol-gkasy-0000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE', 'role-kasiy-0000-0000-0000-000000000002', 'udef-gkasy-0000-0000-0000-000000000005'),
+    ('urol-gdep0-0000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE', 'role-depo0-0000-0000-0000-000000000003', 'udef-gdep0-0000-0000-0000-000000000006'),
+    -- eski sedat kaydı
+    ('6d728059-90fb-4753-b295-953c3c5b2038',   '2011-05-16 15:36:38', 'sedat', '2011-05-16 15:36:38', NULL, 'SEDCORE', '6d728059-90fb-4753-b295-953c3c5b2035', '6d728059-90fb-4753-b295-953c3c5b2036')
+ON CONFLICT (id) DO NOTHING;
 
 
 select * from user_def_access;

@@ -15,7 +15,14 @@ import 'edit_product_modal.dart';
 /// Toplu İçe Aktarma - Ürün İnceleme ve Karar Ekranı V2
 /// Gerçek backend modelleri ile çalışan production-ready versiyon
 class BulkImportReviewScreenV2 extends StatefulWidget {
-  const BulkImportReviewScreenV2({super.key});
+  final String? importId;
+  final String sector;
+
+  const BulkImportReviewScreenV2({
+    super.key,
+    this.importId,
+    this.sector = 'genel',
+  });
 
   @override
   State<BulkImportReviewScreenV2> createState() => _BulkImportReviewScreenV2State();
@@ -32,12 +39,23 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
   @override
   void initState() {
     super.initState();
+    _importId = widget.importId;
+    _sector = widget.sector;
     _loadProducts();
   }
 
   String? _importId;
+  String _sector = 'genel';
   bool _isLoading = true;
   String? _error;
+
+  String get _sectorLabel {
+    switch (_sector) {
+      case 'parcaci': return 'Oto Parça';
+      case 'giyim': return 'Giyim';
+      default: return 'Genel';
+    }
+  }
 
   Future<void> _loadProducts() async {
     setState(() { _isLoading = true; _error = null; });
@@ -242,9 +260,10 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
   }
 
   Future<void> _navigateToAddProduct(AnalyzedProduct product) async {
-    // Navigate to AddProductWizardScreen with pre-populated data
+    // Navigate to AddProductWizardScreen with pre-populated data + sector
     final result = await context.push('/inventory/add-product', extra: {
       'fromBulkImport': true,
+      'sector': _sector,
       'importData': {
         'name': product.name,
         'sku': product.sku,
@@ -350,6 +369,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
       'sellPrice': product.sellPrice,
       'stock': product.stock,
       'description': product.description,
+      'sector': _sector,
     };
 
     final decision = UserDecision.create(
@@ -1171,6 +1191,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
       final result = await bulkImportService.saveDecisions(
         importId: _importId ?? '',
         products: payloads,
+        sector: _sector,
         onProgress: (current, total) {
           debugPrint('📦 İşleniyor: $current/$total');
         },
@@ -1313,7 +1334,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
-        title: 'Toplu Ürün Yükleme - İnceleme',
+        title: 'Toplu Ürün Yükleme - İnceleme (${_sectorLabel})',
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline),
@@ -2347,16 +2368,6 @@ class _SaveProgressDialog extends StatelessWidget {
             Text(
               '$totalCount ürün işleniyor',
               style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 16),
-            LinearProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Lütfen bekleyin, bu işlem birkaç saniye sürebilir...',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
             ),
           ],
         ),

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/stock_management_models.dart';
 import '../../services/service_locator.dart';
-import '../../core/widgets/app_app_bar.dart';
+import '../../core/widgets/widgets.dart';
 import '../../core/theme/app_colors.dart';
 
 /// MULTI-WAREHOUSE STOK EKRANI

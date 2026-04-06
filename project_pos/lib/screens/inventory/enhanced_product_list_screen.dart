@@ -11,7 +11,6 @@ import '../../core/utils/app_logger.dart';
 import '../../services/service_locator.dart';
 import '../../widgets/quick_add_product_modal.dart';
 import '../../core/widgets/widgets.dart';
-import '../../core/widgets/app_app_bar.dart';
 
 class EnhancedProductListScreen extends ConsumerStatefulWidget {
   const EnhancedProductListScreen({super.key});

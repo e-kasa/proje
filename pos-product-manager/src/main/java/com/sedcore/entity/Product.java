@@ -4,8 +4,11 @@ import com.sedcore.enums.ProductStatus;
 import com.towpen.base.db.model.TOpenSimpleCompanyEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.util.List;
+import java.util.Map;
 
 @Entity
 @Table(name = "products")
@@ -29,6 +32,21 @@ public class Product extends TOpenSimpleCompanyEntity {
     private String brand;
     private String unit;
     private String description;
+
+    /**
+     * Sektör: parcaci, giyim, genel
+     * Flutter UI'da hangi alanların görüneceğini belirler
+     */
+    @Column(name = "sector", length = 20)
+    private String sector;
+
+    /**
+     * Sektöre özel ek veriler (kumaş, sezon, araç grubu vb.)
+     * JSONB olarak saklanır — şema değişikliği gerektirmez
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "metadata", columnDefinition = "jsonb")
+    private Map<String, Object> metadata;
 
     @Builder.Default
     @Column(name = "is_deleted", nullable = false)

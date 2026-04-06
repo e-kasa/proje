@@ -137,8 +137,6 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
       backgroundColor: theme.colorScheme.surface,
       appBar: AppAppBar.standard(
         title: 'Stok Transfer Oluştur',
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),

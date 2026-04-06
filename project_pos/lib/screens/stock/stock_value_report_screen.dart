@@ -72,9 +72,6 @@ class _StockValueReportScreenState
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
         title: 'Stok Deger Raporu',
-        backgroundColor: Colors.white,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

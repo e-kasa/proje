@@ -952,7 +952,6 @@ class _DecisionOption extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 }

@@ -242,14 +242,7 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Arac Uyumlulugu', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 20)),
-            if (widget.variantName.isNotEmpty)
-              Text(widget.variantName, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-          ],
-        ),
+        title: 'Arac Uyumlulugu',
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),

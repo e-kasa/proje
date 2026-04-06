@@ -107,8 +107,6 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
         title: 'Giderler',
-        backgroundColor: Colors.white,
-        elevation: 0,
         actions: [
           IconButton(
             onPressed: _loadExpenses,

@@ -209,3 +209,23 @@ class Barcode {
 extension IterableExtension<T> on Iterable<T> {
   T? get firstOrNull => isEmpty ? null : first;
 }
+
+// ─── Decision Action Enum ──────────────────────────────────────────────────
+
+enum DecisionAction {
+  createNew,
+  matchExisting,
+  addVariant,
+}
+
+// ─── Product Decision Model ────────────────────────────────────────────────
+
+class ProductDecision {
+  final DecisionAction action;
+  final Map<String, dynamic>? data;
+
+  ProductDecision({
+    required this.action,
+    this.data,
+  });
+}

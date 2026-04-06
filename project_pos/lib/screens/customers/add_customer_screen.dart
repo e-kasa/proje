@@ -197,7 +197,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                                   border: Border.all(
                                       color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor,
                                       width: selected ? 1.5 : 1),
-                                  borderRadius: BorderRadius.circular(AppConstants.borderRadiusXLarge),
+                                  borderRadius: AppConstants.borderRadiusXLarge,
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -407,7 +407,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
         decoration: BoxDecoration(
           color: selected ? color : Colors.transparent,
           border: Border.all(color: selected ? color : Theme.of(context).dividerColor, width: 1.5),
-          borderRadius: BorderRadius.circular(AppConstants.borderRadiusXLarge),
+          borderRadius: AppConstants.borderRadiusXLarge,
         ),
         child: Text(label,
             style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,

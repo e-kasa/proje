@@ -105,8 +105,6 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
       backgroundColor: theme.colorScheme.surface,
       appBar: AppAppBar.standard(
         title: 'Satın Alma İadesi',
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),

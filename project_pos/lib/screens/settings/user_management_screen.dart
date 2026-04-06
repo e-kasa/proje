@@ -36,14 +36,12 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     setState(() => _isLoading = true);
     try {
       final service = ref.read(userServiceProvider);
-      final results = await Future.wait([
-        service.getUsers(search: _searchController.text, role: _selectedRoleFilter),
-        service.getRoles(),
-      ]);
+      final usersResult = await service.getUsers(search: _searchController.text, role: _selectedRoleFilter);
+      final rolesResult = await service.getRoles();
       if (mounted) {
         setState(() {
-          _users = results[0];
-          _roles = results[1];
+          _users = usersResult;
+          _roles = rolesResult;
           _isLoading = false;
         });
       }
@@ -194,8 +192,6 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
         title: 'Kullanici Yonetimi',
-        backgroundColor: Colors.white,
-        elevation: 0,
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showUserDialog(),

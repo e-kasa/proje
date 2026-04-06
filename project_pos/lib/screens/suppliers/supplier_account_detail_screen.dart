@@ -122,18 +122,7 @@ class _SupplierAccountDetailScreenState
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => context.pop(),
         ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(supplierName,
-                style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary)),
-            const Text('Cari Hesap Detayi',
-                style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
-          ],
-        ),
+        title: supplierName,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: AppColors.textSecondary),

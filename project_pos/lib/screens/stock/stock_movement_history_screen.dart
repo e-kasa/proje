@@ -187,9 +187,6 @@ class _StockMovementHistoryScreenState
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
         title: 'Stok Hareket Gecmisi',
-        backgroundColor: Colors.white,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.date_range),

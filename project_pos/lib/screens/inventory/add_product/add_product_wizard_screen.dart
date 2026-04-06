@@ -507,9 +507,9 @@ class _AddProductWizardScreenState extends ConsumerState<AddProductWizardScreen>
                 ),
               ),
             ],
-          );
-        }
-    );
+          ),
+        ],
+      );
   }
 
   Widget _buildDesktopNavigation() {

@@ -84,8 +84,6 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
         title: 'Nakit Akisi',
-        backgroundColor: Colors.white,
-        elevation: 0,
         actions: [
           IconButton(
             onPressed: _loadCashFlow,

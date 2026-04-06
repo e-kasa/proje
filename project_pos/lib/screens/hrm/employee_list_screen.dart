@@ -106,8 +106,6 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
         title: 'Çalışanlar',
-        backgroundColor: Colors.white,
-        elevation: 0,
         actions: [
           IconButton(
             onPressed: _loadEmployees,

@@ -609,11 +609,12 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
     Color color,
     VoidCallback onTap,
   ) {
-    AppButton.primary(
+    return AppButton.primary(
       text: label,
-      icon: icon, size: 18,
+      icon: icon,
+      size: ButtonSize.small,
       onPressed: onTap,
-    ),
+    );
   }
 
   Widget _buildDecisionSummary(CountedProduct product) {

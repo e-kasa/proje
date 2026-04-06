@@ -111,8 +111,6 @@ class _SaleReturnScreenState extends ConsumerState<SaleReturnScreen> {
       backgroundColor: theme.colorScheme.surface,
       appBar: AppAppBar.standard(
         title: 'Satış İadesi',
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),

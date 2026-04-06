@@ -90,10 +90,7 @@ class _StockTransferReviewScreenState
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Transfer Talep Inceleme',
-          style: TextStyle(color: Colors.black, fontSize: 18),
-        ),
+        title: 'Transfer Talep Inceleme',
         actions: [
           Center(
             child: Padding(
@@ -632,11 +629,12 @@ class _StockTransferReviewScreenState
     Color color,
     VoidCallback onTap,
   ) {
-    AppButton.primary(
+    return AppButton.primary(
       text: label,
-      icon: icon, size: 18,
+      icon: icon,
+      size: ButtonSize.small,
       onPressed: onTap,
-    ),
+    );
   }
 
   Widget _buildDecisionSummary(TransferItem item) {

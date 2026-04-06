@@ -119,8 +119,6 @@ class _CompanySettingsScreenState extends ConsumerState<CompanySettingsScreen> {
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
         title: 'Firma Ayarlari',
-        backgroundColor: Colors.white,
-        elevation: 0,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),

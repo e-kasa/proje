@@ -187,17 +187,10 @@ class _CustomerAccountDetailScreenState
             SizedBox(
               width: double.infinity,
               child: AppButton.primary(
-   text: 'Tahsilat Kaydet',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13,
-   icon: Icons.payments, color: Colors.white, size: 18,
-   onPressed: () => _showPaymentDialog(),
- ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.success,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
+                text: 'Tahsilat Kaydet',
+                icon: Icons.payments,
+                size: ButtonSize.small,
+                onPressed: () => _showPaymentDialog(),
               ),
             ),
             const SizedBox(height: 20),

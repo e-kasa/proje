@@ -60,7 +60,7 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
       ),
       body: _isLoading
           ? const Center(
-              child: AppLoadingIndicator(),
+              child: CircularProgressIndicator(),
             )
           : SingleChildScrollView(
               padding: AppConstants.pagePadding,

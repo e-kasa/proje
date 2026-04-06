@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../models/batch_entry_models.dart';
-import '../../core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/widgets.dart';
 
 class QuickProductDialog extends StatefulWidget {
   final BatchEntryRow row;

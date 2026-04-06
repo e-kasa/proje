@@ -289,10 +289,7 @@ class _MatchConfirmModalState extends State<MatchConfirmModal> {
                     text: 'Eşleştir',
 
                     icon: Icons.link,
-
                     onPressed: _confirm,
-
-                  ),
                   ),
                 ],
               ),

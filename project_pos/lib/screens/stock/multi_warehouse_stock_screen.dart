@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/stock_management_models.dart';
 import '../../services/service_locator.dart';
+import '../../core/ui/widgets/app_app_bar.dart';
+import '../../core/constants/app_colors.dart';
 
 /// MULTI-WAREHOUSE STOK EKRANI
 /// Depo/Magaza/Sube bazinda stok goruntuleme
@@ -500,60 +502,6 @@ class _MultiWarehouseStockScreenState extends ConsumerState<MultiWarehouseStockS
               ),
             ],
           ),
-        ],
-      );
-    }
-
-    Widget _buildFilterButtons() {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Wrap(
-          spacing: 8,
-          children: [
-            FilterChip(
-              label: const Text('TÜMÜ'),
-              selected: _filterType == 'TÜMÜ',
-              onSelected: (_) => setState(() => _filterType = 'TÜMÜ'),
-            ),
-            FilterChip(
-              label: const Text('DÜŞÜK STOK'),
-              selected: _filterType == 'DÜŞÜK STOK',
-              onSelected: (_) => setState(() => _filterType = 'DÜŞÜK STOK'),
-            ),
-            FilterChip(
-              label: const Text('KRİTİK'),
-              selected: _filterType == 'KRİTİK',
-              onSelected: (_) => setState(() => _filterType = 'KRİTİK'),
-            ),
-            FilterChip(
-              label: const Text('TÜKENDİ'),
-              selected: _filterType == 'TÜKENDİ',
-              onSelected: (_) => setState(() => _filterType = 'TÜKENDİ'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    Widget _buildStatistics() {
-      return Container(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildStatItem('Ürün Sayısı', '${_products.length}'),
-            _buildStatItem('Depo Sayısı', '${_products.fold<Set<String>>({}, (set, p) => set..addAll(p.locationStocks.map((loc) => loc.locationName))).length}'),
-          ],
-        ),
-      );
-    }
-
-    Widget _buildStatItem(String label, String value) {
-      return Column(
-        children: [
-          Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
-          const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
         ],
       );
     }

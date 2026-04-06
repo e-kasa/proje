@@ -169,4 +169,128 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       ],
     );
   }
+
+  // ─── Mobile Layout: Product panel with floating cart ───────────────
+  Widget _buildMobileLayout(PosState posState) {
+    return _buildProductPanel(posState);
+  }
+
+  // ─── Show Mobile Cart Bottom Sheet ──────────────────────────────────
+  void _showMobileCart(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.9,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: CartPanel(
+          onPaymentPressed: () {
+            Navigator.pop(context);
+            _showPaymentDialog(context);
+          },
+          currencyFormat: _currencyFormat,
+        ),
+      ),
+    );
+  }
+
+  // ─── Product Panel: Search & Grid ────────────────────────────────────
+  Widget _buildProductPanel(PosState posState) {
+    return Column(
+      children: [
+        // Search Bar
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: TextField(
+            controller: _searchController,
+            focusNode: _searchFocusNode,
+            decoration: InputDecoration(
+              hintText: 'Urun ara, SKU, barkod...',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _searchController.clear();
+                        ref.read(posProvider.notifier).searchProducts('');
+                      },
+                    )
+                  : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+            onChanged: (value) {
+              ref.read(posProvider.notifier).searchProducts(value);
+            },
+          ),
+        ),
+
+        // Category Filter
+        if (posState.categories.isNotEmpty)
+          Container(
+            height: 50,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: CategoryFilterBar(
+              categories: posState.categories,
+              onCategorySelected: (category) {
+                ref.read(posProvider.notifier).selectCategory(category);
+              },
+            ),
+          ),
+
+        // Product Grid
+        Expanded(
+          child: posState.isLoadingProducts
+              ? const Center(child: CircularProgressIndicator())
+              : posState.filteredProducts.isEmpty
+                  ? const Center(child: Text('Urun bulunamadi'))
+                  : GridView.builder(
+                      padding: const EdgeInsets.all(12),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        mainAxisSpacing: 12,
+                        crossAxisSpacing: 12,
+                        childAspectRatio: 0.8,
+                      ),
+                      itemCount: posState.filteredProducts.length,
+                      itemBuilder: (context, index) {
+                        final product = posState.filteredProducts[index];
+                        return ProductGridItem(product: product);
+                      },
+                    ),
+        ),
+      ],
+    );
+  }
+
+  // ─── Payment Dialog ─────────────────────────────────────────────────────
+  void _showPaymentDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: 500,
+          padding: const EdgeInsets.all(24),
+          child: PaymentPanel(
+            onPaymentComplete: () {
+              Navigator.pop(context);
+              ref.read(posProvider.notifier).completeTransaction();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Satis tamamlandi'),
+                  backgroundColor: AppColors.success,
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
 }

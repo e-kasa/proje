@@ -76,7 +76,6 @@ class _EditProductModalState extends State<EditProductModal> {
 
   @override
   void initState() {
-    super.initState();
 
     // Initialize controllers with product data
     _nameController = TextEditingController(text: widget.product['name']);

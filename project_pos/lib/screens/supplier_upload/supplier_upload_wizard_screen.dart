@@ -317,7 +317,6 @@ class _SupplierUploadWizardScreenState
   void _selectAction(DecisionAction action) {
     setState(() {
       decisions[currentProductIndex] = ProductDecision(
-        productIndex: currentProductIndex,
         action: action,
         data: {},
       );
@@ -327,7 +326,6 @@ class _SupplierUploadWizardScreenState
   void _saveDecision(DecisionAction action, Map<String, dynamic> data) {
     setState(() {
       decisions[currentProductIndex] = ProductDecision(
-        productIndex: currentProductIndex,
         action: action,
         data: data,
       );

@@ -258,7 +258,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
                         icon: Icons.error_outline,
                         title: 'Hata Oluştu',
                         description: stockState.error!,
-                        actionLabel: 'Tekrar Dene',
+                        actionText: 'Tekrar Dene',
                         onAction: () => ref.read(stockProvider.notifier).load(),
                       )
                     : filtered.isEmpty

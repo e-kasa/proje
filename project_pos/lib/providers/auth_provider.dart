@@ -141,9 +141,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     return User(
       id: userInfo['id'] as String? ?? '',
       username: userInfo['username'] as String? ?? '',
-      fullName: userInfo['fullName'] as String? ?? '',
+      displayName: userInfo['fullName'] as String? ?? '',
       email: userInfo['email'] as String? ?? '',
-      role: userInfo['role'] as String? ?? '',
       selectedCompanyCode: userInfo['selectedCompanyCode'] as String? ?? '',
     );
   }

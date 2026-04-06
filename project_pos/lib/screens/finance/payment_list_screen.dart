@@ -103,8 +103,6 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
         title: 'Odemeler',
-        backgroundColor: Colors.white,
-        elevation: 0,
         actions: [
           IconButton(
             onPressed: _loadPayments,

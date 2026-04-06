@@ -121,10 +121,7 @@ class PaymentRecordModal {
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Iptal')),
             AppButton.danger(
               text: buttonLabel,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
               icon: Icons.check,
-              color: Colors.white,
-              size: 18,
               onPressed: () {
                 if (amountCtrl.text.isEmpty) {
                   ScaffoldMessenger.of(ctx).showSnackBar(

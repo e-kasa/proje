@@ -141,8 +141,6 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
       backgroundColor: theme.colorScheme.surface,
       appBar: AppAppBar.standard(
         title: _isEditing ? 'Satın Alma Düzenle' : 'Satın Alma Detayı',
-        backgroundColor: theme.colorScheme.surface,
-        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {

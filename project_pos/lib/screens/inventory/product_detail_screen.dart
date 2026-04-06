@@ -182,7 +182,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       child: Scaffold(
         backgroundColor: AppColors.bgLight,
         appBar: AppAppBar.standard(
-          backgroundColor: AppColors.white,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
             onPressed: () => context.go('/inventory/products'),
@@ -221,7 +220,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             _buildGeneralInfoTab(product),
             _buildOemTab(),
             _buildCrossRefTab(),
-            _buildVehicleCompatibilityTab(),
           ],
         ),
       ),

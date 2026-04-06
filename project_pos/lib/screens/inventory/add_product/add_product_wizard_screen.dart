@@ -497,7 +497,11 @@ class _AddProductWizardScreenState extends ConsumerState<AddProductWizardScreen>
                 child: ElevatedButton.icon(
                   onPressed: _state.isSaving
                       ? null
-                      : () => _state.handleSubmit(ref: ref, context: context),
+                      : () => _state.handleSubmit(
+                            ref: ref,
+                            context: context,
+                            fromBulkImport: false,
+                          ),
                   icon: const Icon(Icons.check_circle_outline, size: 16),
                   label: const Text('Kaydet', style: TextStyle(fontSize: 12)),
                   style: ElevatedButton.styleFrom(
@@ -562,7 +566,13 @@ class _AddProductWizardScreenState extends ConsumerState<AddProductWizardScreen>
               ),
             const SizedBox(width: 12),
             ElevatedButton.icon(
-              onPressed: _state.isSaving ? null : () => _state.handleSubmit(ref: ref, context: context),
+              onPressed: _state.isSaving
+                  ? null
+                  : () => _state.handleSubmit(
+                        ref: ref,
+                        context: context,
+                        fromBulkImport: false,
+                      ),
               icon: const Icon(Icons.check_circle_outline, size: 18),
               label: const Text('Kaydet'),
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),

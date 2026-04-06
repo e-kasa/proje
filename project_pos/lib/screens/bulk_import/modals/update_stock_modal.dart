@@ -228,10 +228,7 @@ class _UpdateStockModalState extends State<UpdateStockModal> {
                   text: 'Güncelle',
 
                   icon: Icons.save,
-
                   onPressed: _confirm,
-
-                ),
                 ),
               ],
             ),

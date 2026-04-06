@@ -497,9 +497,6 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
             ),
           ],
         ),
-          ),
-        ),
-      ),
     );
   }
 

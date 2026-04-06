@@ -414,10 +414,7 @@ class _ManualMatchModalState extends State<ManualMatchModal> {
                     text: 'Eşleştir',
 
                     icon: Icons.link,
-
                     onPressed: _selectedProduct != null ? _confirm : null,
-
-                  ),
                   ),
                 ],
               ),

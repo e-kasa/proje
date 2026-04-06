@@ -336,16 +336,9 @@ class _BulkImportUploadScreenState extends State<BulkImportUploadScreen> with Si
               ),
               const SizedBox(height: 24),
               AppButton.primary(
-
                 text: 'Dosya Seç',
-
                 icon: Icons.folder_open,
-
                 onPressed: _pickFile,
-
-              ),
-                  elevation: 0,
-                ),
               ),
             ],
           ),
@@ -624,27 +617,18 @@ class _BulkImportUploadScreenState extends State<BulkImportUploadScreen> with Si
           ),
           const SizedBox(width: 16),
           AppButton.success(
-
             text: 'İndir',
-
-            icon: Icons.file_download, size: 18,
-
+            icon: Icons.file_download,
+            size: ButtonSize.small,
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Şablon indiriliyor...'),
                   backgroundColor: AppColors.success,
                   duration: Duration(seconds: 2),
-
-          ),
+                ),
               );
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
           ),
         ],
       ),

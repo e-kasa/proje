@@ -90,11 +90,8 @@ void showAddAttributeDialog({
             onPressed: () {
               if (nameController.text.trim().isNotEmpty) {
                 state.addAttribute(
-                  ProductAttribute(
-                    name: nameController.text.trim(),
-                    values: [],
-                    icon: selectedIcon,
-                  ),
+                  nameController.text.trim(),
+                  selectedIcon,
                 );
                 onChanged();
                 Navigator.pop(context);

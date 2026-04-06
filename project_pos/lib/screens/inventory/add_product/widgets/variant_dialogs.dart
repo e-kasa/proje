@@ -87,7 +87,19 @@ void showAddAttributeDialog({
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('\u0130ptal')),
           AppButton.primary(
             text: 'Ekle',
-            onPressed: () {,
+            onPressed: () {
+              if (nameController.text.trim().isNotEmpty) {
+                state.addAttribute(
+                  ProductAttribute(
+                    name: nameController.text.trim(),
+                    values: [],
+                    icon: selectedIcon,
+                  ),
+                );
+                onChanged();
+                Navigator.pop(context);
+              }
+            },
           ),
         ],
       ),
@@ -135,7 +147,13 @@ void showAddValueDialog({
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('\u0130ptal')),
         AppButton.primary(
           text: 'Ekle',
-          onPressed: () {,
+          onPressed: () {
+            if (valueController.text.trim().isNotEmpty) {
+              state.addValueToAttribute(attrIndex, valueController.text.trim());
+              onChanged();
+              Navigator.pop(context);
+            }
+          },
         ),
       ],
     ),

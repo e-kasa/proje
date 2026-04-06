@@ -113,7 +113,10 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
       backgroundColor: theme.colorScheme.surface,
       appBar: AppAppBar.standard(
         title: 'Yeni Satın Alma',
-        leadingOnPressed: () => context.pop(),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
         actions: [
           if (_grandTotal > 0)
             Padding(
@@ -425,11 +428,12 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
   }
 
   Widget _buildItemRow(int index, _PurchaseItem item, ThemeData theme) {
-    return AppCard(
+    return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: AppConstants.paddingSmall,
-        child: Column(
+      child: AppCard(
+        child: Padding(
+          padding: AppConstants.paddingSmall,
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -492,6 +496,8 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
               ],
             ),
           ],
+        ),
+          ),
         ),
       ),
     );
@@ -575,8 +581,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
       height: 52,
       child: AppButton.primary(
         onPressed: _isSubmitting ? null : _submit,
-        isLoading: _isSubmitting,
-        label: _isSubmitting ? 'Kaydediliyor...' : 'Satın Almayı Kaydet',
+        text: _isSubmitting ? 'Kaydediliyor...' : 'Satın Almayı Kaydet',
         icon: Icons.save_rounded,
       ),
     );

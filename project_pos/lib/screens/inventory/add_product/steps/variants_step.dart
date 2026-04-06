@@ -385,10 +385,13 @@ class VariantsStep extends StatelessWidget {
   Widget _buildGenerateButton(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      AppButton.success(
-        text: 'Varyantlar\u0131 Olu\u015ftur (${state.calculateTotalVariants(,
+      child: AppButton.success(
+        text: 'Varyantlar\u0131 Olu\u015ftur (${state.calculateTotalVariants()})',
         icon: Icons.bolt,
-        onPressed: () {,
+        onPressed: () {
+          state.generateVariants(context);
+          onChanged();
+        },
       ),
     );
   }

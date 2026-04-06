@@ -142,7 +142,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
                 ),
               );
             },
-            label: 'Kaydet',
+            text: 'Kaydet',
           ),
         ],
       ),
@@ -172,7 +172,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
                 // Search Bar
                 AppSearchInput(
                   controller: _searchController,
-                  hintText: 'Ürün ara...',
+                  hint: 'Ürün ara...',
                   onChanged: (_) => setState(() {}),
                 ),
 
@@ -389,7 +389,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
             borderRadius: AppConstants.borderRadiusMedium,
           ),
           alignment: Alignment.centerLeft,
-          padding: AppConstants.paddingOnlyLeftMedium,
+          padding: const EdgeInsets.only(left: AppConstants.spacing16),
           child: const Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -405,7 +405,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
             borderRadius: AppConstants.borderRadiusMedium,
           ),
           alignment: Alignment.centerRight,
-          padding: AppConstants.paddingOnlyRightMedium,
+          padding: const EdgeInsets.only(right: AppConstants.spacing16),
           child: const Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -417,7 +417,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
         ),
         child: AppCard(
           child: Padding(
-            padding: AppConstants.paddingAllMedium,
+            padding: AppConstants.paddingMedium,
             child: Row(
               children: [
                 Container(

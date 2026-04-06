@@ -823,6 +823,37 @@ class _SupplierAccountDetailScreenState
     }
   }
 
+  Future<void> _showPaymentDialog() async {
+    final supplierName = _supplier?['name']?.toString();
+    final result = await PaymentRecordModal.show(
+      context,
+      isCustomer: false,
+      accountName: supplierName,
+    );
+    if (result != null && mounted) {
+      try {
+        await ref.read(supplierServiceProvider).recordSupplierPayment(
+          widget.supplierId,
+          result,
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ödeme kaydedildi'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        _loadAll();
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Hata: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
   double _toDouble(dynamic value) {
     if (value == null) return 0;
     if (value is double) return value;

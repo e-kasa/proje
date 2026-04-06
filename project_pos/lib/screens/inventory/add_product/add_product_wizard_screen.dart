@@ -511,3 +511,65 @@ class _AddProductWizardScreenState extends ConsumerState<AddProductWizardScreen>
         }
     );
   }
+
+  Widget _buildDesktopNavigation() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Step Info
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Adım ${_currentStep + 1}/$_totalSteps: ${['Temel Bilgiler', 'Varyantlar', 'Stok & Barkod', 'Görseller', 'Önizleme'][_currentStep]}',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Navigation Buttons
+          if (_currentStep > 0)
+            OutlinedButton.icon(
+              onPressed: _handlePrevious,
+              icon: const Icon(Icons.arrow_back, size: 18),
+              label: const Text('Geri'),
+            )
+          else
+            const SizedBox(width: 96),
+          const SizedBox(width: 12),
+          if (_currentStep < _totalSteps - 1)
+            ElevatedButton.icon(
+              onPressed: _handleNext,
+              icon: const Icon(Icons.arrow_forward, size: 18),
+              label: const Text('İleri'),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            )
+          else ...[
+            if (_currentStep == _totalSteps - 1)
+              OutlinedButton.icon(
+                onPressed: _state.isSaving ? null : _handleSaveAndContinue,
+                icon: const Icon(Icons.add_circle_outline, size: 16),
+                label: const Text('Yeni Ekle'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary),
+                ),
+              ),
+            const SizedBox(width: 12),
+            ElevatedButton.icon(
+              onPressed: _state.isSaving ? null : () => _state.handleSubmit(ref: ref, context: context),
+              icon: const Icon(Icons.check_circle_outline, size: 18),
+              label: const Text('Kaydet'),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}

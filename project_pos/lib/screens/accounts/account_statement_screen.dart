@@ -145,10 +145,9 @@ class _AccountStatementScreenState
 
   Widget _buildEmptyState() {
     return AppEmptyState.noData(
-      message: 'Hesap seçilmedi',
+      title: 'Hesap seçilmedi',
       description: 'Ekstre görüntülemek için bir hesap seçin',
-      icon: Icons.account_balance_wallet_outlined,
-      actionLabel: 'Hesap Seç',
+      actionText: 'Hesap Seç',
       onAction: _showAccountSelect,
     );
   }
@@ -166,9 +165,10 @@ class _AccountStatementScreenState
 
   Widget _buildError() {
     return AppEmptyState.error(
-      message: 'Veri yüklenirken hata oluştu',
+      title: 'Veri yüklenirken hata oluştu',
       description: _error ?? '',
-      onRetry: _loadStatement,
+      actionText: 'Tekrar Dene',
+      onAction: _loadStatement,
     );
   }
 

@@ -346,7 +346,7 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
                             context.push('/suppliers/account/$id'),
                         borderRadius: AppConstants.borderRadiusSmall,
                         child: Container(
-                          padding: AppConstants.paddingSymmetricSmall,
+                          padding: AppConstants.paddingHorizontalSmall,
                           decoration: BoxDecoration(
                             color: AppColors.primary.withOpacity(0.08),
                             borderRadius: AppConstants.borderRadiusSmall,
@@ -428,7 +428,7 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
     final display = amount.abs();
 
     return Container(
-      padding: AppConstants.paddingSymmetricSmall,
+      padding: AppConstants.paddingHorizontalSmall,
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
         borderRadius: AppConstants.borderRadiusSmall,

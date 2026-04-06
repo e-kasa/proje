@@ -246,6 +246,38 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
     );
   }
 
+  // ─── Error Display ────────────────────────────────────────────────────────
+
+  Widget _buildError() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
+            const SizedBox(height: 16),
+            const Text(
+              'Veri yüklenirken hata oluştu',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _error ?? 'Bilinmeyen hata',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
+            AppButton.primary(
+              text: 'Tekrar Dene',
+              onPressed: _load,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ─── Status Banner ────────────────────────────────────────────────────────
 
   Widget _buildStatusBanner(bool cancelled, ThemeData theme) {

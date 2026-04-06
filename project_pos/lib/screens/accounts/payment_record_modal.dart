@@ -120,9 +120,26 @@ class PaymentRecordModal {
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Iptal')),
             AppButton.danger(
-              text: buttonLabel, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600,
-              icon: Icons.check, color: Colors.white, size: 18,
-              onPressed: () {,
+              text: buttonLabel,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              icon: Icons.check,
+              color: Colors.white,
+              size: 18,
+              onPressed: () {
+                if (amountCtrl.text.isEmpty) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(content: Text('Tutar gerekli')),
+                  );
+                  return;
+                }
+                Navigator.pop(ctx, {
+                  'amount': double.parse(amountCtrl.text),
+                  'paymentType': paymentType,
+                  'bankName': bankCtrl.text.isNotEmpty ? bankCtrl.text : null,
+                  'referenceNo': refCtrl.text.isNotEmpty ? refCtrl.text : null,
+                  'description': descCtrl.text.isNotEmpty ? descCtrl.text : null,
+                });
+              },
             ),
           ],
         ),

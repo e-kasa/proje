@@ -469,13 +469,12 @@ class _CompanyCategoryScreenState extends ConsumerState<CompanyCategoryScreen> {
         child: SizedBox(
           width: double.infinity,
           height: 50,
-          AppButton.success(
+          child: AppButton.success(
             text: state.isSaving
                   ? 'Kaydediliyor...'
                   : '${state.selectedIds.length} Kategori Seçimini Kaydet',
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
             icon: Icons.check,
-            onPressed: state.isSaving,
+            onPressed: state.isSaving ? null : () {},
           ),
         ),
       ),

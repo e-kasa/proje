@@ -370,4 +370,89 @@ class WizardState extends ChangeNotifier {
         return null;
     }
   }
+
+  // ─── Retained Fields Methods ───────────────────────────────────────────────
+
+  /// Captures fields that should be retained when adding multiple products
+  Map<String, dynamic> captureRetainedFields() {
+    return {
+      'categoryId': selectedCategory,
+      'unit': selectedUnit,
+      'vatRate': selectedVatRate,
+      'vatIncluded': vatIncluded,
+      'taxExempt': taxExempt,
+      'supplierId': selectedSupplier,
+      'selectedStores': List<String>.from(selectedStores),
+      'selectedWarehouses': List<String>.from(selectedWarehouses),
+      'brandText': brandController.text,
+    };
+  }
+
+  /// Applies previously captured retained fields
+  void applyRetainedFields(Map<String, dynamic> retained) {
+    selectedCategory = retained['categoryId'] as String?;
+    selectedUnit = retained['unit'] as String? ?? 'pcs';
+    selectedVatRate = retained['vatRate'] as double? ?? 20.0;
+    vatIncluded = retained['vatIncluded'] as bool? ?? false;
+    taxExempt = retained['taxExempt'] as bool? ?? false;
+    selectedSupplier = retained['supplierId'] as String?;
+    selectedStores = List<String>.from(retained['selectedStores'] as List? ?? []);
+    selectedWarehouses = List<String>.from(retained['selectedWarehouses'] as List? ?? []);
+    final brandText = retained['brandText'] as String? ?? '';
+    if (brandText.isNotEmpty) {
+      brandController.text = brandText;
+    }
+    notifyListeners();
+  }
+
+  /// Resets the wizard state for entering a new product
+  void resetForNewProduct() {
+    productNameController.clear();
+    skuController.clear();
+    descriptionController.clear();
+    basePriceController.text = '0';
+    basePurchasePriceController.text = '0';
+    specialTaxRateController.clear();
+    withholdingTaxRateController.clear();
+    stockLocationController.clear();
+    shelfNumberController.clear();
+    invoiceNumberController.clear();
+    deliveryNoteController.clear();
+    purchaseDateController.clear();
+    globalNotesController.clear();
+    bulkStockController.clear();
+    bulkPurchasePriceController.clear();
+    bulkSalePriceController.clear();
+
+    productType = 'simple';
+    selectedPreset = null;
+    attributes = [];
+    variants = [];
+    showAllVariants = false;
+    variantSearchQuery = '';
+    expandedVariants.clear();
+    oemNumbers = [];
+    crossReferences = [];
+    productImages = [];
+
+    generateSKU();
+    initializeDefaultVariant();
+    notifyListeners();
+  }
+
+  /// Returns a Color for visualizing attributes in variants
+  Color getColorForAttribute(String attr) {
+    final colors = [
+      Colors.red,
+      Colors.blue,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.teal,
+      Colors.pink,
+      Colors.indigo,
+    ];
+    final hash = attr.hashCode.abs();
+    return colors[hash % colors.length];
+  }
 }

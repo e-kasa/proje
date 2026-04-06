@@ -827,3 +827,25 @@ class _CreateNewProductDialogState extends State<CreateNewProductDialog> {
     Navigator.pop(context, results);
   }
 }
+
+// ─── Product Decision Item Model ───────────────────────────────────────────
+
+class ProductDecisionItem {
+  final String readProductName;
+  final double readQuantity;
+  final double readCostPrice;
+  final double readSellPrice;
+  final String sku;
+  String? userDecision;
+  Map<String, dynamic>? decisionData;
+
+  ProductDecisionItem({
+    required this.readProductName,
+    required this.readQuantity,
+    required this.readCostPrice,
+    required this.readSellPrice,
+    required this.sku,
+    this.userDecision,
+    this.decisionData,
+  });
+}

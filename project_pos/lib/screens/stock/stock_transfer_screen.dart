@@ -641,7 +641,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
   Widget _buildSubmitButton(ThemeData theme) {
     return SizedBox(
       height: 52,
-      AppButton.primary(
+      child: AppButton.primary(
         text: _isSubmitting ? 'Kaydediliyor...' : 'Onayla',
         icon: Icons.check,
         onPressed: _isSubmitting ? null : _submit,

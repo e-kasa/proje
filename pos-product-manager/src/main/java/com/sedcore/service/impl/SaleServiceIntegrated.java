@@ -17,9 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -41,6 +43,13 @@ public class SaleServiceIntegrated
 
     @Transactional
     public Sale createSale(SaleRequest request) {
+        // saleNumber gönderilmemişse otomatik üret
+        if (request.getSaleNumber() == null || request.getSaleNumber().isBlank()) {
+            String datePart = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+            String randPart = UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
+            request.setSaleNumber("POS-" + datePart + "-" + randPart);
+        }
+
         log.info("Satis islemi - Musteri: {}, No: {}", request.getCustomerId(), request.getSaleNumber());
 
         BigDecimal totalAmount = calculateTotalAmount(request.getItems());
@@ -124,14 +133,29 @@ public class SaleServiceIntegrated
     /**
      * Stok kontrolu.
      * InventoryView read-only (DB view, @Immutable) - sadece okuma yapilir.
+     * storeId veya warehouseId null ise tum depolardaki toplam stok kontrol edilir.
      */
     private void checkStockAvailability(String variantId, String storeId,
                                         String warehouseId, Integer quantity) {
-        InventoryView inventory = inventoryRepository
-                .findByVariantIdAndStoreIdAndWarehouseId(variantId, storeId, warehouseId)
-                .orElseThrow(() -> new RuntimeException("Stok bulunamadi - Variant: " + variantId));
+        int available;
 
-        int available = inventory.getPhysicalQuantity() != null ? inventory.getPhysicalQuantity() : 0;
+        if (storeId != null && !storeId.isBlank() && warehouseId != null && !warehouseId.isBlank()) {
+            // Belirli mağaza + depo kombinasyonu
+            InventoryView inventory = inventoryRepository
+                    .findByVariantIdAndStoreIdAndWarehouseId(variantId, storeId, warehouseId)
+                    .orElseThrow(() -> new RuntimeException("Stok bulunamadi - Variant: " + variantId));
+            available = inventory.getPhysicalQuantity() != null ? inventory.getPhysicalQuantity() : 0;
+        } else {
+            // Mağaza/depo belirtilmemişse: tüm lokasyonlardaki toplam stok
+            List<InventoryView> inventories = inventoryRepository.findByVariantId(variantId);
+            available = inventories.stream()
+                    .mapToInt(inv -> inv.getPhysicalQuantity() != null ? inv.getPhysicalQuantity() : 0)
+                    .sum();
+            if (inventories.isEmpty()) {
+                throw new RuntimeException("Stok bulunamadi - Variant: " + variantId);
+            }
+        }
+
         if (available < quantity) {
             throw new RuntimeException(String.format(
                     "Stok yetersiz! Mevcut: %d, Istenen: %d", available, quantity));

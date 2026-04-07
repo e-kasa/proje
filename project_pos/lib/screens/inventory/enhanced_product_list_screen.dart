@@ -63,11 +63,11 @@ class _EnhancedProductListScreenState
       final productService = ref.read(productServiceProvider);
       final products = await productService.getProducts();
 
-      // Kategorileri API'den yükle
+      // Firma kategorilerini yükle (login olan firmanın sektörüne göre)
       try {
-        final cats = await ref.read(categoryServiceProvider).getCategories();
+        final cats = await ref.read(companyCategoryServiceProvider).getMyCategoryList();
         final catNames = cats
-            .map((c) => c['name']?.toString() ?? '')
+            .map((c) => c['categoryName']?.toString() ?? '')
             .where((n) => n.isNotEmpty)
             .toList();
         if (mounted) {

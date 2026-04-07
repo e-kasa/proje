@@ -1,7 +1,6 @@
 package com.sedcore.model;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -18,13 +17,12 @@ public class SaleRequest {
 
     private String customerId; // null = peşin satış
 
-    @NotBlank(message = "Satış numarası zorunludur")
+    // Opsiyonel: backend otomatik üretir (POS'tan gönderilmeyebilir)
     private String saleNumber;
 
-    @NotBlank(message = "Mağaza ID zorunludur")
+    // Opsiyonel: POS, mağaza/depo yapılandırması olmadan çalışabilir
     private String storeId;
 
-    @NotBlank(message = "Depo ID zorunludur")
     private String warehouseId;
 
     @Valid

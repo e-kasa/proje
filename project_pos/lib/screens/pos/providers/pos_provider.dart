@@ -114,7 +114,7 @@ class PosState {
 
   final List<Map<String, dynamic>> products;
   final List<Map<String, dynamic>> categories;
-  final int? selectedCategoryId;
+  final String? selectedCategoryId;
   final String searchQuery;
   final bool isLoadingProducts;
 
@@ -204,7 +204,7 @@ class PosState {
     bool clearSuccess = false,
     List<Map<String, dynamic>>? products,
     List<Map<String, dynamic>>? categories,
-    int? selectedCategoryId,
+    String? selectedCategoryId,
     bool clearCategory = false,
     String? searchQuery,
     bool? isLoadingProducts,
@@ -246,13 +246,18 @@ class PosNotifier extends StateNotifier<PosState> {
   Future<void> _loadInitialData() async {
     state = state.copyWith(isLoadingProducts: true);
     try {
-      final results = await Future.wait([
-        _ref.read(productServiceProvider).getProducts(size: 100),
-        _ref.read(categoryServiceProvider).getCategories(),
-      ]);
+      final products = await _ref.read(productServiceProvider).getProducts(size: 100);
+      final rawCats = await _ref.read(companyCategoryServiceProvider).getMyCategoryList();
+      // Firma kategorilerini id/name formatına normalize et
+      final categories = rawCats.map((c) => <String, dynamic>{
+        'id': c['categoryId']?.toString() ?? '',
+        'name': c['categoryName']?.toString() ?? '',
+        'level': c['categoryLevel'] ?? 0,
+        'parentId': c['categoryParentId']?.toString(),
+      }).toList();
       state = state.copyWith(
-        products: results[0] as List<Map<String, dynamic>>,
-        categories: results[1] as List<Map<String, dynamic>>,
+        products: products,
+        categories: categories,
         isLoadingProducts: false,
       );
     } catch (e) {
@@ -279,32 +284,58 @@ class PosNotifier extends StateNotifier<PosState> {
   }
 
   void addToCart(Map<String, dynamic> product, {Map<String, dynamic>? variant}) {
-    // Use variant if provided, otherwise use product
-    final productData = variant ?? product;
-    final stock = (productData['stock'] as num?)?.toInt() ?? 0;
     final items = List<CartItem>.from(state.cartItems);
-    final productId = product['id'].toString();
-    final variantId = variant?['id']?.toString() ?? productId;
+    final productId = product['id']?.toString() ?? '';
 
-    // Check if product/variant is already in cart
+    // Varyant ID: açık variant > product.variantId > productId
+    final variantId = variant?['id']?.toString()
+        ?? product['variantId']?.toString()
+        ?? productId;
+
+    // Stok: variant'tan al (yoksa product'tan)
+    final stock = variant != null
+        ? _variantStock(variant)
+        : (product['stock'] as num?)?.toInt() ?? 0;
+
+    // Sepette aynı varyant var mı?
     final index = items.indexWhere((i) => i.variantId == variantId);
 
     if (index >= 0) {
       final currentQty = items[index].quantity;
       final newQty = currentQty + 1;
-
-      // Check if new quantity exceeds stock
-      if (newQty > stock) {
+      if (newQty > stock && stock > 0) {
         state = state.copyWith(error: 'Stok yetersiz! Mevcut stok: $stock');
         return;
       }
       items[index] = items[index].copyWith(quantity: newQty);
     } else {
-      // Check if stock is available for new item
       if (stock <= 0) {
         state = state.copyWith(error: 'Ürün stokta yok!');
         return;
       }
+
+      // Product + variant verilerini birleştir
+      final basePrice = (product['basePrice'] as num?)?.toDouble()
+          ?? (product['sellingPrice'] as num?)?.toDouble()
+          ?? 0.0;
+      final additionalPrice = variant != null
+          ? (variant['additionalPrice'] as num?)?.toDouble() ?? 0.0
+          : 0.0;
+      final finalPrice = basePrice + additionalPrice;
+
+      final productData = <String, dynamic>{
+        ...product,
+        'id': variantId,              // sepet tekliği için variantId kullan
+        'variantId': variantId,
+        'sku': variant?['sku'] ?? product['sku'],
+        'name': variant?['name'] ?? product['name'],
+        'basePrice': finalPrice,
+        'sellingPrice': finalPrice,
+        'price': finalPrice,
+        'stock': stock,
+        'taxRate': product['taxRate'] ?? 18.0,
+      };
+
       items.add(CartItem(product: productData));
     }
     state = state.copyWith(cartItems: items, clearError: true);
@@ -481,7 +512,7 @@ class PosNotifier extends StateNotifier<PosState> {
     }
   }
 
-  void selectCategory(int? categoryId) {
+  void selectCategory(String? categoryId) {
     if (categoryId == state.selectedCategoryId) {
       state = state.copyWith(clearCategory: true);
     } else {
@@ -490,6 +521,15 @@ class PosNotifier extends StateNotifier<PosState> {
   }
 
   Future<void> refreshProducts() async => _loadInitialData();
+
+  /// Variant haritasından stok miktarını çıkarır.
+  int _variantStock(Map<String, dynamic> variant) {
+    final inv = variant['inventory'] as Map<String, dynamic>?;
+    if (inv != null) {
+      return (inv['physicalQuantity'] as num?)?.toInt() ?? 0;
+    }
+    return (variant['stock'] as num?)?.toInt() ?? 0;
+  }
   void clearMessages() => state = state.copyWith(clearError: true, clearSuccess: true);
 
   // ─── Parked Orders Methods ─────────────────────────────────────

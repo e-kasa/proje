@@ -3,6 +3,8 @@ package com.sedcore.service;
 import com.sedcore.entity.Purchase;
 import com.sedcore.model.PurchaseRequest;
 import com.sedcore.model.PurchaseResponse;
+import com.sedcore.model.PurchaseReturnRequest;
+import com.sedcore.model.PurchaseReturnResponse;
 import com.towpen.base.security.BaseDbService;
 
 import java.util.List;
@@ -22,4 +24,10 @@ public interface PurchaseService extends BaseDbService<Purchase> {
 
     /** Satın alma güncelleme: belge bilgileri + notlar */
     PurchaseResponse updatePurchase(String id, PurchaseRequest request);
+
+    /**
+     * Kısmi iade: seçilen kalemler için PURCHASE_RETURN_OUT stok hareketi,
+     * SupplierAccount alacak kaydı ve AccountTransaction(SUPPLIER_RETURN).
+     */
+    PurchaseReturnResponse createPurchaseReturn(String purchaseId, PurchaseReturnRequest request);
 }

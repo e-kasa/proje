@@ -108,10 +108,30 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                     .findById(dto.getPurchase().getSupplierId())
                     .orElseThrow(() -> new RuntimeException("Tedarikçi bulunamadı: " + dto.getPurchase().getSupplierId()));
 
+            // Toplam tutarı variant fiyat * adet üzerinden hesapla
+            BigDecimal totalAmount = BigDecimal.ZERO;
+            if (dto.getVariants() != null) {
+                for (ProductVariantRequest v : dto.getVariants()) {
+                    BigDecimal price = (v.getPricing() != null && v.getPricing().getPurchasePrice() != null)
+                            ? v.getPricing().getPurchasePrice()
+                            : BigDecimal.ZERO;
+                    int qty = 0;
+                    if (v.getInitialStocks() != null) {
+                        for (InitialStocksRequest stock : v.getInitialStocks()) {
+                            qty += stock.getQuantity();
+                        }
+                    }
+                    totalAmount = totalAmount.add(price.multiply(BigDecimal.valueOf(qty)));
+                }
+            }
+
             purchase = new Purchase();
             purchase.setSupplier(supplier);
             purchase.setInvoiceNumber(dto.getPurchase().getInvoiceNumber());
             purchase.setPurchaseDate(dto.getPurchase().getPurchaseDate());
+            purchase.setTotalAmount(totalAmount);
+            purchase.setPaidAmount(BigDecimal.ZERO);
+            purchase.setIsCancelled(false);
             purchaseService.save(purchase);
         }
 
@@ -441,6 +461,6 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
 
     @Override
     public Class<?> getDTOClassForService() {
-        return ProductResponse.class;
+        return null;
     }
 }

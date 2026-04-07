@@ -1,10 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/service_locator.dart';
 
-/// Category Provider - API-based
+/// Category Provider - Firmanın sektörüne göre otomatik kategori listesi
+/// (companyCategoryService → sadece login olan firmanın kategorileri döner)
 final categoryProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
-  final categories = await ref.read(categoryServiceProvider).getCategories();
-  return categories;
+  final raw = await ref.read(companyCategoryServiceProvider).getMyCategoryList();
+  // id/name formatına normalize et (UI widget'ları bu anahtar adlarını bekler)
+  return raw.map((c) => {
+    'id': c['categoryId']?.toString() ?? '',
+    'name': c['categoryName']?.toString() ?? '',
+    'level': c['categoryLevel'] ?? 0,
+    'parentId': c['categoryParentId']?.toString(),
+  }).toList();
 });
 
 /// Product Provider - Paginated (API-based)

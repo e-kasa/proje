@@ -472,19 +472,21 @@ class WizardState extends ChangeNotifier {
     bulkStockController.clear();
     bulkPurchasePriceController.clear();
     bulkSalePriceController.clear();
-
-    productType = 'simple';
-    selectedPreset = null;
-    attributes = [];
-    variants = [];
-    showAllVariants = false;
-    variantSearchQuery = '';
-    expandedVariants.clear();
-    oemNumbers = [];
-    crossReferences = [];
-    productImages = [];
     fabricController.clear();
     seasonController.clear();
+
+    variants.clear();
+    oemNumbers.clear();
+    productType = 'simple';
+    selectedCategory = null;
+    selectedUnit = 'pcs';
+    selectedVatRate = 20.0;
+    vatIncluded = false;
+    taxExempt = false;
+    selectedSupplier = null;
+    selectedStores = [];
+    selectedWarehouses = [];
+    isSaving = false;
 
     generateSKU();
     initializeDefaultVariant();
@@ -501,9 +503,20 @@ class WizardState extends ChangeNotifier {
       Colors.purple,
       Colors.teal,
       Colors.pink,
-      Colors.indigo,
     ];
-    final hash = attr.hashCode.abs();
-    return colors[hash % colors.length];
+    final lower = attr.toLowerCase();
+    if (lower.contains('kırmızı') || lower.contains('red')) return Colors.red;
+    if (lower.contains('mavi') || lower.contains('blue')) return Colors.blue;
+    if (lower.contains('yeşil') || lower.contains('green')) return Colors.green;
+    if (lower.contains('siyah') || lower.contains('black')) return Colors.black87;
+    if (lower.contains('beyaz') || lower.contains('white')) return Colors.grey.shade300;
+    if (lower.contains('sarı') || lower.contains('yellow')) return Colors.amber;
+    if (lower.contains('turuncu') || lower.contains('orange')) return Colors.orange;
+    if (lower.contains('mor') || lower.contains('purple')) return Colors.purple;
+    if (lower.contains('pembe') || lower.contains('pink')) return Colors.pink;
+    if (lower.contains('gri') || lower.contains('grey') || lower.contains('gray')) return Colors.grey;
+    if (lower.contains('kahve') || lower.contains('brown')) return Colors.brown;
+    if (lower.contains('lacivert') || lower.contains('navy')) return const Color(0xFF001F54);
+    return colors[attr.hashCode.abs() % colors.length];
   }
 }

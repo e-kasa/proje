@@ -43,7 +43,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
         final sessionId = prefs.getString('session_id');
 
         if (token != null && userJson != null) {
-          final user = User.fromJson(jsonDecode(userJson) as Map<String, dynamic>);
+          var user = User.fromJson(jsonDecode(userJson) as Map<String, dynamic>);
+
+          // SharedPreferences'taki sektör override'ı uygula
+          final overrideSector = prefs.getString('override_sector_type');
+          if (overrideSector != null && overrideSector.isNotEmpty) {
+            user = user.copyWith(sectorType: overrideSector);
+          }
+
           state = state.copyWith(
             user: user,
             token: token,
@@ -76,9 +83,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final refreshToken = payload['refreshToken'] as String;
       final sessionId = payload['sessionId'] as String;
 
-      final user = _decodeUserFromJwt(accessToken);
+      var user = _decodeUserFromJwt(accessToken);
 
       final prefs = await SharedPreferences.getInstance();
+
+      // JWT'de sectorType yoksa SharedPreferences override'ını uygula
+      if (user.sectorType == null || user.sectorType!.isEmpty) {
+        final overrideSector = prefs.getString('override_sector_type');
+        if (overrideSector != null && overrideSector.isNotEmpty) {
+          user = user.copyWith(sectorType: overrideSector);
+        }
+      }
+
       await prefs.setString(AppConstants.tokenKey, accessToken);
       await prefs.setString(AppConstants.refreshTokenKey, refreshToken);
       await prefs.setString(AppConstants.userKey, jsonEncode(user.toJson()));
@@ -138,12 +154,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final sessionInstance = jsonDecode(sessionInstanceStr) as Map<String, dynamic>;
     final userInfo = sessionInstance['userInformation'] as Map<String, dynamic>;
 
+    // sectorType: önce userInfo, sonra sessionInstance, sonra JWT root'undan oku
+    final sectorType = userInfo['sectorType'] as String? ??
+        userInfo['companySectorType'] as String? ??
+        sessionInstance['sectorType'] as String? ??
+        sessionInstance['companySectorType'] as String? ??
+        jwtPayload['sectorType'] as String?;
+
     return User(
       id: userInfo['id'] as String? ?? '',
       username: userInfo['username'] as String? ?? '',
       displayName: userInfo['fullName'] as String? ?? '',
       email: userInfo['email'] as String? ?? '',
       selectedCompanyCode: userInfo['selectedCompanyCode'] as String? ?? '',
+      sectorType: sectorType,
     );
   }
 }

@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/config/sector_config.dart';
 import '../../core/widgets/widgets.dart';
+import '../../providers/sector_provider.dart';
 import '../../services/service_locator.dart';
 
 /// Profesyonel Toplu Ürün Yükleme Ekranı
@@ -19,7 +21,6 @@ class BulkImportUploadScreen extends ConsumerStatefulWidget {
 class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
     with SingleTickerProviderStateMixin {
   // ── State ──
-  String _selectedSector = 'parcaci';
   bool _isUploading = false;
   bool _uploadSuccess = false;
   double _uploadProgress = 0.0;
@@ -31,6 +32,18 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
 
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
+
+  // ── Sector (kullanıcıdan otomatik) ──
+  SectorType get _sectorType => ref.watch(sectorTypeProvider);
+
+  String get _selectedSector => switch (_sectorType) {
+    SectorType.autoParts  => 'parcaci',
+    SectorType.footwear   => 'giyim',
+    SectorType.technology => 'genel',
+    SectorType.general    => 'genel',
+  };
+
+  String get _sectorLabel => _sectorType.displayName;
 
   // ── Sector configs ──
   static const _sectors = [
@@ -218,8 +231,8 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
                   _buildStepIndicator(),
                   const SizedBox(height: 28),
 
-                  // Sector Selector
-                  _buildSectorSelector(),
+                  // Sector Info Banner (otomatik)
+                  _buildSectorBanner(),
                   const SizedBox(height: 24),
 
                   // Upload Zone / Progress / Success / Error
@@ -348,78 +361,67 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
   }
 
   // ═══════════════════════════════════════════════════════════
-  // SECTOR SELECTOR
+  // SECTOR BANNER (otomatik — kullanıcı sektörüne göre)
   // ═══════════════════════════════════════════════════════════
 
-  Widget _buildSectorSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 10),
-          child: Text(
-            'Sektör Seçin',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ),
-        Row(
-          children: _sectors.map((s) {
-            final isSelected = _selectedSector == s['key'];
-            final color = s['color'] as Color;
+  Widget _buildSectorBanner() {
+    final sector = _sectors.firstWhere(
+      (s) => s['key'] == _selectedSector,
+      orElse: () => _sectors.last,
+    );
+    final color = sector['color'] as Color;
 
-            return Expanded(
-              child: GestureDetector(
-                onTap: (_isUploading || _uploadSuccess)
-                    ? null
-                    : () => setState(() => _selectedSector = s['key'] as String),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: isSelected ? color.withOpacity(0.08) : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isSelected ? color : AppColors.border,
-                      width: isSelected ? 2 : 1,
-                    ),
-                    boxShadow: isSelected
-                        ? [BoxShadow(color: color.withOpacity(0.15), blurRadius: 8, offset: const Offset(0, 2))]
-                        : null,
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(s['icon'] as IconData, color: isSelected ? color : AppColors.textMuted, size: 28),
-                      const SizedBox(height: 6),
-                      Text(
-                        s['label'] as String,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          color: isSelected ? color : AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        s['desc'] as String,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: isSelected ? color.withOpacity(0.7) : AppColors.textMuted,
-                        ),
-                      ),
-                    ],
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.25)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(sector['icon'] as IconData, color: color, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _sectorLabel,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: color,
                   ),
                 ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
+                const SizedBox(height: 2),
+                Text(
+                  sector['desc'] as String,
+                  style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              'Otomatik',
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

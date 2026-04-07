@@ -3,8 +3,8 @@ import '../../../core/theme/app_colors.dart';
 
 class CategoryFilterBar extends StatelessWidget {
   final List<Map<String, dynamic>> categories;
-  final int? selectedCategoryId;
-  final ValueChanged<int?> onCategorySelected;
+  final String? selectedCategoryId;
+  final ValueChanged<String?> onCategorySelected;
 
   const CategoryFilterBar({
     super.key,
@@ -32,9 +32,7 @@ class CategoryFilterBar extends StatelessWidget {
           }
 
           final cat = categories[index - 1];
-          final catId = cat['id'] is int
-              ? cat['id'] as int
-              : int.tryParse(cat['id'].toString()) ?? 0;
+          final catId = cat['id']?.toString() ?? '';
           final name = cat['name']?.toString() ?? 'Kategori';
 
           return _buildChip(

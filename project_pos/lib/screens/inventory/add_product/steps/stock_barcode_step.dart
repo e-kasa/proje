@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/config/sector_config.dart';
 import '../models/wizard_state.dart';
 import '../widgets/wizard_common_widgets.dart';
 import '../widgets/multi_select_chips.dart';
@@ -18,6 +19,76 @@ class StockBarcodeStep extends StatelessWidget {
     required this.isMobile,
   });
 
+  // ── Sector-aware accent color ──────────────────────────────────────────────
+  Color get _accentColor => switch (state.sectorType) {
+    SectorType.autoParts => AppColors.orange,
+    SectorType.footwear => AppColors.pink,
+    SectorType.technology => AppColors.info,
+    SectorType.general => AppColors.primary,
+  };
+
+  // ── Card wrapper ───────────────────────────────────────────────────────────
+  Widget _card({required Widget child}) {
+    return Container(
+      padding: EdgeInsets.all(isMobile ? 12 : 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  // ── Section header ─────────────────────────────────────────────────────────
+  Widget _header({
+    required IconData icon,
+    required String title,
+    Color? color,
+    String? subtitle,
+  }) {
+    final c = color ?? _accentColor;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: c.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: c.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: c, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                if (subtitle != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(subtitle, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final totalStock = state.variants.fold<int>(0, (sum, v) => sum + (v.inventory?.physicalQuantity ?? 0));
@@ -34,12 +105,12 @@ class StockBarcodeStep extends StatelessWidget {
     final variantsWithStock = state.variants.where((v) => (v.inventory?.physicalQuantity ?? 0) > 0).length;
 
     final statCards = [
-      {'label': '\ud83d\udce6 Toplam\nStok', 'value': '$totalStock', 'color': AppColors.success},
-      {'label': '\ud83d\udcb5 Al\u0131\u015f\nDe\u011feri', 'value': '\u20ba${totalPurchaseValue.toStringAsFixed(2)}', 'color': AppColors.danger},
-      {'label': '\ud83d\udcb0 Sat\u0131\u015f\nDe\u011feri', 'value': '\u20ba${totalSaleValue.toStringAsFixed(2)}', 'color': AppColors.success},
-      {'label': '${totalProfit >= 0 ? "\ud83d\udcb0" : "\u26a0\ufe0f"} Toplam\nK\u00e2r', 'value': '\u20ba${totalProfit.toStringAsFixed(2)}', 'color': totalProfit >= 0 ? AppColors.success : AppColors.danger},
-      {'label': '\ud83d\udcc8 K\u00e2r\nMarj\u0131', 'value': '${profitMargin.toStringAsFixed(1)}%', 'color': totalProfit >= 0 ? AppColors.success : AppColors.danger},
-      {'label': '\ud83c\udff7\ufe0f Stoklu\nVaryant', 'value': '$variantsWithStock/${state.variants.length}', 'color': AppColors.warning},
+      {'label': 'Toplam\nStok', 'value': '$totalStock', 'color': AppColors.success, 'icon': Icons.inventory_2},
+      {'label': 'Alis\nDegeri', 'value': '\u20ba${totalPurchaseValue.toStringAsFixed(2)}', 'color': AppColors.danger, 'icon': Icons.shopping_cart},
+      {'label': 'Satis\nDegeri', 'value': '\u20ba${totalSaleValue.toStringAsFixed(2)}', 'color': AppColors.success, 'icon': Icons.point_of_sale},
+      {'label': 'Toplam\nKar', 'value': '\u20ba${totalProfit.toStringAsFixed(2)}', 'color': totalProfit >= 0 ? AppColors.success : AppColors.danger, 'icon': totalProfit >= 0 ? Icons.trending_up : Icons.warning_amber},
+      {'label': 'Kar\nMarji', 'value': '${profitMargin.toStringAsFixed(1)}%', 'color': totalProfit >= 0 ? AppColors.success : AppColors.danger, 'icon': Icons.show_chart},
+      {'label': 'Stoklu\nVaryant', 'value': '$variantsWithStock/${state.variants.length}', 'color': AppColors.warning, 'icon': Icons.label},
     ];
 
     return Column(
@@ -49,44 +120,98 @@ class StockBarcodeStep extends StatelessWidget {
         _buildBulkOperations(context),
         const SizedBox(height: 16),
         _buildVariantsList(context),
+        if (state.isParcaci) ...[
+          const SizedBox(height: 16),
+          _buildAutoPartsSection(context),
+        ],
         const SizedBox(height: 16),
-        _buildAutoPartsSection(context),
-        const SizedBox(height: 16),
-        buildResponsiveStatGrid(statCards, isMobile: isMobile),
+        _buildStatCards(statCards),
       ],
     );
   }
-  Widget _buildStoreWarehouseSupplier(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(isMobile ? 12 : 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: isMobile ? 6 : 10)],
-      ),
+
+  // ── Stat cards with icons ──────────────────────────────────────────────────
+  Widget _buildStatCards(List<Map<String, dynamic>> statCards) {
+    return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: AppColors.info.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-            child: const Row(
-              children: [
-                Icon(Icons.store, color: AppColors.info),
-                SizedBox(width: 12),
-                Text('Depo, Ma\u011faza ve Tedarik\u00e7i Bilgileri', style: TextStyle(fontWeight: FontWeight.bold)),
-              ],
+          _header(icon: Icons.analytics, title: 'Stok Ozeti', color: _accentColor),
+          const SizedBox(height: 16),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: isMobile ? 2 : 3,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: isMobile ? 1.6 : 2.0,
             ),
+            itemCount: statCards.length,
+            itemBuilder: (context, index) {
+              final card = statCards[index];
+              final color = card['color'] as Color;
+              final icon = card['icon'] as IconData;
+              return Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.06),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: color.withOpacity(0.15)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(icon, color: color, size: 16),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            (card['label'] as String).replaceAll('\n', ' '),
+                            style: TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      card['value'] as String,
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: color),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Store / Warehouse / Supplier ───────────────────────────────────────────
+  Widget _buildStoreWarehouseSupplier(BuildContext context) {
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _header(
+            icon: Icons.store,
+            title: 'Depo, Magaza ve Tedarikci Bilgileri',
+            color: AppColors.info,
           ),
           const SizedBox(height: 16),
 
           buildFormField(
-            label: 'Ma\u011faza',
+            label: 'Magaza',
             required: true,
             child: MultiSelectChips(
               selectedValues: state.selectedStores,
               allOptions: state.stores,
-              hintText: 'Ma\u011faza ekle...',
+              hintText: 'Magaza ekle...',
               icon: Icons.store,
               onChanged: (vals) { state.selectedStores = vals; onChanged(); },
             ),
@@ -107,10 +232,10 @@ class StockBarcodeStep extends StatelessWidget {
           const SizedBox(height: 12),
 
           buildFormField(
-            label: 'Tedarik\u00e7i',
+            label: 'Tedarikci',
             child: DropdownButtonFormField<String>(
               value: state.selectedSupplier,
-              decoration: inputDecoration('Tedarik\u00e7i se\u00e7in').copyWith(
+              decoration: inputDecoration('Tedarikci secin').copyWith(
                 prefixIcon: const Icon(Icons.business, color: AppColors.primary, size: 18),
               ),
               items: state.suppliers.map<DropdownMenuItem<String>>((sup) {
@@ -143,7 +268,7 @@ class StockBarcodeStep extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: buildFormField(
-                  label: 'Al\u0131\u015f Tarihi',
+                  label: 'Alis Tarihi',
                   child: InkWell(
                     onTap: () async {
                       final picked = await showDatePicker(
@@ -169,7 +294,7 @@ class StockBarcodeStep extends StatelessWidget {
                     child: IgnorePointer(
                       child: TextField(
                         controller: state.purchaseDateController,
-                        decoration: inputDecoration('Tarih se\u00e7in').copyWith(
+                        decoration: inputDecoration('Tarih secin').copyWith(
                           prefixIcon: const Icon(Icons.calendar_today, color: AppColors.primary, size: 18),
                           suffixIcon: state.purchaseDateController.text.isNotEmpty
                               ? IconButton(
@@ -189,71 +314,66 @@ class StockBarcodeStep extends StatelessWidget {
       ),
     );
   }
+
+  // ── Bulk operations ────────────────────────────────────────────────────────
   Widget _buildBulkOperations(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(isMobile ? 12 : 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: isMobile ? 6 : 10)],
-      ),
+    return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: AppColors.warning.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-            child: const Row(
-              children: [
-                Icon(Icons.bolt, color: AppColors.warning),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('H\u0131zl\u0131 Toplu \u0130\u015flemler', style: TextStyle(fontWeight: FontWeight.bold)),
-                      Text('T\u00fcm varyantlara ayn\u0131 de\u011feri ata', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          _header(
+            icon: Icons.bolt,
+            title: 'Hizli Toplu Islemler',
+            color: AppColors.warning,
+            subtitle: 'Tum varyantlara ayni degeri ata',
           ),
           const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
-                child: ElevatedButton.icon(
+                child: OutlinedButton.icon(
                   onPressed: () => showBulkStockDialog(context: context, state: state, onChanged: onChanged),
-                  icon: Icon(Icons.inventory_2, size: isMobile ? 18 : 20),
-                  label: Text(isMobile ? 'Stok' : 'Stok Uygula', style: TextStyle(fontSize: isMobile ? 11 : 13)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.info,
+                  icon: Icon(Icons.inventory_2, size: isMobile ? 18 : 20, color: AppColors.info),
+                  label: Text(
+                    isMobile ? 'Stok' : 'Stok Uygula',
+                    style: TextStyle(fontSize: isMobile ? 11 : 13, color: AppColors.info),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: AppColors.info.withOpacity(0.5)),
                     padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 16, vertical: isMobile ? 12 : 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: ElevatedButton.icon(
+                child: OutlinedButton.icon(
                   onPressed: () => showBulkPurchasePriceDialog(context: context, state: state, onChanged: onChanged),
-                  icon: Icon(Icons.attach_money, size: isMobile ? 18 : 20),
-                  label: Text(isMobile ? 'Al\u0131\u015f' : 'Al\u0131\u015f Fiyat\u0131', style: TextStyle(fontSize: isMobile ? 11 : 13)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.danger,
+                  icon: Icon(Icons.attach_money, size: isMobile ? 18 : 20, color: AppColors.danger),
+                  label: Text(
+                    isMobile ? 'Alis' : 'Alis Fiyati',
+                    style: TextStyle(fontSize: isMobile ? 11 : 13, color: AppColors.danger),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: AppColors.danger.withOpacity(0.5)),
                     padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 16, vertical: isMobile ? 12 : 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: ElevatedButton.icon(
+                child: OutlinedButton.icon(
                   onPressed: () => showBulkSalePriceDialog(context: context, state: state, onChanged: onChanged),
-                  icon: Icon(Icons.sell, size: isMobile ? 18 : 20),
-                  label: Text(isMobile ? 'Sat\u0131\u015f' : 'Sat\u0131\u015f Fiyat\u0131', style: TextStyle(fontSize: isMobile ? 11 : 13)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.success,
+                  icon: Icon(Icons.sell, size: isMobile ? 18 : 20, color: AppColors.success),
+                  label: Text(
+                    isMobile ? 'Satis' : 'Satis Fiyati',
+                    style: TextStyle(fontSize: isMobile ? 11 : 13, color: AppColors.success),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: AppColors.success.withOpacity(0.5)),
                     padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 16, vertical: isMobile ? 12 : 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
               ),
@@ -263,86 +383,155 @@ class StockBarcodeStep extends StatelessWidget {
       ),
     );
   }
+
+  // ── Variants list ──────────────────────────────────────────────────────────
   Widget _buildVariantsList(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(isMobile ? 12 : 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: isMobile ? 6 : 10)],
-      ),
+    return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Varyant Stok Bilgileri (${state.variants.length})', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          _header(
+            icon: Icons.view_list,
+            title: 'Varyant Stok Bilgileri (${state.variants.length})',
+            color: _accentColor,
+          ),
           const SizedBox(height: 16),
-          ListView.separated(
+          ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: state.variants.length,
-            separatorBuilder: (_, __) => const Divider(height: 24),
             itemBuilder: (context, index) {
               final variant = state.variants[index];
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(variant.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          key: ValueKey('stock_${variant.sku}_${variant.inventory?.physicalQuantity}'),
-                          initialValue: variant.inventory?.physicalQuantity.toString() ?? '0',
-                          keyboardType: TextInputType.number,
-                          decoration: inputDecoration('Stok').copyWith(prefixIcon: const Icon(Icons.inventory_2, size: 18)),
-                          onChanged: (val) {
-                            final qty = int.tryParse(val) ?? 0;
-                            if (variant.inventory == null) {
-                              variant.inventory = InventoryInfo(
-                                warehouseCode: state.selectedWarehouses.isNotEmpty ? state.selectedWarehouses.first : 'WH-001',
-                                physicalQuantity: qty,
-                              );
-                            } else {
-                              variant.inventory!.physicalQuantity = qty;
-                            }
-                            onChanged();
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextFormField(
-                          key: ValueKey('purchase_${variant.sku}_${variant.purchasePrice}'),
-                          initialValue: variant.purchasePrice.toStringAsFixed(2),
-                          keyboardType: TextInputType.number,
-                          decoration: inputDecoration('Al\u0131\u015f').copyWith(
-                            prefixIcon: const Icon(Icons.attach_money, size: 18, color: AppColors.danger),
-                            prefixText: '\u20ba',
+              final qty = variant.inventory?.physicalQuantity ?? 0;
+              final variantProfit = (variant.salePrice - variant.purchasePrice) * qty;
+              final isEven = index % 2 == 0;
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 2),
+                padding: EdgeInsets.all(isMobile ? 10 : 14),
+                decoration: BoxDecoration(
+                  color: isEven ? Colors.transparent : AppColors.bgLight,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        // Index badge
+                        Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: _accentColor.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          onChanged: (val) { variant.purchasePrice = double.tryParse(val) ?? 0; onChanged(); },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextFormField(
-                          key: ValueKey('sale_${variant.sku}_${variant.salePrice}'),
-                          initialValue: variant.salePrice.toStringAsFixed(2),
-                          keyboardType: TextInputType.number,
-                          decoration: inputDecoration('Sat\u0131\u015f').copyWith(
-                            prefixIcon: const Icon(Icons.sell, size: 18, color: AppColors.success),
-                            prefixText: '\u20ba',
+                          alignment: Alignment.center,
+                          child: Text(
+                            '${index + 1}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: _accentColor,
+                            ),
                           ),
-                          onChanged: (val) { variant.salePrice = double.tryParse(val) ?? 0; onChanged(); },
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    decoration: inputDecoration('Barkod').copyWith(prefixIcon: const Icon(Icons.qr_code, size: 18)),
-                  ),
-                ],
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            variant.name,
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                          ),
+                        ),
+                        // Profit badge
+                        if (qty > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: variantProfit >= 0
+                                  ? AppColors.success.withOpacity(0.1)
+                                  : AppColors.danger.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  variantProfit >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
+                                  size: 12,
+                                  color: variantProfit >= 0 ? AppColors.success : AppColors.danger,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '\u20ba${variantProfit.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: variantProfit >= 0 ? AppColors.success : AppColors.danger,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            key: ValueKey('stock_${variant.sku}_${variant.inventory?.physicalQuantity}'),
+                            initialValue: variant.inventory?.physicalQuantity.toString() ?? '0',
+                            keyboardType: TextInputType.number,
+                            decoration: inputDecoration('Stok').copyWith(prefixIcon: const Icon(Icons.inventory_2, size: 18)),
+                            onChanged: (val) {
+                              final parsedQty = int.tryParse(val) ?? 0;
+                              if (variant.inventory == null) {
+                                variant.inventory = InventoryInfo(
+                                  warehouseCode: state.selectedWarehouses.isNotEmpty ? state.selectedWarehouses.first : 'WH-001',
+                                  physicalQuantity: parsedQty,
+                                );
+                              } else {
+                                variant.inventory!.physicalQuantity = parsedQty;
+                              }
+                              onChanged();
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextFormField(
+                            key: ValueKey('purchase_${variant.sku}_${variant.purchasePrice}'),
+                            initialValue: variant.purchasePrice.toStringAsFixed(2),
+                            keyboardType: TextInputType.number,
+                            decoration: inputDecoration('Alis').copyWith(
+                              prefixIcon: const Icon(Icons.attach_money, size: 18, color: AppColors.danger),
+                              prefixText: '\u20ba',
+                            ),
+                            onChanged: (val) { variant.purchasePrice = double.tryParse(val) ?? 0; onChanged(); },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextFormField(
+                            key: ValueKey('sale_${variant.sku}_${variant.salePrice}'),
+                            initialValue: variant.salePrice.toStringAsFixed(2),
+                            keyboardType: TextInputType.number,
+                            decoration: inputDecoration('Satis').copyWith(
+                              prefixIcon: const Icon(Icons.sell, size: 18, color: AppColors.success),
+                              prefixText: '\u20ba',
+                            ),
+                            onChanged: (val) { variant.salePrice = double.tryParse(val) ?? 0; onChanged(); },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      decoration: inputDecoration('Barkod').copyWith(prefixIcon: const Icon(Icons.qr_code, size: 18)),
+                    ),
+                  ],
+                ),
               );
             },
           ),
@@ -350,27 +539,17 @@ class StockBarcodeStep extends StatelessWidget {
       ),
     );
   }
+
+  // ── Auto parts section (only shown when isParcaci) ─────────────────────────
   Widget _buildAutoPartsSection(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(isMobile ? 12 : 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: isMobile ? 6 : 10)],
-      ),
+    return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: AppColors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-            child: const Row(
-              children: [
-                Icon(Icons.build_circle, color: AppColors.orange),
-                SizedBox(width: 12),
-                Text('Oto Parca Bilgileri', style: TextStyle(fontWeight: FontWeight.bold)),
-              ],
-            ),
+          _header(
+            icon: Icons.build_circle,
+            title: 'Oto Parca Bilgileri',
+            color: AppColors.orange,
           ),
           const SizedBox(height: 16),
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/config/sector_config.dart';
 import '../../../providers/sector_provider.dart';
 import 'models/wizard_state.dart';
 import 'steps/basic_info_step.dart';
@@ -25,25 +26,43 @@ class AddProductWizardScreen extends ConsumerStatefulWidget {
 }
 
 class _AddProductWizardScreenState
-    extends ConsumerState<AddProductWizardScreen> {
+    extends ConsumerState<AddProductWizardScreen>
+    with SingleTickerProviderStateMixin {
   int _currentStep = 0;
   static const _totalSteps = 3;
   late final WizardState _state;
   int _savedCount = 0;
 
-  final _stepTitles = const ['Ürün Bilgileri', 'Varyant & Stok', 'Önizleme'];
+  late final AnimationController _pulseController;
+  late final Animation<double> _pulseAnimation;
+
+  final _stepTitles = const ['Urun Bilgileri', 'Varyant & Stok', 'Onizleme'];
   final _stepIcons = const [
     Icons.inventory_2_rounded,
     Icons.layers_rounded,
     Icons.preview_rounded,
   ];
 
+  Color get _accentColor => switch (_state.sectorType) {
+    SectorType.autoParts => AppColors.orange,
+    SectorType.footwear => AppColors.pink,
+    SectorType.technology => AppColors.info,
+    SectorType.general => AppColors.primary,
+  };
+
+  IconData get _sectorIcon => switch (_state.sectorType) {
+    SectorType.autoParts => Icons.build_circle_rounded,
+    SectorType.footwear => Icons.checkroom_rounded,
+    SectorType.technology => Icons.devices_rounded,
+    SectorType.general => Icons.store_rounded,
+  };
+
   @override
   void initState() {
     super.initState();
     _state = WizardState();
 
-    // Sektörü kullanıcı bilgisinden otomatik al
+    // Sektoru kullanici bilgisinden otomatik al
     _state.sectorType = ref.read(sectorTypeProvider);
 
     _state.generateSKU();
@@ -53,10 +72,20 @@ class _AddProductWizardScreenState
     if (widget.fromBulkImport && widget.importData != null) {
       _state.populateFromImportData(widget.importData!);
     }
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+    _pulseController.repeat(reverse: true);
   }
 
   @override
   void dispose() {
+    _pulseController.dispose();
     _state.dispose();
     super.dispose();
   }
@@ -76,7 +105,7 @@ class _AddProductWizardScreenState
         _state.variants.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Varyant oluşturulmadı, varsayılan varyant kullanılacak'),
+          content: Text('Varyant olusturulmadi, varsayilan varyant kullanilacak'),
           backgroundColor: AppColors.warning,
         ),
       );
@@ -119,6 +148,7 @@ class _AddProductWizardScreenState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isMobile = MediaQuery.of(context).size.width < 600;
+    final sectorConfig = ref.watch(sectorConfigProvider);
 
     return PopScope(
       canPop: false,
@@ -128,22 +158,22 @@ class _AddProductWizardScreenState
           final shouldPop = await showDialog<bool>(
             context: context,
             builder: (ctx) => AlertDialog(
-              title: const Text('Çıkmak istediğinize emin misiniz?'),
+              title: const Text('Cikmak istediginize emin misiniz?'),
               content: Text(
                 _savedCount > 0
-                    ? '$_savedCount ürün kaydedildi. Mevcut formdaki değişiklikler kaybolacak.'
-                    : 'Formdaki değişiklikler kaybolacak.',
+                    ? '$_savedCount urun kaydedildi. Mevcut formdaki degisiklikler kaybolacak.'
+                    : 'Formdaki degisiklikler kaybolacak.',
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('İptal'),
+                  child: const Text('Iptal'),
                 ),
                 FilledButton(
                   onPressed: () => Navigator.pop(ctx, true),
                   style:
                       FilledButton.styleFrom(backgroundColor: AppColors.danger),
-                  child: const Text('Çık'),
+                  child: const Text('Cik'),
                 ),
               ],
             ),
@@ -165,26 +195,40 @@ class _AddProductWizardScreenState
             icon: const Icon(Icons.close_rounded),
             onPressed: () => Navigator.maybePop(context),
           ),
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          title: Row(
             children: [
-              Text(
-                _savedCount > 0
-                    ? 'Ürün Ekle ($_savedCount kaydedildi)'
-                    : 'Yeni Ürün Ekle',
-                style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w700),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _savedCount > 0
+                          ? 'Urun Ekle ($_savedCount kaydedildi)'
+                          : 'Yeni Urun Ekle',
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w700),
+                    ),
+                    Text(
+                      '${_stepTitles[_currentStep]} -- Adim ${_currentStep + 1}/$_totalSteps',
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
               ),
-              Text(
-                '${_stepTitles[_currentStep]} — Adım ${_currentStep + 1}/$_totalSteps',
-                style: TextStyle(
-                    fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
-              ),
+              _buildSectorBadge(sectorConfig),
             ],
           ),
           bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(56),
-            child: _buildStepBar(theme),
+            preferredSize: const Size.fromHeight(78),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildStepBar(theme),
+                Container(height: 2, color: _accentColor),
+              ],
+            ),
           ),
         ),
         body: AnimatedSwitcher(
@@ -200,9 +244,35 @@ class _AddProductWizardScreenState
     );
   }
 
+  Widget _buildSectorBadge(SectorConfig sectorConfig) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: _accentColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _accentColor.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(_sectorIcon, size: 14, color: _accentColor),
+          const SizedBox(width: 5),
+          Text(
+            _state.sectorType.displayName,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: _accentColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStepBar(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: List.generate(_totalSteps * 2 - 1, (i) {
           if (i.isOdd) {
@@ -212,9 +282,15 @@ class _AddProductWizardScreenState
             return Expanded(
               child: Container(
                 height: 2,
-                color: isDone
-                    ? AppColors.primary
-                    : theme.colorScheme.outlineVariant,
+                margin: const EdgeInsets.only(bottom: 18),
+                decoration: BoxDecoration(
+                  gradient: isDone
+                      ? LinearGradient(
+                          colors: [_accentColor, _accentColor.withOpacity(0.6)])
+                      : null,
+                  color: isDone ? null : theme.colorScheme.outlineVariant,
+                  borderRadius: BorderRadius.circular(1),
+                ),
               ),
             );
           }
@@ -222,27 +298,84 @@ class _AddProductWizardScreenState
           final isCurrent = step == _currentStep;
           final isDone = step < _currentStep;
           return GestureDetector(
-            onTap: step < _currentStep ? () => setState(() => _currentStep = step) : null,
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isCurrent
-                    ? AppColors.primary
-                    : isDone
-                        ? AppColors.success
-                        : theme.colorScheme.surfaceContainerHighest,
-                border: isCurrent
-                    ? Border.all(color: AppColors.primaryLight, width: 2)
-                    : null,
-              ),
-              child: Icon(
-                isDone ? Icons.check_rounded : _stepIcons[step],
-                size: 18,
-                color: (isCurrent || isDone)
-                    ? Colors.white
-                    : theme.colorScheme.onSurfaceVariant,
+            onTap: step < _currentStep
+                ? () => setState(() => _currentStep = step)
+                : null,
+            child: SizedBox(
+              width: 72,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: isDone
+                          ? LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                AppColors.success,
+                                AppColors.success.withOpacity(0.8),
+                              ],
+                            )
+                          : null,
+                      color: isCurrent
+                          ? _accentColor
+                          : isDone
+                              ? null
+                              : theme.colorScheme.surfaceContainerHighest,
+                      boxShadow: isCurrent
+                          ? [
+                              BoxShadow(
+                                color: _accentColor.withOpacity(0.4),
+                                blurRadius: 10,
+                                spreadRadius: 1,
+                              ),
+                            ]
+                          : null,
+                      border: isCurrent
+                          ? Border.all(
+                              color: _accentColor.withOpacity(0.3), width: 2.5)
+                          : null,
+                    ),
+                    child: Center(
+                      child: isDone
+                          ? const Icon(Icons.check_rounded,
+                              size: 18, color: Colors.white)
+                          : isCurrent
+                              ? Icon(_stepIcons[step],
+                                  size: 17, color: Colors.white)
+                              : Text(
+                                  '${step + 1}',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color:
+                                        theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _stepTitles[step],
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight:
+                          isCurrent ? FontWeight.w700 : FontWeight.w500,
+                      color: isCurrent
+                          ? _accentColor
+                          : isDone
+                              ? AppColors.success
+                              : theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ),
           );
@@ -267,11 +400,21 @@ class _AddProductWizardScreenState
   }
 
   Widget _buildFooter(ThemeData theme, bool isMobile) {
+    final isLastStep = _currentStep == _totalSteps - 1;
+
     return Container(
       padding: EdgeInsets.all(isMobile ? 12 : 16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant)),
+        border:
+            Border(top: BorderSide(color: theme.colorScheme.outlineVariant)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
       ),
       child: SafeArea(
         child: Row(
@@ -281,23 +424,62 @@ class _AddProductWizardScreenState
               OutlinedButton.icon(
                 onPressed: _back,
                 icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                label: Text(isMobile ? 'Geri' : 'Önceki Adım'),
+                label: Text(isMobile ? 'Geri' : 'Onceki Adim'),
                 style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textSecondary,
+                  side: BorderSide(
+                      color: theme.colorScheme.outlineVariant),
                   padding: EdgeInsets.symmetric(
                       horizontal: isMobile ? 12 : 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
             const Spacer(),
+            // Saved count badge
+            if (_savedCount > 0) ...[
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.bgSuccess,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                      color: AppColors.success.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.check_circle_rounded,
+                        size: 14, color: AppColors.success),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$_savedCount urun',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.success,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+            ],
             // Forward / Save buttons
-            if (_currentStep < _totalSteps - 1)
+            if (!isLastStep)
               FilledButton.icon(
                 onPressed: _next,
                 icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                label: Text(isMobile ? 'İleri' : 'Sonraki Adım'),
+                label: Text(isMobile ? 'Ileri' : 'Sonraki Adim'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: _accentColor,
                   padding: EdgeInsets.symmetric(
                       horizontal: isMobile ? 16 : 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               )
             else ...[
@@ -306,33 +488,43 @@ class _AddProductWizardScreenState
                 icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
                 label: Text(isMobile ? 'Yeni' : 'Kaydet & Yeni Ekle'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary),
+                  foregroundColor: _accentColor,
+                  side: BorderSide(color: _accentColor),
                   padding: EdgeInsets.symmetric(
                       horizontal: isMobile ? 10 : 16, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
-              FilledButton.icon(
-                onPressed: _state.isSaving
-                    ? null
-                    : () => _state.handleSubmit(
-                          ref: ref,
-                          context: context,
-                          fromBulkImport: false,
-                        ),
-                icon: _state.isSaving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
-                    : const Icon(Icons.check_circle_rounded, size: 18),
-                label: Text(_state.isSaving ? 'Kaydediliyor...' : 'Kaydet'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.success,
-                  padding: EdgeInsets.symmetric(
-                      horizontal: isMobile ? 16 : 24, vertical: 12),
+              ScaleTransition(
+                scale: _pulseAnimation,
+                child: FilledButton.icon(
+                  onPressed: _state.isSaving
+                      ? null
+                      : () => _state.handleSubmit(
+                            ref: ref,
+                            context: context,
+                            fromBulkImport: false,
+                          ),
+                  icon: _state.isSaving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.check_circle_rounded, size: 18),
+                  label:
+                      Text(_state.isSaving ? 'Kaydediliyor...' : 'Kaydet'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.success,
+                    padding: EdgeInsets.symmetric(
+                        horizontal: isMobile ? 16 : 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
                 ),
               ),
             ],

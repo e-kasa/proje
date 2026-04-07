@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/config/sector_config.dart';
 import '../models/wizard_state.dart';
 import '../widgets/wizard_common_widgets.dart';
 import '../widgets/category_picker.dart';
@@ -15,6 +17,13 @@ class BasicInfoStep extends StatelessWidget {
     required this.onChanged,
     required this.isMobile,
   });
+
+  Color get _accentColor => switch (state.sectorType) {
+        SectorType.autoParts => AppColors.orange,
+        SectorType.footwear => AppColors.pink,
+        SectorType.technology => AppColors.info,
+        SectorType.general => AppColors.primary,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -44,20 +53,23 @@ class BasicInfoStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionHeader(
-              icon: Icons.info_outline_rounded, title: 'Temel Bilgiler'),
-          const SizedBox(height: 14),
+          _SectionHeader(
+            icon: Icons.info_outline_rounded,
+            title: 'Temel Bilgiler',
+            subtitle: state.sectorType.displayName,
+          ),
+          const SizedBox(height: 16),
           buildFormField(
-            label: 'Ürün Adı',
+            label: 'Urun Adi',
             required: true,
             child: TextField(
               controller: state.productNameController,
               decoration: inputDecoration(
                 state.isParcaci
-                    ? 'Örn: Ön Fren Balatası Takımı'
+                    ? 'Orn: On Fren Balatasi Takimi'
                     : state.isGiyim
-                        ? 'Örn: Slim Fit Erkek Tişört'
-                        : 'Ürün adını girin',
+                        ? 'Orn: Slim Fit Erkek Tisort'
+                        : 'Urun adini girin',
               ),
               onChanged: (_) => onChanged(),
             ),
@@ -72,14 +84,47 @@ class BasicInfoStep extends StatelessWidget {
                   child: TextField(
                     controller: state.skuController,
                     decoration: inputDecoration('Stok Kodu').copyWith(
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.refresh_rounded,
-                            color: AppColors.primary, size: 20),
-                        onPressed: () {
-                          state.generateSKU();
-                          onChanged();
-                        },
-                        tooltip: 'Otomatik üret',
+                      suffixIcon: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.copy_rounded,
+                                color: AppColors.textSecondary, size: 18),
+                            onPressed: () {
+                              if (state.skuController.text.isNotEmpty) {
+                                Clipboard.setData(ClipboardData(
+                                    text: state.skuController.text));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content:
+                                        const Text('SKU kopyalandi'),
+                                    duration:
+                                        const Duration(milliseconds: 1200),
+                                    behavior: SnackBarBehavior.floating,
+                                    backgroundColor: AppColors.dark,
+                                  ),
+                                );
+                              }
+                            },
+                            tooltip: 'Kopyala',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                                minWidth: 32, minHeight: 32),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.refresh_rounded,
+                                color: AppColors.primary, size: 20),
+                            onPressed: () {
+                              state.generateSKU();
+                              onChanged();
+                            },
+                            tooltip: 'Otomatik uret',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                                minWidth: 32, minHeight: 32),
+                          ),
+                          const SizedBox(width: 4),
+                        ],
                       ),
                     ),
                   ),
@@ -186,11 +231,11 @@ class BasicInfoStep extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           buildFormField(
-            label: 'Açıklama',
+            label: 'Aciklama',
             child: TextField(
               controller: state.descriptionController,
               maxLines: 2,
-              decoration: inputDecoration('Ürün hakkında kısa bilgi...'),
+              decoration: inputDecoration('Urun hakkinda kisa bilgi...'),
             ),
           ),
         ],
@@ -200,48 +245,103 @@ class BasicInfoStep extends StatelessWidget {
 
   // ─── Pricing ──────────────────────────────────────────────────────────────
 
+  Widget _buildProfitBadge() {
+    final purchase =
+        double.tryParse(state.basePurchasePriceController.text) ?? 0;
+    final sale = double.tryParse(state.basePriceController.text) ?? 0;
+
+    if (purchase <= 0 || sale <= 0) return const SizedBox.shrink();
+
+    final profit = sale - purchase;
+    final margin = (profit / purchase) * 100;
+    final isPositive = profit > 0;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: isPositive
+            ? AppColors.success.withOpacity(0.08)
+            : AppColors.danger.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isPositive
+              ? AppColors.success.withOpacity(0.3)
+              : AppColors.danger.withOpacity(0.3),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isPositive
+                ? Icons.trending_up_rounded
+                : Icons.trending_down_rounded,
+            size: 16,
+            color: isPositive ? AppColors.success : AppColors.danger,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'Kar: ${profit >= 0 ? "+" : ""}${profit.toStringAsFixed(2)} TL (${margin.toStringAsFixed(1)}%)',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: isPositive ? AppColors.success : AppColors.danger,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPricingCard(BuildContext context) {
+    final priceFields = [
+      Expanded(
+        child: buildFormField(
+          label: 'Alis Fiyati',
+          child: TextField(
+            controller: state.basePurchasePriceController,
+            keyboardType: TextInputType.number,
+            decoration: inputDecoration('0.00').copyWith(
+              prefixText: 'TL ',
+              prefixStyle: const TextStyle(
+                  color: AppColors.danger, fontWeight: FontWeight.w600),
+            ),
+            onChanged: (_) => onChanged(),
+          ),
+        ),
+      ),
+      SizedBox(width: isMobile ? 0 : 12, height: isMobile ? 12 : 0),
+      Expanded(
+        child: buildFormField(
+          label: 'Satis Fiyati',
+          required: true,
+          child: TextField(
+            controller: state.basePriceController,
+            keyboardType: TextInputType.number,
+            decoration: inputDecoration('0.00').copyWith(
+              prefixText: 'TL ',
+              prefixStyle: const TextStyle(
+                  color: AppColors.success, fontWeight: FontWeight.w600),
+            ),
+            onChanged: (_) => onChanged(),
+          ),
+        ),
+      ),
+    ];
+
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const _SectionHeader(
-              icon: Icons.payments_rounded, title: 'Fiyatlandırma'),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: buildFormField(
-                  label: 'Alış Fiyatı',
-                  child: TextField(
-                    controller: state.basePurchasePriceController,
-                    keyboardType: TextInputType.number,
-                    decoration: inputDecoration('0.00').copyWith(
-                      prefixText: '₺ ',
-                      prefixStyle: const TextStyle(
-                          color: AppColors.danger, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: buildFormField(
-                  label: 'Satış Fiyatı',
-                  required: true,
-                  child: TextField(
-                    controller: state.basePriceController,
-                    keyboardType: TextInputType.number,
-                    decoration: inputDecoration('0.00').copyWith(
-                      prefixText: '₺ ',
-                      prefixStyle: const TextStyle(
-                          color: AppColors.success, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+              icon: Icons.payments_rounded, title: 'Fiyatlandirma'),
+          const SizedBox(height: 16),
+          if (isMobile)
+            Column(children: priceFields)
+          else
+            Row(children: priceFields),
+          const SizedBox(height: 10),
+          _buildProfitBadge(),
         ],
       ),
     );
@@ -251,32 +351,36 @@ class BasicInfoStep extends StatelessWidget {
 
   Widget _buildAutoPartsCard(BuildContext context) {
     return _card(
+      accentBorderColor: AppColors.orange,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _SectionHeader(
             icon: Icons.build_circle_rounded,
-            title: 'Oto Parça Bilgileri',
+            title: 'Oto Parca Bilgileri',
             color: AppColors.orange,
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           buildFormField(
             label: 'Raf Konumu',
             child: TextField(
               controller: state.shelfNumberController,
-              decoration: inputDecoration('Örn: A-03-R2').copyWith(
+              decoration: inputDecoration('Orn: A-03-R2').copyWith(
                 prefixIcon: Icon(Icons.shelves,
                     color: AppColors.orange, size: 18),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
           // OEM Numbers
           _buildDynamicList(
-            title: 'OEM Numaraları',
+            title: 'OEM Numaralari',
             icon: Icons.confirmation_number_rounded,
+            accentColor: AppColors.orange,
             items: state.oemNumbers,
+            emptyIcon: Icons.confirmation_number_outlined,
+            emptyText: 'Henuz OEM numarasi eklenmedi',
             onAdd: () {
               state.oemNumbers
                   .add({'oemNumber': '', 'manufacturer': ''});
@@ -292,7 +396,7 @@ class BasicInfoStep extends StatelessWidget {
                   flex: 3,
                   child: TextField(
                     decoration:
-                        inputDecoration('OEM No (örn: 04465-02220)')
+                        inputDecoration('OEM No (orn: 04465-02220)')
                             .copyWith(isDense: true),
                     style: const TextStyle(fontSize: 13),
                     onChanged: (val) =>
@@ -306,7 +410,7 @@ class BasicInfoStep extends StatelessWidget {
                   flex: 2,
                   child: TextField(
                     decoration:
-                        inputDecoration('Üretici').copyWith(isDense: true),
+                        inputDecoration('Uretici').copyWith(isDense: true),
                     style: const TextStyle(fontSize: 13),
                     onChanged: (val) =>
                         state.oemNumbers[i]['manufacturer'] = val,
@@ -317,13 +421,18 @@ class BasicInfoStep extends StatelessWidget {
               ],
             ),
           ),
-          const Divider(height: 24),
+          const SizedBox(height: 8),
+          Divider(color: AppColors.border.withOpacity(0.5), height: 24),
+          const SizedBox(height: 4),
 
           // Cross References
           _buildDynamicList(
-            title: 'Çapraz Referanslar',
+            title: 'Capraz Referanslar',
             icon: Icons.compare_arrows_rounded,
+            accentColor: AppColors.orange,
             items: state.crossReferences,
+            emptyIcon: Icons.compare_arrows_outlined,
+            emptyText: 'Henuz capraz referans eklenmedi',
             onAdd: () {
               state.crossReferences.add(
                   {'crossRefNumber': '', 'crossRefBrand': '', 'notes': ''});
@@ -339,7 +448,7 @@ class BasicInfoStep extends StatelessWidget {
                   flex: 3,
                   child: TextField(
                     decoration:
-                        inputDecoration('Referans No (örn: GDB3550)')
+                        inputDecoration('Referans No (orn: GDB3550)')
                             .copyWith(isDense: true),
                     style: const TextStyle(fontSize: 13),
                     onChanged: (val) =>
@@ -352,7 +461,7 @@ class BasicInfoStep extends StatelessWidget {
                 Expanded(
                   flex: 2,
                   child: TextField(
-                    decoration: inputDecoration('Marka (örn: TRW)')
+                    decoration: inputDecoration('Marka (orn: TRW)')
                         .copyWith(isDense: true),
                     style: const TextStyle(fontSize: 13),
                     onChanged: (val) =>
@@ -376,43 +485,120 @@ class BasicInfoStep extends StatelessWidget {
     required VoidCallback onAdd,
     required void Function(int) onRemove,
     required Widget Function(int) itemBuilder,
+    Color accentColor = AppColors.primary,
+    IconData emptyIcon = Icons.inbox_rounded,
+    String emptyText = 'Henuz eklenmedi',
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(icon, size: 16, color: AppColors.textSecondary),
+            Icon(icon, size: 16, color: accentColor),
             const SizedBox(width: 6),
             Text(title,
-                style: const TextStyle(
-                    fontWeight: FontWeight.w600, fontSize: 13)),
+                style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: AppColors.textPrimary)),
+            const SizedBox(width: 8),
+            if (items.isNotEmpty)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: accentColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${items.length}',
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: accentColor),
+                ),
+              ),
             const Spacer(),
             TextButton.icon(
               onPressed: onAdd,
-              icon: const Icon(Icons.add_rounded, size: 16),
-              label: const Text('Ekle', style: TextStyle(fontSize: 12)),
+              icon: Icon(Icons.add_rounded, size: 16, color: accentColor),
+              label: Text('Ekle',
+                  style: TextStyle(fontSize: 12, color: accentColor)),
               style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 8)),
             ),
           ],
         ),
+        const SizedBox(height: 8),
         if (items.isEmpty)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8, left: 22),
-            child: Text('Henüz eklenmedi',
-                style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+            decoration: BoxDecoration(
+              color: AppColors.bgLight.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: accentColor.withOpacity(0.2),
+              ),
+            ),
+            child: Column(
+              children: [
+                Icon(emptyIcon,
+                    size: 28, color: accentColor.withOpacity(0.3)),
+                const SizedBox(height: 6),
+                Text(emptyText,
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textMuted.withOpacity(0.7))),
+                const SizedBox(height: 8),
+                Text('Eklemek icin yukardaki "Ekle" butonunu kullanin',
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textMuted.withOpacity(0.5))),
+              ],
+            ),
           ),
         ...items.asMap().entries.map((entry) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+          final index = entry.key;
+          final isEven = index % 2 == 0;
+          return Container(
+            margin: const EdgeInsets.only(bottom: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: isEven
+                  ? Colors.transparent
+                  : AppColors.bgLight.withOpacity(0.7),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: AppColors.border.withOpacity(isEven ? 0.3 : 0.15),
+              ),
+            ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Expanded(child: itemBuilder(entry.key)),
+                Container(
+                  width: 24,
+                  height: 24,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: accentColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '${index + 1}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: accentColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(child: itemBuilder(index)),
                 IconButton(
                   icon: const Icon(Icons.remove_circle_outline_rounded,
                       color: AppColors.danger, size: 20),
-                  onPressed: () => onRemove(entry.key),
+                  onPressed: () => onRemove(index),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(minWidth: 36),
                 ),
@@ -428,6 +614,7 @@ class BasicInfoStep extends StatelessWidget {
 
   Widget _buildClothingCard(BuildContext context) {
     return _card(
+      accentBorderColor: AppColors.pink,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -436,15 +623,15 @@ class BasicInfoStep extends StatelessWidget {
             title: 'Giyim Bilgileri',
             color: AppColors.pink,
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
                 child: buildFormField(
-                  label: 'Kumaş / Materyal',
+                  label: 'Kumas / Materyal',
                   child: TextField(
                     controller: state.fabricController,
-                    decoration: inputDecoration('Örn: %100 Pamuk'),
+                    decoration: inputDecoration('Orn: %100 Pamuk'),
                   ),
                 ),
               ),
@@ -454,7 +641,7 @@ class BasicInfoStep extends StatelessWidget {
                   label: 'Sezon',
                   child: TextField(
                     controller: state.seasonController,
-                    decoration: inputDecoration('Örn: 2026 İlkbahar-Yaz'),
+                    decoration: inputDecoration('Orn: 2026 Ilkbahar-Yaz'),
                   ),
                 ),
               ),
@@ -474,18 +661,18 @@ class BasicInfoStep extends StatelessWidget {
         children: [
           const _SectionHeader(
               icon: Icons.receipt_long_rounded, title: 'Vergi Bilgileri'),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
                 flex: 2,
                 child: buildFormField(
-                  label: 'KDV Oranı',
+                  label: 'KDV Orani',
                   child: DropdownButtonFormField<double>(
                     value: state.selectedVatRate,
                     decoration: inputDecoration('KDV %'),
                     items: const [
-                      DropdownMenuItem(value: 0.0, child: Text('% 0 — Muaf')),
+                      DropdownMenuItem(value: 0.0, child: Text('% 0 -- Muaf')),
                       DropdownMenuItem(value: 1.0, child: Text('% 1')),
                       DropdownMenuItem(value: 8.0, child: Text('% 8')),
                       DropdownMenuItem(value: 10.0, child: Text('% 10')),
@@ -502,7 +689,7 @@ class BasicInfoStep extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: buildFormField(
-                  label: 'ÖTV %',
+                  label: 'OTV %',
                   child: TextField(
                     controller: state.specialTaxRateController,
                     keyboardType:
@@ -528,7 +715,8 @@ class BasicInfoStep extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _toggleChip(
+              Expanded(
+                  child: _toggleChip(
                 label: 'Fiyat KDV Dahil',
                 value: state.vatIncluded,
                 onTap: () {
@@ -538,7 +726,8 @@ class BasicInfoStep extends StatelessWidget {
                 activeColor: AppColors.success,
               )),
               const SizedBox(width: 12),
-              Expanded(child: _toggleChip(
+              Expanded(
+                  child: _toggleChip(
                 label: 'Vergiden Muaf',
                 value: state.taxExempt,
                 onTap: () {
@@ -556,15 +745,41 @@ class BasicInfoStep extends StatelessWidget {
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
-  Widget _card({required Widget child}) {
+  Widget _card({required Widget child, Color? accentBorderColor}) {
     return Container(
-      padding: EdgeInsets.all(isMobile ? 14 : 20),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border.withOpacity(0.5)),
+        border: Border.all(color: AppColors.border.withOpacity(0.4)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: child,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (accentBorderColor != null)
+              Container(
+                width: 4,
+                decoration: BoxDecoration(
+                  color: accentBorderColor,
+                ),
+              ),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.all(isMobile ? 14 : 20),
+                child: child,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -615,24 +830,67 @@ class _SectionHeader extends StatelessWidget {
   final IconData icon;
   final String title;
   final Color? color;
+  final String? subtitle;
 
   const _SectionHeader({
     required this.icon,
     required this.title,
     this.color,
+    this.subtitle,
   });
 
   @override
   Widget build(BuildContext context) {
     final c = color ?? AppColors.primary;
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 20, color: c),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: TextStyle(
-              fontSize: 15, fontWeight: FontWeight.w700, color: c),
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: c.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 18, color: c),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w700, color: c),
+                  ),
+                  if (subtitle != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        subtitle!,
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textMuted,
+                            fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Container(
+          height: 2,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [c.withOpacity(0.4), c.withOpacity(0.0)],
+              stops: const [0.0, 1.0],
+            ),
+            borderRadius: BorderRadius.circular(1),
+          ),
         ),
       ],
     );

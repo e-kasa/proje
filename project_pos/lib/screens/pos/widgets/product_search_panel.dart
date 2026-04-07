@@ -181,6 +181,180 @@ class _ProductSearchPanelState extends ConsumerState<ProductSearchPanel> {
     );
   }
 
+  /// Ürüne dokunulduğunda varyant sayısına göre davranış belirler.
+  void _handleProductTap(
+      BuildContext context, Map<String, dynamic> product, PosNotifier notifier) {
+    final variants = (product['variants'] as List?)
+        ?.whereType<Map<String, dynamic>>()
+        .toList() ?? [];
+
+    if (variants.length > 1) {
+      _showVariantPicker(context, product, variants, notifier);
+    } else if (variants.length == 1) {
+      notifier.addToCart(product, variant: variants.first);
+    } else {
+      notifier.addToCart(product);
+    }
+  }
+
+  /// Birden fazla varyantı olan ürünler için seçim dialogu.
+  void _showVariantPicker(
+      BuildContext context,
+      Map<String, dynamic> product,
+      List<Map<String, dynamic>> variants,
+      PosNotifier notifier) {
+    final basePrice = (product['basePrice'] as num?)?.toDouble()
+        ?? (product['sellingPrice'] as num?)?.toDouble()
+        ?? 0.0;
+    final currencyFormat =
+        RegExp(r'\d').hasMatch('₺') ? null : null; // sadece placeholder
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Handle bar
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Text(
+              product['name']?.toString() ?? 'Varyant Seç',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${variants.length} varyant mevcut',
+              style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+            ),
+            const SizedBox(height: 16),
+            // Varyant listesi
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.45,
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: variants.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (_, i) {
+                  final v = variants[i];
+                  final additionalPrice =
+                      (v['additionalPrice'] as num?)?.toDouble() ?? 0.0;
+                  final totalPrice = basePrice + additionalPrice;
+                  final vStock = _getVariantStock(v);
+                  final vName = v['name']?.toString()
+                      ?? v['sku']?.toString()
+                      ?? 'Varyant ${i + 1}';
+                  final attrs = v['attributes'] as Map<String, dynamic>? ?? {};
+                  final attrText = attrs.entries
+                      .map((e) => '${e.value}')
+                      .join(' · ');
+                  final isOutOfStock = vStock <= 0;
+
+                  return ListTile(
+                    onTap: isOutOfStock ? null : () {
+                      Navigator.pop(ctx);
+                      notifier.addToCart(product, variant: v);
+                    },
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 4, vertical: 4),
+                    leading: Container(
+                      width: 40, height: 40,
+                      decoration: BoxDecoration(
+                        color: isOutOfStock
+                            ? AppColors.bgLight
+                            : AppColors.primary.withAlpha(20),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.inventory_2_outlined,
+                        size: 20,
+                        color: isOutOfStock
+                            ? AppColors.textMuted
+                            : AppColors.primary,
+                      ),
+                    ),
+                    title: Text(
+                      vName,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: isOutOfStock
+                            ? AppColors.textMuted
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                    subtitle: attrText.isNotEmpty
+                        ? Text(attrText,
+                            style: const TextStyle(
+                                fontSize: 12, color: AppColors.textMuted))
+                        : null,
+                    trailing: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '${totalPrice.toStringAsFixed(2)} ₺',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: isOutOfStock
+                                ? AppColors.textMuted
+                                : AppColors.primary,
+                          ),
+                        ),
+                        Text(
+                          isOutOfStock ? 'Stokta yok' : 'Stok: $vStock',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isOutOfStock
+                                ? AppColors.danger
+                                : vStock <= 5
+                                    ? AppColors.warning
+                                    : AppColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  int _getVariantStock(Map<String, dynamic> variant) {
+    final inv = variant['inventory'] as Map<String, dynamic>?;
+    if (inv != null) {
+      return (inv['physicalQuantity'] as num?)?.toInt() ?? 0;
+    }
+    return (variant['stock'] as num?)?.toInt() ?? 0;
+  }
+
   Widget _buildProductCard(
       Map<String, dynamic> product, PosNotifier notifier) {
     final name = product['name']?.toString() ?? '';
@@ -190,11 +364,17 @@ class _ProductSearchPanelState extends ConsumerState<ProductSearchPanel> {
     final stock = (product['stock'] as num?)?.toInt() ?? 0;
     final sku = product['sku']?.toString() ?? '';
     final isOutOfStock = stock <= 0;
+    final variants = (product['variants'] as List?)
+        ?.whereType<Map<String, dynamic>>()
+        .toList() ?? [];
+    final hasMultiVariant = variants.length > 1;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: isOutOfStock ? null : () => notifier.addToCart(product),
+        onTap: isOutOfStock
+            ? null
+            : () => _handleProductTap(context, product, notifier),
         borderRadius: BorderRadius.circular(12),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
@@ -266,26 +446,58 @@ class _ProductSearchPanelState extends ConsumerState<ProductSearchPanel> {
 
               const Spacer(),
 
-              // SKU
-              if (sku.isNotEmpty)
-                Text(
-                  sku,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textMuted,
-                  ),
-                ),
+              // SKU + çoklu varyant ikonu
+              Row(
+                children: [
+                  if (sku.isNotEmpty)
+                    Expanded(
+                      child: Text(
+                        sku,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textMuted,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  if (hasMultiVariant)
+                    Tooltip(
+                      message: '${variants.length} varyant',
+                      child: Icon(
+                        Icons.layers_outlined,
+                        size: 14,
+                        color: AppColors.primary.withAlpha(180),
+                      ),
+                    ),
+                ],
+              ),
 
               const SizedBox(height: 4),
 
               // Fiyat
-              Text(
-                '${price.toStringAsFixed(2)} \u20BA',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: isOutOfStock ? AppColors.textMuted : AppColors.primary,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${price.toStringAsFixed(2)} ₺',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: isOutOfStock
+                            ? AppColors.textMuted
+                            : AppColors.primary,
+                      ),
+                    ),
+                  ),
+                  if (hasMultiVariant)
+                    Text(
+                      'başlangıç',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textMuted.withAlpha(180),
+                      ),
+                    ),
+                ],
               ),
             ],
           ),

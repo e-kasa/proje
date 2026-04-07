@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/config/sector_config.dart';
 import '../models/wizard_state.dart';
 import '../widgets/wizard_common_widgets.dart';
 import '../widgets/variant_image_widgets.dart';
@@ -13,6 +15,13 @@ class PreviewStep extends StatelessWidget {
     required this.state,
     required this.isMobile,
   });
+
+  Color get _accentColor => switch (state.sectorType) {
+    SectorType.autoParts => AppColors.orange,
+    SectorType.footwear => AppColors.pink,
+    SectorType.technology => AppColors.info,
+    SectorType.general => AppColors.primary,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -54,53 +63,102 @@ class PreviewStep extends StatelessWidget {
       int stock, double purchase, double sale, double profit) {
     final items = [
       _SummaryItem(
-          label: 'Varyant',
-          value: '${state.variants.length}',
-          color: AppColors.primary),
+        label: 'Varyant',
+        value: '${state.variants.length}',
+        color: _accentColor,
+        icon: Icons.layers_rounded,
+      ),
       _SummaryItem(
-          label: 'Stok', value: '$stock', color: AppColors.info),
+        label: 'Stok',
+        value: '$stock',
+        color: AppColors.info,
+        icon: Icons.inventory_2_rounded,
+      ),
       _SummaryItem(
-          label: 'Alış',
-          value: '₺${purchase.toStringAsFixed(0)}',
-          color: AppColors.danger),
+        label: 'Alis',
+        value: '\u20ba${purchase.toStringAsFixed(0)}',
+        color: AppColors.danger,
+        icon: Icons.shopping_cart_rounded,
+      ),
       _SummaryItem(
-          label: 'Satış',
-          value: '₺${sale.toStringAsFixed(0)}',
-          color: AppColors.success),
+        label: 'Satis',
+        value: '\u20ba${sale.toStringAsFixed(0)}',
+        color: AppColors.success,
+        icon: Icons.point_of_sale_rounded,
+      ),
       _SummaryItem(
-          label: 'Kâr',
-          value: '₺${profit.toStringAsFixed(0)}',
-          color: profit >= 0 ? AppColors.success : AppColors.danger),
+        label: 'Kar',
+        value: '\u20ba${profit.toStringAsFixed(0)}',
+        color: profit >= 0 ? AppColors.success : AppColors.danger,
+        icon: Icons.trending_up_rounded,
+      ),
     ];
 
-    return Row(
+    final child = Row(
       children: items.map((item) {
         return Expanded(
           child: Container(
             margin: EdgeInsets.only(right: item != items.last ? 8 : 0),
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
             decoration: BoxDecoration(
-              color: item.color.withOpacity(0.06),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: item.color.withOpacity(0.2)),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  item.color.withOpacity(0.08),
+                  item.color.withOpacity(0.02),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: item.color.withOpacity(0.15)),
             ),
-            child: Column(
+            child: Stack(
               children: [
-                Text(item.value,
-                    style: TextStyle(
-                        fontSize: isMobile ? 14 : 16,
-                        fontWeight: FontWeight.w700,
-                        color: item.color)),
-                const SizedBox(height: 2),
-                Text(item.label,
-                    style: TextStyle(
-                        fontSize: 10, color: item.color.withOpacity(0.7))),
+                Positioned(
+                  right: -4,
+                  top: -4,
+                  child: Icon(
+                    item.icon,
+                    size: 32,
+                    color: item.color.withOpacity(0.07),
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.value,
+                      style: TextStyle(
+                        fontSize: isMobile ? 15 : 18,
+                        fontWeight: FontWeight.w800,
+                        color: item.color,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      item.label,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        color: item.color.withOpacity(0.65),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
         );
       }).toList(),
     );
+
+    if (isMobile) {
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: IntrinsicWidth(child: child),
+      );
+    }
+    return child;
   }
 
   // ─── Product Info ─────────────────────────────────────────────────────────
@@ -115,22 +173,68 @@ class PreviewStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _header(Icons.info_outline_rounded, 'Ürün Bilgileri'),
-          const SizedBox(height: 12),
-          _infoRow('Ürün Adı', state.productNameController.text),
+          _header(Icons.info_outline_rounded, 'Urun Bilgileri'),
+          const SizedBox(height: 16),
+          _infoRow('Urun Adi', state.productNameController.text),
+          _divider(),
           _infoRow('SKU', state.skuController.text),
+          _divider(),
           _infoRow('Kategori', categoryLabel),
-          _infoRow('Marka', state.brandController.text.isEmpty
-              ? '-'
-              : state.brandController.text),
-          _infoRow('Birim', state.selectedUnit),
-          _infoRow('Alış Fiyatı', '₺${state.basePurchasePriceController.text}'),
-          _infoRow('Satış Fiyatı', '₺${state.basePriceController.text}'),
+          _divider(),
           _infoRow(
-              'KDV',
-              '% ${state.selectedVatRate}'
-              '${state.vatIncluded ? " (Dahil)" : " (Hariç)"}'),
-          _infoRow('Sektör', state.sectorType.displayName),
+            'Marka',
+            state.brandController.text.isEmpty
+                ? '-'
+                : state.brandController.text,
+          ),
+          _divider(),
+          _infoRow('Birim', state.selectedUnit),
+          _divider(),
+          _infoRow('Alis Fiyati', '\u20ba${state.basePurchasePriceController.text}'),
+          _divider(),
+          _infoRow('Satis Fiyati', '\u20ba${state.basePriceController.text}'),
+          _divider(),
+          _infoRow(
+            'KDV',
+            '% ${state.selectedVatRate}'
+            '${state.vatIncluded ? " (Dahil)" : " (Haric)"}',
+          ),
+          _divider(),
+          _sectorRow(),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectorRow() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 130,
+            child: Text(
+              'Sektor',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: _accentColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _accentColor.withOpacity(0.3)),
+            ),
+            child: Text(
+              state.sectorType.displayName,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: _accentColor,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -143,25 +247,117 @@ class PreviewStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _header(Icons.build_circle_rounded, 'Oto Parça Bilgileri'),
-          const SizedBox(height: 12),
-          if (state.shelfNumberController.text.isNotEmpty)
+          _header(Icons.build_circle_rounded, 'Oto Parca Bilgileri'),
+          const SizedBox(height: 16),
+          if (state.shelfNumberController.text.isNotEmpty) ...[
             _infoRow('Raf Konumu', state.shelfNumberController.text),
-          if (state.oemNumbers.isNotEmpty)
-            _infoRow(
-                'OEM Numaraları',
-                state.oemNumbers
-                    .map((o) => o['oemNumber'])
-                    .where((s) => s != null && s.isNotEmpty)
-                    .join(', ')),
+            if (state.oemNumbers.isNotEmpty || state.crossReferences.isNotEmpty)
+              _divider(),
+          ],
+          if (state.oemNumbers.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 130,
+                    child: Text(
+                      'OEM Numaralari',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: state.oemNumbers
+                          .map((o) => o['oemNumber'])
+                          .where((s) => s != null && s.isNotEmpty)
+                          .map((oem) => _chip(
+                                oem!,
+                                AppColors.orange,
+                                Icons.precision_manufacturing_rounded,
+                              ))
+                          .toList(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (state.crossReferences.isNotEmpty) _divider(),
+          ],
           if (state.crossReferences.isNotEmpty)
-            _infoRow(
-                'Çapraz Referanslar',
-                state.crossReferences
-                    .map((c) =>
-                        '${c['crossRefNumber']} (${c['crossRefBrand']})')
-                    .where((s) => s.isNotEmpty)
-                    .join(', ')),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 130,
+                    child: Text(
+                      'Capraz Referanslar',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: state.crossReferences
+                          .map((c) {
+                            final num = c['crossRefNumber'] ?? '';
+                            final brand = c['crossRefBrand'] ?? '';
+                            if (num.isEmpty) return null;
+                            final label = brand.isNotEmpty
+                                ? '$num ($brand)'
+                                : num;
+                            return _chip(
+                              label,
+                              AppColors.info,
+                              Icons.compare_arrows_rounded,
+                            );
+                          })
+                          .whereType<Widget>()
+                          .toList(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _chip(String label, Color color, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color.withOpacity(0.7)),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+              fontFamily: 'monospace',
+            ),
+          ),
         ],
       ),
     );
@@ -175,29 +371,32 @@ class PreviewStep extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _header(Icons.location_on_rounded, 'Konum'),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           _infoRow(
-              'Mağaza',
-              state.selectedStores.isEmpty
-                  ? '-'
-                  : state.selectedStores
-                      .map((v) => state.stores
-                          .firstWhere((s) => s['value'] == v,
-                              orElse: () =>
-                                  <String, dynamic>{'label': v})['label']
-                          ?.toString() ?? v)
-                      .join(', ')),
+            'Magaza',
+            state.selectedStores.isEmpty
+                ? '-'
+                : state.selectedStores
+                    .map((v) => state.stores
+                        .firstWhere((s) => s['value'] == v,
+                            orElse: () =>
+                                <String, dynamic>{'label': v})['label']
+                        ?.toString() ?? v)
+                    .join(', '),
+          ),
+          _divider(),
           _infoRow(
-              'Depo',
-              state.selectedWarehouses.isEmpty
-                  ? '-'
-                  : state.selectedWarehouses
-                      .map((v) => state.warehouses
-                          .firstWhere((w) => w['value'] == v,
-                              orElse: () =>
-                                  <String, dynamic>{'label': v})['label']
-                          ?.toString() ?? v)
-                      .join(', ')),
+            'Depo',
+            state.selectedWarehouses.isEmpty
+                ? '-'
+                : state.selectedWarehouses
+                    .map((v) => state.warehouses
+                        .firstWhere((w) => w['value'] == v,
+                            orElse: () =>
+                                <String, dynamic>{'label': v})['label']
+                        ?.toString() ?? v)
+                    .join(', '),
+          ),
         ],
       ),
     );
@@ -206,27 +405,38 @@ class PreviewStep extends StatelessWidget {
   // ─── Variants Table ───────────────────────────────────────────────────────
 
   Widget _buildVariantsTable(BuildContext context) {
+    final totalStock = state.variants
+        .fold<int>(0, (sum, v) => sum + (v.inventory?.physicalQuantity ?? 0));
+    final totalPurchase = state.variants.fold<double>(
+        0, (s, v) => s + ((v.inventory?.physicalQuantity ?? 0) * v.purchasePrice));
+    final totalSale = state.variants.fold<double>(
+        0, (s, v) => s + ((v.inventory?.physicalQuantity ?? 0) * v.salePrice));
+    final totalProfit = totalSale - totalPurchase;
+
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _header(Icons.table_chart_rounded,
-              'Varyantlar (${state.variants.length})'),
+          _header(
+            Icons.table_chart_rounded,
+            'Varyantlar (${state.variants.length})',
+          ),
           const SizedBox(height: 12),
           if (isMobile)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: AppColors.info.withOpacity(0.06),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
                   Icon(Icons.swipe_rounded, size: 14, color: AppColors.info),
                   const SizedBox(width: 4),
-                  Text('Kaydırarak tüm sütunları görün',
-                      style:
-                          TextStyle(fontSize: 10, color: AppColors.info)),
+                  Text(
+                    'Kaydirarak tum sutunlari gorun',
+                    style: TextStyle(fontSize: 10, color: AppColors.info),
+                  ),
                 ],
               ),
             ),
@@ -234,69 +444,181 @@ class PreviewStep extends StatelessWidget {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
-              headingRowColor:
-                  WidgetStateProperty.all(AppColors.primary.withOpacity(0.04)),
+              headingRowColor: WidgetStateProperty.all(
+                _accentColor.withOpacity(0.06),
+              ),
               dataRowMinHeight: 36,
               dataRowMaxHeight: 44,
-              headingRowHeight: 40,
+              headingRowHeight: 42,
               columnSpacing: isMobile ? 16 : 32,
               horizontalMargin: 8,
-              columns: const [
-                DataColumn(
-                    label: Text('#',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 12))),
-                DataColumn(
-                    label: Text('Varyant',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 12))),
-                DataColumn(
-                    label: Text('SKU',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 12))),
-                DataColumn(
-                    label: Text('Stok',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 12))),
-                DataColumn(
-                    label: Text('Alış',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 12))),
-                DataColumn(
-                    label: Text('Satış',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 12))),
+              columns: [
+                _tableColumn('#'),
+                _tableColumn('Varyant'),
+                _tableColumn('SKU'),
+                _tableColumn('Stok'),
+                _tableColumn('Alis'),
+                _tableColumn('Satis'),
+                _tableColumn('Kar'),
               ],
-              rows: state.variants.asMap().entries.map((entry) {
-                final v = entry.value;
-                final qty = v.inventory?.physicalQuantity ?? 0;
-                return DataRow(cells: [
-                  DataCell(Text('${entry.key + 1}',
-                      style: const TextStyle(fontSize: 12))),
-                  DataCell(Text(v.name,
-                      style: const TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w500))),
-                  DataCell(Text(v.sku,
-                      style: const TextStyle(
-                          fontFamily: 'monospace', fontSize: 10))),
-                  DataCell(Text('$qty',
-                      style: TextStyle(
+              rows: [
+                ...state.variants.asMap().entries.map((entry) {
+                  final v = entry.value;
+                  final qty = v.inventory?.physicalQuantity ?? 0;
+                  final rowProfit = (v.salePrice - v.purchasePrice) * qty;
+                  final isZeroStock = qty == 0;
+
+                  return DataRow(
+                    color: WidgetStateProperty.resolveWith<Color?>(
+                      (states) {
+                        if (isZeroStock) {
+                          return AppColors.warning.withOpacity(0.06);
+                        }
+                        if (entry.key.isOdd) {
+                          return AppColors.bgLight.withOpacity(0.5);
+                        }
+                        return null;
+                      },
+                    ),
+                    cells: [
+                      DataCell(Text(
+                        '${entry.key + 1}',
+                        style: const TextStyle(fontSize: 12),
+                      )),
+                      DataCell(Text(
+                        v.name,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      )),
+                      DataCell(Text(
+                        v.sku,
+                        style: const TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 10,
+                        ),
+                      )),
+                      DataCell(Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isZeroStock)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 4),
+                              child: Icon(
+                                Icons.warning_amber_rounded,
+                                size: 13,
+                                color: AppColors.warning,
+                              ),
+                            ),
+                          Text(
+                            '$qty',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: qty > 0
+                                  ? AppColors.success
+                                  : AppColors.danger,
+                            ),
+                          ),
+                        ],
+                      )),
+                      DataCell(Text(
+                        '\u20ba${v.purchasePrice.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.danger,
+                        ),
+                      )),
+                      DataCell(Text(
+                        '\u20ba${v.salePrice.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.success,
+                        ),
+                      )),
+                      DataCell(Text(
+                        '\u20ba${rowProfit.toStringAsFixed(2)}',
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: qty > 0
+                          color: rowProfit >= 0
                               ? AppColors.success
-                              : AppColors.danger))),
-                  DataCell(Text('₺${v.purchasePrice.toStringAsFixed(2)}',
+                              : AppColors.danger,
+                        ),
+                      )),
+                    ],
+                  );
+                }),
+                // Total row
+                DataRow(
+                  color: WidgetStateProperty.all(
+                    _accentColor.withOpacity(0.08),
+                  ),
+                  cells: [
+                    const DataCell(SizedBox.shrink()),
+                    DataCell(Text(
+                      'TOPLAM',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: _accentColor,
+                      ),
+                    )),
+                    const DataCell(SizedBox.shrink()),
+                    DataCell(Text(
+                      '$totalStock',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: _accentColor,
+                      ),
+                    )),
+                    DataCell(Text(
+                      '\u20ba${totalPurchase.toStringAsFixed(2)}',
                       style: const TextStyle(
-                          fontSize: 12, color: AppColors.danger))),
-                  DataCell(Text('₺${v.salePrice.toStringAsFixed(2)}',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.danger,
+                      ),
+                    )),
+                    DataCell(Text(
+                      '\u20ba${totalSale.toStringAsFixed(2)}',
                       style: const TextStyle(
-                          fontSize: 12, color: AppColors.success))),
-                ]);
-              }).toList(),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.success,
+                      ),
+                    )),
+                    DataCell(Text(
+                      '\u20ba${totalProfit.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: totalProfit >= 0
+                            ? AppColors.success
+                            : AppColors.danger,
+                      ),
+                    )),
+                  ],
+                ),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  DataColumn _tableColumn(String label) {
+    return DataColumn(
+      label: Text(
+        label,
+        style: TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+          color: _accentColor,
+        ),
       ),
     );
   }
@@ -310,11 +632,24 @@ class PreviewStep extends StatelessWidget {
         children: [
           Row(
             children: [
-              _header(Icons.image_rounded, 'Görseller'),
+              _header(Icons.image_rounded, 'Gorseller'),
               const Spacer(),
-              Text('${state.productImages.length} görsel',
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: _accentColor.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${state.productImages.length} gorsel',
                   style: TextStyle(
-                      fontSize: 11, color: AppColors.textMuted)),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: _accentColor,
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -333,7 +668,7 @@ class PreviewStep extends StatelessWidget {
                 return buildAddImageButton(() {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Görsel seçici yakında eklenecek...'),
+                      content: Text('Gorsel secici yakinda eklenecek...'),
                       backgroundColor: AppColors.info,
                     ),
                   );
@@ -350,12 +685,19 @@ class PreviewStep extends StatelessWidget {
               child: Center(
                 child: Column(
                   children: [
-                    Icon(Icons.add_photo_alternate_rounded,
-                        size: 40, color: AppColors.textMuted.withOpacity(0.4)),
+                    Icon(
+                      Icons.add_photo_alternate_rounded,
+                      size: 40,
+                      color: AppColors.textMuted.withOpacity(0.4),
+                    ),
                     const SizedBox(height: 8),
-                    Text('Henüz görsel eklenmedi',
-                        style: TextStyle(
-                            fontSize: 12, color: AppColors.textMuted)),
+                    Text(
+                      'Henuz gorsel eklenmedi',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -368,58 +710,263 @@ class PreviewStep extends StatelessWidget {
   // ─── JSON Payload ─────────────────────────────────────────────────────────
 
   Widget _buildJsonPayload(BuildContext context) {
+    final jsonString = state.buildJsonPreview();
+
     return Container(
       padding: EdgeInsets.all(isMobile ? 14 : 20),
       decoration: BoxDecoration(
         color: const Color(0xFF1e293b),
         borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1e293b).withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.code_rounded, color: Colors.white70, size: 18),
-              const SizedBox(width: 8),
-              const Text('API Payload',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13)),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.code_rounded,
+                  color: Colors.white70,
+                  size: 16,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'API Payload',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
               const Spacer(),
-              IconButton(
-                icon:
-                    const Icon(Icons.copy_rounded, color: Colors.white54, size: 18),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('JSON kopyalandı!'),
-                        backgroundColor: AppColors.success),
-                  );
-                },
-                tooltip: 'Kopyala',
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: jsonString));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            const Icon(
+                              Icons.check_circle_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('Kopyalandi!'),
+                          ],
+                        ),
+                        backgroundColor: AppColors.success,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.1),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.copy_rounded,
+                          color: Colors.white54,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Kopyala',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Container(
-            constraints: const BoxConstraints(maxHeight: 200),
-            padding: const EdgeInsets.all(12),
+            constraints: const BoxConstraints(maxHeight: 260),
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.black26,
-              borderRadius: BorderRadius.circular(8),
+              color: Colors.black.withOpacity(0.25),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.05),
+              ),
             ),
             child: SingleChildScrollView(
-              child: Text(
-                state.buildJsonPreview(),
-                style: const TextStyle(
-                    color: Colors.white60, fontFamily: 'monospace', fontSize: 10),
-              ),
+              child: _buildSyntaxHighlightedJson(jsonString),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildSyntaxHighlightedJson(String json) {
+    final spans = <TextSpan>[];
+    final keyColor = const Color(0xFF7dd3fc); // light blue
+    final stringColor = const Color(0xFF86efac); // light green
+    final numberColor = const Color(0xFFfde68a); // light amber
+    final boolNullColor = const Color(0xFFc4b5fd); // light purple
+    final punctuationColor = Colors.white.withOpacity(0.4);
+
+    final lines = json.split('\n');
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      if (i > 0) {
+        spans.add(const TextSpan(text: '\n'));
+      }
+      _highlightLine(
+        line,
+        spans,
+        keyColor: keyColor,
+        stringColor: stringColor,
+        numberColor: numberColor,
+        boolNullColor: boolNullColor,
+        punctuationColor: punctuationColor,
+      );
+    }
+
+    return RichText(
+      text: TextSpan(
+        style: const TextStyle(
+          fontFamily: 'monospace',
+          fontSize: 10.5,
+          height: 1.5,
+        ),
+        children: spans,
+      ),
+    );
+  }
+
+  void _highlightLine(
+    String line,
+    List<TextSpan> spans, {
+    required Color keyColor,
+    required Color stringColor,
+    required Color numberColor,
+    required Color boolNullColor,
+    required Color punctuationColor,
+  }) {
+    // Match JSON key-value patterns
+    final keyValuePattern = RegExp(r'^(\s*)"([^"]+)"(\s*:\s*)(.*)$');
+    final match = keyValuePattern.firstMatch(line);
+
+    if (match != null) {
+      final indent = match.group(1) ?? '';
+      final key = match.group(2) ?? '';
+      final colon = match.group(3) ?? '';
+      final value = match.group(4) ?? '';
+
+      // Indent
+      if (indent.isNotEmpty) {
+        spans.add(TextSpan(text: indent, style: TextStyle(color: punctuationColor)));
+      }
+      // Key with quotes
+      spans.add(TextSpan(text: '"', style: TextStyle(color: keyColor)));
+      spans.add(TextSpan(text: key, style: TextStyle(color: keyColor, fontWeight: FontWeight.w600)));
+      spans.add(TextSpan(text: '"', style: TextStyle(color: keyColor)));
+      // Colon
+      spans.add(TextSpan(text: colon, style: TextStyle(color: punctuationColor)));
+      // Value
+      _highlightValue(value, spans,
+        stringColor: stringColor,
+        numberColor: numberColor,
+        boolNullColor: boolNullColor,
+        punctuationColor: punctuationColor,
+      );
+    } else {
+      // Non key-value lines (brackets, commas, etc.)
+      final trimmed = line.trim();
+      if (trimmed.isEmpty) {
+        spans.add(TextSpan(text: line, style: TextStyle(color: punctuationColor)));
+      } else {
+        _highlightValue(line, spans,
+          stringColor: stringColor,
+          numberColor: numberColor,
+          boolNullColor: boolNullColor,
+          punctuationColor: punctuationColor,
+        );
+      }
+    }
+  }
+
+  void _highlightValue(
+    String value,
+    List<TextSpan> spans, {
+    required Color stringColor,
+    required Color numberColor,
+    required Color boolNullColor,
+    required Color punctuationColor,
+  }) {
+    final trimmed = value.trim();
+    final trailingComma = trimmed.endsWith(',');
+    final cleaned = trailingComma
+        ? trimmed.substring(0, trimmed.length - 1).trim()
+        : trimmed;
+
+    // Leading whitespace
+    final leadingSpaces = value.length - value.trimLeft().length;
+    if (leadingSpaces > 0) {
+      spans.add(TextSpan(
+        text: value.substring(0, leadingSpaces),
+        style: TextStyle(color: punctuationColor),
+      ));
+    }
+
+    if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
+      // String value
+      spans.add(TextSpan(text: cleaned, style: TextStyle(color: stringColor)));
+    } else if (cleaned == 'true' || cleaned == 'false') {
+      spans.add(TextSpan(text: cleaned, style: TextStyle(color: boolNullColor, fontWeight: FontWeight.w600)));
+    } else if (cleaned == 'null') {
+      spans.add(TextSpan(text: cleaned, style: TextStyle(color: boolNullColor, fontStyle: FontStyle.italic)));
+    } else if (RegExp(r'^-?\d+\.?\d*$').hasMatch(cleaned)) {
+      spans.add(TextSpan(text: cleaned, style: TextStyle(color: numberColor)));
+    } else if (cleaned == '{' || cleaned == '}' || cleaned == '[' || cleaned == ']') {
+      spans.add(TextSpan(text: cleaned, style: TextStyle(color: punctuationColor)));
+    } else {
+      spans.add(TextSpan(text: cleaned, style: TextStyle(color: punctuationColor)));
+    }
+
+    if (trailingComma) {
+      spans.add(TextSpan(text: ',', style: TextStyle(color: punctuationColor)));
+    }
   }
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -430,7 +977,14 @@ class PreviewStep extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border.withOpacity(0.5)),
+        border: Border.all(color: AppColors.border.withOpacity(0.4)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: child,
     );
@@ -439,36 +993,62 @@ class PreviewStep extends StatelessWidget {
   Widget _header(IconData icon, String title) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: AppColors.primary),
-        const SizedBox(width: 8),
-        Text(title,
-            style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primary)),
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: _accentColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 18, color: _accentColor),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
       ],
     );
   }
 
   Widget _infoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 130,
-            child: Text(label,
-                style: TextStyle(
-                    fontSize: 12, color: AppColors.textSecondary)),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+            ),
           ),
           Expanded(
-            child: Text(value,
-                style: const TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w500)),
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _divider() {
+    return Divider(
+      height: 1,
+      thickness: 1,
+      color: AppColors.border.withOpacity(0.3),
     );
   }
 }
@@ -477,7 +1057,12 @@ class _SummaryItem {
   final String label;
   final String value;
   final Color color;
+  final IconData icon;
 
-  _SummaryItem(
-      {required this.label, required this.value, required this.color});
+  _SummaryItem({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.icon,
+  });
 }

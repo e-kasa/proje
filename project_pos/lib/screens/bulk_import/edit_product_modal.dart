@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
+import '../../services/service_locator.dart';
 
 /// Reference data helpers for product edit form dropdowns.
 class _ReferenceData {
-  static List<String> getCategories() => [
-    'Giyim', 'Elektronik', 'Gida', 'Kozmetik', 'Ev & Yasam',
-    'Spor', 'Oyuncak', 'Kirtasiye', 'Diger',
-  ];
+  // Sabit kategoriler artık kullanılmıyor — API'den dinamik yükleniyor
 
   static List<String> getBrands() => [
     'Genel', 'Nike', 'Adidas', 'Samsung', 'Apple', 'LG',
@@ -34,7 +33,7 @@ class _ReferenceData {
   ];
 }
 
-class EditProductModal extends StatefulWidget {
+class EditProductModal extends ConsumerStatefulWidget {
   final Map<String, dynamic> product;
   final Function(Map<String, dynamic>) onSave;
   final List<Map<String, dynamic>>? existingProducts;
@@ -47,10 +46,10 @@ class EditProductModal extends StatefulWidget {
   });
 
   @override
-  State<EditProductModal> createState() => _EditProductModalState();
+  ConsumerState<EditProductModal> createState() => _EditProductModalState();
 }
 
-class _EditProductModalState extends State<EditProductModal> {
+class _EditProductModalState extends ConsumerState<EditProductModal> {
   final _formKey = GlobalKey<FormState>();
 
   late TextEditingController _nameController;
@@ -65,6 +64,8 @@ class _EditProductModalState extends State<EditProductModal> {
   String? _selectedBrand;
   String? _selectedUnit;
   double? _selectedTaxRate;
+
+  List<String> _categoryNames = [];
 
   String? _selectedExistingProductId;
   String _resolutionMode = 'edit';
@@ -92,6 +93,29 @@ class _EditProductModalState extends State<EditProductModal> {
     if (widget.product['status'] == 'conflict') {
       _resolutionMode = 'match';
       _selectedExistingProductId = widget.product['existingProduct']?['id'];
+    }
+
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final cats = await ref.read(companyCategoryServiceProvider).getMyCategoryList();
+      final names = cats
+          .map((c) => c['categoryName']?.toString() ?? '')
+          .where((n) => n.isNotEmpty)
+          .toList();
+      if (mounted) {
+        setState(() {
+          _categoryNames = names;
+          // Seçili kategori listede yoksa sıfırla
+          if (_selectedCategory != null && !names.contains(_selectedCategory)) {
+            _selectedCategory = null;
+          }
+        });
+      }
+    } catch (_) {
+      // Yüklenemezse dropdown boş kalır
     }
   }
 
@@ -410,7 +434,7 @@ class _EditProductModalState extends State<EditProductModal> {
                 child: DropdownButtonFormField<String>(
                   value: _selectedCategory,
                   decoration: const InputDecoration(labelText: 'Kategori', border: OutlineInputBorder()),
-                  items: _ReferenceData.getCategories().map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                  items: _categoryNames.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
                   onChanged: (v) => setState(() => _selectedCategory = v),
                 ),
               ),

@@ -6,6 +6,9 @@ import com.sedcore.enums.TransactionType;
 import com.sedcore.model.PurchaseItemRequest;
 import com.sedcore.model.PurchaseRequest;
 import com.sedcore.model.PurchaseResponse;
+import com.sedcore.model.PurchaseReturnItemRequest;
+import com.sedcore.model.PurchaseReturnRequest;
+import com.sedcore.model.PurchaseReturnResponse;
 import com.sedcore.repository.PurchaseRepository;
 import com.sedcore.service.*;
 import com.towpen.base.security.BaseDbServiceImp;
@@ -239,6 +242,111 @@ public class PurchaseServiceImpl
         purchase = save(purchase);
         log.info("Satin alma guncellendi: id={}", id);
         return mapToResponse(purchase);
+    }
+
+    // ─── PURCHASE RETURN ─────────────────────────────────────────────────────
+
+    /**
+     * Kısmi iade akışı:
+     * 1. Purchase doğrula (iptal edilmemiş olmalı)
+     * 2. Her kalem için PURCHASE_RETURN_OUT StockMovement
+     * 3. SupplierAccount alacak kaydı (applyCredit)
+     * 4. AccountTransaction(SUPPLIER_RETURN) kaydet
+     */
+    @Override
+    public PurchaseReturnResponse createPurchaseReturn(String purchaseId, PurchaseReturnRequest request) {
+        log.info("Satin alma iadesi baslatiliyor - purchaseId={}, neden={}",
+                purchaseId, request.getReason());
+
+        // 1. Purchase doğrula
+        Purchase purchase = findById(purchaseId)
+                .orElseThrow(() -> new RuntimeException("Satin alma bulunamadi: " + purchaseId));
+
+        if (Boolean.TRUE.equals(purchase.getIsCancelled())) {
+            throw new RuntimeException("Iptal edilmis satin alma iade edilemez: " + purchaseId);
+        }
+
+        Supplier supplier = supplierService.findById(purchase.getSupplier().getId())
+                .orElseThrow(() -> new RuntimeException(
+                        "Tedarikci bulunamadi: " + purchase.getSupplier().getId()));
+
+        // 2. Stok hareketleri (PURCHASE_RETURN_OUT)
+        BigDecimal totalReturnAmount = BigDecimal.ZERO;
+        List<PurchaseReturnResponse.ReturnItemResponse> responseItems = new ArrayList<>();
+
+        for (PurchaseReturnItemRequest item : request.getItems()) {
+            // productId aslında variantId olarak gelir (Flutter mapping)
+            String variantId = item.getProductId();
+            ProductVariant variant = productVariantService.findById(variantId)
+                    .orElseThrow(() -> new RuntimeException("Varyant bulunamadi: " + variantId));
+
+            BigDecimal unitPrice = item.getUnitPrice() != null ? item.getUnitPrice() : BigDecimal.ZERO;
+            int qty = item.getQuantity() != null ? item.getQuantity() : 0;
+
+            StockMovement movement = StockMovement.builder()
+                    .variant(variant)
+                    .storeId(null)
+                    .warehouseId(null)
+                    .movementType(StockMovementType.PURCHASE_RETURN_OUT)
+                    .quantity(qty)
+                    .unitPrice(unitPrice)
+                    .purchase(purchase)
+                    .build();
+            stockMovementService.saveMovement(movement);
+
+            BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(qty));
+            totalReturnAmount = totalReturnAmount.add(lineTotal);
+
+            responseItems.add(PurchaseReturnResponse.ReturnItemResponse.builder()
+                    .variantId(variantId)
+                    .variantSku(variant.getSku())
+                    .productName(variant.getProduct() != null ? variant.getProduct().getName() : item.getProductName())
+                    .quantity(qty)
+                    .unitPrice(unitPrice)
+                    .lineTotal(lineTotal)
+                    .build());
+        }
+
+        // totalReturnAmount: request'ten geleni kullan, yoksa hesapladığımızı kullan
+        BigDecimal effectiveReturnAmount = request.getTotalReturnAmount() != null
+                ? request.getTotalReturnAmount()
+                : totalReturnAmount;
+
+        // 3. SupplierAccount alacak kaydı (borcumuz azalır)
+        SupplierAccount account = supplierAccountService.applyCredit(supplier, effectiveReturnAmount);
+
+        // 4. AccountTransaction(SUPPLIER_RETURN) kaydet
+        AccountTransaction tx = AccountTransaction.builder()
+                .supplier(supplier)
+                .purchase(purchase)
+                .transactionType(TransactionType.SUPPLIER_RETURN)
+                .debitAmount(BigDecimal.ZERO)
+                .creditAmount(effectiveReturnAmount)
+                .balance(account.getCurrentBalance())
+                .referenceId(purchase.getId())
+                .referenceType("PURCHASE_RETURN")
+                .referenceNumber(purchase.getInvoiceNumber())
+                .description("Satin alma iadesi - " + request.getReasonLabel()
+                        + " - Fatura: " + purchase.getInvoiceNumber())
+                .transactionDate(LocalDateTime.now())
+                .isOverdue(false)
+                .isCancelled(false)
+                .build();
+        accountTransactionService.save(tx);
+
+        log.info("Satin alma iadesi tamamlandi - purchaseId={}, tutar={}", purchaseId, effectiveReturnAmount);
+
+        return PurchaseReturnResponse.builder()
+                .purchaseId(purchaseId)
+                .supplierName(supplier.getName())
+                .reason(request.getReason())
+                .reasonLabel(request.getReasonLabel())
+                .notes(request.getNotes())
+                .totalReturnAmount(effectiveReturnAmount)
+                .returnDate(LocalDateTime.now())
+                .items(responseItems)
+                .message("Iade basariyla olusturuldu. Stok ve cari hesap guncellendi.")
+                .build();
     }
 
     // ─── HELPERS ─────────────────────────────────────────────────────────────

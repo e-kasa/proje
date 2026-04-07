@@ -59,8 +59,8 @@ class ProductService {
       // Barkod -- variants[0].barcodes icindeki primary barkod
       'barcode': _extractBarcode(firstVariant),
 
-      // Ham varyant listesi (detay ekrani icin)
-      'variants': raw['variants'],
+      // Vergi oranı -- first variant'ten al
+      'taxRate': firstVariant['taxRate'] ?? raw['taxRate'] ?? 18.0,
     };
   }
 

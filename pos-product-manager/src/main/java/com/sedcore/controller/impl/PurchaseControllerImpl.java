@@ -2,6 +2,8 @@ package com.sedcore.controller.impl;
 
 import com.sedcore.model.PurchaseRequest;
 import com.sedcore.model.PurchaseResponse;
+import com.sedcore.model.PurchaseReturnRequest;
+import com.sedcore.model.PurchaseReturnResponse;
 import com.sedcore.se.ApiResponse;
 import com.sedcore.service.PurchaseService;
 import jakarta.validation.Valid;
@@ -78,6 +80,23 @@ public class PurchaseControllerImpl {
             log.error("Satin alma guncelleme hatasi: {}", e.getMessage());
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("Guncelleme basarisiz: " + e.getMessage()));
+        }
+    }
+
+    // POST /api/v1/purchases/{id}/returns
+    @PostMapping("/{id}/returns")
+    public ResponseEntity<ApiResponse<PurchaseReturnResponse>> createReturn(
+            @PathVariable String id,
+            @RequestBody PurchaseReturnRequest request) {
+        try {
+            PurchaseReturnResponse response = purchaseService.createPurchaseReturn(id, request);
+            log.info("Satin alma iadesi olusturuldu: purchaseId={}, tutar={}",
+                    id, response.getTotalReturnAmount());
+            return ResponseEntity.ok(ApiResponse.success(response));
+        } catch (Exception e) {
+            log.error("Satin alma iadesi hatasi: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Iade olusturulamadi: " + e.getMessage()));
         }
     }
 

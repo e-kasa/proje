@@ -1100,4 +1100,80 @@ class BulkSavePayloadBuilder {
       },
     };
   }
+
+  /// Varyant ekleme/güncelleme payload'u
+  static Map<String, dynamic> _buildVariantPayload(
+    AnalyzedProduct product,
+    UserDecision decision,
+  ) {
+    final variantData = decision.data;
+    return {
+      'tempId': product.tempId,
+      'action': decision.action.name,
+      'productId': variantData['productId'],
+      'variant': {
+        'sku': product.sku,
+        'name': variantData['variantName'] ?? product.name,
+        'shelfLocationCode': product.shelfLocation,
+        'attributes': variantData['attributes'] ?? {},
+        'pricing': {
+          'purchasePrice': product.buyPrice,
+          'salePrice': product.sellPrice,
+        },
+        'initialStocks': [
+          {
+            'storeId': null,
+            'warehouseId': 'WH-001',
+            'quantity': product.stock,
+          }
+        ],
+        'barcodes': product.barcode.isNotEmpty
+            ? [
+                {
+                  'code': product.barcode,
+                  'type': 'EAN13',
+                  'isPrimary': true,
+                }
+              ]
+            : [],
+      },
+    };
+  }
+
+  /// Payload özeti (debug/preview için)
+  static Map<String, dynamic> getSummary(List<Map<String, dynamic>> payloads) {
+    final summary = <String, int>{};
+    var totalProducts = 0;
+    var totalVariants = 0;
+    var totalStock = 0;
+
+    for (final payload in payloads) {
+      final action = payload['action'] as String?;
+      summary[action ?? 'UNKNOWN'] = (summary[action ?? 'UNKNOWN'] ?? 0) + 1;
+
+      if (action == 'CREATE') {
+        totalProducts++;
+        final variants = payload['variants'] as List?;
+        if (variants != null) {
+          totalVariants += variants.length;
+          for (final variant in variants) {
+            final stocks = variant['initialStocks'] as List?;
+            if (stocks != null) {
+              for (final stock in stocks) {
+                totalStock += (stock['quantity'] as num?)?.toInt() ?? 0;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return {
+      'totalPayloads': payloads.length,
+      'totalProducts': totalProducts,
+      'totalVariants': totalVariants,
+      'totalStock': totalStock,
+      'actionBreakdown': summary,
+    };
+  }
 }

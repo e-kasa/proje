@@ -48,7 +48,8 @@ public class Purchase extends TOpenSimpleCompanyEntity {
     // ===== TUTAR BİLGİLERİ =====
 
     @Column(name = "total_amount", precision = 15, scale = 2, nullable = false)
-    private BigDecimal totalAmount; // Toplam tutar
+    @Builder.Default
+    private BigDecimal totalAmount = BigDecimal.ZERO; // Toplam tutar
 
     @Column(name = "paid_amount", precision = 15, scale = 2)
     @Builder.Default

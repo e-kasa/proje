@@ -493,6 +493,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
     final paymentMethod = _paymentMethodLabel(
         s['paymentMethod']?.toString() ?? '');
     final itemCount = (s['items'] as List?)?.length ?? s['itemCount'];
+    final hasReturn = s['hasReturn'] == true;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -603,6 +604,11 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                       theme.colorScheme.onSurfaceVariant,
                       theme,
                     ),
+                  if (hasReturn) ...[
+                    const SizedBox(width: 6),
+                    _tag('İade Var', Icons.assignment_return_outlined,
+                        Colors.deepOrange, theme),
+                  ],
                   const Spacer(),
                   if (cancelled)
                     _tag('İptal Edildi', Icons.cancel_outlined, Colors.red,

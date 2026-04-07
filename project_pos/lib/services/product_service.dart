@@ -38,7 +38,22 @@ class ProductService {
 
       // Varyant bilgileri -- satis/stok islemleri icin gerekli
       'variantId': firstVariant['id'],          // backend variantId
-      'variants': variants,                      // tum varyant listesi
+      'variants': variants.map((v) {
+        // Her varyant için inventory.physicalQuantity → stock alanına kopyala
+        final vInv = v['inventory'] as Map<String, dynamic>?;
+        final vStock = vInv != null
+            ? (vInv['physicalQuantity'] as num?)?.toInt() ?? 0
+            : (v['stock'] as num?)?.toInt() ?? 0;
+        final vPrice = (v['salePrice'] as num?)?.toDouble() ??
+            (v['additionalPrice'] as num?)?.toDouble() ?? 0.0;
+        return {
+          ...v,
+          'stock': vStock,
+          'sellingPrice': vPrice,
+          'basePrice': vPrice,
+          'price': vPrice,
+        };
+      }).toList(),
 
       // Fiyat -- basePrice ana fiyat, varyant additionalPrice eklenebilir
       'basePrice': raw['basePrice'],
@@ -210,7 +225,7 @@ class ProductService {
         return s <= t && s > 0;
       }).length,
       'outOfStockProducts':
-          products.where((p) => (p['stock'] as int? ?? 0) == 0).length,
+          products.where((p) => (p['stock'] as int? ?? 0) <= 0).length,
     };
   }
-}
+} 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../services/service_locator.dart';
@@ -272,6 +273,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                         ],
                       ),
                     ),
+                    // ── Detaylı Rapor Kısayolları ─────────────────────────
+                    _buildAdvancedReportLinks(),
+
                     Expanded(
                       child: TabBarView(
                         controller: _tabController,
@@ -284,6 +288,81 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                     ),
                   ],
                 ),
+    );
+  }
+
+  // ── Detaylı Rapor Kısayolları ──────────────────────────────────────────────
+
+  Widget _buildAdvancedReportLinks() {
+    final links = [
+      _ReportLink('Satış Özeti',    Icons.show_chart,          Colors.blue,       '/reports/sales-summary'),
+      _ReportLink('Ürün Analizi',   Icons.bar_chart_rounded,   Colors.green,      '/reports/product-analysis'),
+      _ReportLink('Müşteri Analizi',Icons.people_alt_outlined,  Colors.purple,     '/reports/customer-analysis'),
+      _ReportLink('Kar Analizi',    Icons.trending_up_rounded,  Colors.teal,       '/reports/profit-overview'),
+    ];
+
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            child: Row(
+              children: [
+                const Icon(Icons.analytics_outlined, size: 15, color: AppColors.textMuted),
+                const SizedBox(width: 6),
+                const Text(
+                  'Detaylı Analizler',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                      color: AppColors.textMuted, letterSpacing: 0.3),
+                ),
+              ],
+            ),
+          ),
+          Row(
+            children: links.map((l) => Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: _advancedLinkCard(l),
+              ),
+            )).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _advancedLinkCard(_ReportLink link) {
+    return InkWell(
+      onTap: () => context.push(link.route),
+      borderRadius: AppConstants.borderRadiusSmall,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+        decoration: BoxDecoration(
+          color: link.color.withOpacity(0.07),
+          borderRadius: AppConstants.borderRadiusSmall,
+          border: Border.all(color: link.color.withOpacity(0.18)),
+        ),
+        child: Column(
+          children: [
+            Icon(link.icon, color: link.color, size: 20),
+            const SizedBox(height: 4),
+            Text(
+              link.label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: link.color,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -493,4 +572,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     _tabController.dispose();
     super.dispose();
   }
+}
+
+class _ReportLink {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final String route;
+  const _ReportLink(this.label, this.icon, this.color, this.route);
 }

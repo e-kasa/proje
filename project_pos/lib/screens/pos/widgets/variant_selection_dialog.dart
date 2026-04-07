@@ -142,7 +142,11 @@ class _VariantSelectionDialogState extends State<VariantSelectionDialog> {
   }
 
   Widget _buildVariantCard(Map<String, dynamic> variant) {
-    final stock = (variant['stock'] as num?)?.toInt() ?? 0;
+    // Stok önce inventory.physicalQuantity'den, yoksa direkt stock alanından okunur
+    final inv = variant['inventory'] as Map<String, dynamic>?;
+    final stock = inv != null
+        ? (inv['physicalQuantity'] as num?)?.toInt() ?? 0
+        : (variant['stock'] as num?)?.toInt() ?? 0;
     final isOutOfStock = stock <= 0;
     final isSelected = _selectedVariant != null &&
         _selectedVariant!['id'] == variant['id'];

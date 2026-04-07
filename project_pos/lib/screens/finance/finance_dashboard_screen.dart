@@ -321,7 +321,14 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(child: SizedBox()),
+              Expanded(
+                child: _buildActionButton(
+                  icon: Icons.account_balance_wallet_outlined,
+                  label: 'Cari Hesaplar',
+                  color: Colors.teal,
+                  onTap: () => context.go('/accounts'),
+                ),
+              ),
             ],
           ),
         ],

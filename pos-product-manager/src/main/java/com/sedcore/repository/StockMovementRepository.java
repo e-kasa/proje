@@ -1,6 +1,7 @@
 package com.sedcore.repository;
 
 import com.sedcore.entity.StockMovement;
+import com.sedcore.enums.StockMovementType;
 import com.towpen.base.db.repository.BaseDaoRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -35,4 +36,17 @@ public interface StockMovementRepository extends BaseDaoRepository<StockMovement
 
     // Depo bazlı hareketler (doğrudan String field)
     List<StockMovement> findByWarehouseId(String warehouseId);
+
+    // Satış + hareket tipi (iptal/iade doğrulama için)
+    @Query("SELECT sm FROM StockMovement sm WHERE sm.sale.id = :saleId AND sm.movementType = :movementType")
+    List<StockMovement> findBySaleIdAndMovementType(
+            @Param("saleId") String saleId,
+            @Param("movementType") StockMovementType movementType);
+
+    // Varyant + satış (iade miktarı hesaplama için)
+    @Query("SELECT sm FROM StockMovement sm WHERE sm.sale.id = :saleId AND sm.variant.id = :variantId AND sm.movementType = :movementType")
+    List<StockMovement> findBySaleIdAndVariantIdAndMovementType(
+            @Param("saleId") String saleId,
+            @Param("variantId") String variantId,
+            @Param("movementType") StockMovementType movementType);
 }

@@ -1,13 +1,13 @@
 package com.sedcore.service.impl;
 
-import org.springframework.stereotype.Service;
+// Bu sınıf StockMovementServiceImpl ile çakışıyor — @Service kaldırıldı.
+// Gerçek implementasyon: StockMovementServiceImpl.java
 
 import com.sedcore.entity.StockMovement;
 import com.towpen.base.security.BaseDbServiceImp;
 
 import java.util.List;
 
-@Service
 public class StockMovementService extends BaseDbServiceImp<StokMovementRepository,StockMovement> implements com.sedcore.service.StockMovementService {
 
     @Override

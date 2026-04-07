@@ -9,6 +9,7 @@ public enum TransactionType {
     PAYMENT("Odeme"),                       // Odeme alma (ALACAK)
     SUPPLIER_PAYMENT("Tedarikci Odemesi"), // Tedarikciye odeme (ALACAK - borcumuz azalir)
     RETURN("Iade"),                         // Musteriden iade (ALACAK)
+    CANCEL("Iptal"),                        // Satis iptali (ALACAK - borc sifirlama)
     SUPPLIER_RETURN("Tedarikciye Iade"),   // Tedarikciye iade (ALACAK - borcumuz azalir)
     DISCOUNT("Indirim"),                    // Indirim (ALACAK)
     LATE_FEE("Gecikme Faizi"),             // Gecikme faizi (BORC)
@@ -33,7 +34,8 @@ public enum TransactionType {
 
     public boolean isCredit() {
         return this == PAYMENT || this == SUPPLIER_PAYMENT
-            || this == RETURN || this == SUPPLIER_RETURN
+            || this == RETURN || this == CANCEL
+            || this == SUPPLIER_RETURN
             || this == DISCOUNT || this == ADJUSTMENT_CREDIT
             || this == REFUND || this == COLLECTION;
     }

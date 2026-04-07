@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import '../models/wizard_state.dart';
-import 'package:project_pos/core/widgets/widgets.dart';
 
 /// Shows a dialog to apply bulk stock quantity to all variants.
 Future<void> showBulkStockDialog({

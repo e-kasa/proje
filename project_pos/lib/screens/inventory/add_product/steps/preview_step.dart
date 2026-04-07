@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/config/sector_config.dart';
 import '../models/wizard_state.dart';
-import '../widgets/wizard_common_widgets.dart';
 import '../widgets/variant_image_widgets.dart';
 
 class PreviewStep extends StatelessWidget {

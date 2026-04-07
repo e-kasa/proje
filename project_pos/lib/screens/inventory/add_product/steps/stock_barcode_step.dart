@@ -5,7 +5,6 @@ import '../models/wizard_state.dart';
 import '../widgets/wizard_common_widgets.dart';
 import '../widgets/multi_select_chips.dart';
 import '../widgets/bulk_dialogs.dart';
-import 'package:project_pos/core/widgets/widgets.dart';
 
 class StockBarcodeStep extends StatelessWidget {
   final WizardState state;

@@ -3,6 +3,8 @@ package com.sedcore.repository;
 import com.sedcore.entity.AccountTransaction;
 import com.sedcore.enums.TransactionType;
 import com.towpen.base.db.repository.BaseDaoRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -17,4 +19,8 @@ public interface AccountTransactionRepository extends BaseDaoRepository<AccountT
     List<AccountTransaction> findByPurchaseId(String purchaseId);
 
     List<AccountTransaction> findByCustomerId(String customerId);
+
+    // Satış bazlı hareketler (iptal sırasında orijinal SALE tx'i bulmak için)
+    @Query("SELECT t FROM AccountTransaction t WHERE t.sale.id = :saleId")
+    List<AccountTransaction> findBySaleId(@Param("saleId") String saleId);
 }

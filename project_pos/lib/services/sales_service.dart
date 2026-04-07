@@ -80,7 +80,7 @@ class SalesService {
   /// [reason] iptal nedenini belirtir.
   Future<Map<String, dynamic>> cancelSale(String id, String reason) async {
     try {
-      final response = await _apiClient.put('$_base/$id/cancel', data: {'reason': reason});
+      final response = await _apiClient.patch('$_base/$id/cancel', data: {'reason': reason});
       return response.data['data'] as Map<String, dynamic>;
     } catch (e) {
       rethrow;

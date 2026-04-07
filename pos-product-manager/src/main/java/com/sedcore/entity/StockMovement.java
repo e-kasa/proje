@@ -32,10 +32,10 @@ public class StockMovement extends TOpenSimpleCompanyEntity{
     @JoinColumn(name = "variant_id", nullable = false)
     private ProductVariant variant;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String storeId;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String warehouseId;
 
     @Enumerated(EnumType.STRING)

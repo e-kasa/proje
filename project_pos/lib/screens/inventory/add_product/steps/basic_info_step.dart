@@ -57,6 +57,7 @@ class BasicInfoStep extends StatelessWidget {
             icon: Icons.info_outline_rounded,
             title: 'Temel Bilgiler',
             subtitle: state.sectorType.displayName,
+            color: _accentColor,
           ),
           const SizedBox(height: 16),
           buildFormField(

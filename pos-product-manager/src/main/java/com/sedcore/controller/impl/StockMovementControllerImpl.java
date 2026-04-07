@@ -7,6 +7,7 @@ import com.sedcore.repository.ProductVariantRepository;
 import com.sedcore.repository.StockMovementRepository;
 import com.sedcore.se.ApiResponse;
 import com.sedcore.service.StockMovementService;
+import com.sedcore.util.EntityAuditHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +31,7 @@ public class StockMovementControllerImpl {
     private final StockMovementRepository stockMovementRepository;
     private final ProductVariantRepository variantRepository;
     private final StockMovementService stockMovementService;
+    private final EntityAuditHelper entityAuditHelper;
 
     // GET /product/api/v1/stock-movements
     @GetMapping
@@ -42,6 +44,8 @@ public class StockMovementControllerImpl {
             List<StockMovement> movements;
             if (variantId != null && storeId != null) {
                 movements = stockMovementRepository.findByVariantIdAndStoreId(variantId, storeId);
+            } else if (variantId != null) {
+                movements = stockMovementRepository.findByVariantId(variantId);
             } else {
                 movements = (List<StockMovement>)stockMovementService.findAll();
             }
@@ -83,6 +87,7 @@ public class StockMovementControllerImpl {
                 .quantity(dto.getQuantity())
                 .build();
 
+            entityAuditHelper.prepare(movement);
             movement = stockMovementRepository.save(movement);
             log.info("Stok hareketi oluşturuldu: Variant={}, Tip={}, Miktar={}",
                 variant.getSku(), movement.getMovementType(), movement.getQuantity());
@@ -114,22 +119,35 @@ public class StockMovementControllerImpl {
 
     private Map<String, Object> toMap(StockMovement m) {
         Map<String, Object> map = new HashMap<>();
-        map.put("id", m.getId());
-        map.put("storeId", m.getStoreId());
-        map.put("warehouseId", m.getWarehouseId());
+        map.put("id",           m.getId());
+        map.put("storeId",      m.getStoreId());
+        map.put("warehouseId",  m.getWarehouseId());
         map.put("movementType", m.getMovementType());
-        map.put("quantity", m.getQuantity());
-        map.put("companyCode", m.getCompanyCode());
+        map.put("quantity",     m.getQuantity());
+        map.put("unitPrice",    m.getUnitPrice());
+        map.put("companyCode",  m.getCompanyCode());
+        map.put("createTime",   m.getCreateTime());  // Hareket tarihi (UI için)
+        map.put("createUser",   m.getCreateUser());
+
         if (m.getVariant() != null) {
-            map.put("variantId", m.getVariant().getId());
-            map.put("variantSku", m.getVariant().getSku());
+            map.put("variantId",   m.getVariant().getId());
+            map.put("variantSku",  m.getVariant().getSku());
+            map.put("variantName", m.getVariant().getName());
+            if (m.getVariant().getProduct() != null) {
+                map.put("productName", m.getVariant().getProduct().getName());
+                map.put("productId",   m.getVariant().getProduct().getId());
+            }
         }
         if (m.getSale() != null) {
-            map.put("saleId", m.getSale().getId());
+            map.put("saleId",     m.getSale().getId());
             map.put("saleNumber", m.getSale().getSaleNumber());
         }
         if (m.getPurchase() != null) {
-            map.put("purchaseId", m.getPurchase().getId());
+            map.put("purchaseId",     m.getPurchase().getId());
+            map.put("purchaseNumber", m.getPurchase().getInvoiceNumber());
+        }
+        if (m.getTransfer() != null) {
+            map.put("transferId", m.getTransfer().getId());
         }
         return map;
     }

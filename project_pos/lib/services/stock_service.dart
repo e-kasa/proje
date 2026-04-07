@@ -157,4 +157,21 @@ class StockService {
       rethrow;
     }
   }
+
+  /// Belirli bir varyantın tüm stok hareketlerini getirir.
+  ///
+  /// Ürün detay ekranındaki "Geçmiş" sekmesi için kullanılır.
+  /// Backend: GET /product/api/v1/stock-movements?variantId={id}
+  Future<List<Map<String, dynamic>>> getVariantMovements(String variantId) async {
+    try {
+      final response = await _apiClient.get(
+        'product/api/v1/stock-movements',
+        queryParameters: {'variantId': variantId},
+      );
+      return List<Map<String, dynamic>>.from(response.data['data'] ?? []);
+    } catch (e) {
+      debugPrint('getVariantMovements hata: $e');
+      rethrow;
+    }
+  }
 }

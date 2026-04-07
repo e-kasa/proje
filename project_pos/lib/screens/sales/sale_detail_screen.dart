@@ -161,23 +161,68 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
         _sale['paymentStatus']?.toString().toLowerCase() ??
         '';
     final isPending = status == 'pending' || status == 'unpaid';
+    final hasReturn = _sale['hasReturn'] == true;
 
     if (cancelled) {
+      final cancelDateStr = _sale['cancelDate']?.toString();
+      final cancelDateDisplay = cancelDateStr != null
+          ? _dateTimeFmt.format(
+              DateTime.tryParse(cancelDateStr) ?? DateTime.now())
+          : null;
+      final cancelReasonDisplay = _sale['cancelReason']?.toString();
+      final cancelDetail = [
+        if (cancelDateDisplay != null) 'Tarih: $cancelDateDisplay',
+        if (cancelReasonDisplay != null && cancelReasonDisplay.isNotEmpty)
+          'Sebep: $cancelReasonDisplay',
+      ].join('  •  ');
       return _statusContainer(
         icon: Icons.cancel_outlined,
         text: 'Bu satış iptal edilmiştir',
         color: Colors.red,
-        reason: _sale['cancelReason']?.toString(),
+        reason: cancelDetail.isNotEmpty ? cancelDetail : null,
         theme: theme,
       );
     }
 
     if (isPending) {
-      return _statusContainer(
-        icon: Icons.schedule,
-        text: 'Veresiye satış — ödeme bekleniyor',
-        color: Colors.orange,
-        theme: theme,
+      return Column(
+        children: [
+          _statusContainer(
+            icon: Icons.schedule,
+            text: 'Veresiye satış — ödeme bekleniyor',
+            color: Colors.orange,
+            theme: theme,
+          ),
+          if (hasReturn) ...[
+            const SizedBox(height: 8),
+            _statusContainer(
+              icon: Icons.assignment_return_outlined,
+              text: 'Bu satış için iade kaydı bulunmaktadır',
+              color: Colors.deepOrange,
+              theme: theme,
+            ),
+          ],
+        ],
+      );
+    }
+
+    if (hasReturn) {
+      return Column(
+        children: [
+          _statusContainer(
+            icon: Icons.check_circle_outline,
+            text: 'Satış tamamlandı',
+            color: Colors.green,
+            theme: theme,
+          ),
+          const SizedBox(height: 8),
+          _statusContainer(
+            icon: Icons.assignment_return_outlined,
+            text: 'Bu satış için iade kaydı bulunmaktadır',
+            color: Colors.deepOrange,
+            theme: theme,
+          ),
+        ],
       );
     }
 

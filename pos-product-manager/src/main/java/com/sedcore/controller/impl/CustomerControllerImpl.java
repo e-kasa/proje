@@ -8,6 +8,7 @@ import com.sedcore.model.CustomerPaymentDto;
 import com.sedcore.repository.CustomerRepository;
 import com.sedcore.se.ApiResponse;
 import com.sedcore.service.CustomerService;
+import com.sedcore.util.EntityAuditHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +29,7 @@ public class CustomerControllerImpl {
 
     private final CustomerRepository customerRepository;
     private final CustomerService customerService;
+    private final EntityAuditHelper entityAuditHelper;
 
     // GET /product/api/v1/customers
     @GetMapping
@@ -76,6 +78,7 @@ public class CustomerControllerImpl {
                 .paymentTermDays(dto.getPaymentTermDays()).riskStatus(dto.getRiskStatus())
                 .isActive(dto.getIsActive() != null ? dto.getIsActive() : true)
                 .build();
+            entityAuditHelper.prepare(customer);
             customer = customerRepository.save(customer);
             log.info("Müşteri oluşturuldu: {}", customer.getName());
             return ResponseEntity.ok(ApiResponse.success(toMap(customer)));
@@ -103,6 +106,7 @@ public class CustomerControllerImpl {
             if (dto.getPaymentTermDays() != null) customer.setPaymentTermDays(dto.getPaymentTermDays());
             if (dto.getRiskStatus() != null) customer.setRiskStatus(dto.getRiskStatus());
             if (dto.getIsActive() != null) customer.setIsActive(dto.getIsActive());
+            entityAuditHelper.prepare(customer);
             customer = customerRepository.save(customer);
             return ResponseEntity.ok(ApiResponse.success(toMap(customer)));
         } catch (Exception e) {
@@ -117,6 +121,7 @@ public class CustomerControllerImpl {
             Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Müşteri bulunamadı: " + id));
             customer.setIsActive(false); // soft delete
+            entityAuditHelper.prepare(customer);
             customerRepository.save(customer);
             return ResponseEntity.ok(ApiResponse.success(null));
         } catch (Exception e) {
@@ -131,6 +136,7 @@ public class CustomerControllerImpl {
             Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Müşteri bulunamadı: " + id));
             customer.setIsActive(customer.getIsActive() == null || !customer.getIsActive());
+            entityAuditHelper.prepare(customer);
             customer = customerRepository.save(customer);
             return ResponseEntity.ok(ApiResponse.success(toMap(customer)));
         } catch (Exception e) {

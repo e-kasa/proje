@@ -60,6 +60,22 @@ public class Sale extends TOpenSimpleCompanyEntity {
     @Builder.Default
     private Boolean isCancelled = false;
 
+    @Column(name = "cancel_reason", length = 500)
+    private String cancelReason;
+
+    @Column(name = "cancel_date")
+    private LocalDateTime cancelDate;
+
+    // ===== İADE TAKİBİ =====
+
+    @Column(name = "returned_amount", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal returnedAmount = BigDecimal.ZERO; // Toplam iade edilen tutar
+
+    @Column(name = "has_return")
+    @Builder.Default
+    private Boolean hasReturn = false; // İade kaydı var mı? (hızlı sorgu için)
+
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 

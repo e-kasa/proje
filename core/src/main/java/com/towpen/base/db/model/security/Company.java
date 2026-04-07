@@ -51,4 +51,13 @@ public class Company extends TOpenDbEntity {
 	@Comment("Firmanın domain adresi – gateway domain çözümlemesi için kullanılır")
 	@Column(name = "domain", nullable = true, unique = true, length = 255)
 	private String domain;
+
+	/**
+	 * Şirketin faaliyet sektörü.
+	 * Flutter uygulaması UI'yi bu değere göre uyarlar.
+	 * Değerler: AUTO_PARTS, GENERAL, TECHNOLOGY, FOOTWEAR
+	 */
+	@Comment("Şirket sektörü – Flutter UI sektör konfigürasyonu için kullanılır")
+	@Column(name = "sector_type", nullable = true, length = 20)
+	private String sectorType;
 }

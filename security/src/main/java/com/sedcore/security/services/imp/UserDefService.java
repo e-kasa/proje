@@ -4,6 +4,7 @@ import com.sedcore.security.repos.CompanyRepository;
 import com.sedcore.security.repos.UserDefAccessRepository;
 import com.sedcore.security.repos.UserDefRepository;
 import com.sedcore.security.repos.UserRoleRepository;
+import org.springframework.jdbc.core.JdbcTemplate;
 import com.sedcore.security.services.IUserDefService;
 import com.towpen.base.db.model.security.Company;
 import com.towpen.base.db.model.security.UserDef;
@@ -39,6 +40,10 @@ public class UserDefService extends BaseDbServiceImp<UserDefRepository,UserDef> 
 
     @Autowired
     private UserRoleRepository userRoleRepository;
+
+    /** store_id'yi doğrudan JDBC ile okur — core modülü yeniden derlenmese bile çalışır */
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @Transactional(propagation = Propagation.REQUIRED, noRollbackFor = { TOpenException.class })
     @Override
@@ -158,6 +163,28 @@ public class UserDefService extends BaseDbServiceImp<UserDefRepository,UserDef> 
         loginUser.setUserId(userDef.getId());
         loginUser.setUserName(userDef.getUserName());
         loginUser.setLanguageVal(LanguageType.getLanguageFromValue(userDef.getLanguageVal() != null ? userDef.getLanguageVal().getValue() : null));
+
+        // Şirketin sektör tipini JWT'ye ekle → Flutter sektör UI'sini buna göre ayarlar
+        Optional<Company> optCompany = companyRepository.findByCompanyCode(userDef.getCompanyCode());
+        HashMap<String, Object> dynamicParams = new HashMap<>();
+        if (optCompany.isPresent() && optCompany.get().getSectorType() != null) {
+            dynamicParams.put("sectorType", optCompany.get().getSectorType());
+        }
+        // store_id'yi JDBC ile oku — core modülü rebuild gerekmeden çalışır
+        try {
+            String storeId = jdbcTemplate.queryForObject(
+                    "SELECT store_id FROM user_def WHERE id = ?",
+                    String.class,
+                    userDef.getId());
+            if (storeId != null && !storeId.isBlank()) {
+                dynamicParams.put("storeId", storeId);
+            }
+        } catch (Exception ignored) {
+            // store_id kolonu henüz yoksa veya NULL ise sessizce devam et
+        }
+        if (!dynamicParams.isEmpty()) {
+            loginUser.setDynamicLoginParameters(dynamicParams);
+        }
 
         return loginUser;
     }

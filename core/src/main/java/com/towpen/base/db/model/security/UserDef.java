@@ -44,5 +44,9 @@ public class UserDef extends TOpenSimpleCompanyEntity {
 	@Column(name = "user_def_generic_id_type", nullable = true)
 	private UserDefGenericIdType userDefGenericIdType;
 
+	/** Kullanıcının atandığı mağaza ID (kasiyerler için) — null ise tüm mağazalara erişim */
+	@Comment("Kullanıcının atandığı mağaza — null ise tüm mağazalara erişim (admin/depo)")
+	@Column(name = "store_id", nullable = true, length = 50)
+	private String storeId;
 
 }

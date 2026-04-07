@@ -28,6 +28,20 @@ FROM stock_movements sm
 GROUP BY sm.company_code, sm.variant_id, sm.store_id, sm.warehouse_id;
 
 -- ================================================
+-- 0a. ŞİRKETLER
+-- Company entity: id, company_code, company_name, is_main_company, sector_type
+-- (create_user/create_time alanları yok - TOpenDbEntity sadece id içerir)
+-- ================================================
+INSERT INTO company
+(id, company_code, company_name, is_main_company, sector_type)
+VALUES
+    ('cmp-0001-0000-0000-0000-000000000001',
+     'SEDCORE','Sedcore Oto Parca A.S.',true,'AUTO_PARTS'),
+    ('cmp-0002-0000-0000-0000-000000000001',
+     'SEDCORE1','Sedcore Giyim Magazasi',false,'FOOTWEAR')
+ON CONFLICT (id) DO NOTHING;
+
+-- ================================================
 -- 0. STORES & WAREHOUSES
 -- ================================================
 INSERT INTO stores
@@ -476,26 +490,33 @@ ON CONFLICT (id) DO NOTHING;
 
 -- ================================================
 -- 12. KULLANICILAR & ROLLER
--- ================================================
 INSERT INTO role_def
 (id, create_time, create_user, last_modified_time, update_user,
  company_code, code, description, is_active, is_system_role, name)
 VALUES
-    -- SEDCORE (Parçacı) rolleri
+    -- SEDCORE (Parçacı)
     ('role-admin-0000-0000-0000-000000000001',CURRENT_TIMESTAMP,'SYSTEM',CURRENT_TIMESTAMP,NULL,
-     'SEDCORE','ADMIN','Tam yetkili yonetici',true,true,'Yonetici'),
+     'SEDCORE','ADMIN','Tam yetkili yonetici',true,true,'Yonetici - Parçacı'),
+
     ('role-kasiy-0000-0000-0000-000000000002',CURRENT_TIMESTAMP,'SYSTEM',CURRENT_TIMESTAMP,NULL,
-     'SEDCORE','CASHIER','POS satis islemleri',true,false,'Kasiyer'),
+     'SEDCORE','CASHIER','POS satis islemleri',true,false,'Kasiyer - Parçacı'),
+
     ('role-depo0-0000-0000-0000-000000000003',CURRENT_TIMESTAMP,'SYSTEM',CURRENT_TIMESTAMP,NULL,
      'SEDCORE','WAREHOUSE','Stok ve depo yonetimi',true,false,'Depo Sorumlusu'),
+
     ('6d728059-90fb-4753-b295-953c3c5b2035','2011-05-16 15:36:38','sedat','2011-05-16 15:36:38',NULL,
      'SEDCORE','USER','user role',true,true,'sedat'),
-    -- SEDCORE1 (Giyim) rolleri
+
+    -- SEDCORE1 (Giyim)
     ('role-adm1-0000-0000-0000-000000000001',CURRENT_TIMESTAMP,'SYSTEM',CURRENT_TIMESTAMP,NULL,
-     'SEDCORE1','ADMIN','Tam yetkili yonetici',true,true,'Yonetici'),
+     'SEDCORE1','ADMIN','Tam yetkili yonetici',true,true,'Yonetici - Giyim'),
+
     ('role-kas1-0000-0000-0000-000000000002',CURRENT_TIMESTAMP,'SYSTEM',CURRENT_TIMESTAMP,NULL,
-     'SEDCORE1','CASHIER','POS satis islemleri',true,false,'Kasiyer')
-ON CONFLICT (id) DO NOTHING;
+     'SEDCORE1','CASHIER','POS satis islemleri',true,false,'Kasiyer - Giyim'),
+
+    ('role-dep1-0000-0000-0000-000000000003',CURRENT_TIMESTAMP,'SYSTEM',CURRENT_TIMESTAMP,NULL,
+     'SEDCORE1','WAREHOUSE','Stok ve depo yonetimi',true,false,'Depo Sorumlusu - Giyim')
+    ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO user_def
 (id, create_time, create_user, last_modified_time, update_user, company_code,
@@ -507,16 +528,20 @@ VALUES
      'SEDCORE','admin',true,'TR','AGENCY_ID','Admin Kullanici','admin','USER'),
     ('udef-kasiy-0000-0000-0000-000000000002',CURRENT_TIMESTAMP,'SYSTEM',CURRENT_TIMESTAMP,NULL,
      'SEDCORE','kasiyer',true,'TR','AGENCY_ID','Kasiyer','kasiyer','USER'),
+    ('udef-depo-0000-0000-0000-000000000003',CURRENT_TIMESTAMP,'SYSTEM',CURRENT_TIMESTAMP,NULL,
+     'SEDCORE','depo',true,'TR','AGENCY_ID','Depo Sorumlusu','depo','USER'),
     ('6d728059-90fb-4753-b295-953c3c5b2036','2011-05-16 15:36:38','sedat','2011-05-16 15:36:38',NULL,
      'SEDCORE','generic_identifier',true,'TR','AGENCY_ID','user display name','sedat','USER'),
     -- SEDCORE1 (Giyim) kullanıcıları
     ('udef-adm1-0000-0000-0000-000000000001',CURRENT_TIMESTAMP,'SYSTEM',CURRENT_TIMESTAMP,NULL,
      'SEDCORE1','sedcore1',true,'TR','AGENCY_ID','Giyim Admin','sedcore1','USER'),
     ('udef-kas1-0000-0000-0000-000000000002',CURRENT_TIMESTAMP,'SYSTEM',CURRENT_TIMESTAMP,NULL,
-     'SEDCORE1','giyimkasiyer',true,'TR','AGENCY_ID','Giyim Kasiyer','giyimkasiyer','USER')
+     'SEDCORE1','giyimkasiyer',true,'TR','AGENCY_ID','Giyim Kasiyer','giyimkasiyer','USER'),
+    ('udef-dep1-0000-0000-0000-000000000003',CURRENT_TIMESTAMP,'SYSTEM',CURRENT_TIMESTAMP,NULL,
+     'SEDCORE1','giyimdepo',true,'TR','AGENCY_ID','Giyim Depo Sorumlusu','giyimdepo','USER')
 ON CONFLICT (id) DO NOTHING;
 
--- admin → admin123 | kasiyer → kasiyer123 | sedcore1 → sedcore1123 | giyimkasiyer → kasiyer123
+-- admin/sedcore1 → admin123 | kasiyer/giyimkasiyer → kasiyer123 | depo/giyimdepo → depo123
 INSERT INTO user_def_access
 (id, create_time, create_user, last_modified_time, update_user,
  company_code, access_type, can_login, has_ip_restriction,
@@ -532,11 +557,15 @@ VALUES
      'SEDCORE','INTERNAL',true,false,false,false,CURRENT_TIMESTAMP,
      'bfV/PaJuohhVbz7cLZzThRiawQ/W4o7ohh+qdvvnvc4=','a2FzaXllcnNhbHQxMjM0',
      'udef-kasiy-0000-0000-0000-000000000002'),
+    ('uacc-depo-0000-0000-0000-000000000003',CURRENT_TIMESTAMP,'SYSTEM',CURRENT_TIMESTAMP,NULL,
+     'SEDCORE','INTERNAL',true,false,false,false,CURRENT_TIMESTAMP,
+     'Ocp99HrIz1DxzgwFK6XsG3u3Jilc3kkZZx1m/GoqNHI=','ZGVwb3NhbHQxMjM0NTY=',
+     'udef-depo-0000-0000-0000-000000000003'),
     ('6d728059-90fb-4753-b295-953c3c5b2037','2011-05-16 15:36:38','sedat','2011-05-16 15:36:38',NULL,
      'SEDCORE','INTERNAL',true,true,true,true,'2011-05-16 15:36:38',
      'icerwJaNuMo0cknO9Ue/PfwtvuzD3FMs32OrjN8H8p0=','sedcore',
      '6d728059-90fb-4753-b295-953c3c5b2036'),
-    -- SEDCORE1 kullanıcı erişimleri (sedcore1 → sedcore1123 | giyimkasiyer → kasiyer123)
+    -- SEDCORE1 kullanıcı erişimleri
     ('uacc-adm1-0000-0000-0000-000000000001',CURRENT_TIMESTAMP,'SYSTEM',CURRENT_TIMESTAMP,NULL,
      'SEDCORE1','INTERNAL',true,false,false,false,CURRENT_TIMESTAMP,
      'JI1KzWlPRvgcsVO/Y/dR7gDxxDuFlAHbxiQxj7QGjcw=','YWRtaW5zYWx0MTIzNDU2',
@@ -544,7 +573,11 @@ VALUES
     ('uacc-kas1-0000-0000-0000-000000000002',CURRENT_TIMESTAMP,'SYSTEM',CURRENT_TIMESTAMP,NULL,
      'SEDCORE1','INTERNAL',true,false,false,false,CURRENT_TIMESTAMP,
      'bfV/PaJuohhVbz7cLZzThRiawQ/W4o7ohh+qdvvnvc4=','a2FzaXllcnNhbHQxMjM0',
-     'udef-kas1-0000-0000-0000-000000000002')
+     'udef-kas1-0000-0000-0000-000000000002'),
+    ('uacc-dep1-0000-0000-0000-000000000003',CURRENT_TIMESTAMP,'SYSTEM',CURRENT_TIMESTAMP,NULL,
+     'SEDCORE1','INTERNAL',true,false,false,false,CURRENT_TIMESTAMP,
+     'Ocp99HrIz1DxzgwFK6XsG3u3Jilc3kkZZx1m/GoqNHI=','ZGVwb3NhbHQxMjM0NTY=',
+     'udef-dep1-0000-0000-0000-000000000003')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO user_role
@@ -558,11 +591,101 @@ VALUES
      'SEDCORE','role-kasiy-0000-0000-0000-000000000002','udef-kasiy-0000-0000-0000-000000000002'),
     ('6d728059-90fb-4753-b295-953c3c5b2038','2011-05-16 15:36:38','sedat','2011-05-16 15:36:38',NULL,
      'SEDCORE','6d728059-90fb-4753-b295-953c3c5b2035','6d728059-90fb-4753-b295-953c3c5b2036'),
+    ('urol-depo-0000-0000-0000-000000000003',CURRENT_TIMESTAMP,'SYSTEM',CURRENT_TIMESTAMP,NULL,
+     'SEDCORE','role-depo0-0000-0000-0000-000000000003','udef-depo-0000-0000-0000-000000000003'),
     -- SEDCORE1 rolleri
     ('urol-adm1-0000-0000-0000-000000000001',CURRENT_TIMESTAMP,'SYSTEM',CURRENT_TIMESTAMP,NULL,
      'SEDCORE1','role-adm1-0000-0000-0000-000000000001','udef-adm1-0000-0000-0000-000000000001'),
     ('urol-kas1-0000-0000-0000-000000000002',CURRENT_TIMESTAMP,'SYSTEM',CURRENT_TIMESTAMP,NULL,
-     'SEDCORE1','role-kas1-0000-0000-0000-000000000002','udef-kas1-0000-0000-0000-000000000002')
+     'SEDCORE1','role-kas1-0000-0000-0000-000000000002','udef-kas1-0000-0000-0000-000000000002'),
+    ('urol-dep1-0000-0000-0000-000000000003',CURRENT_TIMESTAMP,'SYSTEM',CURRENT_TIMESTAMP,NULL,
+     'SEDCORE1','role-dep1-0000-0000-0000-000000000003','udef-dep1-0000-0000-0000-000000000003')
+ON CONFLICT (id) DO NOTHING;
+
+-- ================================================
+-- ÇOK MAĞAZA SENARYOSU: SEDCORE 2. Mağaza + Kasiyer2
+-- ================================================
+
+-- store_id kolonunu güvence altına al — security modülü rebuild edilmese bile çalışır
+ALTER TABLE user_def ADD COLUMN IF NOT EXISTS store_id VARCHAR(50);
+
+-- SEDCORE şube mağazası (2. mağaza) — store_code global unique olduğu için SUBE-01 kullanılır
+INSERT INTO stores
+(id, create_user, company_code, create_time, last_modified_time,
+ store_code, name, address, phone, is_active)
+VALUES
+    ('str-0003-0000-0000-0000-000000000001','SYSTEM','SEDCORE',
+     CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'SUBE-01','Şube Mağaza - Parçacı','İstanbul Anadolu, Türkiye','0216 000 00 01',true)
+ON CONFLICT (id) DO NOTHING;
+
+-- ÖNEMLİ: user_def.store_id, stock_movements.store_id ile EŞLEŞMELİDİR.
+-- stock_movements store_code string kullandığından user_def.store_id da store_code olmalıdır.
+
+-- Kasiyer2 kullanıcısı — SEDCORE, SUBE-01 (Şube Mağaza)
+INSERT INTO user_def
+(id, create_time, create_user, last_modified_time, update_user, company_code,
+ generic_identifier, is_active, language_val, user_def_generic_id_type,
+ user_display_name, user_name, user_type, store_id)
+VALUES
+    ('udef-kas2-0000-0000-0000-000000000002',CURRENT_TIMESTAMP,'SYSTEM',CURRENT_TIMESTAMP,NULL,
+     'SEDCORE','kasiyer2',true,'TR','AGENCY_ID','Kasiyer 2 - Şube','kasiyer2','USER',
+     'SUBE-01')
+ON CONFLICT (id) DO NOTHING;
+
+-- Kasiyer2 erişim kaydı (şifre: kasiyer123)
+INSERT INTO user_def_access
+(id, create_time, create_user, last_modified_time, update_user,
+ company_code, access_type, can_login, has_ip_restriction,
+ ip_restriction, is_force_password_change, last_change_time,
+ password_hash, salt_key, user_def_id)
+VALUES
+    ('uacc-kas2-0000-0000-0000-000000000002',CURRENT_TIMESTAMP,'SYSTEM',CURRENT_TIMESTAMP,NULL,
+     'SEDCORE','INTERNAL',true,false,false,false,CURRENT_TIMESTAMP,
+     'bfV/PaJuohhVbz7cLZzThRiawQ/W4o7ohh+qdvvnvc4=','a2FzaXllcnNhbHQxMjM0',
+     'udef-kas2-0000-0000-0000-000000000002')
+ON CONFLICT (id) DO NOTHING;
+
+-- Kasiyer2 rol ataması (Kasiyer rolü)
+INSERT INTO user_role
+(id, create_time, create_user, last_modified_time, update_user,
+ company_code, role_def_id, user_def_id)
+VALUES
+    ('urol-kas2-0000-0000-0000-000000000002',CURRENT_TIMESTAMP,'SYSTEM',CURRENT_TIMESTAMP,NULL,
+     'SEDCORE','role-kasiy-0000-0000-0000-000000000002','udef-kas2-0000-0000-0000-000000000002')
+ON CONFLICT (id) DO NOTHING;
+
+-- Kasiyer store_id'lerini her başlatmada doğru store_code ile set et
+-- (UUID değil store_code kullanılır — stock_movements ile eşleşmesi için)
+UPDATE user_def SET store_id = 'STORE-01' WHERE user_name = 'kasiyer';
+UPDATE user_def SET store_id = 'SUBE-01'  WHERE user_name = 'kasiyer2';
+UPDATE user_def SET store_id = 'STORE-02' WHERE user_name = 'giyimkasiyer';
+
+-- ================================================
+-- TEST VERİSİ: Çok mağaza stok senaryosu
+-- ------------------------------------------------
+-- Senaryo A: var-oto1-...-001 (Fren Balata Ön Aks)
+--   STORE-01: 25 adet (kasiyer görür → yeşil)
+--   SUBE-01:  YOK    (kasiyer2 görür → "Transferde")
+--
+-- Senaryo B: var-oto1-...-002 (Fren Balata Arka Aks)
+--   STORE-01: 20 adet (kasiyer görür → yeşil)
+--   SUBE-01:   8 adet (kasiyer2 de görür → yeşil)
+--
+-- Senaryo C: var-oto1-...-003 (Yağ Filtresi)
+--   STORE-01: YOK (kasiyer görür → "Transferde")
+--   SUBE-01:  15 adet
+-- ================================================
+INSERT INTO stock_movements
+(id, create_user, company_code, create_time, last_modified_time,
+ variant_id, store_id, warehouse_id, movement_type, quantity)
+VALUES
+    -- Senaryo B: Fren Balata Arka Aks → SUBE-01'de de stok var
+    ('stm-test-0000-0000-0000-000000000001','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-oto1-0000-0000-0000-000000000002','SUBE-01','WH-01','PURCHASE_IN',8),
+    -- Senaryo C: Yağ Filtresi → sadece SUBE-01'de
+    ('stm-test-0000-0000-0000-000000000002','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'var-oto1-0000-0000-0000-000000000003','SUBE-01','WH-01','PURCHASE_IN',15)
 ON CONFLICT (id) DO NOTHING;
 
 select * from user_def_access;

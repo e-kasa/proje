@@ -154,12 +154,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final sessionInstance = jsonDecode(sessionInstanceStr) as Map<String, dynamic>;
     final userInfo = sessionInstance['userInformation'] as Map<String, dynamic>;
 
-    // sectorType: önce userInfo, sonra sessionInstance, sonra JWT root'undan oku
-    final sectorType = userInfo['sectorType'] as String? ??
+    // sectorType: dynamicLoginParameters'dan, direkt userInfo'dan veya JWT root'undan oku
+    final dynamicParams = userInfo['dynamicLoginParameters'] as Map<String, dynamic>?;
+    final sectorType = dynamicParams?['sectorType'] as String? ??
+        userInfo['sectorType'] as String? ??
         userInfo['companySectorType'] as String? ??
         sessionInstance['sectorType'] as String? ??
         sessionInstance['companySectorType'] as String? ??
         jwtPayload['sectorType'] as String?;
+
+    // storeId: kasiyerlerin atandığı mağaza — JWT dynamicLoginParameters'dan gelir
+    final storeId = dynamicParams?['storeId'] as String?;
 
     return User(
       id: userInfo['id'] as String? ?? '',
@@ -168,6 +173,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       email: userInfo['email'] as String? ?? '',
       selectedCompanyCode: userInfo['selectedCompanyCode'] as String? ?? '',
       sectorType: sectorType,
+      storeId: storeId,
     );
   }
 }

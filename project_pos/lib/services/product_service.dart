@@ -23,8 +23,37 @@ class ProductService {
         (raw['variants'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     final firstVariant =
         variants.isNotEmpty ? variants.first : <String, dynamic>{};
-    final inventory =
+    final firstInventory =
         firstVariant['inventory'] as Map<String, dynamic>? ?? {};
+
+    // Normalize edilmiş varyant listesi — her varyant için stock/sellingPrice set et
+    final normalizedVariants = variants.map((v) {
+      final vInv = v['inventory'] as Map<String, dynamic>?;
+      final vStock = vInv != null
+          ? (vInv['physicalQuantity'] as num?)?.toInt() ?? 0
+          : (v['stock'] as num?)?.toInt() ?? 0;
+      final vPrice = (v['salePrice'] as num?)?.toDouble() ??
+          (v['additionalPrice'] as num?)?.toDouble() ?? 0.0;
+      // Lokasyon bazlı stok listesi — PosNotifier mağaza filtresi için pass-through
+      final vInvList = (v['inventories'] as List?)
+              ?.cast<Map<String, dynamic>>() ??
+          [];
+      return {
+        ...v,
+        'stock': vStock,
+        'inventories': vInvList,
+        'sellingPrice': vPrice,
+        'basePrice': vPrice,
+        'price': vPrice,
+      };
+    }).toList();
+
+    // Toplam stok = tüm varyantların stoğunun toplamı
+    // Böylece "Fren Balata" kartı ön aks + arka aks stokunu birlikte gösterir
+    final totalStock = normalizedVariants.fold<int>(
+      0,
+      (sum, v) => sum + ((v['stock'] as num?)?.toInt() ?? 0),
+    );
 
     return {
       // Kimlik
@@ -37,23 +66,8 @@ class ProductService {
       'categoryId': raw['categoryId'],
 
       // Varyant bilgileri -- satis/stok islemleri icin gerekli
-      'variantId': firstVariant['id'],          // backend variantId
-      'variants': variants.map((v) {
-        // Her varyant için inventory.physicalQuantity → stock alanına kopyala
-        final vInv = v['inventory'] as Map<String, dynamic>?;
-        final vStock = vInv != null
-            ? (vInv['physicalQuantity'] as num?)?.toInt() ?? 0
-            : (v['stock'] as num?)?.toInt() ?? 0;
-        final vPrice = (v['salePrice'] as num?)?.toDouble() ??
-            (v['additionalPrice'] as num?)?.toDouble() ?? 0.0;
-        return {
-          ...v,
-          'stock': vStock,
-          'sellingPrice': vPrice,
-          'basePrice': vPrice,
-          'price': vPrice,
-        };
-      }).toList(),
+      'variantId': firstVariant['id'],          // backend variantId (tek varyantlı için)
+      'variants': normalizedVariants,
 
       // Fiyat -- basePrice ana fiyat, varyant additionalPrice eklenebilir
       'basePrice': raw['basePrice'],
@@ -64,12 +78,12 @@ class ProductService {
       'status': raw['status'],
       'isActive': (raw['status'] as String?)?.toUpperCase() == 'ACTIVE',
 
-      // Stok -- variants[0].inventory.physicalQuantity
-      'stock': inventory['physicalQuantity'] ?? 0,
-      'lowStockThreshold': inventory['minStockLevel'] ?? 10,
-      'warehouseCode': inventory['warehouseCode'],
-      'warehouseId': inventory['warehouseId'],
-      'storeId': inventory['storeId'],
+      // Stok -- TÜM varyantların toplamı (çok varyantlılar için doğru stok gösterimi)
+      'stock': totalStock,
+      'lowStockThreshold': firstInventory['minStockLevel'] ?? 10,
+      'warehouseCode': firstInventory['warehouseCode'],
+      'warehouseId': firstInventory['warehouseId'],
+      'storeId': firstInventory['storeId'],
 
       // Barkod -- variants[0].barcodes icindeki primary barkod
       'barcode': _extractBarcode(firstVariant),

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../services/service_locator.dart';
 import '../../../core/utils/app_logger.dart';
+import '../../../providers/auth_provider.dart';
 
 // ─── Parked Order Model ────────────────────────────────────────────
 class ParkedOrder {
@@ -122,6 +123,10 @@ class PosState {
   final String? lastSaleId;
   final Map<String, dynamic>? lastSaleData;
 
+  /// Çapraz lokasyon stok uyarısı — null değilse PosScreen dialog gösterir.
+  /// İçerik: {product, variant, productName, otherLocations}
+  final Map<String, dynamic>? crossLocationAlert;
+
   const PosState({
     this.cartItems = const [],
     this.selectedCustomer,
@@ -141,6 +146,7 @@ class PosState {
     this.parkedOrders = const [],
     this.lastSaleId,
     this.lastSaleData,
+    this.crossLocationAlert,
   });
 
   int get totalItems => cartItems.fold(0, (s, i) => s + i.quantity);
@@ -212,6 +218,8 @@ class PosState {
     String? lastSaleId,
     bool clearLastSale = false,
     Map<String, dynamic>? lastSaleData,
+    Map<String, dynamic>? crossLocationAlert,
+    bool clearCrossLocationAlert = false,
   }) {
     return PosState(
       cartItems: cartItems ?? this.cartItems,
@@ -232,6 +240,9 @@ class PosState {
       parkedOrders: parkedOrders ?? this.parkedOrders,
       lastSaleId: clearLastSale ? null : (lastSaleId ?? this.lastSaleId),
       lastSaleData: clearLastSale ? null : (lastSaleData ?? this.lastSaleData),
+      crossLocationAlert: clearCrossLocationAlert
+          ? null
+          : (crossLocationAlert ?? this.crossLocationAlert),
     );
   }
 }
@@ -255,8 +266,13 @@ class PosNotifier extends StateNotifier<PosState> {
         'level': c['categoryLevel'] ?? 0,
         'parentId': c['categoryParentId']?.toString(),
       }).toList();
+      // Mağaza bazlı stok normalizasyonu — kasiyer kendi mağazasının stoğunu görür
+      final storeId = _ref.read(authProvider).user?.storeId;
+      final normalizedProducts = (storeId != null && storeId.isNotEmpty)
+          ? products.map((p) => _normalizeProductStock(p, storeId)).toList()
+          : products;
       state = state.copyWith(
-        products: products,
+        products: normalizedProducts,
         categories: categories,
         isLoadingProducts: false,
       );
@@ -283,7 +299,8 @@ class PosNotifier extends StateNotifier<PosState> {
     }
   }
 
-  void addToCart(Map<String, dynamic> product, {Map<String, dynamic>? variant}) {
+  void addToCart(Map<String, dynamic> product,
+      {Map<String, dynamic>? variant, bool forceAdd = false}) {
     final items = List<CartItem>.from(state.cartItems);
     final productId = product['id']?.toString() ?? '';
 
@@ -292,10 +309,17 @@ class PosNotifier extends StateNotifier<PosState> {
         ?? product['variantId']?.toString()
         ?? productId;
 
-    // Stok: variant'tan al (yoksa product'tan)
-    final stock = variant != null
+    // Toplam stok (tüm lokasyonlar — sepet miktarı sınırı için)
+    final totalStock = variant != null
         ? _variantStock(variant)
         : (product['stock'] as num?)?.toInt() ?? 0;
+
+    // Kendi mağaza stoğu (PosNotifier normalize ettiyse kullan, forceAdd ise atla)
+    final myStoreStock = forceAdd
+        ? totalStock
+        : (variant != null
+            ? (variant['myStoreStock'] as num?)?.toInt() ?? totalStock
+            : (product['myStoreStock'] as num?)?.toInt() ?? totalStock);
 
     // Sepette aynı varyant var mı?
     final index = items.indexWhere((i) => i.variantId == variantId);
@@ -303,14 +327,36 @@ class PosNotifier extends StateNotifier<PosState> {
     if (index >= 0) {
       final currentQty = items[index].quantity;
       final newQty = currentQty + 1;
-      if (newQty > stock && stock > 0) {
-        state = state.copyWith(error: 'Stok yetersiz! Mevcut stok: $stock');
+      if (newQty > totalStock && totalStock > 0) {
+        state = state.copyWith(error: 'Stok yetersiz! Toplam stok: $totalStock');
         return;
       }
       items[index] = items[index].copyWith(quantity: newQty);
     } else {
-      if (stock <= 0) {
-        state = state.copyWith(error: 'Ürün stokta yok!');
+      if (myStoreStock <= 0) {
+        // Başka lokasyonda stok var mı?
+        final availableElsewhere = variant != null
+            ? variant['availableElsewhere'] == true
+            : product['availableElsewhere'] == true;
+
+        if (!forceAdd && availableElsewhere) {
+          final otherLocations = ((variant != null
+                      ? variant['otherLocations']
+                      : product['otherLocations']) as List?)
+                  ?.cast<Map<String, dynamic>>() ??
+              [];
+          state = state.copyWith(
+            crossLocationAlert: {
+              'product': product,
+              'variant': variant,
+              'productName': variant?['name']?.toString() ??
+                  product['name']?.toString() ?? '',
+              'otherLocations': otherLocations,
+            },
+          );
+        } else {
+          state = state.copyWith(error: 'Ürün stokta yok!');
+        }
         return;
       }
 
@@ -332,13 +378,77 @@ class PosNotifier extends StateNotifier<PosState> {
         'basePrice': finalPrice,
         'sellingPrice': finalPrice,
         'price': finalPrice,
-        'stock': stock,
+        'stock': forceAdd ? totalStock : myStoreStock,
         'taxRate': product['taxRate'] ?? 18.0,
       };
 
       items.add(CartItem(product: productData));
     }
-    state = state.copyWith(cartItems: items, clearError: true);
+    state = state.copyWith(
+        cartItems: items, clearError: true, clearCrossLocationAlert: true);
+  }
+
+  /// Mağaza bazlı stok normalizasyonu — her varyanta myStoreStock/availableElsewhere ekler
+  Map<String, dynamic> _normalizeProductStock(
+      Map<String, dynamic> product, String storeId) {
+    final variants =
+        (product['variants'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+
+    final updatedVariants = variants.map((v) {
+      final vInventories =
+          (v['inventories'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+
+      int myStoreStock;
+      bool availableElsewhere = false;
+      List<Map<String, dynamic>> otherLocations = [];
+
+      if (vInventories.isNotEmpty) {
+        // Kendi mağazasının stoğu
+        myStoreStock = vInventories
+            .where((inv) => inv['storeId'] == storeId)
+            .fold(0,
+                (sum, inv) => sum + ((inv['physicalQuantity'] as num?)?.toInt() ?? 0));
+        // Diğer lokasyonlar (stoku > 0 olanlar)
+        otherLocations = vInventories
+            .where((inv) =>
+                inv['storeId'] != storeId &&
+                ((inv['physicalQuantity'] as num?)?.toInt() ?? 0) > 0)
+            .toList();
+        availableElsewhere = myStoreStock <= 0 && otherLocations.isNotEmpty;
+      } else {
+        myStoreStock = (v['stock'] as num?)?.toInt() ?? 0;
+      }
+
+      return <String, dynamic>{
+        ...v,
+        'myStoreStock': myStoreStock,
+        'availableElsewhere': availableElsewhere,
+        'otherLocations': otherLocations,
+      };
+    }).toList();
+
+    // Ürün düzeyinde: tüm varyantların kendi mağaza stoku toplamı
+    final totalMyStoreStock = updatedVariants.fold<int>(
+        0, (sum, v) => sum + ((v['myStoreStock'] as num?)?.toInt() ?? 0));
+    final anyAvailableElsewhere =
+        updatedVariants.any((v) => v['availableElsewhere'] == true);
+    final allOtherLocations = updatedVariants.length == 1
+        ? (updatedVariants.first['otherLocations'] as List?)
+                ?.cast<Map<String, dynamic>>() ??
+            []
+        : <Map<String, dynamic>>[];
+
+    return <String, dynamic>{
+      ...product,
+      'variants': updatedVariants,
+      'myStoreStock': totalMyStoreStock,
+      'availableElsewhere': anyAvailableElsewhere,
+      'otherLocations': allOtherLocations,
+    };
+  }
+
+  void clearCrossLocationAlert() {
+    state = state.copyWith(clearCrossLocationAlert: true);
   }
 
   Future<void> addToCartByBarcode(String barcode) async {

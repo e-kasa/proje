@@ -419,6 +419,7 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
 
         // Inventory: InventoryView'dan tüm depoları topla
         InventoryResponse inventoryResponse = null;
+        List<InventoryResponse> inventoryList = new java.util.ArrayList<>();
         try {
             List<InventoryView> inventories = inventoryService.findByVariantIdSafe(variant.getId());
             if (!inventories.isEmpty()) {
@@ -426,6 +427,7 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                         .mapToInt(iv -> iv.getPhysicalQuantity() != null ? iv.getPhysicalQuantity() : 0)
                         .sum();
                 InventoryView first = inventories.get(0);
+                // Toplam stok (geriye dönük uyumluluk)
                 inventoryResponse = InventoryResponse.builder()
                         .id(first.getId())
                         .variantId(first.getVariantId())
@@ -434,6 +436,16 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                         .physicalQuantity(totalQty)
                         .minStockLevel(variant.getMinStockLevel())
                         .build();
+                // Lokasyon bazlı stok listesi — Flutter çok-mağaza UI için
+                inventoryList = inventories.stream()
+                        .map(iv -> InventoryResponse.builder()
+                                .variantId(iv.getVariantId())
+                                .storeId(iv.getStoreId())
+                                .warehouseId(iv.getWarehouseId())
+                                .physicalQuantity(iv.getPhysicalQuantity() != null ? iv.getPhysicalQuantity() : 0)
+                                .minStockLevel(variant.getMinStockLevel())
+                                .build())
+                        .collect(java.util.stream.Collectors.toList());
             }
         } catch (Exception e) {
             log.warn("Stok bilgisi alınamadı variant={}: {}", variant.getId(), e.getMessage());
@@ -456,6 +468,7 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                 .attributes(variant.getAttributes())
                 .barcodes(barcodeResponses)
                 .inventory(inventoryResponse)
+                .inventories(inventoryList)
                 .build();
     }
 

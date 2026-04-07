@@ -93,10 +93,49 @@ public class SaleServiceIntegrated
             checkStockAvailability(variant.getId(), request.getStoreId(),
                     request.getWarehouseId(), item.getQuantity());
 
+            // storeId/warehouseId null gelirse (POS'tan gönderilmemiş),
+            // bu varyantın envanter kaydındaki lokasyonu kullan.
+            // Aksi halde SALE_OUT hareketi inventory_view'da ayrı bir NULL grubuna
+            // düşer ve stok görünümü güncellenmez.
+            String effectiveStoreId     = request.getStoreId();
+            String effectiveWarehouseId = request.getWarehouseId();
+            if (effectiveStoreId == null || effectiveStoreId.isBlank()
+                    || effectiveWarehouseId == null || effectiveWarehouseId.isBlank()) {
+                // Önce bu varyantın envanter kaydından bul
+                List<InventoryView> invList = inventoryRepository.findByVariantId(variant.getId());
+                if (!invList.isEmpty()) {
+                    // Stoku 0'dan büyük olan kaydı tercih et
+                    InventoryView bestInv = invList.stream()
+                            .filter(iv -> iv.getPhysicalQuantity() != null && iv.getPhysicalQuantity() > 0)
+                            .findFirst()
+                            .orElse(invList.get(0));
+                    if (bestInv.getStoreId() != null && !bestInv.getStoreId().isBlank()) {
+                        effectiveStoreId = bestInv.getStoreId();
+                    }
+                    if (bestInv.getWarehouseId() != null && !bestInv.getWarehouseId().isBlank()) {
+                        effectiveWarehouseId = bestInv.getWarehouseId();
+                    }
+                }
+                // Hâlâ null ise: bu varyantın ilk PURCHASE_IN hareketinden store/warehouse al
+                if (effectiveStoreId == null || effectiveStoreId.isBlank()) {
+                    var purchaseOpt = stockMovementRepository
+                            .findFirstByVariantIdAndMovementType(variant.getId(), StockMovementType.PURCHASE_IN);
+                    if (purchaseOpt.isPresent()) {
+                        StockMovement pm = purchaseOpt.get();
+                        if (pm.getStoreId() != null && !pm.getStoreId().isBlank()) {
+                            effectiveStoreId = pm.getStoreId();
+                        }
+                        if (pm.getWarehouseId() != null && !pm.getWarehouseId().isBlank()) {
+                            effectiveWarehouseId = pm.getWarehouseId();
+                        }
+                    }
+                }
+            }
+
             StockMovement movement = StockMovement.builder()
                     .variant(variant)
-                    .storeId(request.getStoreId())
-                    .warehouseId(request.getWarehouseId())
+                    .storeId(effectiveStoreId)
+                    .warehouseId(effectiveWarehouseId)
                     .movementType(StockMovementType.SALE_OUT)
                     .quantity(item.getQuantity())
                     .unitPrice(item.getUnitPrice())
@@ -104,7 +143,8 @@ public class SaleServiceIntegrated
                     .build();
 
             movements.add(prepareAndSave(stockMovementRepository, movement));
-            log.info("Stok hareketi: Variant={}, Miktar={}", variant.getSku(), item.getQuantity());
+            log.info("Stok hareketi: Variant={}, Miktar={}, Magaza={}, Depo={}",
+                    variant.getSku(), item.getQuantity(), effectiveStoreId, effectiveWarehouseId);
         }
 
         sale.setMovements(movements);

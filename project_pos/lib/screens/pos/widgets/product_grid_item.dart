@@ -27,8 +27,16 @@ class ProductGridItem extends StatelessWidget {
         0.0;
     final stock = (product['stock'] as num?)?.toInt() ?? 0;
     final sku = product['sku']?.toString() ?? '';
-    final isOutOfStock = stock <= 0;
     final categoryName = product['categoryName']?.toString();
+
+    // Mağaza bazlı stok (PosNotifier normalize ettiyse)
+    final myStoreStock =
+        (product['myStoreStock'] as num?)?.toInt() ?? stock;
+    final availableElsewhere = product['availableElsewhere'] == true;
+
+    // Kart durumu: kendi mağazasında 0 ama başka yerde var → tıklanabilir (dialog çıkar)
+    final isOutOfStock = myStoreStock <= 0 && !availableElsewhere;
+    final isTransferOnly = myStoreStock <= 0 && availableElsewhere;
 
     return Material(
       color: Colors.transparent,
@@ -40,11 +48,13 @@ class ProductGridItem extends StatelessWidget {
           decoration: BoxDecoration(
             color: isOutOfStock
                 ? AppColors.bgLight.withOpacity(0.7)
-                : Colors.white,
+                : isTransferOnly
+                    ? AppColors.bgWarning.withOpacity(0.3)
+                    : Colors.white,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: isOutOfStock
-                  ? AppColors.border
+              color: isTransferOnly
+                  ? AppColors.warning.withOpacity(0.5)
                   : AppColors.border,
             ),
             boxShadow: [
@@ -98,7 +108,7 @@ class ProductGridItem extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   // Stok badge
-                  _buildStockBadge(stock, isOutOfStock),
+                  _buildStockBadge(myStoreStock, isOutOfStock, isTransferOnly),
                 ],
               ),
 
@@ -146,7 +156,11 @@ class ProductGridItem extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: isOutOfStock ? AppColors.textMuted : AppColors.primary,
+                  color: isOutOfStock
+                      ? AppColors.textMuted
+                      : isTransferOnly
+                          ? AppColors.warning
+                          : AppColors.primary,
                 ),
               ),
             ],
@@ -156,7 +170,7 @@ class ProductGridItem extends StatelessWidget {
     );
   }
 
-  Widget _buildStockBadge(int stock, bool isOutOfStock) {
+  Widget _buildStockBadge(int stock, bool isOutOfStock, bool isTransferOnly) {
     Color bgColor;
     Color textColor;
     String label;
@@ -164,7 +178,11 @@ class ProductGridItem extends StatelessWidget {
     if (isOutOfStock) {
       bgColor = AppColors.bgDanger;
       textColor = AppColors.danger;
-      label = 'Tukendi';
+      label = 'Tükendi';
+    } else if (isTransferOnly) {
+      bgColor = AppColors.bgWarning;
+      textColor = AppColors.warning;
+      label = 'Transferde';
     } else if (stock <= 5) {
       bgColor = AppColors.bgWarning;
       textColor = AppColors.warning;

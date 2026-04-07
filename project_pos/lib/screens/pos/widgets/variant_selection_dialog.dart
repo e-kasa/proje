@@ -251,7 +251,7 @@ class _VariantSelectionDialogState extends State<VariantSelectionDialog> {
     if (isOutOfStock) {
       bgColor = AppColors.bgDanger;
       textColor = AppColors.danger;
-      label = 'Tukendi';
+      label = 'Tükendi';
     } else if (stock <= 5) {
       bgColor = AppColors.bgWarning;
       textColor = AppColors.warning;
@@ -259,7 +259,7 @@ class _VariantSelectionDialogState extends State<VariantSelectionDialog> {
     } else {
       bgColor = AppColors.bgSuccess;
       textColor = AppColors.success;
-      label = 'Tersedia';
+      label = '$stock Adet';
     }
 
     return Container(

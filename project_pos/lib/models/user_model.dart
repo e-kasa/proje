@@ -11,6 +11,10 @@ class User {
   /// JWT payload'unda veya company-settings endpoint'inden okunur.
   final String? sectorType;
 
+  /// Kullanıcının atandığı mağaza ID — JWT dynamicLoginParameters'dan gelir.
+  /// null ise admin/depo (tüm mağazalara erişim)
+  final String? storeId;
+
   User({
     required this.id,
     required this.username,
@@ -20,6 +24,7 @@ class User {
     this.roles = const [],
     this.email,
     this.sectorType,
+    this.storeId,
   });
 
   User copyWith({
@@ -31,6 +36,7 @@ class User {
     List<String>? roles,
     String? email,
     String? sectorType,
+    String? storeId,
   }) {
     return User(
       id: id ?? this.id,
@@ -41,6 +47,7 @@ class User {
       roles: roles ?? this.roles,
       email: email ?? this.email,
       sectorType: sectorType ?? this.sectorType,
+      storeId: storeId ?? this.storeId,
     );
   }
 
@@ -53,6 +60,7 @@ class User {
         'roles': roles,
         'email': email,
         'sectorType': sectorType,
+        'storeId': storeId,
       };
 
   factory User.fromJson(Map<String, dynamic> json) => User(
@@ -66,5 +74,6 @@ class User {
         sectorType: json['sectorType'] as String? ??
             json['companySectorType'] as String? ??
             json['sector'] as String?,
+        storeId: json['storeId'] as String?,
       );
 }

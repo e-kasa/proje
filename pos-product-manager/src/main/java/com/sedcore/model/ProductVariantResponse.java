@@ -29,5 +29,10 @@ public class ProductVariantResponse {
     private Map<String, String> attributes;
 
     private List<BarcodeResponse> barcodes;
+
+    /** Toplam stok (geriye dönük uyumluluk için — tüm lokasyonların toplamı) */
     private InventoryResponse inventory;
+
+    /** Lokasyon bazlı stok listesi — Flutter çok-mağaza görünümü için */
+    private List<InventoryResponse> inventories;
 }

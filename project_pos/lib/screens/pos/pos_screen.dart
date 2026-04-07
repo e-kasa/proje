@@ -12,6 +12,7 @@ import 'widgets/payment_panel.dart';
 import 'widgets/category_filter_bar.dart';
 import 'widgets/variant_selection_dialog.dart';
 import 'widgets/parked_orders_panel.dart';
+import 'widgets/out_of_stock_location_dialog.dart';
 
 class PosScreen extends ConsumerStatefulWidget {
   const PosScreen({super.key});
@@ -142,6 +143,31 @@ class _PosScreenState extends ConsumerState<PosScreen> {
           ),
         );
         ref.read(posProvider.notifier).clearMessages();
+      });
+    }
+
+    // Çapraz lokasyon stok uyarısı — başka mağazada stok var ama kasiyerin mağazasında yok
+    if (posState.crossLocationAlert != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final alert = posState.crossLocationAlert!;
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => OutOfStockLocationDialog(
+            alert: alert,
+            onForceAdd: () {
+              ref.read(posProvider.notifier).addToCart(
+                alert['product'] as Map<String, dynamic>,
+                variant: alert['variant'] as Map<String, dynamic>?,
+                forceAdd: true,
+              );
+            },
+            onCancel: () {
+              ref.read(posProvider.notifier).clearCrossLocationAlert();
+            },
+          ),
+        );
       });
     }
 

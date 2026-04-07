@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface StockMovementRepository extends BaseDaoRepository<StockMovement> {
@@ -47,6 +48,12 @@ public interface StockMovementRepository extends BaseDaoRepository<StockMovement
     @Query("SELECT sm FROM StockMovement sm WHERE sm.sale.id = :saleId AND sm.variant.id = :variantId AND sm.movementType = :movementType")
     List<StockMovement> findBySaleIdAndVariantIdAndMovementType(
             @Param("saleId") String saleId,
+            @Param("variantId") String variantId,
+            @Param("movementType") StockMovementType movementType);
+
+    // Belirli varyant + hareket tipi için ilk kaydı döner (store/warehouse fallback için)
+    @Query("SELECT sm FROM StockMovement sm WHERE sm.variant.id = :variantId AND sm.movementType = :movementType ORDER BY sm.createTime ASC")
+    Optional<StockMovement> findFirstByVariantIdAndMovementType(
             @Param("variantId") String variantId,
             @Param("movementType") StockMovementType movementType);
 }

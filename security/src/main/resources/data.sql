@@ -24,7 +24,7 @@ VALUES
     -- Mağaza yöneticisi rolü (giyim)
     ('role-mgzyn-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'SEDCORE', 'STORE_MANAGER', 'Mağaza yönetimi ve raporlama', true, false, 'Mağaza Yöneticisi')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- KULLANICI TANIMLAMALARI (user_def)
@@ -42,7 +42,7 @@ VALUES
      'SEDCORE', 'kasiyer', true, 'TR', 'AGENCY_ID', 'Kasiyer Kullanıcı', 'kasiyer', 'USER'),
 
     -- 3. Depo — Yedek Parça sektörü depo sorumlusu
-    ('udef-depo0-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+    ('udef-depo-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'SEDCORE', 'depo', true, 'TR', 'AGENCY_ID', 'Depo Sorumlusu', 'depo', 'USER'),
 
     -- 4. Mağaza Admin — Giyim sektörü yöneticisi
@@ -56,7 +56,7 @@ VALUES
     -- 6. Giyim Depo — Giyim sektörü depo sorumlusu
     ('udef-gdep0-0000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'SEDCORE', 'giyim_depo', true, 'TR', 'AGENCY_ID', 'Giyim Depo Sorumlusu', 'giyim_depo', 'USER')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- ERİŞİM BİLGİLERİ (user_def_access)
@@ -90,7 +90,7 @@ VALUES
      'SEDCORE1', 'INTERNAL', true, false, false, false, CURRENT_TIMESTAMP,
      'waEXHxvD4c7l7iGYPXbIbzHkS8Z2JM/8D7eQrKSjxrg=',
      'ZGVwb3NhbHQxMjM0NTY3',
-     'udef-depo0-0000-0000-0000-000000000003'),
+     'udef-depo-0000-0000-0000-000000000003'),
 
     ('uacc-mgzad-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'SEDCORE1', 'INTERNAL', true, false, false, false, CURRENT_TIMESTAMP,
@@ -109,7 +109,7 @@ VALUES
      'ESsw/Y8pJi1jdeSAIwXfwiewoWPRAvIX/oDtnbmZvyA=',
      'Z2l5aW1kZXBvc2FsdDEy',
      'udef-gdep0-0000-0000-0000-000000000006')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- ROL ATAMALARI (user_role)
@@ -127,7 +127,7 @@ VALUES
 
     -- depo → WAREHOUSE rolü
     ('urol-depo0-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'role-depo0-0000-0000-0000-000000000003', 'udef-depo0-0000-0000-0000-000000000003'),
+     'SEDCORE', 'role-depo0-0000-0000-0000-000000000003', 'udef-depo-0000-0000-0000-000000000003'),
 
     -- magaza_admin → STORE_MANAGER rolü
     ('urol-mgzad-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
@@ -140,4 +140,4 @@ VALUES
     -- giyim_depo → WAREHOUSE rolü
     ('urol-gdep0-0000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'SEDCORE', 'role-depo0-0000-0000-0000-000000000003', 'udef-gdep0-0000-0000-0000-000000000006')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;

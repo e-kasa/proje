@@ -142,12 +142,18 @@ class _VariantSelectionDialogState extends State<VariantSelectionDialog> {
   }
 
   Widget _buildVariantCard(Map<String, dynamic> variant) {
-    // Stok önce inventory.physicalQuantity'den, yoksa direkt stock alanından okunur
+    // Kendi mağaza stoğu — PosNotifier tarafından normalize edilmişse myStoreStock kullan,
+    // yoksa inventory.physicalQuantity veya variant.stock'a düş
     final inv = variant['inventory'] as Map<String, dynamic>?;
-    final stock = inv != null
+    final totalStock = inv != null
         ? (inv['physicalQuantity'] as num?)?.toInt() ?? 0
         : (variant['stock'] as num?)?.toInt() ?? 0;
-    final isOutOfStock = stock <= 0;
+    final myStoreStock = (variant['myStoreStock'] as num?)?.toInt() ?? totalStock;
+    final availableElsewhere = variant['availableElsewhere'] == true;
+
+    final isOutOfStock   = myStoreStock <= 0 && !availableElsewhere;
+    final isTransferOnly = myStoreStock <= 0 && availableElsewhere;
+
     final isSelected = _selectedVariant != null &&
         _selectedVariant!['id'] == variant['id'];
 
@@ -156,21 +162,30 @@ class _VariantSelectionDialogState extends State<VariantSelectionDialog> {
         (variant['price'] as num?)?.toDouble() ??
         0.0;
 
-    // Build attribute string (e.g., "Red, Size: L")
+    // Build attribute string (e.g., "Ön Aks", "Kırmızı L")
     final attributes = _buildAttributeString(variant);
 
+    // Transferde varyantlar seçilebilir — addToCart crossLocationAlert tetikler
+    final canTap = !isOutOfStock;
+
     return GestureDetector(
-      onTap: isOutOfStock ? null : () => setState(() => _selectedVariant = variant),
+      onTap: canTap ? () => setState(() => _selectedVariant = variant) : null,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(
           color: isOutOfStock
               ? AppColors.bgLight.withOpacity(0.5)
-              : isSelected
-                  ? AppColors.primary.withOpacity(0.1)
-                  : Colors.white,
+              : isTransferOnly
+                  ? AppColors.bgWarning.withOpacity(0.3)
+                  : isSelected
+                      ? AppColors.primary.withOpacity(0.1)
+                      : Colors.white,
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
+            color: isSelected
+                ? AppColors.primary
+                : isTransferOnly
+                    ? AppColors.warning.withOpacity(0.5)
+                    : AppColors.border,
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(12),
@@ -178,7 +193,7 @@ class _VariantSelectionDialogState extends State<VariantSelectionDialog> {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: isOutOfStock ? null : () => setState(() => _selectedVariant = variant),
+            onTap: canTap ? () => setState(() => _selectedVariant = variant) : null,
             borderRadius: BorderRadius.circular(12),
             child: Padding(
               padding: const EdgeInsets.all(12),
@@ -215,14 +230,18 @@ class _VariantSelectionDialogState extends State<VariantSelectionDialog> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: isOutOfStock ? AppColors.textMuted : AppColors.primary,
+                      color: isOutOfStock
+                          ? AppColors.textMuted
+                          : isTransferOnly
+                              ? AppColors.warning
+                              : AppColors.primary,
                     ),
                   ),
 
                   const SizedBox(height: 4),
 
                   // Stock Badge
-                  _buildStockBadge(stock, isOutOfStock),
+                  _buildStockBadge(myStoreStock, isOutOfStock, isTransferOnly: isTransferOnly),
 
                   // Selection Indicator
                   if (isSelected)
@@ -243,7 +262,7 @@ class _VariantSelectionDialogState extends State<VariantSelectionDialog> {
     );
   }
 
-  Widget _buildStockBadge(int stock, bool isOutOfStock) {
+  Widget _buildStockBadge(int stock, bool isOutOfStock, {bool isTransferOnly = false}) {
     Color bgColor;
     Color textColor;
     String label;
@@ -252,6 +271,10 @@ class _VariantSelectionDialogState extends State<VariantSelectionDialog> {
       bgColor = AppColors.bgDanger;
       textColor = AppColors.danger;
       label = 'Tükendi';
+    } else if (isTransferOnly) {
+      bgColor = AppColors.bgWarning;
+      textColor = AppColors.warning;
+      label = 'Transferde';
     } else if (stock <= 5) {
       bgColor = AppColors.bgWarning;
       textColor = AppColors.warning;

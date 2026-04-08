@@ -232,22 +232,43 @@ class StockBarcodeStep extends StatelessWidget {
 
           buildFormField(
             label: 'Tedarikci',
-            child: DropdownButtonFormField<String>(
-              value: state.selectedSupplier,
-              decoration: inputDecoration('Tedarikci secin').copyWith(
-                prefixIcon: const Icon(Icons.business, color: AppColors.primary, size: 18),
-              ),
-              items: state.suppliers.map<DropdownMenuItem<String>>((sup) {
-                final name = sup['name']?.toString() ?? sup['companyName']?.toString() ?? '-';
-                final contact = sup['contactName']?.toString() ?? '';
-                final label = contact.isNotEmpty ? '$name ($contact)' : name;
-                return DropdownMenuItem<String>(
-                  value: sup['id'].toString(),
-                  child: Text(label, overflow: TextOverflow.ellipsis),
-                );
-              }).toList(),
-              onChanged: (val) { state.selectedSupplier = val; onChanged(); },
-            ),
+            child: Builder(builder: (context) {
+              // Duplicate ID'leri temizle ve güvenli items oluştur
+              final supplierItems = state.suppliers
+                  .map((sup) => sup['id']?.toString() ?? '')
+                  .where((id) => id.isNotEmpty)
+                  .toSet()
+                  .map<DropdownMenuItem<String>>((id) {
+                    final sup = state.suppliers.firstWhere(
+                        (s) => s['id']?.toString() == id);
+                    final name = sup['name']?.toString() ??
+                        sup['companyName']?.toString() ?? '-';
+                    final contact = sup['contactName']?.toString() ?? '';
+                    final label = contact.isNotEmpty ? '$name ($contact)' : name;
+                    return DropdownMenuItem<String>(
+                      value: id,
+                      child: Text(label, overflow: TextOverflow.ellipsis),
+                    );
+                  })
+                  .toList();
+              final safeValue = supplierItems.any(
+                      (item) => item.value == state.selectedSupplier)
+                  ? state.selectedSupplier
+                  : null;
+              return DropdownButtonFormField<String>(
+                value: safeValue,
+                isExpanded: true,
+                decoration: inputDecoration('Tedarikci secin').copyWith(
+                  prefixIcon: const Icon(Icons.business,
+                      color: AppColors.primary, size: 18),
+                ),
+                items: supplierItems,
+                onChanged: (val) {
+                  state.selectedSupplier = val;
+                  onChanged();
+                },
+              );
+            }),
           ),
           const SizedBox(height: 12),
 

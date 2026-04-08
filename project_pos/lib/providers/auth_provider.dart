@@ -167,9 +167,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final storeId = dynamicParams?['storeId'] as String?;
 
     return User(
-      id: userInfo['id'] as String? ?? '',
-      username: userInfo['username'] as String? ?? '',
-      displayName: userInfo['fullName'] as String? ?? '',
+      id: userInfo['userId'] as String?        // JWT alanı: userId
+          ?? userInfo['id'] as String?          // eski fallback
+          ?? '',
+      username: userInfo['userName'] as String?   // JWT alanı: userName
+          ?? userInfo['username'] as String?       // eski fallback
+          ?? '',
+      displayName: userInfo['displayName'] as String?  // JWT alanı: displayName
+          ?? userInfo['fullName'] as String?            // eski fallback
+          ?? '',
       email: userInfo['email'] as String? ?? '',
       selectedCompanyCode: userInfo['selectedCompanyCode'] as String? ?? '',
       sectorType: sectorType,

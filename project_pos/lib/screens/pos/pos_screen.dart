@@ -146,6 +146,16 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       });
     }
 
+    // Mağaza seçici — activeStoreId yoksa ve birden fazla mağaza varsa göster
+    if (!posState.isLoadingProducts &&
+        posState.activeStoreId == null &&
+        posState.availableStoreIds.length > 1) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _showStorePicker(context, posState.availableStoreIds, posState.activeStoreId);
+      });
+    }
+
     // Çapraz lokasyon stok uyarısı — başka mağazada stok var ama kasiyerin mağazasında yok
     if (posState.crossLocationAlert != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -221,8 +231,38 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         children: [
           const Text('POS Satış Paneli',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
-          Text('Aktif Terminal: #01',
-            style: TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.w500)),
+          GestureDetector(
+            onTap: posState.availableStoreIds.length > 1
+                ? () => _showStorePicker(context, posState.availableStoreIds, posState.activeStoreId)
+                : null,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  posState.activeStoreId != null
+                      ? Icons.store_rounded
+                      : Icons.store_mall_directory_outlined,
+                  size: 11,
+                  color: posState.activeStoreId != null ? AppColors.success : AppColors.warning,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  posState.activeStoreId != null
+                      ? 'Mağaza: ${posState.activeStoreId}'
+                      : 'Mağaza seçilmedi',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: posState.activeStoreId != null ? AppColors.textMuted : AppColors.warning,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (posState.availableStoreIds.length > 1) ...[
+                  const SizedBox(width: 2),
+                  const Icon(Icons.arrow_drop_down_rounded, size: 14, color: AppColors.textMuted),
+                ],
+              ],
+            ),
+          ),
         ],
       ),
       actions: [
@@ -502,5 +542,100 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => const ParkedOrdersPanel(),
     );
+  }
+
+  bool _storePickerShown = false;
+
+  /// Mağaza seçici dialog — birden fazla mağaza varken kasiyerin hangi mağazada
+  /// çalıştığını seçmesini sağlar.
+  void _showStorePicker(
+      BuildContext context, List<String> storeIds, String? currentStoreId) {
+    if (_storePickerShown) return;
+    _storePickerShown = true;
+
+    showDialog(
+      context: context,
+      barrierDismissible: currentStoreId != null, // seçim yapılmışsa kapatılabilir
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: const [
+            Icon(Icons.store_rounded, color: AppColors.primary),
+            SizedBox(width: 10),
+            Text('Mağaza Seçin'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Hangi mağazada çalışıyorsunuz?\nStok bilgileri seçtiğiniz mağazaya göre gösterilecek.',
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            ...storeIds.map((id) {
+              final isSelected = id == currentStoreId;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    ref.read(posProvider.notifier).setActiveStore(id);
+                    _storePickerShown = false;
+                    Navigator.pop(ctx);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.primary.withOpacity(0.08)
+                          : AppColors.bgLight,
+                      border: Border.all(
+                        color: isSelected ? AppColors.primary : AppColors.border,
+                        width: isSelected ? 2 : 1,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.store_rounded,
+                          size: 20,
+                          color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            id,
+                            style: TextStyle(
+                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                              color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        if (isSelected)
+                          const Icon(Icons.check_circle_rounded,
+                              size: 18, color: AppColors.primary),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
+        actions: currentStoreId != null
+            ? [
+                TextButton(
+                  onPressed: () {
+                    _storePickerShown = false;
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text('İptal'),
+                ),
+              ]
+            : null,
+      ),
+    ).then((_) => _storePickerShown = false);
   }
 }

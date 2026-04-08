@@ -127,6 +127,13 @@ class PosState {
   /// İçerik: {product, variant, productName, otherLocations}
   final Map<String, dynamic>? crossLocationAlert;
 
+  /// Aktif mağaza ID'si — JWT'den veya kullanıcı seçiminden gelir.
+  /// null ise PosScreen mağaza seçici gösterir.
+  final String? activeStoreId;
+
+  /// Ürünlerin inventories'inden çıkarılan benzersiz mağaza listesi
+  final List<String> availableStoreIds;
+
   const PosState({
     this.cartItems = const [],
     this.selectedCustomer,
@@ -147,6 +154,8 @@ class PosState {
     this.lastSaleId,
     this.lastSaleData,
     this.crossLocationAlert,
+    this.activeStoreId,
+    this.availableStoreIds = const [],
   });
 
   int get totalItems => cartItems.fold(0, (s, i) => s + i.quantity);
@@ -220,6 +229,9 @@ class PosState {
     Map<String, dynamic>? lastSaleData,
     Map<String, dynamic>? crossLocationAlert,
     bool clearCrossLocationAlert = false,
+    String? activeStoreId,
+    bool clearActiveStoreId = false,
+    List<String>? availableStoreIds,
   }) {
     return PosState(
       cartItems: cartItems ?? this.cartItems,
@@ -243,6 +255,8 @@ class PosState {
       crossLocationAlert: clearCrossLocationAlert
           ? null
           : (crossLocationAlert ?? this.crossLocationAlert),
+      activeStoreId: clearActiveStoreId ? null : (activeStoreId ?? this.activeStoreId),
+      availableStoreIds: availableStoreIds ?? this.availableStoreIds,
     );
   }
 }
@@ -266,15 +280,41 @@ class PosNotifier extends StateNotifier<PosState> {
         'level': c['categoryLevel'] ?? 0,
         'parentId': c['categoryParentId']?.toString(),
       }).toList();
-      // Mağaza bazlı stok normalizasyonu — kasiyer kendi mağazasının stoğunu görür
-      final storeId = _ref.read(authProvider).user?.storeId;
-      final normalizedProducts = (storeId != null && storeId.isNotEmpty)
-          ? products.map((p) => _normalizeProductStock(p, storeId)).toList()
+
+      // Ürünlerin inventories'inden benzersiz mağaza ID'lerini çıkar
+      final storeIdSet = <String>{};
+      for (final p in products) {
+        for (final v in (p['variants'] as List?)?.cast<Map<String, dynamic>>() ?? []) {
+          for (final inv in (v['inventories'] as List?)?.cast<Map<String, dynamic>>() ?? []) {
+            final sid = inv['storeId'] as String?;
+            if (sid != null && sid.isNotEmpty) storeIdSet.add(sid);
+          }
+        }
+      }
+      final availableStores = storeIdSet.toList()..sort();
+
+      // Mağaza bazlı stok normalizasyonu:
+      //   1. JWT'den gelen storeId (kasiyer kendi mağazasına atanmış)
+      //   2. Mevcut activeStoreId (kullanıcı daha önce seçtiyse)
+      //   3. Tek mağaza varsa otomatik seç
+      final jwtStoreId = _ref.read(authProvider).user?.storeId;
+      final currentStoreId = state.activeStoreId;
+      String? effectiveStoreId = jwtStoreId?.isNotEmpty == true
+          ? jwtStoreId
+          : (currentStoreId?.isNotEmpty == true
+              ? currentStoreId
+              : (availableStores.length == 1 ? availableStores.first : null));
+
+      final normalizedProducts = (effectiveStoreId != null && effectiveStoreId.isNotEmpty)
+          ? products.map((p) => _normalizeProductStock(p, effectiveStoreId)).toList()
           : products;
+
       state = state.copyWith(
         products: normalizedProducts,
         categories: categories,
         isLoadingProducts: false,
+        activeStoreId: effectiveStoreId,
+        availableStoreIds: availableStores,
       );
     } catch (e) {
       state = state.copyWith(isLoadingProducts: false, error: e.toString());
@@ -641,6 +681,18 @@ class PosNotifier extends StateNotifier<PosState> {
     return (variant['stock'] as num?)?.toInt() ?? 0;
   }
   void clearMessages() => state = state.copyWith(clearError: true, clearSuccess: true);
+
+  /// Aktif mağazayı değiştirir ve tüm ürünlerin stok bilgisini yeniden normalize eder.
+  void setActiveStore(String storeId) {
+    if (storeId.isEmpty) return;
+    final normalizedProducts = state.products.isNotEmpty
+        ? state.products.map((p) => _normalizeProductStock(p, storeId)).toList()
+        : state.products;
+    state = state.copyWith(
+      activeStoreId: storeId,
+      products: normalizedProducts,
+    );
+  }
 
   // ─── Parked Orders Methods ─────────────────────────────────────
   void parkCurrentOrder({String? label}) {

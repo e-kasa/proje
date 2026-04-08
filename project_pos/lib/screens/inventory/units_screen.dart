@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 class UnitsScreen extends ConsumerStatefulWidget {
   const UnitsScreen({super.key});
@@ -73,6 +74,7 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
   }
 
   void _showAddUnitDialog() {
+    final t = i18nOf(ref);
     final nameController = TextEditingController();
     final codeController = TextEditingController();
     String selectedType = 'Sayılabilir';
@@ -85,7 +87,7 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
             children: [
               Icon(Icons.straighten, color: AppColors.primary),
               SizedBox(width: 12),
-              Text('Yeni Birim Ekle'),
+              Text(t('inventory.new_unit')),
             ],
           ),
           content: SingleChildScrollView(
@@ -162,6 +164,7 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
   }
 
   void _showEditUnitDialog(Map<String, dynamic> unit) {
+    final t = i18nOf(ref);
     final nameController = TextEditingController(text: unit['name']);
     final codeController = TextEditingController(text: unit['code']);
     String selectedType = unit['type'];
@@ -174,7 +177,7 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
             children: [
               Icon(Icons.edit, color: AppColors.info),
               SizedBox(width: 12),
-              Text('Birim Düzenle'),
+              Text(t('inventory.edit_unit')),
             ],
           ),
           content: SingleChildScrollView(
@@ -249,6 +252,7 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
   }
 
   void _showDeleteDialog(Map<String, dynamic> unit) {
+    final t = i18nOf(ref);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -256,7 +260,7 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
           children: [
             Icon(Icons.warning, color: AppColors.danger),
             SizedBox(width: 12),
-            Text('Birimi Sil'),
+            Text(t('inventory.delete_unit')),
           ],
         ),
         content: Column(
@@ -317,10 +321,11 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = i18nOf(ref);
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
-        title: 'Birimler',
+        title: t('menu.units'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
@@ -345,7 +350,7 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
                         controller: _searchController,
                         onChanged: _filterUnits,
                         decoration: InputDecoration(
-                          hintText: 'Birim ara (ad veya kod)...',
+                          hintText: '${t('common.search')}...',
                           prefixIcon: const Icon(Icons.search, size: 20),
                           filled: true,
                           fillColor: AppColors.bgLight,
@@ -361,7 +366,7 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
                     ElevatedButton.icon(
                       onPressed: _showAddUnitDialog,
                       icon: const Icon(Icons.add, size: 20),
-                      label: const Text('Yeni Birim'),
+                      label: Text(t('inventory.new_unit')),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -384,7 +389,7 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildStatItem('Toplam', '${_units.length}', Icons.straighten),
+                      _buildStatItem(t('common.total'), '${_units.length}', Icons.straighten),
                       Container(width: 1, height: 30, color: AppColors.border),
                       _buildStatItem('Sayılabilir', '${_units.where((u) => u['type'] == 'Sayılabilir').length}', Icons.numbers),
                       Container(width: 1, height: 30, color: AppColors.border),
@@ -458,8 +463,8 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
             color: AppColors.textMuted.withOpacity(0.5),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Henüz birim eklenmemiş',
+          Text(
+            t('inventory.no_units'),
             style: TextStyle(
               fontSize: 16,
               color: AppColors.textSecondary,
@@ -467,8 +472,8 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Yeni birim eklemek için yukarıdaki butonu kullanın',
+          Text(
+            t('inventory.add_unit_hint'),
             style: TextStyle(
               fontSize: 13,
               color: AppColors.textMuted,

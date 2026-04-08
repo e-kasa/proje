@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
+import '../../core/utils/i18n_helper.dart';
 import '../../services/service_locator.dart';
 
 class SaleDetailScreen extends ConsumerStatefulWidget {
@@ -59,13 +60,14 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = i18nOf(ref);
     final cancelled = _sale['status']?.toString().toLowerCase() == 'cancelled' ||
         _sale['isCancelled'] == true;
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppAppBar.standard(
-        title: 'Satış Detayı',
+        title: t('sales.detail'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
@@ -74,7 +76,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _load,
-            tooltip: 'Yenile',
+            tooltip: t('common.refresh'),
           ),
           if (!_isLoading && _error == null && !cancelled)
             PopupMenuButton<String>(
@@ -88,26 +90,26 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                 }
               },
               itemBuilder: (_) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'return',
                   child: Row(
                     children: [
                       Icon(Icons.assignment_return_outlined,
                           size: 18, color: Colors.orange),
                       SizedBox(width: 8),
-                      Text('Satış İadesi',
+                      Text(t('sales.return'),
                           style: TextStyle(color: Colors.orange)),
                     ],
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'cancel',
                   child: Row(
                     children: [
                       Icon(Icons.cancel_outlined,
                           size: 18, color: Colors.red),
                       SizedBox(width: 8),
-                      Text('Satışı İptal Et',
+                      Text(t('sales.cancel_sale'),
                           style: TextStyle(color: Colors.red)),
                     ],
                   ),
@@ -157,6 +159,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
   // ─── Status Banner ────────────────────────────────────────────────────────
 
   Widget _buildStatusBanner(bool cancelled, ThemeData theme) {
+    final t = i18nOf(ref);
     final status = _sale['status']?.toString().toLowerCase() ??
         _sale['paymentStatus']?.toString().toLowerCase() ??
         '';
@@ -177,7 +180,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
       ].join('  •  ');
       return _statusContainer(
         icon: Icons.cancel_outlined,
-        text: 'Bu satış iptal edilmiştir',
+        text: t('sales.sale_cancelled_message'),
         color: Colors.red,
         reason: cancelDetail.isNotEmpty ? cancelDetail : null,
         theme: theme,
@@ -189,7 +192,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
         children: [
           _statusContainer(
             icon: Icons.schedule,
-            text: 'Veresiye satış — ödeme bekleniyor',
+            text: t('sales.pending_payment'),
             color: Colors.orange,
             theme: theme,
           ),
@@ -197,7 +200,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
             const SizedBox(height: 8),
             _statusContainer(
               icon: Icons.assignment_return_outlined,
-              text: 'Bu satış için iade kaydı bulunmaktadır',
+              text: t('sales.has_return_record'),
               color: Colors.deepOrange,
               theme: theme,
             ),
@@ -211,14 +214,14 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
         children: [
           _statusContainer(
             icon: Icons.check_circle_outline,
-            text: 'Satış tamamlandı',
+            text: t('sales.sale_completed'),
             color: Colors.green,
             theme: theme,
           ),
           const SizedBox(height: 8),
           _statusContainer(
             icon: Icons.assignment_return_outlined,
-            text: 'Bu satış için iade kaydı bulunmaktadır',
+            text: t('sales.has_return_record'),
             color: Colors.deepOrange,
             theme: theme,
           ),
@@ -228,7 +231,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
 
     return _statusContainer(
       icon: Icons.check_circle_outline,
-      text: 'Satış tamamlandı',
+      text: t('sales.sale_completed'),
       color: Colors.green,
       theme: theme,
     );
@@ -283,6 +286,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
   // ─── Header Card ──────────────────────────────────────────────────────────
 
   Widget _buildHeaderCard(ThemeData theme) {
+    final t = i18nOf(ref);
     final saleNo =
         _sale['saleNumber']?.toString() ?? _sale['id']?.toString() ?? '-';
     final customerName = _sale['customerName']?.toString() ??
@@ -326,13 +330,13 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      customerName ?? 'Perakende Satış',
+                      customerName ?? t('sales.retail_sale'),
                       style: theme.textTheme.titleMedium
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      customerName != null ? 'Müşteri' : 'Anonim Satış',
+                      customerName != null ? t('sales.customer') : t('sales.anonymous_sale'),
                       style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant),
                     ),
@@ -344,12 +348,12 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
           const SizedBox(height: 16),
           const Divider(height: 1),
           const SizedBox(height: 16),
-          _infoRow(Icons.tag, 'Satış No', '#$saleNo', theme),
+          _infoRow(Icons.tag, t('sales.receipt_no'), '#$saleNo', theme),
           const SizedBox(height: 10),
           _infoRow(
-              Icons.calendar_today_outlined, 'Tarih', dateDisplay, theme),
+              Icons.calendar_today_outlined, t('common.date'), dateDisplay, theme),
           const SizedBox(height: 10),
-          _infoRow(Icons.payment, 'Ödeme Yöntemi',
+          _infoRow(Icons.payment, t('sales.payment_method'),
               paymentMethod.isNotEmpty ? paymentMethod : '-', theme),
         ],
       ),
@@ -384,6 +388,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
   // ─── Amount Card ──────────────────────────────────────────────────────────
 
   Widget _buildAmountCard(ThemeData theme) {
+    final t = i18nOf(ref);
     final subtotal = (_sale['subtotal'] as num?)?.toDouble() ?? 0;
     final totalDiscount =
         (_sale['totalDiscount'] as num?)?.toDouble() ?? 0;
@@ -414,22 +419,22 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                   color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
               Text(
-                'Tutar Bilgileri',
+                t('sales.amount_info'),
                 style: theme.textTheme.titleSmall
                     ?.copyWith(fontWeight: FontWeight.bold),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          _amountRow('Ara Toplam', subtotal, theme),
+          _amountRow(t('sales.subtotal'), subtotal, theme),
           if (totalDiscount > 0) ...[
             const SizedBox(height: 6),
-            _amountRow('İndirim', -totalDiscount, theme,
+            _amountRow(t('sales.discount'), -totalDiscount, theme,
                 color: AppColors.success),
           ],
           if (totalTax > 0) ...[
             const SizedBox(height: 6),
-            _amountRow('KDV', totalTax, theme),
+            _amountRow(t('sales.vat'), totalTax, theme),
           ],
           const SizedBox(height: 10),
           const Divider(height: 1),
@@ -438,7 +443,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'GENEL TOPLAM',
+                t('sales.grand_total'),
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w800,
                   color: AppColors.primary,
@@ -483,6 +488,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
   // ─── Payment Info Card ────────────────────────────────────────────────────
 
   Widget _buildPaymentInfoCard(ThemeData theme) {
+    final t = i18nOf(ref);
     final cashReceived =
         (_sale['cashReceived'] as num?)?.toDouble() ?? 0;
     final cardAmount = (_sale['cardAmount'] as num?)?.toDouble() ?? 0;
@@ -517,7 +523,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                   size: 20, color: AppColors.primary),
               const SizedBox(width: 8),
               Text(
-                'Ödeme Detayı',
+                t('sales.payment_detail'),
                 style: theme.textTheme.titleSmall
                     ?.copyWith(fontWeight: FontWeight.bold),
               ),
@@ -525,16 +531,16 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
           ),
           const SizedBox(height: 12),
           if (hasCash)
-            _paymentDetailRow(Icons.money, 'Nakit', cashReceived, theme),
+            _paymentDetailRow(Icons.money, t('sales.payment_cash'), cashReceived, theme),
           if (hasCard) ...[
             const SizedBox(height: 8),
             _paymentDetailRow(
-                Icons.credit_card, 'Kredi Kartı', cardAmount, theme),
+                Icons.credit_card, t('sales.payment_credit_card'), cardAmount, theme),
           ],
           if (hasTransfer) ...[
             const SizedBox(height: 8),
             _paymentDetailRow(
-                Icons.account_balance, 'Havale/EFT', transferAmount, theme),
+                Icons.account_balance, t('sales.payment_bank_transfer'), transferAmount, theme),
           ],
           if (changeAmount > 0) ...[
             const SizedBox(height: 8),
@@ -549,7 +555,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                         size: 16, color: AppColors.success),
                     const SizedBox(width: 8),
                     Text(
-                      'Para Üstü',
+                      t('sales.change_amount'),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: AppColors.success,
@@ -596,6 +602,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
   // ─── Items Section ────────────────────────────────────────────────────────
 
   Widget _buildItemsSection(ThemeData theme) {
+    final t = i18nOf(ref);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -605,7 +612,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                 size: 20, color: AppColors.primary),
             const SizedBox(width: 8),
             Text(
-              'Satış Kalemleri',
+              t('sales.sale_items'),
               style: theme.textTheme.titleSmall
                   ?.copyWith(fontWeight: FontWeight.bold),
             ),
@@ -618,7 +625,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                 borderRadius: AppConstants.borderRadiusMedium,
               ),
               child: Text(
-                '${_items.length} kalem',
+                '${_items.length} ${t('sales.items_unit')}',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -646,7 +653,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                 Icon(Icons.inbox_outlined, size: 40, color: Colors.grey[400]),
                 const SizedBox(height: 8),
                 Text(
-                  'Kalem bilgisi bulunamadı',
+                  t('sales.no_items_found'),
                   style: TextStyle(color: Colors.grey[500]),
                 ),
               ],
@@ -664,6 +671,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
 
   Widget _buildItemCard(
       Map<String, dynamic> item, int index, ThemeData theme) {
+    final t = i18nOf(ref);
     final qty = (item['quantity'] as num?)?.toInt() ?? 0;
     final unitPrice = (item['unitPrice'] as num?)?.toDouble() ?? 0;
     final discount = (item['discount'] as num?)?.toDouble() ?? 0;
@@ -725,7 +733,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                   spacing: 8,
                   runSpacing: 4,
                   children: [
-                    _itemTag('$qty adet', Icons.inventory_2_outlined,
+                    _itemTag('$qty ${t('common.quantity_unit')}', Icons.inventory_2_outlined,
                         AppColors.primary, theme),
                     _itemTag('${_fmt.format(unitPrice)} /br',
                         Icons.sell_outlined, Colors.teal, theme),
@@ -759,7 +767,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
               ),
               const SizedBox(height: 2),
               Text(
-                'Toplam',
+                t('common.total'),
                 style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant, fontSize: 11),
               ),
@@ -794,6 +802,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
   // ─── Notes Card ───────────────────────────────────────────────────────────
 
   Widget _buildNotesCard(ThemeData theme) {
+    final t = i18nOf(ref);
     final notes = _sale['note']?.toString() ??
         _sale['notes']?.toString() ??
         '';
@@ -817,7 +826,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                   size: 18, color: AppColors.primary),
               const SizedBox(width: 8),
               Text(
-                'Notlar',
+                t('common.note'),
                 style: theme.textTheme.titleSmall
                     ?.copyWith(fontWeight: FontWeight.bold),
               ),
@@ -837,6 +846,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
   // ─── Action Buttons ───────────────────────────────────────────────────────
 
   Widget _buildActionButtons(ThemeData theme) {
+    final t = i18nOf(ref);
     return Row(
       children: [
         Expanded(
@@ -855,7 +865,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
               ),
             ),
             icon: const Icon(Icons.assignment_return_outlined, size: 18),
-            label: const Text('Satış İadesi'),
+            label: Text(t('sales.return')),
           ),
         ),
         const SizedBox(width: 12),
@@ -871,7 +881,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
               ),
             ),
             icon: const Icon(Icons.cancel_outlined, size: 18),
-            label: const Text('Satışı İptal Et'),
+            label: Text(t('sales.cancel_sale')),
           ),
         ),
       ],
@@ -881,24 +891,25 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
   // ─── Cancel Confirmation ──────────────────────────────────────────────────
 
   Future<void> _confirmCancel(BuildContext context) async {
+    final t = i18nOf(ref);
     final reasonCtrl = TextEditingController();
 
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Satışı İptal Et'),
+        title: Text(t('sales.cancel_sale')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Bu satışı iptal etmek istediğinize emin misiniz?'),
+            Text(t('common.are_you_sure')),
             const SizedBox(height: 16),
             TextField(
               controller: reasonCtrl,
               maxLines: 2,
               decoration: InputDecoration(
-                labelText: 'İptal Sebebi',
-                hintText: 'İptal nedenini yazın...',
+                labelText: t('sales.cancel_reason'),
+                hintText: t('sales.cancel_reason_hint'),
                 border: OutlineInputBorder(
                   borderRadius: AppConstants.borderRadiusSmall,
                 ),
@@ -909,11 +920,11 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Vazgeç'),
+            child: Text(t('common.cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('İptal Et',
+            child: Text(t('sales.do_cancel'),
                 style: TextStyle(color: Colors.red)),
           ),
         ],
@@ -922,13 +933,13 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
 
     if (confirm == true && mounted) {
       final reason =
-          reasonCtrl.text.trim().isNotEmpty ? reasonCtrl.text.trim() : 'Belirtilmedi';
+          reasonCtrl.text.trim().isNotEmpty ? reasonCtrl.text.trim() : t('sales.not_specified');
       try {
         await ref.read(salesServiceProvider).cancelSale(widget.saleId, reason);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Satış iptal edildi'),
+            SnackBar(
+              content: Text(t('sales.sale_cancelled_success')),
               backgroundColor: Colors.orange,
             ),
           );
@@ -938,7 +949,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('İptal hatası: $e'),
+              content: Text('${t('sales.cancel_error')}: $e'),
               backgroundColor: Colors.red,
             ),
           );

@@ -24,6 +24,9 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.GenericFilterBean;
 
+import io.jsonwebtoken.Jwts;
+import com.towpen.base.security.util.JwtUtil;
+
 import java.io.IOException;
 import java.io.Writer;
 import java.net.URLDecoder;
@@ -38,6 +41,12 @@ public class JwtXUserInfoFilter extends GenericFilterBean {
 	private static final String API_REQUEST_START = "/api";
 
 	public static final String METHOD_AUTHENTICATE = "/authenticate";
+
+	/** Token gerektirmeyen public path'ler — filter bu path'leri doğrudan geçirir */
+	private static final List<String> PUBLIC_PATHS = List.of(
+		"/api/rest/sso-log",
+		"/i18n"
+	);
 
 	private ApiErrorBeanController apiBeanController;
 
@@ -58,8 +67,18 @@ public class JwtXUserInfoFilter extends GenericFilterBean {
 		httpRequest.setCharacterEncoding("UTF-8");
 		httpResponse.setCharacterEncoding("UTF-8");
 		try {
+			// Public path kontrolü — token gerektirmeyen endpoint'ler doğrudan geçer
+			if (isPublicPath(requestURL)) {
+				chain.doFilter(httpRequest, httpResponse);
+				return;
+			}
+
 			TOpenSessionInstance xUserInfo = resolveXUserInfoAsObject(httpRequest);
-			if(requestURL.startsWith(API_REQUEST_START) && !requestURL.equals("/api/rest/sso-log")) {
+			// X-User-Info yoksa Bearer JWT token'dan çözümle (Flutter/mobil fallback)
+			if (xUserInfo == null) {
+				xUserInfo = resolveSessionFromBearerToken(httpRequest);
+			}
+			if(requestURL.startsWith(API_REQUEST_START)) {
 				if (xUserInfo == null) {
 					prepareNoAccessError(httpResponse);
 					return;
@@ -111,6 +130,35 @@ public class JwtXUserInfoFilter extends GenericFilterBean {
 			return mapper.readValue(xUserInfoHeader, TOpenSessionInstance.class);
 
 		}return null;
+	}
+
+	/** Verilen path'in public (token gerektirmeyen) olup olmadığını kontrol eder */
+	private boolean isPublicPath(String path) {
+		return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
+	}
+
+	/**
+	 * Bearer JWT token'dan sessionInstance claim'ini çözümler.
+	 * Flutter/mobil client'lar X-User-Info göndermez, direkt JWT kullanır.
+	 */
+	private TOpenSessionInstance resolveSessionFromBearerToken(HttpServletRequest httpRequest) {
+		try {
+			String token = resolveToken(httpRequest);
+			if (token == null) return null;
+			// jjwt 0.12.x API
+			String sessionJson = Jwts.parser()
+					.verifyWith(javax.crypto.SecretKey.class.cast(JwtUtil.getSigningKey()))
+					.build()
+					.parseSignedClaims(token)
+					.getPayload()
+					.get("sessionInstance", String.class);
+			if (sessionJson != null) {
+				return mapper.readValue(sessionJson, TOpenSessionInstance.class);
+			}
+		} catch (Exception e) {
+			logger.debug("Bearer token'dan session çözümlenemedi: " + e.getMessage());
+		}
+		return null;
 	}
 
 	private String resolveToken(HttpServletRequest httpRequest) {

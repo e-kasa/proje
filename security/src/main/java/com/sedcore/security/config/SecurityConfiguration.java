@@ -31,7 +31,9 @@ public class SecurityConfiguration {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/authenticate"
+                                "/authenticate",
+                                "/register/company",
+                                "/i18n/**"
                         ).permitAll().requestMatchers(
                                 "/api/refresh-token",
                                 "/api/ldap-authentication",

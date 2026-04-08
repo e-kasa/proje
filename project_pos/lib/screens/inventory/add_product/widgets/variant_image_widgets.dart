@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../models/wizard_state.dart';
 
 /// Add image button (dashed border).

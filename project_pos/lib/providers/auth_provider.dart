@@ -121,6 +121,44 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Kayıt API'sinden gelen JWT response ile oturum açar.
+  /// Login çağrısına gerek kalmadan direkt JWT decode eder.
+  Future<void> loginWithToken(Map<String, dynamic> response) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final status = response['status'] as int? ?? 0;
+      if (status != 200) throw Exception('Kayıt başarısız');
+
+      final payload = response['payload'] as Map<String, dynamic>;
+      final accessToken = payload['accessToken'] as String;
+      final refreshToken = payload['refreshToken'] as String;
+      final sessionId = payload['sessionId'] as String;
+
+      final user = _decodeUserFromJwt(accessToken);
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(AppConstants.tokenKey, accessToken);
+      await prefs.setString(AppConstants.refreshTokenKey, refreshToken);
+      await prefs.setString(AppConstants.userKey, jsonEncode(user.toJson()));
+      await prefs.setString('session_id', sessionId);
+      if (user.selectedCompanyCode.isNotEmpty) {
+        await prefs.setString(AppConstants.companyCodeKey, user.selectedCompanyCode);
+      }
+
+      state = state.copyWith(
+        user: user,
+        token: accessToken,
+        refreshToken: refreshToken,
+        sessionId: sessionId,
+        isAuthenticated: true,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
+    }
+  }
+
   /// Oturumu kapatır ve saklanan token/kullanıcı bilgilerini temizler.
   Future<void> logout() async {
     try {
@@ -166,6 +204,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     // storeId: kasiyerlerin atandığı mağaza — JWT dynamicLoginParameters'dan gelir
     final storeId = dynamicParams?['storeId'] as String?;
 
+    // sessionInstance.roles → JWT'deki rol kodları listesi (["ADMIN"], ["CASHIER"] vb.)
+    final roles = (sessionInstance['roles'] as List<dynamic>?)
+        ?.map((e) => e.toString()).toList() ?? [];
+
     return User(
       id: userInfo['userId'] as String?        // JWT alanı: userId
           ?? userInfo['id'] as String?          // eski fallback
@@ -178,6 +220,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           ?? '',
       email: userInfo['email'] as String? ?? '',
       selectedCompanyCode: userInfo['selectedCompanyCode'] as String? ?? '',
+      roles: roles,
       sectorType: sectorType,
       storeId: storeId,
     );

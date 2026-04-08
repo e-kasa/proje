@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   final String productId;
@@ -134,6 +135,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
 
   @override
   Widget build(BuildContext context) {
+    final t = i18nOf(ref);
     if (_isLoading) {
       return Scaffold(
         backgroundColor: AppColors.bgLight,
@@ -149,7 +151,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
             icon: const Icon(Icons.arrow_back),
             onPressed: () => context.go('/inventory/products'),
           ),
-          title: 'Ürün Detayı',
+          title: t('common.detail'),
         ),
         body: Center(
           child: Column(
@@ -160,7 +162,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
               Text(_error ?? 'Bilinmeyen hata',
                   style: const TextStyle(fontSize: 16, color: AppColors.textSecondary)),
               const SizedBox(height: 16),
-              ElevatedButton(onPressed: _loadProduct, child: const Text('Tekrar Dene')),
+              ElevatedButton(onPressed: _loadProduct, child: Text(t('common.retry'))),
             ],
           ),
         ),
@@ -181,7 +183,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Yenile',
+            tooltip: t('common.refresh'),
             onPressed: () {
               _loadProduct();
               if (_tabController.index == 4) _loadMovements();
@@ -190,7 +192,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
           OutlinedButton.icon(
             onPressed: () => context.push('/inventory/add-product?edit=${_product!['id']}'),
             icon: const Icon(Icons.edit, size: 18),
-            label: const Text('Düzenle'),
+            label: Text(t('common.edit')),
           ),
           const SizedBox(width: 12),
         ],

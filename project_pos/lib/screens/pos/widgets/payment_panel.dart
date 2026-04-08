@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../providers/pos_provider.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'receipt_preview_dialog.dart';
@@ -31,6 +32,7 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
   Widget build(BuildContext context) {
     final posState = ref.watch(posProvider);
     final notifier = ref.read(posProvider.notifier);
+    final t = i18nOf(ref);
 
     return Container(
       constraints: BoxConstraints(
@@ -61,9 +63,9 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
               children: [
                 const Icon(Icons.payment, color: AppColors.primary, size: 24),
                 const SizedBox(width: 8),
-                const Text(
-                  'Ödeme',
-                  style: TextStyle(
+                Text(
+                  t('pos.payment'),
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                   ),
@@ -91,9 +93,9 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
                   const SizedBox(height: 20),
 
                   // Ödeme yöntemi seçimi
-                  const Text(
-                    'Ödeme Yöntemi',
-                    style: TextStyle(
+                  Text(
+                    t('pos.payment_method'),
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -115,8 +117,8 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
                     onChanged: notifier.setNote,
                     maxLines: 2,
                     decoration: InputDecoration(
-                      labelText: 'Not (Opsiyonel)',
-                      hintText: 'Satışla ilgili not ekleyin...',
+                      labelText: t('pos.note_optional'),
+                      hintText: t('pos.note_hint'),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -141,13 +143,13 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Row(
-                            children: const [
-                              Icon(Icons.currency_lira,
+                            children: [
+                              const Icon(Icons.currency_lira,
                                   color: AppColors.success, size: 20),
-                              SizedBox(width: 8),
+                              const SizedBox(width: 8),
                               Text(
-                                'Para Üstü',
-                                style: TextStyle(
+                                t('pos.change_amount'),
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.success,
@@ -248,8 +250,8 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
                       : const Icon(Icons.check_circle, size: 22),
                   label: Text(
                     posState.isSubmitting
-                        ? 'Kaydediliyor...'
-                        : 'Satışı Tamamla (${posState.grandTotal.toStringAsFixed(2)} \u20BA)',
+                        ? t('common.loading')
+                        : '${t('pos.complete_sale')} (${posState.grandTotal.toStringAsFixed(2)} \u20BA)',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
@@ -265,6 +267,7 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
   }
 
   Widget _buildOrderSummary(PosState posState) {
+    final t = i18nOf(ref);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -273,23 +276,23 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
       ),
       child: Column(
         children: [
-          _summaryRow('Ürün Sayısı', '${posState.totalItems} adet'),
+          _summaryRow(t('pos.item_count'), '${posState.totalItems} ${t('pos.pieces')}'),
           _summaryRow(
-              'Ara Toplam', '${posState.subtotal.toStringAsFixed(2)} \u20BA'),
+              t('pos.subtotal'), '${posState.subtotal.toStringAsFixed(2)} \u20BA'),
           if (posState.totalDiscount > 0)
             _summaryRow(
-              'İndirim',
+              t('pos.discount'),
               '-${posState.totalDiscount.toStringAsFixed(2)} \u20BA',
               valueColor: AppColors.success,
             ),
-          _summaryRow('KDV', '${posState.totalTax.toStringAsFixed(2)} \u20BA'),
+          _summaryRow(t('pos.tax'), '${posState.totalTax.toStringAsFixed(2)} \u20BA'),
           const Divider(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'TOPLAM',
-                style: TextStyle(
+              Text(
+                t('pos.grand_total'),
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
@@ -423,6 +426,7 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
   }
 
   Widget _buildPaymentInput(PosState posState, PosNotifier notifier) {
+    final t = i18nOf(ref);
     switch (posState.paymentMethod) {
       case PaymentMethod.cash:
         return Column(
@@ -430,7 +434,7 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
           children: [
             _buildAmountField(
               controller: _cashController,
-              label: 'Alınan Tutar',
+              label: t('pos.cash_received'),
               icon: Icons.money,
               onChanged: (val) =>
                   notifier.setCashReceived(double.tryParse(val) ?? 0),
@@ -441,16 +445,16 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
         );
 
       case PaymentMethod.creditCard:
-        return const Center(
+        return Center(
           child: Padding(
-            padding: EdgeInsets.all(20),
+            padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                Icon(Icons.credit_card, size: 48, color: AppColors.primary),
-                SizedBox(height: 8),
+                const Icon(Icons.credit_card, size: 48, color: AppColors.primary),
+                const SizedBox(height: 8),
                 Text(
-                  'Kredi kartı ile ödeme alınacak',
-                  style: TextStyle(
+                  t('pos.credit_card_payment_info'),
+                  style: const TextStyle(
                     fontSize: 14,
                     color: AppColors.textSecondary,
                   ),
@@ -461,17 +465,17 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
         );
 
       case PaymentMethod.bankTransfer:
-        return const Center(
+        return Center(
           child: Padding(
-            padding: EdgeInsets.all(20),
+            padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                Icon(Icons.account_balance,
+                const Icon(Icons.account_balance,
                     size: 48, color: AppColors.primary),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
-                  'Havale/EFT ile ödeme alınacak',
-                  style: TextStyle(
+                  t('pos.bank_transfer_payment_info'),
+                  style: const TextStyle(
                     fontSize: 14,
                     color: AppColors.textSecondary,
                   ),
@@ -486,7 +490,7 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
           children: [
             _buildAmountField(
               controller: _cashController,
-              label: 'Nakit Tutar',
+              label: t('pos.cash_amount'),
               icon: Icons.money,
               onChanged: (val) =>
                   notifier.setCashReceived(double.tryParse(val) ?? 0),
@@ -494,7 +498,7 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
             const SizedBox(height: 12),
             _buildAmountField(
               controller: _cardController,
-              label: 'Kart Tutarı',
+              label: t('pos.card_amount'),
               icon: Icons.credit_card,
               onChanged: (val) =>
                   notifier.setCardAmount(double.tryParse(val) ?? 0),
@@ -502,7 +506,7 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
             const SizedBox(height: 12),
             _buildAmountField(
               controller: _transferController,
-              label: 'Havale/EFT Tutarı',
+              label: t('pos.transfer_amount'),
               icon: Icons.account_balance,
               onChanged: (val) =>
                   notifier.setTransferAmount(double.tryParse(val) ?? 0),
@@ -518,9 +522,9 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Kalan',
-                    style: TextStyle(
+                  Text(
+                    t('pos.remaining'),
+                    style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: AppColors.warning,
@@ -606,7 +610,7 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
             ),
             child: Text(
               isExact
-                  ? 'Tam: ${amount.toStringAsFixed(2)}'
+                  ? '${i18nOf(ref)('pos.exact')}: ${amount.toStringAsFixed(2)}'
                   : amount.toStringAsFixed(0),
               style: TextStyle(
                 fontSize: 12,
@@ -623,6 +627,7 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
   void _showSuccessDialog(BuildContext context) {
     final posState = ref.read(posProvider);
     final saleData = posState.lastSaleData;
+    final t = i18nOf(ref);
 
     showDialog(
       context: context,
@@ -646,18 +651,18 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Satış Tamamlandı!',
-              style: TextStyle(
+            Text(
+              t('pos.sale_completed'),
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Satış başarıyla kaydedildi.',
-              style: TextStyle(
+            Text(
+              t('pos.sale_saved'),
+              style: const TextStyle(
                 fontSize: 14,
                 color: AppColors.textSecondary,
               ),
@@ -676,7 +681,7 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  child: const Text('Kapat'),
+                  child: Text(t('common.close')),
                 ),
               ),
               const SizedBox(width: 8),
@@ -693,7 +698,7 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel> {
                     }
                   },
                   icon: const Icon(Icons.receipt_long, size: 18),
-                  label: const Text('Fiş Görüntüle'),
+                  label: Text(t('pos.view_receipt')),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,

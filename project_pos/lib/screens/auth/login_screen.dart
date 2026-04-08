@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/auth_state.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/i18n_provider.dart';
 import '../../core/widgets/widgets.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -62,7 +63,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               const Icon(Icons.error_outline, color: Colors.white, size: 18),
               const SizedBox(width: 8),
               Expanded(
-                  child: Text('Giriş başarısız. Bilgileri kontrol edin.',
+                  child: Text(ref.read(i18nProvider).bundle('auth.login_failed'),
                       style: const TextStyle(fontWeight: FontWeight.w500))),
             ],
           ),
@@ -329,13 +330,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   // ── FORM ─────────────────────────────────────────────────────────────────
   Widget _buildForm(AuthState authState, {double? maxWidth}) {
+    final i18n = ref.watch(i18nProvider);
+    String t(String code) => i18n.isLoaded ? i18n.bundle(code) : code;
+
     final form = Form(
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'Hoş Geldiniz',
+          Text(
+            t('auth.welcome'),
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
@@ -344,8 +348,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Hesabınıza giriş yapın',
+          Text(
+            t('auth.login_subtitle'),
             style: TextStyle(
               fontSize: 14,
               color: AppColors.textSecondary,
@@ -354,7 +358,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           const SizedBox(height: 36),
 
           // Email
-          _label('Kullanıcı Adı / E-posta'),
+          _label(t('auth.username_email')),
           const SizedBox(height: 8),
           TextFormField(
             controller: _emailController,
@@ -367,12 +371,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               icon: Icons.alternate_email_rounded,
             ),
             validator: (v) =>
-                (v == null || v.isEmpty) ? 'Kullanıcı adı boş bırakılamaz' : null,
+                (v == null || v.isEmpty) ? t('validation.username_required') : null,
           ),
           const SizedBox(height: 20),
 
           // Password
-          _label('Şifre'),
+          _label(t('form.password')),
           const SizedBox(height: 8),
           TextFormField(
             controller: _passwordController,
@@ -399,7 +403,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               ),
             ),
             validator: (v) =>
-                (v == null || v.isEmpty) ? 'Şifre boş bırakılamaz' : null,
+                (v == null || v.isEmpty) ? t('validation.password_required') : null,
           ),
           const SizedBox(height: 16),
 
@@ -420,7 +424,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 ),
               ),
               const SizedBox(width: 10),
-              const Text('Beni hatırla',
+              Text(t('auth.remember_me'),
                   style: TextStyle(
                       fontSize: 14, color: AppColors.textSecondary)),
             ],
@@ -429,12 +433,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
           // Login button
           _GradientButton(
-            text: 'Giriş Yap',
+            text: t('auth.login'),
             isLoading: authState.isLoading,
             onPressed: authState.isLoading ? null : _handleLogin,
           ),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: 16),
+
+          // ── Şirket Kaydı Linki ──────────────────────────────────────────
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('${t('auth.no_account')} ',
+                  style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+              GestureDetector(
+                onTap: () => context.go('/register'),
+                child: Text(t('auth.create_company'),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    )),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
 
           // ── Hızlı Giriş ──────────────────────────────────────────────────
           Row(
@@ -443,7 +467,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
-                  'Hızlı Giriş',
+                  t('auth.quick_login'),
                   style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                 ),
               ),
@@ -536,8 +560,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           const SizedBox(height: 20),
           Center(
             child: Text(
-              'Araç Parçaları Yönetim Sistemi',
-              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+              t('auth.system_name'),
+              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
             ),
           ),
         ],

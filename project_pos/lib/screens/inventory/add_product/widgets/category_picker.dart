@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../models/wizard_state.dart';
 
 /// Category picker button that shows the selected category and opens a bottom sheet.

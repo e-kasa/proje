@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../screens/auth/login_screen.dart';
+import '../../screens/auth/company_registration_screen.dart';
+import '../../providers/menu_provider.dart';
 import '../../screens/dashboard/modern_dashboard_screen.dart';
 import '../../screens/sales/sale_list_screen.dart';
 import '../../screens/sales/sale_detail_screen.dart';
@@ -92,16 +94,32 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: authNotifier,
     redirect: (context, state) {
       final isAuthenticated = ref.read(authProvider).isAuthenticated;
-      final isLoginRoute = state.matchedLocation == '/login';
+      final loc = state.matchedLocation;
+      final isPublicRoute = loc == '/login' || loc == '/register';
 
-      if (!isAuthenticated && !isLoginRoute) return '/login';
-      if (isAuthenticated && isLoginRoute) return '/dashboard';
+      if (!isAuthenticated && !isPublicRoute) return '/login';
+      if (isAuthenticated && isPublicRoute) return '/dashboard';
+
+      // Rol bazlı route guard — menü yüklendiyse kontrol et
+      if (isAuthenticated) {
+        final menuState = ref.read(menuProvider);
+        const alwaysAllowed = ['/dashboard', '/menu', '/profile'];
+        if (menuState.categories.isNotEmpty &&
+            !alwaysAllowed.contains(loc) &&
+            !ref.read(menuProvider.notifier).isRouteAllowed(loc)) {
+          return '/dashboard';
+        }
+      }
       return null;
     },
     routes: [
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) => const CompanyRegistrationScreen(),
       ),
 
       ShellRoute(

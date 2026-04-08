@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
+import '../../core/utils/i18n_helper.dart';
 import '../../services/service_locator.dart';
 import '../../services/sales_service.dart';
 
@@ -211,16 +212,17 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(saleListProvider);
     final theme = Theme.of(context);
+    final t = i18nOf(ref);
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppAppBar.standard(
-        title: 'Satışlar',
+        title: t('sales.title'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref.read(saleListProvider.notifier).load(),
-            tooltip: 'Yenile',
+            tooltip: t('common.refresh'),
           ),
         ],
       ),
@@ -230,7 +232,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
           if (mounted) ref.read(saleListProvider.notifier).load();
         },
         icon: const Icon(Icons.add),
-        label: const Text('Yeni Satış'),
+        label: Text(t('sales.new_sale')),
         backgroundColor: AppColors.primary,
       ),
       body: Column(
@@ -253,6 +255,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
   // ─── Search & Filter ──────────────────────────────────────────────────────
 
   Widget _buildSearchAndFilter(SaleListState state, ThemeData theme) {
+    final t = i18nOf(ref);
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       color: theme.colorScheme.surface,
@@ -264,7 +267,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
             onChanged: (v) =>
                 ref.read(saleListProvider.notifier).setSearch(v),
             decoration: InputDecoration(
-              hintText: 'Satış no veya müşteri ara...',
+              hintText: t('sales.search_hint'),
               prefixIcon: const Icon(Icons.search),
               suffixIcon: _searchCtrl.text.isNotEmpty
                   ? IconButton(
@@ -290,13 +293,13 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
           // Filtre çipleri + tarih
           Row(
             children: [
-              _filterChip('Tümü', null, state.statusFilter, theme),
+              _filterChip(t('common.all'), null, state.statusFilter, theme),
               const SizedBox(width: 8),
-              _filterChip('Ödendi', 'paid', state.statusFilter, theme),
+              _filterChip(t('sales.paid'), 'paid', state.statusFilter, theme),
               const SizedBox(width: 8),
-              _filterChip('Veresiye', 'pending', state.statusFilter, theme),
+              _filterChip(t('sales.pending'), 'pending', state.statusFilter, theme),
               const SizedBox(width: 8),
-              _filterChip('İptal', 'cancelled', state.statusFilter, theme),
+              _filterChip(t('sales.cancelled'), 'cancelled', state.statusFilter, theme),
               const Spacer(),
               // Tarih filtresi
               _buildDateFilterButton(state, theme),
@@ -343,7 +346,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                   ),
                   const Spacer(),
                   Text(
-                    '${state.filtered.length} kayıt',
+                    '${state.filtered.length} ${t('sales.records')}',
                     style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant),
                   ),
@@ -356,7 +359,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
               child: Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  '${state.filtered.length} kayıt',
+                  '${state.filtered.length} ${t('sales.records')}',
                   style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant),
                 ),
@@ -381,6 +384,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
   }
 
   Widget _buildDateFilterButton(SaleListState state, ThemeData theme) {
+    final t = i18nOf(ref);
     final hasFilter = state.startDate != null || state.endDate != null;
     return Material(
       color: Colors.transparent,
@@ -413,7 +417,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
               ),
               const SizedBox(width: 4),
               Text(
-                'Tarih',
+                t('common.date'),
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: hasFilter ? FontWeight.w600 : FontWeight.w400,
@@ -430,6 +434,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
   }
 
   Future<void> _showDateRangePicker(SaleListState state) async {
+    final t = i18nOf(ref);
     final now = DateTime.now();
     final picked = await showDateRangePicker(
       context: context,
@@ -440,10 +445,10 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
           : DateTimeRange(
               start: now.subtract(const Duration(days: 30)), end: now),
       locale: const Locale('tr', 'TR'),
-      helpText: 'Tarih Aralığı Seçin',
-      cancelText: 'İptal',
-      confirmText: 'Uygula',
-      saveText: 'Uygula',
+      helpText: t('sales.select_date_range'),
+      cancelText: t('common.cancel'),
+      confirmText: t('sales.apply'),
+      saveText: t('sales.apply'),
     );
 
     if (picked != null) {
@@ -467,6 +472,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
   }
 
   Widget _buildSaleCard(Map<String, dynamic> s, ThemeData theme) {
+    final t = i18nOf(ref);
     final status = s['status']?.toString().toLowerCase() ??
         s['paymentStatus']?.toString().toLowerCase() ??
         '';
@@ -552,7 +558,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          customerName ?? 'Perakende Satış',
+                          customerName ?? t('sales.retail_sale'),
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w600,
                             decoration: cancelled
@@ -599,28 +605,28 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                 children: [
                   if (itemCount != null)
                     _tag(
-                      '$itemCount kalem',
+                      '$itemCount ${t('sales.items_unit')}',
                       Icons.inventory_2_outlined,
                       theme.colorScheme.onSurfaceVariant,
                       theme,
                     ),
                   if (hasReturn) ...[
                     const SizedBox(width: 6),
-                    _tag('İade Var', Icons.assignment_return_outlined,
+                    _tag(t('sales.has_return'), Icons.assignment_return_outlined,
                         Colors.deepOrange, theme),
                   ],
                   const Spacer(),
                   if (cancelled)
-                    _tag('İptal Edildi', Icons.cancel_outlined, Colors.red,
+                    _tag(t('sales.cancelled'), Icons.cancel_outlined, Colors.red,
                         theme)
                   else if (isPending)
-                    _tag('Veresiye', Icons.schedule_rounded, Colors.orange,
+                    _tag(t('sales.pending'), Icons.schedule_rounded, Colors.orange,
                         theme)
                   else if (isPaid)
-                    _tag('Ödendi', Icons.check_circle_outline, Colors.green,
+                    _tag(t('sales.paid'), Icons.check_circle_outline, Colors.green,
                         theme)
                   else
-                    _tag('Açık', Icons.hourglass_empty, Colors.blue, theme),
+                    _tag(t('sales.open'), Icons.hourglass_empty, Colors.blue, theme),
                 ],
               ),
             ],
@@ -653,15 +659,16 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
   }
 
   String _paymentMethodLabel(String method) {
+    final t = i18nOf(ref);
     switch (method.toLowerCase()) {
       case 'cash':
-        return 'Nakit';
+        return t('sales.payment_cash');
       case 'credit_card':
-        return 'Kredi Kartı';
+        return t('sales.payment_credit_card');
       case 'bank_transfer':
-        return 'Havale/EFT';
+        return t('sales.payment_bank_transfer');
       case 'mixed':
-        return 'Karma';
+        return t('sales.payment_mixed');
       default:
         return '';
     }
@@ -670,6 +677,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
   // ─── Error & Empty ────────────────────────────────────────────────────────
 
   Widget _buildError(String error) {
+    final t = i18nOf(ref);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -679,7 +687,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
           Text(error, textAlign: TextAlign.center),
           const SizedBox(height: 16),
           AppButton.primary(
-                        text: 'Tekrar Dene',
+                        text: t('sales.retry'),
                         icon: Icons.refresh,
                         onPressed: () => ref.read(saleListProvider.notifier).load(),
                       ),
@@ -689,6 +697,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
   }
 
   Widget _buildEmpty() {
+    final t = i18nOf(ref);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -696,12 +705,12 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
           Icon(Icons.point_of_sale_outlined, size: 64, color: Colors.grey[300]),
           const SizedBox(height: 16),
           Text(
-            'Satış kaydı bulunamadı',
+            t('sales.no_sales'),
             style: TextStyle(color: Colors.grey[500], fontSize: 16),
           ),
           const SizedBox(height: 8),
           Text(
-            '"Yeni Satış" butonuna tıklayarak POS ekranına gidin',
+            t('sales.new_sale_hint'),
             style: TextStyle(color: Colors.grey[400], fontSize: 13),
           ),
         ],

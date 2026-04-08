@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/core/config/sector_config.dart';
 import '../../../providers/sector_provider.dart';
 import 'models/wizard_state.dart';

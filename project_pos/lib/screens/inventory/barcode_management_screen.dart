@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 class BarcodeManagementScreen extends ConsumerStatefulWidget {
   const BarcodeManagementScreen({super.key});
@@ -106,6 +107,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
   }
 
   void _showAddBarcodeDialog() {
+    final t = i18nOf(ref);
     final barcodeController = TextEditingController();
     String selectedType = 'EAN-13';
 
@@ -117,7 +119,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
             children: [
               Icon(Icons.qr_code_2, color: AppColors.primary),
               SizedBox(width: 12),
-              Text('Yeni Barkod Ekle'),
+              Text(t('inventory.add_barcode')),
             ],
           ),
           content: SingleChildScrollView(
@@ -157,7 +159,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
                     context.go('/scanner');
                   },
                   icon: const Icon(Icons.camera_alt),
-                  label: const Text('Barkod Tara'),
+                  label: Text(t('inventory.scan_barcode')),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 48),
                   ),
@@ -197,6 +199,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
   }
 
   void _showBarcodeDetails(Map<String, dynamic> barcode) {
+    final t = i18nOf(ref);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -271,8 +274,8 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
               const SizedBox(height: 24),
 
               // Product Info
-              _buildInfoSection('Ürün Bilgileri', [
-                _buildInfoRow('Ürün Adı', barcode['productName'], Icons.shopping_bag),
+              _buildInfoSection(t('inventory.product_info'), [
+                _buildInfoRow(t('inventory.product_name'), barcode['productName'], Icons.shopping_bag),
                 _buildInfoRow('SKU', barcode['sku'], Icons.qr_code_2),
                 _buildInfoRow('Fiyat', '${barcode['price']} ₺', Icons.attach_money),
                 _buildInfoRow('Stok', '${barcode['stock']} adet', Icons.inventory_2),
@@ -290,7 +293,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
                         // Edit logic
                       },
                       icon: const Icon(Icons.edit),
-                      label: const Text('Düzenle'),
+                      label: Text(t('common.edit')),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
@@ -304,7 +307,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
                         // Print logic
                       },
                       icon: const Icon(Icons.print),
-                      label: const Text('Yazdır'),
+                      label: Text(t('common.print')),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -391,10 +394,11 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
 
   @override
   Widget build(BuildContext context) {
+    final t = i18nOf(ref);
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
-        title: 'Barkod Yönetimi',
+        title: t('menu.barcodes'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
@@ -419,7 +423,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
                         controller: _searchController,
                         onChanged: _filterBarcodes,
                         decoration: InputDecoration(
-                          hintText: 'Barkod, ürün adı veya SKU ara...',
+                          hintText: '${t('common.search')}...',
                           prefixIcon: const Icon(Icons.search, size: 20),
                           filled: true,
                           fillColor: AppColors.bgLight,
@@ -435,7 +439,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
                     ElevatedButton.icon(
                       onPressed: _showAddBarcodeDialog,
                       icon: const Icon(Icons.add, size: 20),
-                      label: const Text('Ekle'),
+                      label: Text(t('common.add')),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -484,11 +488,11 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildQuickStat('Toplam', '${_barcodes.length}', Icons.qr_code_2),
+                      _buildQuickStat(t('common.total'), '${_barcodes.length}', Icons.qr_code_2),
                       Container(width: 1, height: 30, color: AppColors.border),
-                      _buildQuickStat('Aktif', '${_barcodes.where((b) => b['status'] == 'active').length}', Icons.check_circle),
+                      _buildQuickStat(t('common.active'), '${_barcodes.where((b) => b['status'] == 'active').length}', Icons.check_circle),
                       Container(width: 1, height: 30, color: AppColors.border),
-                      _buildQuickStat('Stoksuz', '${_barcodes.where((b) => b['stock'] == 0).length}', Icons.warning),
+                      _buildQuickStat(t('stock.out_of_stock'), '${_barcodes.where((b) => b['stock'] == 0).length}', Icons.warning),
                     ],
                   ),
                 ),
@@ -518,7 +522,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
         onPressed: () => context.go('/scanner'),
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
-        label: const Text('Barkod Tara', style: TextStyle(color: Colors.white)),
+        label: Text(t('inventory.scan_barcode'), style: const TextStyle(color: Colors.white)),
       ),
     );
   }
@@ -563,8 +567,8 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
             color: AppColors.textMuted.withOpacity(0.5),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Henüz barkod eklenmemiş',
+          Text(
+            t('inventory.no_barcodes'),
             style: TextStyle(
               fontSize: 16,
               color: AppColors.textSecondary,
@@ -680,8 +684,8 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
                           color: AppColors.danger.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Text(
-                          'Stokta Yok',
+                        child: Text(
+                          t('stock.out_of_stock'),
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -696,8 +700,8 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
                           color: AppColors.warning.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Text(
-                          'Düşük Stok',
+                        child: Text(
+                          t('stock.low_stock'),
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,

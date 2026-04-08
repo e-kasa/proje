@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../providers/sector_provider.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'providers/batch_entry_provider.dart';
 import 'models/batch_entry_models.dart';
 import 'widgets/batch_header_form.dart';

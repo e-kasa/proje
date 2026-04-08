@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/stock_management_models.dart';
 import '../../services/service_locator.dart';
 import '../../core/widgets/widgets.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 /// STOK TRANSFER ONAY EKRANI
 /// Transfer taleplerini inceleyip onaylama/reddetme

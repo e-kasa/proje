@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 class BrandsScreen extends ConsumerStatefulWidget {
   const BrandsScreen({super.key});
@@ -75,6 +76,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
   }
 
   void _showAddBrandDialog() {
+    final t = i18nOf(ref);
     final nameController = TextEditingController();
     final codeController = TextEditingController();
     final descriptionController = TextEditingController();
@@ -86,7 +88,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
           children: [
             Icon(Icons.branding_watermark, color: AppColors.primary),
             SizedBox(width: 12),
-            Text('Yeni Marka Ekle'),
+            Text(t('inventory.new_brand')),
           ],
         ),
         content: SingleChildScrollView(
@@ -130,7 +132,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('İptal'),
+            child: Text(t('common.cancel')),
           ),
           ElevatedButton.icon(
             onPressed: () async {
@@ -169,7 +171,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
               }
             },
             icon: const Icon(Icons.save),
-            label: const Text('Kaydet'),
+            label: Text(t('common.save')),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
@@ -181,6 +183,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
   }
 
   void _showEditBrandDialog(Map<String, dynamic> brand) {
+    final t = i18nOf(ref);
     final nameController = TextEditingController(text: brand['name']);
     final codeController = TextEditingController(text: brand['code'] ?? '');
     final descriptionController = TextEditingController(text: brand['description'] ?? '');
@@ -192,7 +195,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
           children: [
             Icon(Icons.edit, color: AppColors.info),
             SizedBox(width: 12),
-            Text('Marka Düzenle'),
+            Text(t('inventory.edit_brand')),
           ],
         ),
         content: SingleChildScrollView(
@@ -233,7 +236,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('İptal'),
+            child: Text(t('common.cancel')),
           ),
           ElevatedButton.icon(
             onPressed: () async {
@@ -275,7 +278,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
               }
             },
             icon: const Icon(Icons.save),
-            label: const Text('Güncelle'),
+            label: Text(t('common.update')),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.info,
               foregroundColor: Colors.white,
@@ -287,6 +290,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
   }
 
   void _showDeleteDialog(Map<String, dynamic> brand) {
+    final t = i18nOf(ref);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -294,7 +298,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
           children: [
             Icon(Icons.warning, color: AppColors.danger),
             SizedBox(width: 12),
-            Text('Markayı Sil'),
+            Text(t('inventory.delete_brand')),
           ],
         ),
         content: Column(
@@ -328,7 +332,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('İptal'),
+            child: Text(t('common.cancel')),
           ),
           ElevatedButton.icon(
             onPressed: () async {
@@ -356,7 +360,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
               }
             },
             icon: const Icon(Icons.delete),
-            label: const Text('Sil'),
+            label: Text(t('common.delete')),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.danger,
               foregroundColor: Colors.white,
@@ -397,10 +401,11 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = i18nOf(ref);
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
-        title: 'Markalar',
+        title: t('menu.brands'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
@@ -425,7 +430,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                         controller: _searchController,
                         onChanged: _filterBrands,
                         decoration: InputDecoration(
-                          hintText: 'Marka ara...',
+                          hintText: '${t('common.search')}...',
                           prefixIcon: const Icon(Icons.search, size: 20),
                           filled: true,
                           fillColor: AppColors.bgLight,
@@ -441,7 +446,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                     ElevatedButton.icon(
                       onPressed: _showAddBrandDialog,
                       icon: const Icon(Icons.add, size: 20),
-                      label: const Text('Yeni Marka'),
+                      label: Text(t('inventory.new_brand')),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -464,11 +469,11 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildStatItem('Toplam', '${_brands.length}', Icons.branding_watermark),
+                      _buildStatItem(t('common.total'), '${_brands.length}', Icons.branding_watermark),
                       Container(width: 1, height: 30, color: AppColors.border),
-                      _buildStatItem('Aktif', '${_brands.where((b) => b['active'] == true).length}', Icons.check_circle),
+                      _buildStatItem(t('common.active'), '${_brands.where((b) => b['active'] == true).length}', Icons.check_circle),
                       Container(width: 1, height: 30, color: AppColors.border),
-                      _buildStatItem('Pasif', '${_brands.where((b) => b['active'] != true).length}', Icons.cancel),
+                      _buildStatItem(t('common.passive'), '${_brands.where((b) => b['active'] != true).length}', Icons.cancel),
                     ],
                   ),
                 ),
@@ -536,8 +541,8 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
             color: AppColors.textMuted.withOpacity(0.5),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Henüz marka eklenmemiş',
+          Text(
+            t('inventory.no_brands'),
             style: TextStyle(
               fontSize: 16,
               color: AppColors.textSecondary,
@@ -545,8 +550,8 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Yeni marka eklemek için yukarıdaki butonu kullanın',
+          Text(
+            t('inventory.add_brand_hint'),
             style: TextStyle(
               fontSize: 13,
               color: AppColors.textMuted,
@@ -615,7 +620,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                               borderRadius: AppConstants.borderRadiusSmall,
                             ),
                             child: Text(
-                              isActive ? 'Aktif' : 'Pasif',
+                              isActive ? t('common.active') : t('common.passive'),
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
@@ -677,7 +682,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                         children: [
                           Icon(Icons.edit, size: 18, color: AppColors.info),
                           SizedBox(width: 12),
-                          Text('Düzenle'),
+                          Text(t('common.edit')),
                         ],
                       ),
                     ),
@@ -691,7 +696,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                             color: isActive ? AppColors.warning : AppColors.success,
                           ),
                           const SizedBox(width: 12),
-                          Text(isActive ? 'Pasife Al' : 'Aktife Al'),
+                          Text(isActive ? t('inventory.deactivate') : t('inventory.activate')),
                         ],
                       ),
                     ),
@@ -701,7 +706,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                         children: [
                           Icon(Icons.delete, size: 18, color: AppColors.danger),
                           SizedBox(width: 12),
-                          Text('Sil'),
+                          Text(t('common.delete')),
                         ],
                       ),
                     ),

@@ -4,12 +4,14 @@ import 'package:animate_do/animate_do.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/common/section_header.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 class InventoryScreen extends ConsumerWidget {
   const InventoryScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
@@ -20,9 +22,9 @@ class InventoryScreen extends ConsumerWidget {
             children: [
               // Header
               FadeInDown(
-                child: const SectionHeader(
-                  title: 'Inventory',
-                  subtitle: 'Manage your products and stock',
+                child: SectionHeader(
+                  title: t('inventory.title'),
+                  subtitle: t('inventory.manage_products_stock'),
                 ),
               ),
               const SizedBox(height: 32),
@@ -40,48 +42,48 @@ class InventoryScreen extends ConsumerWidget {
                   children: [
                     _buildQuickActionCard(
                       context,
-                      title: 'Products',
-                      subtitle: 'Manage all products',
+                      title: t('menu.products'),
+                      subtitle: t('inventory.manage_products'),
                       icon: Icons.inventory_2_outlined,
                       color: AppTheme.primaryColor,
                       onTap: () => context.go('/inventory/products'),
                     ),
                     _buildQuickActionCard(
                       context,
-                      title: 'Categories',
-                      subtitle: 'Organize categories',
+                      title: t('menu.categories'),
+                      subtitle: t('inventory.organize_categories'),
                       icon: Icons.category_outlined,
                       color: AppTheme.secondaryColor,
                       onTap: () {},
                     ),
                     _buildQuickActionCard(
                       context,
-                      title: 'Brands',
-                      subtitle: 'Manage brands',
+                      title: t('menu.brands'),
+                      subtitle: t('inventory.manage_brands'),
                       icon: Icons.local_offer_outlined,
                       color: AppTheme.successColor,
                       onTap: () {},
                     ),
                     _buildQuickActionCard(
                       context,
-                      title: 'Stock Alert',
-                      subtitle: 'Low stock items',
+                      title: t('stock.alerts'),
+                      subtitle: t('stock.low_stock'),
                       icon: Icons.warning_amber_outlined,
                       color: AppTheme.warningColor,
                       onTap: () {},
                     ),
                     _buildQuickActionCard(
                       context,
-                      title: 'Warehouse',
-                      subtitle: 'Manage warehouses',
+                      title: t('menu.warehouses'),
+                      subtitle: t('inventory.manage_warehouses'),
                       icon: Icons.warehouse_outlined,
                       color: AppTheme.accentColor,
                       onTap: () {},
                     ),
                     _buildQuickActionCard(
                       context,
-                      title: 'Stock Transfer',
-                      subtitle: 'Transfer stock',
+                      title: t('menu.stock_transfer'),
+                      subtitle: t('stock.transfer'),
                       icon: Icons.sync_alt_outlined,
                       color: AppTheme.primaryColor,
                       onTap: () {},

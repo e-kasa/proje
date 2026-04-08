@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
@@ -25,12 +26,15 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
   String? _selectedStatus;
   String _searchQuery = '';
 
-  final _statusOptions = [
-    {'value': null, 'label': 'Tümü'},
-    {'value': 'paid', 'label': 'Ödendi'},
-    {'value': 'pending', 'label': 'Bekliyor'},
-    {'value': 'cancelled', 'label': 'İptal'},
-  ];
+  List<Map<String, String?>> _getStatusOptions() {
+    final t = i18nOf(ref);
+    return [
+      {'value': null, 'label': t('common.all')},
+      {'value': 'paid', 'label': t('finance.paid')},
+      {'value': 'pending', 'label': t('finance.pending')},
+      {'value': 'cancelled', 'label': t('finance.cancelled')},
+    ];
+  }
 
   @override
   void initState() {
@@ -54,7 +58,7 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        AppToast.error(context, 'Giderler yüklenirken hata oluştu');
+        AppToast.error(context, i18nOf(ref)('common.error'));
       }
     }
   }
@@ -72,8 +76,8 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
     final confirmed = await AppConfirmationDialog.showDelete(
       
       context: context,
-      title: 'Gideri Sil',
-      message: 'Bu gideri silmek istediğinizden emin misiniz?',
+      title: i18nOf(ref)('finance.delete_expense'),
+      message: i18nOf(ref)('common.are_you_sure'),
       itemName: '${expense['category']} - ${NumberFormat.currency(locale: 'tr_TR', symbol: '₺').format(expense['amount'])}',
     );
 
@@ -81,10 +85,10 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
 
     try {
       await _financeService.deleteExpense(expense['id']);
-      AppToast.success(context, 'Gider başarıyla silindi');
+      AppToast.success(context, i18nOf(ref)('common.success'));
       _loadExpenses();
     } catch (e) {
-      AppToast.error(context, 'Gider silinirken hata oluştu');
+      AppToast.error(context, i18nOf(ref)('common.error'));
     }
   }
 
@@ -101,12 +105,13 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = i18nOf(ref);
     final isMobile = MediaQuery.of(context).size.width < 600;
 
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
-        title: 'Giderler',
+        title: t('finance.expenses'),
         actions: [
           IconButton(
             onPressed: _loadExpenses,
@@ -131,10 +136,10 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                 // Expense List
                 Expanded(
                   child: _filteredExpenses.isEmpty
-                      ? const AppEmptyState(
+                      ? AppEmptyState(
                           icon: Icons.receipt_long_outlined,
-                          title: 'Gider Bulunamadı',
-                          actionText: 'Henüz hiç gider kaydı yok',
+                          title: t('finance.no_expenses'),
+                          actionText: t('finance.no_expense_records'),
                         )
                       : ListView.separated(
                           padding: const EdgeInsets.all(16),
@@ -155,13 +160,14 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
           context.go('/finance/expenses/add');
         },
         icon: const Icon(Icons.add),
-        label: const Text('Yeni Gider'),
+        label: Text(t('finance.new_expense')),
         backgroundColor: AppColors.primary,
       ),
     );
   }
 
   Widget _buildStatsSection() {
+    final t = i18nOf(ref);
     final totalExpenses = _expenses.fold<double>(
       0,
       (sum, e) => sum + (e['amount'] as num).toDouble(),
@@ -247,7 +253,7 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
           TextField(
             onChanged: (value) => setState(() => _searchQuery = value),
             decoration: InputDecoration(
-              hintText: 'Gider ara...',
+              hintText: t('common.search'),
               prefixIcon: const Icon(Icons.search),
               filled: true,
               fillColor: AppColors.bgLight,
@@ -265,7 +271,7 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                 child: DropdownButtonFormField<String>(
                   value: _selectedCategory,
                   decoration: InputDecoration(
-                    labelText: 'Kategori',
+                    labelText: t('finance.category'),
                     filled: true,
                     fillColor: AppColors.bgLight,
                     border: OutlineInputBorder(
@@ -274,7 +280,7 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                     ),
                   ),
                   items: [
-                    const DropdownMenuItem<String>(value: null, child: Text('Tümü')),
+                    DropdownMenuItem<String>(value: null, child: Text(t('common.all'))),
                     ..._categories.map<DropdownMenuItem<String>>((cat) {
                       return DropdownMenuItem<String>(
                         value: cat['name'] as String,
@@ -293,7 +299,7 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                 child: DropdownButtonFormField<String>(
                   value: _selectedStatus,
                   decoration: InputDecoration(
-                    labelText: 'Durum',
+                    labelText: t('common.status'),
                     filled: true,
                     fillColor: AppColors.bgLight,
                     border: OutlineInputBorder(
@@ -301,7 +307,7 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                       borderSide: BorderSide.none,
                     ),
                   ),
-                  items: _statusOptions.map<DropdownMenuItem<String>>((opt) {
+                  items: _getStatusOptions().map<DropdownMenuItem<String>>((opt) {
                     return DropdownMenuItem<String>(
                       value: opt['value'],
                       child: Text(opt['label'] as String),
@@ -322,6 +328,7 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
   }
 
   Widget _buildExpenseCard(Map<String, dynamic> expense, bool isMobile) {
+    final t = i18nOf(ref);
     final date = DateTime.parse(expense['date']);
     final amount = (expense['amount'] as num).toDouble();
     final status = expense['status'] as String;
@@ -334,17 +341,17 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
       case 'paid':
         statusColor = AppColors.success;
         statusVariant = BadgeVariant.success;
-        statusText = 'Ödendi';
+        statusText = t('finance.paid');
         break;
       case 'pending':
         statusColor = AppColors.warning;
         statusVariant = BadgeVariant.warning;
-        statusText = 'Bekliyor';
+        statusText = t('finance.pending');
         break;
       case 'cancelled':
         statusColor = AppColors.textMuted;
         statusVariant = BadgeVariant.secondary;
-        statusText = 'İptal';
+        statusText = t('finance.cancelled');
         break;
       default:
         statusColor = AppColors.textMuted;

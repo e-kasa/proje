@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:animate_do/animate_do.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/menu_provider.dart';
+import '../../providers/i18n_provider.dart';
 import '../../core/utils/responsive.dart';
 import '../../core/widgets/widgets.dart';
 
@@ -28,8 +30,15 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
   Widget build(BuildContext context) {
     final isDesktop = context.shouldShowSidebar;
 
-    // Tüm menü aksiyonlarının listesi (Arama için merkezi liste)
-    final List<_CategoryData> categories = [
+    // Dinamik menü — backend'den gelen verilere göre oluşturulur
+    final menuState = ref.watch(menuProvider);
+    final i18n = ref.watch(i18nProvider);
+
+    // Kategori renk paleti
+    const categoryColors = [AppColors.success, AppColors.primary, Colors.brown, AppColors.info, Colors.purple, Colors.teal, Colors.deepOrange, Colors.indigo];
+
+    // Fallback sabit liste
+    final List<_CategoryData> defaultCategories = [
       _CategoryData('SATIŞ & OPERASYON', AppColors.success, [
         _MenuAction('POS Satış', Icons.shopping_cart, '/pos', 'Hızlı perakende satış ekranı'),
         _MenuAction('Satış Geçmişi', Icons.history, '/sales', 'Geçmiş faturaları incele'),
@@ -65,6 +74,28 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
         _MenuAction('Ayarlar', Icons.settings, '/settings', 'Sistem yapılandırma'),
       ]),
     ];
+
+    // Bundle kodunu çevir
+    String t(String code) => i18n.isLoaded ? i18n.bundle(code) : code;
+
+    // Backend'den menü geldiyse dinamik oluştur, yoksa fallback kullan
+    final List<_CategoryData> categories = menuState.categories.isNotEmpty
+        ? menuState.categories.asMap().entries.map((entry) {
+            final i = entry.key;
+            final cat = entry.value;
+            final color = categoryColors[i % categoryColors.length];
+            return _CategoryData(
+              t(cat.label),
+              color,
+              cat.menus.expand((m) => m.items.map((item) => _MenuAction(
+                    t(item.label),
+                    menuIconMap[m.icon] ?? Icons.circle,
+                    item.link,
+                    '',
+                  ))).toList(),
+            );
+          }).toList()
+        : defaultCategories;
 
     // Filtreleme mantığı
     final filteredCategories = categories.map((cat) {

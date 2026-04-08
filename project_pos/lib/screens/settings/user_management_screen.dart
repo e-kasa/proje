@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
-import '../../core/widgets/widgets.dart';
+import '../../core/utils/i18n_helper.dart';
 import '../../services/service_locator.dart';
 
 class UserManagementScreen extends ConsumerStatefulWidget {
@@ -57,7 +57,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     try {
       final service = ref.read(userServiceProvider);
       await service.toggleUserStatus(userId);
-      AppToast.success(context, 'Kullanici durumu guncellendi');
+      AppToast.success(context, i18nOf(ref)('settings.status_updated'));
       _loadData();
     } catch (e) {
       AppToast.error(context, 'Durum degistirilemedi: $e');
@@ -71,11 +71,12 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     final passwordController = TextEditingController();
     String? selectedRoleId = user?['roleId']?.toString();
 
+    final t = i18nOf(ref);
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: Text(isEdit ? 'Kullanici Duzenle' : 'Yeni Kullanici'),
+          title: Text(isEdit ? t('settings.edit_user') : t('settings.new_user')),
           content: SingleChildScrollView(
             child: SizedBox(
               width: 400,
@@ -84,20 +85,20 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                 children: [
                   TextField(
                     controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Ad Soyad',
-                      prefixIcon: Icon(Icons.person_outline),
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: t('form.full_name'),
+                      prefixIcon: const Icon(Icons.person_outline),
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: emailController,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
-                      labelText: 'E-posta',
-                      prefixIcon: Icon(Icons.email_outlined),
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: t('form.email'),
+                      prefixIcon: const Icon(Icons.email_outlined),
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -105,20 +106,20 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                     TextField(
                       controller: passwordController,
                       obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Sifre',
-                        prefixIcon: Icon(Icons.lock_outline),
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: t('form.password'),
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                     const SizedBox(height: 16),
                   ],
                   DropdownButtonFormField<String>(
                     initialValue: selectedRoleId,
-                    decoration: const InputDecoration(
-                      labelText: 'Rol',
-                      prefixIcon: Icon(Icons.admin_panel_settings_outlined),
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: t('form.role'),
+                      prefixIcon: const Icon(Icons.admin_panel_settings_outlined),
+                      border: const OutlineInputBorder(),
                     ),
                     items: _roles.map((role) {
                       return DropdownMenuItem<String>(
@@ -137,18 +138,18 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Iptal'),
+              child: Text(t('common.cancel')),
             ),
             FilledButton(
               onPressed: () async {
                 final name = nameController.text.trim();
                 final email = emailController.text.trim();
                 if (name.isEmpty || email.isEmpty) {
-                  AppToast.warning(context, 'Ad ve e-posta zorunludur');
+                  AppToast.warning(context, t('settings.name_email_required'));
                   return;
                 }
                 if (!isEdit && passwordController.text.trim().isEmpty) {
-                  AppToast.warning(context, 'Sifre zorunludur');
+                  AppToast.warning(context, t('settings.password_required'));
                   return;
                 }
 
@@ -168,17 +169,17 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                     if (selectedRoleId != null && selectedRoleId != user['roleId']?.toString()) {
                       await service.assignRole(user['id'].toString(), selectedRoleId!);
                     }
-                    AppToast.success(context, 'Kullanici guncellendi');
+                    AppToast.success(context, t('settings.user_updated'));
                   } else {
                     await service.createUser(data);
-                    AppToast.success(context, 'Kullanici olusturuldu');
+                    AppToast.success(context, t('settings.user_created'));
                   }
                   _loadData();
                 } catch (e) {
                   AppToast.error(context, 'Islem basarisiz: $e');
                 }
               },
-              child: Text(isEdit ? 'Guncelle' : 'Olustur'),
+              child: Text(isEdit ? t('common.update') : t('common.create')),
             ),
           ],
         ),
@@ -191,14 +192,14 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
-        title: 'Kullanici Yonetimi',
+        title: i18nOf(ref)('settings.user_management'),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showUserDialog(),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.person_add),
-        label: const Text('Yeni Kullanici'),
+        label: Text(i18nOf(ref)('settings.new_user')),
       ),
       body: Column(
         children: [
@@ -212,7 +213,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                   child: TextField(
                     controller: _searchController,
                     decoration: InputDecoration(
-                      hintText: 'Kullanici ara...',
+                      hintText: i18nOf(ref)('settings.search_user'),
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -246,7 +247,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                     _loadData();
                   },
                   itemBuilder: (context) => [
-                    const PopupMenuItem(value: null, child: Text('Tum Roller')),
+                    PopupMenuItem(value: null, child: Text(i18nOf(ref)('settings.all_roles'))),
                     ..._roles.map((role) => PopupMenuItem(
                           value: role['id']?.toString(),
                           child: Text(role['name']?.toString() ?? ''),
@@ -269,7 +270,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                             Icon(Icons.people_outline, size: 64, color: AppColors.textMuted),
                             const SizedBox(height: 16),
                             Text(
-                              'Kullanici bulunamadi',
+                              i18nOf(ref)('settings.no_users'),
                               style: TextStyle(fontSize: 16, color: AppColors.textMuted),
                             ),
                           ],
@@ -339,15 +340,15 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.info.withValues(alpha: 0.1),
+                      color: _getRoleBadgeColor(roleName).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       roleName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.info,
+                        color: _getRoleBadgeColor(roleName),
                       ),
                     ),
                   ),
@@ -385,5 +386,14 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
         ),
       ),
     );
+  }
+
+  Color _getRoleBadgeColor(String roleName) {
+    final lower = roleName.toLowerCase();
+    if (lower.contains('yönetici') || lower.contains('admin')) return Colors.purple;
+    if (lower.contains('kasiyer') || lower.contains('cashier')) return AppColors.success;
+    if (lower.contains('depo') || lower.contains('warehouse')) return Colors.orange;
+    if (lower.contains('mağaza') || lower.contains('store')) return AppColors.primary;
+    return AppColors.info;
   }
 }

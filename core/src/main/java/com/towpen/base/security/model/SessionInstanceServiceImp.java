@@ -57,6 +57,13 @@ public class SessionInstanceServiceImp implements ISessionInstanceService {
 
     @Override
     public LanguageType getLanguage() {
+        if (isLoggedIn()) {
+            TOpenSessionInstance session = getSessionInstance();
+            if (session != null && session.getUserInformation() != null
+                    && session.getUserInformation().getLanguageVal() != null) {
+                return session.getUserInformation().getLanguageVal();
+            }
+        }
         return LanguageType.TR;
     }
 

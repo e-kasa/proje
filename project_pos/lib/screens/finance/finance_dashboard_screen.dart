@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
@@ -38,19 +39,21 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        AppToast.error(context, 'Finansal özet yüklenemedi');
+        final t = i18nOf(ref);
+        AppToast.error(context, t('finance.load_error'));
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = i18nOf(ref);
     final isMobile = MediaQuery.of(context).size.width < 600;
 
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
-        title: 'Finans Özeti',
+        title: t('finance.title'),
         actions: [
           IconButton(
             onPressed: _loadSummary,
@@ -79,14 +82,14 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
 
                   // Expense by Category
                   if (_summary['expensesByCategory'] != null)
-                    _buildCategoryBreakdown('Kategori Bazlı Giderler',
+                    _buildCategoryBreakdown(t('finance.expenses_by_category'),
                         _summary['expensesByCategory'], AppColors.danger),
 
                   const SizedBox(height: 16),
 
                   // Revenue by Category
                   if (_summary['revenuesByCategory'] != null)
-                    _buildCategoryBreakdown('Kategori Bazlı Gelirler',
+                    _buildCategoryBreakdown(t('finance.income_by_category'),
                         _summary['revenuesByCategory'], AppColors.success),
                 ],
               ),
@@ -95,6 +98,7 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
   }
 
   Widget _buildMainStats(bool isMobile) {
+    final t = i18nOf(ref);
     final totalExpenses = (_summary['totalExpenses'] ?? 0.0) as double;
     final totalRevenues = (_summary['totalRevenues'] ?? 0.0) as double;
     final netIncome = (_summary['netIncome'] ?? 0.0) as double;
@@ -119,7 +123,7 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Net Gelir',
+                    t('finance.net_income'),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w500,
@@ -137,7 +141,7 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                netIncome >= 0 ? 'Karlı' : 'Zararda',
+                netIncome >= 0 ? t('finance.profitable') : t('finance.in_loss'),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.white70,
                     ),
@@ -174,7 +178,7 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Gelirler',
+                          t('finance.income'),
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: AppColors.textMuted,
                               ),
@@ -223,7 +227,7 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Giderler',
+                          t('finance.expenses'),
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: AppColors.textMuted,
                               ),
@@ -255,12 +259,13 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
   }
 
   Widget _buildQuickActions() {
+    final t = i18nOf(ref);
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Hızlı İşlemler',
+            t('finance.quick_actions'),
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -271,7 +276,7 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
               Expanded(
                 child: _buildActionButton(
                   icon: Icons.add_circle,
-                  label: 'Gider Ekle',
+                  label: t('finance.add_expense'),
                   color: AppColors.danger,
                   onTap: () => context.go('/finance/expenses/add'),
                 ),
@@ -280,7 +285,7 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
               Expanded(
                 child: _buildActionButton(
                   icon: Icons.add_circle_outline,
-                  label: 'Gelir Ekle',
+                  label: t('finance.add_income'),
                   color: AppColors.success,
                   onTap: () => context.go('/finance/add-income'),
                 ),
@@ -293,7 +298,7 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
               Expanded(
                 child: _buildActionButton(
                   icon: Icons.receipt_long,
-                  label: 'Giderler',
+                  label: t('finance.expenses'),
                   color: AppColors.primary,
                   onTap: () => context.go('/finance/expenses'),
                 ),
@@ -302,7 +307,7 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
               Expanded(
                 child: _buildActionButton(
                   icon: Icons.payment,
-                  label: 'Odemeler',
+                  label: t('finance.payments'),
                   color: AppColors.info,
                   onTap: () => context.go('/finance/payments'),
                 ),
@@ -315,7 +320,7 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
               Expanded(
                 child: _buildActionButton(
                   icon: Icons.show_chart,
-                  label: 'Nakit Akisi',
+                  label: t('finance.cash_flow'),
                   color: AppColors.warning,
                   onTap: () => context.go('/finance/cash-flow'),
                 ),
@@ -324,7 +329,7 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
               Expanded(
                 child: _buildActionButton(
                   icon: Icons.account_balance_wallet_outlined,
-                  label: 'Cari Hesaplar',
+                  label: t('accounts.title'),
                   color: Colors.teal,
                   onTap: () => context.go('/accounts'),
                 ),

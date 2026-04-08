@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../../core/utils/validation_helper.dart';
 import '../../services/finance_service.dart';
 import '../../core/api/api_client.dart';
@@ -86,13 +87,13 @@ class _AddIncomeScreenState extends ConsumerState<AddIncomeScreen> {
 
       await _financeService.createRevenue(data);
       if (mounted) {
-        AppToast.success(context, 'Gelir eklendi');
+        AppToast.success(context, i18nOf(ref)('common.success'));
         context.go('/finance');
       }
     } catch (e) {
       setState(() => _isSaving = false);
       if (mounted) {
-        AppToast.error(context, 'Gelir kaydedilemedi: $e');
+        AppToast.error(context, '${i18nOf(ref)('common.error')}: $e');
       }
     }
   }
@@ -114,9 +115,10 @@ class _AddIncomeScreenState extends ConsumerState<AddIncomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = i18nOf(ref);
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      appBar: AppAppBar.standard(title: 'Yeni Gelir'),
+      appBar: AppAppBar.standard(title: t('finance.add_income')),
       body: SingleChildScrollView(
         padding: AppConstants.pagePadding,
         child: Form(
@@ -128,8 +130,8 @@ class _AddIncomeScreenState extends ConsumerState<AddIncomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Genel Bilgiler',
+                    Text(
+                      t('finance.general_info'),
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -192,8 +194,8 @@ class _AddIncomeScreenState extends ConsumerState<AddIncomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Odeme Bilgileri',
+                    Text(
+                      t('finance.payment_info'),
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -264,7 +266,7 @@ class _AddIncomeScreenState extends ConsumerState<AddIncomeScreen> {
               SizedBox(
                 width: double.infinity,
                 child: AppButton(
-                  text: _isSaving ? 'Kaydediliyor...' : 'Kaydet',
+                  text: _isSaving ? t('common.loading') : t('common.save'),
                   onPressed: _isSaving ? null : _saveIncome,
                   icon: Icons.save,
                 ),

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../core/widgets/widgets.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/theme/app_colors.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../../core/utils/validation_helper.dart';
 import '../../services/finance_service.dart';
 import '../../core/api/api_client.dart';
@@ -36,19 +37,25 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   String _selectedPaymentMethod = 'Nakit';
   List<Map<String, dynamic>> _categories = [];
 
-  final _statusOptions = [
-    {'value': 'pending', 'label': 'Bekliyor'},
-    {'value': 'paid', 'label': 'Ödendi'},
-    {'value': 'cancelled', 'label': 'İptal'},
-  ];
+  List<Map<String, String>> _getStatusOptions() {
+    final t = i18nOf(ref);
+    return [
+      {'value': 'pending', 'label': t('finance.pending')},
+      {'value': 'paid', 'label': t('finance.paid')},
+      {'value': 'cancelled', 'label': t('finance.cancelled')},
+    ];
+  }
 
-  final _paymentMethods = [
-    'Nakit',
-    'Kredi Kartı',
-    'Banka Transferi',
-    'Çek',
-    'Otomatik Ödeme',
-  ];
+  List<String> _getPaymentMethods() {
+    final t = i18nOf(ref);
+    return [
+      t('finance.cash'),
+      t('finance.credit_card'),
+      t('finance.bank_transfer'),
+      t('finance.check'),
+      t('finance.auto_payment'),
+    ];
+  }
 
   @override
   void initState() {
@@ -81,7 +88,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         }
       });
     } catch (e) {
-      AppToast.error(context, 'Kategoriler yüklenemedi');
+      AppToast.error(context, i18nOf(ref)('common.error'));
     }
   }
 
@@ -103,7 +110,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        AppToast.error(context, 'Gider yüklenemedi');
+        AppToast.error(context, i18nOf(ref)('common.error'));
       }
     }
   }
@@ -134,20 +141,20 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       if (widget.expenseId != null) {
         await _financeService.updateExpense(widget.expenseId!, data);
         if (mounted) {
-          AppToast.success(context, 'Gider güncellendi');
+          AppToast.success(context, i18nOf(ref)('common.success'));
           context.go('/finance/expenses');
         }
       } else {
         await _financeService.createExpense(data);
         if (mounted) {
-          AppToast.success(context, 'Gider eklendi');
+          AppToast.success(context, i18nOf(ref)('common.success'));
           context.go('/finance/expenses');
         }
       }
     } catch (e) {
       setState(() => _isSaving = false);
       if (mounted) {
-        AppToast.error(context, 'Gider kaydedilemedi: $e');
+        AppToast.error(context, '${i18nOf(ref)('common.error')}: $e');
       }
     }
   }
@@ -169,10 +176,11 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = i18nOf(ref);
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.primary(
-        title: widget.expenseId != null ? 'Gider Düzenle' : 'Yeni Gider',
+        title: widget.expenseId != null ? t('finance.edit_expense') : t('finance.new_expense'),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -184,7 +192,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     AppSectionCard(
-                      title: 'Genel Bilgiler',
+                      title: t('finance.general_info'),
                       children: [
                         // Category
                         DropdownButtonFormField<String>(
@@ -235,7 +243,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                     const SizedBox(height: AppConstants.formFieldSpacing),
 
                     AppSectionCard(
-                      title: 'Ödeme Bilgileri',
+                      title: t('finance.payment_info'),
                       children: [
                         // Vendor
                         AppInput(
@@ -253,7 +261,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                             labelText: 'Ödeme Yöntemi *',
                             prefixIcon: Icon(Icons.payment),
                           ),
-                          items: _paymentMethods.map<DropdownMenuItem<String>>((method) {
+                          items: _getPaymentMethods().map<DropdownMenuItem<String>>((method) {
                             return DropdownMenuItem<String>(
                               value: method,
                               child: Text(method),
@@ -310,7 +318,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                             labelText: 'Durum *',
                             prefixIcon: Icon(Icons.check_circle),
                           ),
-                          items: _statusOptions.map<DropdownMenuItem<String>>((status) {
+                          items: _getStatusOptions().map<DropdownMenuItem<String>>((status) {
                             return DropdownMenuItem<String>(
                               value: status['value'],
                               child: Text(status['label'] as String),
@@ -328,8 +336,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                     // Save Button
                     AppButton.primary(
                       text: _isSaving
-                          ? 'Kaydediliyor...'
-                          : (widget.expenseId != null ? 'Güncelle' : 'Kaydet'),
+                          ? t('common.loading')
+                          : (widget.expenseId != null ? t('common.update') : t('common.save')),
                       onPressed: _isSaving ? null : _saveExpense,
                       icon: Icons.save,
                       isLoading: _isSaving,

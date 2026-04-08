@@ -5,6 +5,7 @@ import '../../models/stock_management_models.dart';
 import '../../services/service_locator.dart';
 import '../../core/widgets/widgets.dart';
 import '../../core/theme/app_colors.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 /// MULTI-WAREHOUSE STOK EKRANI
 /// Depo/Magaza/Sube bazinda stok goruntuleme

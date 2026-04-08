@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/src/intl/number_format.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/services/service_locator.dart';
 import '../providers/pos_provider.dart';
 import 'cart_item_row.dart';
@@ -20,6 +21,7 @@ class CartPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final posState = ref.watch(posProvider);
     final notifier = ref.read(posProvider.notifier);
+    final t = i18nOf(ref);
 
     return Container(
       decoration: BoxDecoration(
@@ -31,31 +33,31 @@ class CartPanel extends ConsumerWidget {
       child: Column(
         children: [
           // Header
-          _buildHeader(context, posState, notifier),
+          _buildHeader(context, posState, notifier, t),
 
           // Müşteri seçimi
-          _buildCustomerSection(context, posState, notifier, ref),
+          _buildCustomerSection(context, posState, notifier, ref, t),
 
           const Divider(height: 1),
 
           // Sepet listesi
           Expanded(
             child: posState.cartItems.isEmpty
-                ? _buildEmptyCart()
+                ? _buildEmptyCart(t)
                 : _buildCartList(posState, notifier),
           ),
 
           const Divider(height: 1),
 
           // Toplam & Ödeme
-          _buildTotalSection(posState, notifier),
+          _buildTotalSection(posState, notifier, t),
         ],
       ),
     );
   }
 
   Widget _buildHeader(
-      BuildContext context, PosState posState, PosNotifier notifier) {
+      BuildContext context, PosState posState, PosNotifier notifier, String Function(String) t) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -67,7 +69,7 @@ class CartPanel extends ConsumerWidget {
           const Icon(Icons.shopping_cart, color: AppColors.primary, size: 22),
           const SizedBox(width: 8),
           Text(
-            'Sepet',
+            t('pos.cart'),
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -95,12 +97,12 @@ class CartPanel extends ConsumerWidget {
           const Spacer(),
           if (posState.cartItems.isNotEmpty) ...[
             TextButton.icon(
-              onPressed: () => _showParkDialog(context, notifier),
+              onPressed: () => _showParkDialog(context, notifier, t),
               icon: const Icon(Icons.pause_circle_outline,
                   size: 16, color: AppColors.primary),
-              label: const Text(
-                'Park',
-                style: TextStyle(fontSize: 12, color: AppColors.primary),
+              label: Text(
+                t('pos.park_order'),
+                style: const TextStyle(fontSize: 12, color: AppColors.primary),
               ),
               style: TextButton.styleFrom(
                 padding:
@@ -111,12 +113,12 @@ class CartPanel extends ConsumerWidget {
             ),
             const SizedBox(width: 4),
             TextButton.icon(
-              onPressed: () => _confirmClearCart(context, notifier),
+              onPressed: () => _confirmClearCart(context, notifier, t),
               icon: const Icon(Icons.delete_outline,
                   size: 16, color: AppColors.danger),
-              label: const Text(
-                'Temizle',
-                style: TextStyle(fontSize: 12, color: AppColors.danger),
+              label: Text(
+                t('common.clear'),
+                style: const TextStyle(fontSize: 12, color: AppColors.danger),
               ),
               style: TextButton.styleFrom(
                 padding:
@@ -132,9 +134,9 @@ class CartPanel extends ConsumerWidget {
   }
 
   Widget _buildCustomerSection(BuildContext context, PosState posState,
-      PosNotifier notifier, WidgetRef ref) {
+      PosNotifier notifier, WidgetRef ref, String Function(String) t) {
     return InkWell(
-      onTap: () => _showCustomerPicker(context, notifier, ref),
+      onTap: () => _showCustomerPicker(context, notifier, ref, t),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         color: posState.selectedCustomer != null
@@ -155,7 +157,7 @@ class CartPanel extends ConsumerWidget {
             Expanded(
               child: Text(
                 posState.selectedCustomer?['name']?.toString() ??
-                    'Müşteri Seç (Opsiyonel)',
+                    t('pos.select_customer'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: posState.selectedCustomer != null
@@ -180,7 +182,7 @@ class CartPanel extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyCart() {
+  Widget _buildEmptyCart(String Function(String) t) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -188,18 +190,18 @@ class CartPanel extends ConsumerWidget {
           Icon(Icons.shopping_cart_outlined,
               size: 56, color: AppColors.textMuted.withOpacity(0.3)),
           const SizedBox(height: 12),
-          const Text(
-            'Sepet Boş',
-            style: TextStyle(
+          Text(
+            t('pos.cart_empty'),
+            style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w500,
               color: AppColors.textMuted,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Ürün eklemek için soldan seçin',
-            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+          Text(
+            t('pos.cart_empty_hint'),
+            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
           ),
         ],
       ),
@@ -230,7 +232,7 @@ class CartPanel extends ConsumerWidget {
     );
   }
 
-  Widget _buildTotalSection(PosState posState, PosNotifier notifier) {
+  Widget _buildTotalSection(PosState posState, PosNotifier notifier, String Function(String) t) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -247,14 +249,14 @@ class CartPanel extends ConsumerWidget {
       child: Column(
         children: [
           // Ara toplam
-          _buildSummaryRow('Ara Toplam', posState.subtotal),
+          _buildSummaryRow(t('pos.subtotal'), posState.subtotal),
           if (posState.totalDiscount > 0)
             _buildSummaryRow(
-              'İndirim',
+              t('pos.discount'),
               -posState.totalDiscount,
               color: AppColors.success,
             ),
-          _buildSummaryRow('KDV', posState.totalTax),
+          _buildSummaryRow(t('pos.tax'), posState.totalTax),
           const SizedBox(height: 8),
           const Divider(height: 1),
           const SizedBox(height: 8),
@@ -263,9 +265,9 @@ class CartPanel extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'TOPLAM',
-                style: TextStyle(
+              Text(
+                t('pos.grand_total'),
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
@@ -299,9 +301,9 @@ class CartPanel extends ConsumerWidget {
                 elevation: 2,
               ),
               icon: const Icon(Icons.payment, size: 20),
-              label: const Text(
-                'Ödeme Yap',
-                style: TextStyle(
+              label: Text(
+                t('pos.payment'),
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                 ),
@@ -340,23 +342,23 @@ class CartPanel extends ConsumerWidget {
     );
   }
 
-  void _showParkDialog(BuildContext context, PosNotifier notifier) {
+  void _showParkDialog(BuildContext context, PosNotifier notifier, String Function(String) t) {
     final labelController = TextEditingController();
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Siparişi Park Et'),
+        title: Text(t('pos.park_order')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Bu siparişe bir etiket vermek istiyorsanız yazın (opsiyonel):'),
+            Text(t('pos.park_order_label_hint')),
             const SizedBox(height: 12),
             TextField(
               controller: labelController,
               decoration: InputDecoration(
-                hintText: 'Örn: Masa 5, VIP müşteri, vb...',
+                hintText: t('pos.park_order_placeholder'),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -370,7 +372,7 @@ class CartPanel extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('İptal'),
+            child: Text(t('common.cancel')),
           ),
           ElevatedButton(
             onPressed: () {
@@ -380,23 +382,23 @@ class CartPanel extends ConsumerWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
             ),
-            child: const Text('Park Et'),
+            child: Text(t('pos.park_order')),
           ),
         ],
       ),
     );
   }
 
-  void _confirmClearCart(BuildContext context, PosNotifier notifier) {
+  void _confirmClearCart(BuildContext context, PosNotifier notifier, String Function(String) t) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Sepeti Temizle'),
-        content: const Text('Tüm ürünler sepetten kaldırılacak. Emin misiniz?'),
+        title: Text(t('pos.clear_cart')),
+        content: Text(t('pos.clear_cart_confirm')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('İptal'),
+            child: Text(t('common.cancel')),
           ),
           ElevatedButton(
             onPressed: () {
@@ -406,7 +408,7 @@ class CartPanel extends ConsumerWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.danger,
             ),
-            child: const Text('Temizle'),
+            child: Text(t('common.clear')),
           ),
         ],
       ),
@@ -414,7 +416,7 @@ class CartPanel extends ConsumerWidget {
   }
 
   void _showCustomerPicker(
-      BuildContext context, PosNotifier notifier, WidgetRef ref) {
+      BuildContext context, PosNotifier notifier, WidgetRef ref, String Function(String) t) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -427,6 +429,7 @@ class CartPanel extends ConsumerWidget {
           Navigator.pop(ctx);
         },
         ref: ref,
+        t: t,
       ),
     );
   }
@@ -436,10 +439,12 @@ class CartPanel extends ConsumerWidget {
 class _CustomerPickerSheet extends StatefulWidget {
   final ValueChanged<Map<String, dynamic>> onSelected;
   final WidgetRef ref;
+  final String Function(String) t;
 
   const _CustomerPickerSheet({
     required this.onSelected,
     required this.ref,
+    required this.t,
   });
 
   @override
@@ -530,9 +535,9 @@ class _CustomerPickerSheetState extends State<_CustomerPickerSheet> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
-                  const Text(
-                    'Müşteri Seç',
-                    style: TextStyle(
+                  Text(
+                    widget.t('pos.select_customer_title'),
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                     ),
@@ -551,9 +556,9 @@ class _CustomerPickerSheetState extends State<_CustomerPickerSheet> {
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                       ),
                       icon: const Icon(Icons.person_add, size: 16),
-                      label: const Text(
-                        'Yeni Ekle',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      label: Text(
+                        widget.t('common.add'),
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
@@ -567,7 +572,7 @@ class _CustomerPickerSheetState extends State<_CustomerPickerSheet> {
                 controller: _searchController,
                 onChanged: _filter,
                 decoration: InputDecoration(
-                  hintText: 'İsim veya telefon ile ara...',
+                  hintText: widget.t('pos.search_customer'),
                   prefixIcon: const Icon(Icons.search, size: 20),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -582,9 +587,9 @@ class _CustomerPickerSheetState extends State<_CustomerPickerSheet> {
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _filtered.isEmpty
-                      ? const Center(
-                          child: Text('Müşteri bulunamadı',
-                              style: TextStyle(color: AppColors.textMuted)),
+                      ? Center(
+                          child: Text(widget.t('pos.customer_not_found'),
+                              style: const TextStyle(color: AppColors.textMuted)),
                         )
                       : ListView.separated(
                           controller: scrollController,

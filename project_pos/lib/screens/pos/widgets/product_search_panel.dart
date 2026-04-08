@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../providers/pos_provider.dart';
 import 'category_filter_bar.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
@@ -27,6 +28,7 @@ class _ProductSearchPanelState extends ConsumerState<ProductSearchPanel> {
   Widget build(BuildContext context) {
     final posState = ref.watch(posProvider);
     final notifier = ref.read(posProvider.notifier);
+    final t = i18nOf(ref);
 
     return Column(
       children: [
@@ -40,7 +42,7 @@ class _ProductSearchPanelState extends ConsumerState<ProductSearchPanel> {
                   controller: _searchController,
                   onChanged: notifier.setSearchQuery,
                   decoration: InputDecoration(
-                    hintText: 'Ürün adı, SKU veya barkod ara...',
+                    hintText: t('pos.search_product'),
                     prefixIcon: const Icon(Icons.search, size: 20),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
@@ -81,7 +83,7 @@ class _ProductSearchPanelState extends ConsumerState<ProductSearchPanel> {
                 child: IconButton(
                   onPressed: () => _showBarcodeInput(context, notifier),
                   icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
-                  tooltip: 'Barkod Oku',
+                  tooltip: t('pos.scan_barcode'),
                 ),
               ),
               const SizedBox(width: 8),
@@ -100,7 +102,7 @@ class _ProductSearchPanelState extends ConsumerState<ProductSearchPanel> {
                         ? AppColors.textMuted
                         : AppColors.textSecondary,
                   ),
-                  tooltip: 'Yenile',
+                  tooltip: t('common.refresh'),
                 ),
               ),
             ],

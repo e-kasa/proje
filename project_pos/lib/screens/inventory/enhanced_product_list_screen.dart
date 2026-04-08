@@ -11,6 +11,7 @@ import '../../core/utils/app_logger.dart';
 import '../../services/service_locator.dart';
 import '../../widgets/quick_add_product_modal.dart';
 import '../../core/widgets/widgets.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 class EnhancedProductListScreen extends ConsumerStatefulWidget {
   const EnhancedProductListScreen({super.key});
@@ -142,7 +143,7 @@ class _EnhancedProductListScreenState
       context,
       MaterialPageRoute(
         builder: (context) => Scaffold(
-          appBar: AppAppBar.standard(title: 'Barkod Okut'),
+          appBar: AppAppBar.standard(title: t('inventory.scan_barcode')),
           body: MobileScanner(
             onDetect: (capture) {
               final List<Barcode> barcodes = capture.barcodes;
@@ -253,19 +254,19 @@ class _EnhancedProductListScreenState
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Toplu Silme'),
+        title: Text(t('inventory.bulk_delete')),
         content: Text(
-          '${_selectedProductIds.length} ürünü silmek istediğinize emin misiniz?',
+          '${_selectedProductIds.length} ${t('common.are_you_sure')}',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('İptal'),
+            child: Text(t('common.cancel')),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-            child: const Text('Sil', style: TextStyle(color: Colors.white)),
+            child: Text(t('common.delete'), style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -305,18 +306,19 @@ class _EnhancedProductListScreenState
 
   @override
   Widget build(BuildContext context) {
+    final t = i18nOf(ref);
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
         title: _isSelectionMode
-            ? '${_selectedProductIds.length} seçili'
-            : 'Ürünler',
+            ? '${_selectedProductIds.length} ${t('inventory.selected')}'
+            : t('inventory.products'),
         actions: [
           if (_isSelectionMode) ...[
             IconButton(
               icon: const Icon(Icons.delete),
               onPressed: _bulkDelete,
-              tooltip: 'Toplu Sil',
+              tooltip: t('inventory.bulk_delete'),
             ),
             IconButton(
               icon: const Icon(Icons.close),
@@ -329,12 +331,12 @@ class _EnhancedProductListScreenState
             IconButton(
               icon: const Icon(Icons.file_download),
               onPressed: _exportToCSV,
-              tooltip: 'Excel İndir',
+              tooltip: t('common.export'),
             ),
             IconButton(
               icon: const Icon(Icons.qr_code_scanner),
               onPressed: _scanBarcode,
-              tooltip: 'Barkod Okut',
+              tooltip: t('inventory.scan_barcode'),
             ),
           ],
         ],
@@ -454,7 +456,7 @@ class _EnhancedProductListScreenState
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _filteredProducts.isEmpty
-                    ? const Center(child: Text('Ürün bulunamadı'))
+                    ? Center(child: Text(t('common.no_result')))
                     : RefreshIndicator(
                         onRefresh: _loadProducts,
                         child: ListView.builder(
@@ -488,9 +490,9 @@ class _EnhancedProductListScreenState
               },
               backgroundColor: AppColors.primary,
               icon: const Icon(Icons.add, color: Colors.white),
-              label: const Text(
-                'Hızlı Ekle',
-                style: TextStyle(color: Colors.white),
+              label: Text(
+                t('inventory.quick_add'),
+                style: const TextStyle(color: Colors.white),
               ),
             ),
     );

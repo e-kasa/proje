@@ -9,6 +9,8 @@ import 'right_menu_drawer.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/navigation_provider.dart';
+import '../../providers/menu_provider.dart';
+import '../../providers/i18n_provider.dart';
 
 class NavigationItem {
   final IconData icon;
@@ -26,73 +28,79 @@ class NavigationItem {
   });
 }
 
-const _routeTitles = <String, String>{
-  '/dashboard': 'Ana Sayfa',
-  '/menu': 'Menü',
-  '/profile': 'Profil',
-  '/settings': 'Ayarlar',
-  '/settings/users': 'Kullanıcı Yönetimi',
-  '/settings/company': 'İşletme Bilgileri',
-  '/part-search': 'Parça Arama',
-  '/vehicles': 'Araçlar',
-  '/pos': 'Satış / POS',
-  '/sales': 'Satış Geçmişi',
-  '/scanner': 'Barkod Tarayıcı',
-  '/stock': 'Stok Yönetimi',
-  '/stock/multi-warehouse': 'Çok Depo Stok',
-  '/stock/transfer': 'Stok Transfer Oluştur',
-  '/stock/transfer-review': 'Transfer Onay',
-  '/stock/count-review': 'Stok Sayım',
-  '/stock/movements': 'Hareket Geçmişi',
-  '/stock/alerts': 'Stok Alarmları',
-  '/stock/value-report': 'Stok Değer Raporu',
-  '/inventory': 'Envanter',
-  '/inventory/products': 'Ürünler',
-  '/inventory/add-product': 'Ürün Ekle',
-  '/inventory/batch-entry': 'Toplu Ürün Girişi',
-  '/inventory/categories': 'Kategoriler',
-  '/inventory/brands': 'Markalar',
-  '/inventory/units': 'Birimler',
-  '/inventory/barcodes': 'Barkodlar',
-  '/categories/company-setup': 'Kategori Tanımla',
-  '/bulk-import': 'Toplu Ürün Yükleme',
-  '/bulk-import/review': 'İçe Aktarma İnceleme',
-  '/bulk-import/supplier': 'Tedarikçi İthalatı',
-  '/bulk-import/supplier-wizard': 'Tedarikçi İthalatı (Wizard)',
-  '/bulk-import/supplier-upload': 'Tedarikçi Dosyası Yükle',
-  '/purchases': 'Satın Alma',
-  '/purchases/create': 'Yeni Alım',
-  '/customers': 'Müşteriler',
-  '/customers/add': 'Müşteri Ekle',
-  '/suppliers': 'Tedarikçiler',
-  '/suppliers/add': 'Tedarikçi Ekle',
-  '/accounts': 'Cari Hesap Özeti',
-  '/accounts/statement': 'Hesap Ekstresi',
-  '/accounts/overdue': 'Vadesi Geçmiş',
-  '/warehouses': 'Depolar',
-  '/warehouses/add': 'Depo Ekle',
-  '/stores': 'Mağazalar',
-  '/stores/add': 'Mağaza Ekle',
-  '/finance': 'Finans',
-  '/finance/expenses': 'Giderler',
-  '/finance/expenses/add': 'Gider Ekle',
-  '/finance/add-income': 'Gelir Ekle',
-  '/finance/payments': 'Ödemeler',
-  '/finance/cash-flow': 'Nakit Akışı',
-  '/hrm/employees': 'Çalışanlar',
-  '/hrm/employees/add': 'Çalışan Ekle',
-  '/reports': 'Raporlar',
-  '/reports/daily-summary': 'Günlük Özet',
-  '/reports/sales-summary': 'Satış Özeti',
-  '/reports/product-analysis': 'Ürün Satış Analizi',
-  '/reports/customer-analysis': 'Müşteri Satış Analizi',
-  '/reports/profit-overview': 'Kâr/Zarar Özeti',
+// Route → bundle kodu eşlemesi. i18n provider ile çözümlenir.
+const _routeTitleBundles = <String, String>{
+  '/dashboard': 'menu.dashboard',
+  '/menu': 'menu.menu_list',
+  '/profile': 'nav.profile',
+  '/settings': 'menu.settings',
+  '/settings/users': 'menu.user_management',
+  '/settings/company': 'menu.company_settings',
+  '/part-search': 'menu.part_search',
+  '/vehicles': 'menu.vehicles',
+  '/pos': 'menu.pos',
+  '/sales': 'menu.sales_history',
+  '/scanner': 'menu.barcode_scanner',
+  '/stock': 'menu.stock',
+  '/stock/multi-warehouse': 'menu.multi_warehouse_stock',
+  '/stock/transfer': 'menu.stock_transfer',
+  '/stock/transfer-review': 'menu.transfer_review',
+  '/stock/count-review': 'menu.stock_count',
+  '/stock/movements': 'menu.movement_history',
+  '/stock/alerts': 'menu.stock_alerts',
+  '/stock/value-report': 'menu.stock_value_report',
+  '/inventory': 'inventory.title',
+  '/inventory/products': 'menu.products',
+  '/inventory/add-product': 'inventory.add_product',
+  '/inventory/batch-entry': 'menu.batch_entry',
+  '/inventory/categories': 'menu.categories',
+  '/inventory/brands': 'menu.brands',
+  '/inventory/units': 'menu.units',
+  '/inventory/barcodes': 'menu.barcodes',
+  '/categories/company-setup': 'menu.categories',
+  '/bulk-import': 'bulk.title',
+  '/bulk-import/review': 'bulk.review',
+  '/bulk-import/supplier': 'bulk.supplier_import',
+  '/bulk-import/supplier-wizard': 'bulk.supplier_import',
+  '/bulk-import/supplier-upload': 'bulk.supplier_import',
+  '/purchases': 'menu.purchases',
+  '/purchases/create': 'menu.new_purchase',
+  '/customers': 'menu.customers',
+  '/customers/add': 'customer.add',
+  '/suppliers': 'menu.suppliers',
+  '/suppliers/add': 'supplier.add',
+  '/accounts': 'accounts.title',
+  '/accounts/statement': 'accounts.statement',
+  '/accounts/overdue': 'accounts.overdue',
+  '/warehouses': 'menu.warehouses',
+  '/warehouses/add': 'warehouse.add',
+  '/stores': 'menu.stores',
+  '/stores/add': 'store.add',
+  '/finance': 'menu.finance',
+  '/finance/expenses': 'finance.expenses',
+  '/finance/expenses/add': 'finance.add_expense',
+  '/finance/add-income': 'finance.add_income',
+  '/finance/payments': 'finance.payments',
+  '/finance/cash-flow': 'finance.cash_flow',
+  '/hrm/employees': 'hrm.employees',
+  '/hrm/employees/add': 'hrm.add_employee',
+  '/reports': 'menu.reports',
+  '/reports/daily-summary': 'reports.daily_summary',
+  '/reports/sales-summary': 'reports.sales_summary',
+  '/reports/product-analysis': 'reports.product_analysis',
+  '/reports/customer-analysis': 'reports.customer_analysis',
+  '/reports/profit-overview': 'reports.profit_overview',
+  '/settings/sector': 'settings.sector_settings',
 };
 
-String _getPageTitle(String location) =>
-    _routeTitles[location] ?? _routeTitles.entries
-        .where((e) => location.startsWith(e.key))
-        .fold('Panel', (_, e) => e.value);
+/// Route icin bundle kodunu bulur, i18n state ile cevirir.
+String _getPageTitle(String location, I18nState i18n) {
+  final bundleCode = _routeTitleBundles[location] ?? _routeTitleBundles.entries
+      .where((e) => location.startsWith(e.key))
+      .fold<String?>('Panel', (_, e) => e.value);
+  if (bundleCode == null || bundleCode == 'Panel') return 'Panel';
+  return i18n.isLoaded ? i18n.bundle(bundleCode) : bundleCode;
+}
 
 class ResponsiveLayout extends ConsumerStatefulWidget {
   final Widget child;
@@ -111,119 +119,34 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
   bool _isSidebarExpanded = true;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  final List<NavigationItem> _webNavItems = [
-    NavigationItem(
-      icon: Icons.dashboard_outlined,
-      label: 'Ana Sayfa',
-      route: '/dashboard',
-      sectionLabel: 'GENEL',
-    ),
-    NavigationItem(
-      icon: Icons.grid_view_outlined,
-      label: 'Menü Listesi',
-      route: '/menu',
-    ),
-    NavigationItem(
-      icon: Icons.search_outlined,
-      label: 'Parça Ara',
-      route: '/part-search',
-    ),
-    NavigationItem(
-      icon: Icons.point_of_sale_outlined,
-      label: 'Satış / POS',
-      route: '/pos',
-      sectionLabel: 'SATIŞ',
-    ),
-    NavigationItem(
-      icon: Icons.history_outlined,
-      label: 'Satış Geçmişi',
-      route: '/sales',
-    ),
-    NavigationItem(
-      icon: Icons.list_alt_outlined,
-      label: 'Ürünler',
-      route: '/inventory/products',
-      sectionLabel: 'ÜRÜN KATALOĞU',
-    ),
-    NavigationItem(
-      icon: Icons.category_outlined,
-      label: 'Kategoriler',
-      route: '/inventory/categories',
-    ),
-    NavigationItem(
-      icon: Icons.inventory_2_outlined,
-      label: 'Stok Durumu',
-      route: '/stock',
-      sectionLabel: 'STOK YÖNETİMİ',
-    ),
-    NavigationItem(
-      icon: Icons.warehouse_outlined,
-      label: 'Depolar',
-      route: '/warehouses',
-    ),
-    NavigationItem(
-      icon: Icons.shopping_cart_outlined,
-      label: 'Satın Alma',
-      route: '/purchases',
-      sectionLabel: 'TEDARIK',
-    ),
-    NavigationItem(
-      icon: Icons.business_outlined,
-      label: 'Tedarikçiler',
-      route: '/suppliers',
-    ),
-    NavigationItem(
-      icon: Icons.people_outlined,
-      label: 'Müşteriler',
-      route: '/customers',
-      sectionLabel: 'CARI HESAPLAR',
-    ),
-    NavigationItem(
-      icon: Icons.account_balance_wallet_outlined,
-      label: 'Cari Hesaplar',
-      route: '/accounts',
-    ),
-    NavigationItem(
-      icon: Icons.account_balance_outlined,
-      label: 'Finans',
-      route: '/finance',
-      sectionLabel: 'FINANS',
-    ),
-    NavigationItem(
-      icon: Icons.analytics_outlined,
-      label: 'Raporlar',
-      route: '/reports',
-    ),
-    NavigationItem(
-      icon: Icons.settings_outlined,
-      label: 'Ayarlar',
-      route: '/settings',
-      sectionLabel: 'YÖNETİM',
-    ),
+  // Fallback menü — backend'den veri gelene kadar gösterilir
+  static final List<NavigationItem> _defaultWebNavItems = [
+    NavigationItem(icon: Icons.dashboard_outlined, label: 'Ana Sayfa', route: '/dashboard', sectionLabel: 'GENEL'),
+    NavigationItem(icon: Icons.grid_view_outlined, label: 'Menü Listesi', route: '/menu'),
+    NavigationItem(icon: Icons.search_outlined, label: 'Parça Ara', route: '/part-search'),
+    NavigationItem(icon: Icons.point_of_sale_outlined, label: 'Satış / POS', route: '/pos', sectionLabel: 'SATIŞ'),
+    NavigationItem(icon: Icons.history_outlined, label: 'Satış Geçmişi', route: '/sales'),
+    NavigationItem(icon: Icons.list_alt_outlined, label: 'Ürünler', route: '/inventory/products', sectionLabel: 'ÜRÜN KATALOĞU'),
+    NavigationItem(icon: Icons.category_outlined, label: 'Kategoriler', route: '/inventory/categories'),
+    NavigationItem(icon: Icons.inventory_2_outlined, label: 'Stok Durumu', route: '/stock', sectionLabel: 'STOK YÖNETİMİ'),
+    NavigationItem(icon: Icons.warehouse_outlined, label: 'Depolar', route: '/warehouses'),
+    NavigationItem(icon: Icons.shopping_cart_outlined, label: 'Satın Alma', route: '/purchases', sectionLabel: 'TEDARİK'),
+    NavigationItem(icon: Icons.business_outlined, label: 'Tedarikçiler', route: '/suppliers'),
+    NavigationItem(icon: Icons.people_outlined, label: 'Müşteriler', route: '/customers', sectionLabel: 'CARİ HESAPLAR'),
+    NavigationItem(icon: Icons.account_balance_wallet_outlined, label: 'Cari Hesaplar', route: '/accounts'),
+    NavigationItem(icon: Icons.account_balance_outlined, label: 'Finans', route: '/finance', sectionLabel: 'FİNANS'),
+    NavigationItem(icon: Icons.analytics_outlined, label: 'Raporlar', route: '/reports'),
+    NavigationItem(icon: Icons.settings_outlined, label: 'Ayarlar', route: '/settings', sectionLabel: 'YÖNETİM'),
   ];
 
-  final List<NavigationItem> _mobileNavItems = [
-    NavigationItem(
-      icon: Icons.dashboard_outlined,
-      label: 'Ana Sayfa',
-      route: '/dashboard',
-    ),
-    NavigationItem(
-      icon: Icons.search_outlined,
-      label: 'Parça Ara',
-      route: '/part-search',
-    ),
-    NavigationItem(
-      icon: Icons.inventory_2_outlined,
-      label: 'Stok',
-      route: '/stock',
-    ),
-    NavigationItem(
-      icon: Icons.point_of_sale_outlined,
-      label: 'Satış',
-      route: '/pos',
-    ),
+  static final List<NavigationItem> _defaultMobileNavItems = [
+    NavigationItem(icon: Icons.dashboard_outlined, label: 'Ana Sayfa', route: '/dashboard'),
+    NavigationItem(icon: Icons.search_outlined, label: 'Parça Ara', route: '/part-search'),
+    NavigationItem(icon: Icons.inventory_2_outlined, label: 'Stok', route: '/stock'),
+    NavigationItem(icon: Icons.point_of_sale_outlined, label: 'Satış', route: '/pos'),
   ];
+
+  bool _menuLoaded = false;
 
   void _onNavigationItemSelected(int index, String route) {
     final currentLocation = GoRouterState.of(context).matchedLocation;
@@ -247,8 +170,29 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
     final isMobile = !context.shouldShowSidebar;
-    
-    // Menü sayfasındaysak ve Desktop modundaysak Sidebar'ı tamamen gizle (TAM TERSİ MANTIK)
+
+    // Menü ve i18n verilerini backend'den yükle (bir kere)
+    final menuState = ref.watch(menuProvider);
+    final i18nState = ref.watch(i18nProvider);
+    if (!_menuLoaded && !menuState.isLoading && menuState.categories.isEmpty) {
+      _menuLoaded = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(menuProvider.notifier).loadMenus();
+        if (!i18nState.isLoaded) {
+          ref.read(i18nProvider.notifier).loadTranslations();
+        }
+      });
+    }
+
+    // Dinamik menü öğeleri — backend'den geldiyse i18n ile çevir, yoksa fallback
+    final webNavItems = menuState.categories.isNotEmpty
+        ? ref.read(menuProvider.notifier).toSidebarItems(i18n: i18nState)
+        : _defaultWebNavItems;
+    final mobileNavItems = menuState.categories.isNotEmpty
+        ? ref.read(menuProvider.notifier).toMobileItems(i18n: i18nState)
+        : _defaultMobileNavItems;
+
+    // Menü sayfasındaysak ve Desktop modundaysak Sidebar'ı tamamen gizle
     final hideSidebarOnDesktop = location == '/menu' && !isMobile;
 
     if (context.shouldShowSidebar && !hideSidebarOnDesktop) {
@@ -257,7 +201,7 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
         body: Row(
           children: [
             AdaptiveSidebar(
-              items: _webNavItems,
+              items: webNavItems,
               selectedIndex: _selectedIndex,
               isExpanded: _isSidebarExpanded,
               onItemSelected: _onNavigationItemSelected,
@@ -303,7 +247,7 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
       ) : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: isMobile ? AdaptiveBottomNav(
-        items: _mobileNavItems,
+        items: mobileNavItems,
         selectedIndex: _selectedIndex,
         onItemSelected: _onNavigationItemSelected,
         hasNotch: true,
@@ -320,7 +264,7 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
         final displayName = user?.displayName ?? 'Admin';
         final companyCode = user?.selectedCompanyCode ?? '';
         final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'A';
-        final pageTitle = _getPageTitle(location);
+        final pageTitle = _getPageTitle(location, ref.read(i18nProvider));
 
         return Container(
           height: 64,
@@ -359,6 +303,9 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
                   ],
                 ),
                 const Spacer(),
+                // Dil değiştirme butonu
+                _buildLanguageToggle(ref),
+                const SizedBox(width: 4),
                 _AppBarIconBtn(
                   icon: isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
                   onPressed: () => ref.read(themeProvider.notifier).setThemeMode(
@@ -378,7 +325,10 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
     return PopupMenuButton<String>(
       onSelected: (value) {
         if (value == 'profile') context.go('/profile');
-        if (value == 'logout') ref.read(authProvider.notifier).logout();
+        if (value == 'logout') {
+          ref.read(menuProvider.notifier).clearMenus();
+          ref.read(authProvider.notifier).logout();
+        }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -391,10 +341,47 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
           ],
         ),
       ),
-      itemBuilder: (_) => [
-        const PopupMenuItem(value: 'profile', child: Text('Profil')),
-        const PopupMenuItem(value: 'logout', child: Text('Çıkış Yap')),
-      ],
+      itemBuilder: (_) {
+        final t = ref.read(i18nProvider);
+        return [
+          PopupMenuItem(value: 'profile', child: Text(t.isLoaded ? t.bundle('nav.profile') : 'Profil')),
+          PopupMenuItem(value: 'logout', child: Text(t.isLoaded ? t.bundle('nav.logout') : 'Çıkış Yap')),
+        ];
+      },
+    );
+  }
+
+  Widget _buildLanguageToggle(WidgetRef ref) {
+    final currentLang = ref.watch(i18nProvider).lang;
+    final isTr = currentLang == 'TR';
+    return GestureDetector(
+      onTap: () {
+        final newLang = isTr ? 'EN' : 'TR';
+        ref.read(i18nProvider.notifier).changeLanguage(newLang);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.language, size: 16, color: AppColors.primary),
+            const SizedBox(width: 4),
+            Text(
+              isTr ? 'TR' : 'EN',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -402,7 +389,7 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 0,
-      title: Text(_getPageTitle(location), style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+      title: Text(_getPageTitle(location, ref.read(i18nProvider)), style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
       actions: [
         IconButton(icon: const Icon(Icons.menu, color: AppColors.textPrimary), onPressed: _openRightDrawer),
       ],

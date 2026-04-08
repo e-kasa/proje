@@ -11,4 +11,10 @@ public interface UserDefRepository extends BaseDaoRepository<UserDef> {
     @Query("select n from UserDef n where n.userName =:userName")
     Optional<UserDef> findByUserDefName(@Param("userName") String userName);
 
+    /**
+     * Hibernate company filter'ı bypass ederek kullanıcı adını tüm şirketlerde arar.
+     * Şirket kaydında global unique kontrolü için kullanılır.
+     */
+    @Query(value = "SELECT COUNT(*) FROM user_def WHERE user_name = :userName", nativeQuery = true)
+    long countByUserNameGlobal(@Param("userName") String userName);
 }

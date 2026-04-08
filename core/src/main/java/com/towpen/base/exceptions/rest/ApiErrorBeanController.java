@@ -114,7 +114,11 @@ public class ApiErrorBeanController {
 	}
 
 	public LanguageType getSelectedLanguage() {
-		return LanguageType.TR;
+		try {
+			return sessionInstanceService.getLanguage();
+		} catch (Exception e) {
+			return LanguageType.TR;
+		}
 	}
 
 	public String getMessageText(String errorCode, Object[] params, LanguageType languageType) {

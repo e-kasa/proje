@@ -24,6 +24,9 @@ import 'sales_report_service.dart';
 import 'user_service.dart';
 import 'bulk_import_service.dart';
 import 'payment_service.dart';
+import 'registration_service.dart';
+import 'menu_service.dart';
+import 'i18n_service.dart';
 
 // API Client Provider
 final apiClientProvider = Provider<ApiClient>((ref) {
@@ -149,4 +152,19 @@ final bulkImportServiceProvider = Provider<BulkImportService>((ref) {
 final paymentServiceProvider = Provider<PaymentService>((ref) {
   final apiClient = ref.watch(apiClientProvider);
   return PaymentService(apiClient);
+});
+
+final registrationServiceProvider = Provider<RegistrationService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return RegistrationService(apiClient);
+});
+
+final menuServiceProvider = Provider<MenuService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return MenuService(apiClient);
+});
+
+final i18nServiceProvider = Provider<I18nService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return I18nService(apiClient);
 });

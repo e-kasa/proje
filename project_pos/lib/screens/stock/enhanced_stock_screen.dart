@@ -6,6 +6,7 @@ import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../providers/data_providers.dart';
 import '../../providers/navigation_provider.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 class EnhancedStockScreen extends ConsumerStatefulWidget {
   const EnhancedStockScreen({super.key});

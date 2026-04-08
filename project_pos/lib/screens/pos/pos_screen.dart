@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:animate_do/animate_do.dart';
 import '../../core/theme/app_colors.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'providers/pos_provider.dart';
 import 'widgets/product_grid_item.dart';
 import 'widgets/cart_panel.dart';
@@ -85,15 +86,16 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   }
 
   void _confirmClearCart() {
+    final t = i18nOf(ref);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Sepeti Temizle'),
-        content: const Text('Tüm ürünler sepetten kaldırılacak. Emin misiniz?'),
+        title: Text(t('pos.clear_cart')),
+        content: Text(t('pos.clear_cart_confirm')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('İptal'),
+            child: Text(t('common.cancel')),
           ),
           ElevatedButton(
             onPressed: () {
@@ -103,7 +105,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.danger,
             ),
-            child: const Text('Temizle'),
+            child: Text(t('common.clear')),
           ),
         ],
       ),
@@ -218,6 +220,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   }
 
   PreferredSizeWidget _buildAppBar(PosState posState) {
+    final t = i18nOf(ref);
     return AppBar(
       elevation: 0,
       backgroundColor: Colors.white,
@@ -229,8 +232,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('POS Satış Paneli',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
+          Text(t('pos.title'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
           GestureDetector(
             onTap: posState.availableStoreIds.length > 1
                 ? () => _showStorePicker(context, posState.availableStoreIds, posState.activeStoreId)
@@ -248,8 +251,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 const SizedBox(width: 4),
                 Text(
                   posState.activeStoreId != null
-                      ? 'Mağaza: ${posState.activeStoreId}'
-                      : 'Mağaza seçilmedi',
+                      ? '${t('pos.store')}: ${posState.activeStoreId}'
+                      : t('pos.no_store'),
                   style: TextStyle(
                     fontSize: 11,
                     color: posState.activeStoreId != null ? AppColors.textMuted : AppColors.warning,
@@ -273,7 +276,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               IconButton(
                 onPressed: () => _showParkedOrdersPanel(context),
                 icon: const Icon(Icons.pause_circle_outline, color: AppColors.primary),
-                tooltip: 'Bekleyen siparişler',
+                tooltip: t('pos.parked_orders'),
               ),
               Positioned(
                 top: 8,
@@ -410,6 +413,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   }
 
   Widget _buildShortcutBar() {
+    final t = i18nOf(ref);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -420,13 +424,13 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            _shortcutHint('F1', 'Ödeme'),
+            _shortcutHint('F1', t('pos.payment')),
             const SizedBox(width: 24),
-            _shortcutHint('F5', 'Yenile'),
+            _shortcutHint('F5', t('common.refresh')),
             const SizedBox(width: 24),
-            _shortcutHint('ESC', 'Temizle'),
+            _shortcutHint('ESC', t('common.clear')),
             const SizedBox(width: 24),
-            _shortcutHint('Ctrl+Delete', 'Sepeti Sıfırla'),
+            _shortcutHint('Ctrl+Delete', t('pos.clear_cart')),
           ],
         ),
       ),
@@ -466,6 +470,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   }
 
   Widget _buildSearchBar() {
+    final t = i18nOf(ref);
     return Container(
       decoration: BoxDecoration(
         color: AppColors.bgLight,
@@ -477,7 +482,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         focusNode: _searchFocusNode,
         onChanged: (value) => ref.read(posProvider.notifier).setSearchQuery(value),
         decoration: InputDecoration(
-          hintText: 'Ürün adı, SKU veya barkod okutun...',
+          hintText: t('pos.search_product'),
           hintStyle: const TextStyle(fontSize: 14, color: AppColors.textMuted),
           prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
           suffixIcon: _searchController.text.isNotEmpty
@@ -553,24 +558,25 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     if (_storePickerShown) return;
     _storePickerShown = true;
 
+    final t = i18nOf(ref);
     showDialog(
       context: context,
       barrierDismissible: currentStoreId != null, // seçim yapılmışsa kapatılabilir
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
-          children: const [
-            Icon(Icons.store_rounded, color: AppColors.primary),
-            SizedBox(width: 10),
-            Text('Mağaza Seçin'),
+          children: [
+            const Icon(Icons.store_rounded, color: AppColors.primary),
+            const SizedBox(width: 10),
+            Text(t('pos.select_store')),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Hangi mağazada çalışıyorsunuz?\nStok bilgileri seçtiğiniz mağazaya göre gösterilecek.',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            Text(
+              t('pos.select_store_desc'),
+              style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 16),
             ...storeIds.map((id) {
@@ -631,7 +637,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     _storePickerShown = false;
                     Navigator.pop(ctx);
                   },
-                  child: const Text('İptal'),
+                  child: Text(t('common.cancel')),
                 ),
               ]
             : null,

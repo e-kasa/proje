@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'wizard_common_widgets.dart';
 
 /// Multi-select chip widget with dropdown for adding new selections.

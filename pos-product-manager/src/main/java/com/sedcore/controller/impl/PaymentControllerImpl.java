@@ -49,7 +49,7 @@ public class PaymentControllerImpl implements PaymentController {
             throw e;
         } catch (Exception e) {
             log.error("Odeme olusturma hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -62,7 +62,7 @@ public class PaymentControllerImpl implements PaymentController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -93,12 +93,12 @@ public class PaymentControllerImpl implements PaymentController {
             if (purchaseId != null) {
                 return ResponseEntity.ok(ApiResponse.success(paymentService.getByPurchase(purchaseId)));
             }
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
             log.error("Odeme listesi hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -136,7 +136,7 @@ public class PaymentControllerImpl implements PaymentController {
             throw e;
         } catch (Exception e) {
             log.error("Odeme iptal hatasi: id={}, {}", id, e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -153,7 +153,7 @@ public class PaymentControllerImpl implements PaymentController {
             throw e;
         } catch (Exception e) {
             log.error("Odeme onay hatasi: id={}, {}", id, e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 }

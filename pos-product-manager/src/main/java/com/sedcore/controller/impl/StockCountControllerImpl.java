@@ -58,7 +58,7 @@ public class StockCountControllerImpl {
             throw e;
         } catch (Exception e) {
             log.error("Stok sayim hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 

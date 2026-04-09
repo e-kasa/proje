@@ -57,7 +57,7 @@ public class SupplierControllerImpl {
             throw e;
         } catch (Exception e) {
             log.error("Tedarikci listesi hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -69,7 +69,7 @@ public class SupplierControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -84,7 +84,7 @@ public class SupplierControllerImpl {
             throw e;
         } catch (Exception e) {
             log.error("Tedarikci olusturma hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -98,7 +98,7 @@ public class SupplierControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -111,7 +111,7 @@ public class SupplierControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -123,7 +123,7 @@ public class SupplierControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -148,7 +148,7 @@ public class SupplierControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -160,7 +160,7 @@ public class SupplierControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -172,7 +172,7 @@ public class SupplierControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -187,7 +187,7 @@ public class SupplierControllerImpl {
             throw e;
         } catch (Exception e) {
             log.error("Odeme kaydi hatasi: supplierId={}, {}", id, e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -199,13 +199,13 @@ public class SupplierControllerImpl {
         try {
             BigDecimal newLimit = body.get("creditLimit");
             if (newLimit == null) {
-                throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+                throw ExceptionMapper.map(e);
             }
             return ResponseEntity.ok(ApiResponse.success(supplierService.updateCreditLimit(id, newLimit)));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 }

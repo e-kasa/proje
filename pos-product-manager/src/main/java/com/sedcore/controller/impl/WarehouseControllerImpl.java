@@ -57,7 +57,7 @@ public class WarehouseControllerImpl {
                     .orElseThrow(() -> new RuntimeException("Depo bulunamadi: " + id));
             return ResponseEntity.ok(ApiResponse.success(toMap(wh)));
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 

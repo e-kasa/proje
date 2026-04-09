@@ -51,7 +51,7 @@ public class ProductControllerImpl implements ProductController {
             throw e;
         } catch (Exception e) {
             log.error("Ürün oluşturma hatası: ", e);
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -72,7 +72,7 @@ public class ProductControllerImpl implements ProductController {
             throw e;
         } catch (Exception e) {
             log.error("Ürün güncelleme hatası: id={}", id, e);
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -115,7 +115,7 @@ public class ProductControllerImpl implements ProductController {
             throw e;
         } catch (Exception e) {
             log.error("Ürün listeleme hatası: ", e);
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -137,7 +137,7 @@ public class ProductControllerImpl implements ProductController {
             throw e;
         } catch (Exception e) {
             log.error("Ürün arama hatası: ", e);
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -164,7 +164,7 @@ public class ProductControllerImpl implements ProductController {
             throw e;
         } catch (Exception e) {
             log.error("Ürün durum değiştirme hatası: id={}", id, e);
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -182,7 +182,7 @@ public class ProductControllerImpl implements ProductController {
             throw e;
         } catch (Exception e) {
             log.error("Ürün silme hatası: id={}", id, e);
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 

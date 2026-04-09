@@ -42,7 +42,7 @@ public class AccountTransactionControllerImpl implements AccountTransactionContr
             return ResponseEntity.ok(ApiResponse.success(accountTransactionService.getTransaction(id)));
         } catch (Exception e) {
             log.error("Cari hareket getirme hatasi: id={}, {}", id, e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -81,7 +81,7 @@ public class AccountTransactionControllerImpl implements AccountTransactionContr
                     ApiResponse.error("supplierId, customerId veya purchaseId parametresi gerekli"));
         } catch (Exception e) {
             log.error("Cari hareket listesi hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 

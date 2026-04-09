@@ -31,7 +31,7 @@ public class VehicleControllerImpl implements VehicleController {
             return ResponseEntity.ok(ApiResponse.success("Araclar getirildi", vehicleService.getActiveVehicles()));
         } catch (Exception e) {
             log.error("Araclar getirilirken hata: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -42,7 +42,7 @@ public class VehicleControllerImpl implements VehicleController {
             return ResponseEntity.ok(ApiResponse.success("Tum araclar getirildi", vehicleService.getAllVehicles()));
         } catch (Exception e) {
             log.error("Tum araclar getirilirken hata: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -54,7 +54,7 @@ public class VehicleControllerImpl implements VehicleController {
             return ResponseEntity.ok(ApiResponse.success("Arac olusturuldu", response));
         } catch (Exception e) {
             log.error("Arac olusturulurken hata: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -66,7 +66,7 @@ public class VehicleControllerImpl implements VehicleController {
             return ResponseEntity.ok(ApiResponse.success("Arac guncellendi", response));
         } catch (Exception e) {
             log.error("Arac guncellenirken hata: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -78,7 +78,7 @@ public class VehicleControllerImpl implements VehicleController {
             return ResponseEntity.ok(ApiResponse.success("Arac silindi", null));
         } catch (Exception e) {
             log.error("Arac silinirken hata: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -89,7 +89,7 @@ public class VehicleControllerImpl implements VehicleController {
             return ResponseEntity.ok(ApiResponse.success("Markalar getirildi", vehicleService.getDistinctMakes()));
         } catch (Exception e) {
             log.error("Markalar getirilirken hata: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -100,7 +100,7 @@ public class VehicleControllerImpl implements VehicleController {
             return ResponseEntity.ok(ApiResponse.success("Modeller getirildi", vehicleService.getModelsByMake(make)));
         } catch (Exception e) {
             log.error("Modeller getirilirken hata: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -114,7 +114,7 @@ public class VehicleControllerImpl implements VehicleController {
             return ResponseEntity.ok(ApiResponse.success("Arama sonuclari", vehicleService.searchVehicles(make, model, year)));
         } catch (Exception e) {
             log.error("Arac aranirken hata: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 }

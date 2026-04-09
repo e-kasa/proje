@@ -31,7 +31,7 @@ public class VehicleCompatibilityControllerImpl implements VehicleCompatibilityC
             return ResponseEntity.ok(ApiResponse.success("Uyumlu araclar getirildi", vehicleCompatibilityService.getByVariantId(variantId)));
         } catch (Exception e) {
             log.error("Uyumlu araclar getirilirken hata: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -42,7 +42,7 @@ public class VehicleCompatibilityControllerImpl implements VehicleCompatibilityC
             return ResponseEntity.ok(ApiResponse.success("Uyumlu parcalar getirildi", vehicleCompatibilityService.getByVehicleId(vehicleId)));
         } catch (Exception e) {
             log.error("Uyumlu parcalar getirilirken hata: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -54,7 +54,7 @@ public class VehicleCompatibilityControllerImpl implements VehicleCompatibilityC
             return ResponseEntity.ok(ApiResponse.success("Arac uyumlulugu eklendi", response));
         } catch (Exception e) {
             log.error("Arac uyumlulugu eklenirken hata: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -66,7 +66,7 @@ public class VehicleCompatibilityControllerImpl implements VehicleCompatibilityC
             return ResponseEntity.ok(ApiResponse.success("Arac uyumlulugu toplu eklendi", responses));
         } catch (Exception e) {
             log.error("Toplu arac uyumlulugu eklenirken hata: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -78,7 +78,7 @@ public class VehicleCompatibilityControllerImpl implements VehicleCompatibilityC
             return ResponseEntity.ok(ApiResponse.success("Arac uyumlulugu silindi", null));
         } catch (Exception e) {
             log.error("Arac uyumlulugu silinirken hata: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -92,7 +92,7 @@ public class VehicleCompatibilityControllerImpl implements VehicleCompatibilityC
             return ResponseEntity.ok(ApiResponse.success("Arama sonuclari", vehicleCompatibilityService.searchByVehicle(make, model, year)));
         } catch (Exception e) {
             log.error("Uyumluluk aranirken hata: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 }

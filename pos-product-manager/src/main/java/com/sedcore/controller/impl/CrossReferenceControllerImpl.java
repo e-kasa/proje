@@ -31,7 +31,7 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
             return ResponseEntity.ok(ApiResponse.success("Capraz referanslar getirildi", crossReferenceService.getByVariantId(variantId)));
         } catch (Exception e) {
             log.error("Capraz referanslar getirilirken hata: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -43,7 +43,7 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
             return ResponseEntity.ok(ApiResponse.success("Capraz referans eklendi", response));
         } catch (Exception e) {
             log.error("Capraz referans eklenirken hata: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -56,7 +56,7 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
             return ResponseEntity.ok(ApiResponse.success("Capraz referanslar toplu eklendi", responses));
         } catch (Exception e) {
             log.error("Capraz referanslar toplu eklenirken hata: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -68,7 +68,7 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
             return ResponseEntity.ok(ApiResponse.success("Capraz referans silindi", null));
         } catch (Exception e) {
             log.error("Capraz referans silinirken hata: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -79,7 +79,7 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
             return ResponseEntity.ok(ApiResponse.success("Arama sonuclari", crossReferenceService.searchByCrossRefNumber(q)));
         } catch (Exception e) {
             log.error("Capraz referans aranirken hata: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.map(e);
         }
     }
 }

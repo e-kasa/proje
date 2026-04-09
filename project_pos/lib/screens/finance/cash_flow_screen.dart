@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
-import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 
 class CashFlowScreen extends ConsumerStatefulWidget {
@@ -65,12 +64,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Veri yuklenemedi'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
+        AppToast.error(context, 'Veri yuklenemedi');
       }
     }
   }
@@ -466,3 +460,4 @@ class _BarRow extends StatelessWidget {
     );
   }
 }
+                                                                                                                                                                                         

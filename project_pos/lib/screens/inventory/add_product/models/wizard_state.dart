@@ -529,6 +529,4 @@ class WizardState extends ChangeNotifier {
     if (lower.contains('gri') || lower.contains('grey') || lower.contains('gray')) return Colors.grey;
     if (lower.contains('kahve') || lower.contains('brown')) return Colors.brown;
     if (lower.contains('lacivert') || lower.contains('navy')) return const Color(0xFF001F54);
-    return colors[attr.hashCode.abs() % colors.length];
-  }
-}
+    r

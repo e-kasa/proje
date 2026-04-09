@@ -68,4 +68,4 @@ public class StatsControllerImpl {
      */
     @GetMapping("/order-status")
     public ResponseEntity<ApiResponse<OrderStatusDistribution>> getOrderStatus() {
-        return ResponseEntity.ok(ApiResponse.success(statsService.getOrderStatusDistribution()
+        return ResponseEntity.ok(ApiResponse.success(statsService.getOrderStatusDistribution()}

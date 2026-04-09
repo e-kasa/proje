@@ -39,6 +39,9 @@ public class AccountTransactionControllerImpl implements AccountTransactionContr
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<AccountTransactionResponse>> getById(@PathVariable String id) {
         try {
+            return ResponseEntity.ok(ApiResponse.success(accountTransactionService.getById(id)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Cari hareket getirme hatasi: id={}, {}", id, e);
             throw ExceptionMapper.map(e);
@@ -76,7 +79,9 @@ public class AccountTransactionControllerImpl implements AccountTransactionContr
                 return ResponseEntity.ok(ApiResponse.success(
                         accountTransactionService.getByPurchase(purchaseId)));
             }
-            return ResponseEntity.badRequest().body(
+            throw new TOpenException(new TOpenMessage(TMessageType.ACCOUNT_TRANSACTION_LIST_ERROR_2200));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Cari hareket listesi hatasi: {}", e);
             throw ExceptionMapper.map(e);

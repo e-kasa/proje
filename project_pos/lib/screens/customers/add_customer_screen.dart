@@ -87,9 +87,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Müşteri yüklenemedi: $e')),
-        );
+        AppToast.error(context, 'Müşteri yüklenemedi: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -120,28 +118,19 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
         final id = (widget.customer?['id'] ?? widget.customerId).toString();
         await svc.updateCustomer(id, data);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('✅ Müşteri güncellendi'),
-                backgroundColor: Color(0xFF10B981)),
-          );
+          AppToast.success(context, 'Müşteri güncellendi');
         }
       } else {
         await svc.createCustomer(data);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('✅ Müşteri oluşturuldu'),
-                backgroundColor: Color(0xFF10B981)),
-          );
+          AppToast.success(context, 'Müşteri oluşturuldu');
         }
       }
 
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Hata: $e'),
-              backgroundColor: Color(0xFFEF4444)),
-        );
+        AppToast.error(context, 'Hata: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -423,3 +412,4 @@ class _CustomerTypeOption {
   final IconData icon;
   const _CustomerTypeOption(this.value, this.label, this.icon);
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                          

@@ -79,4 +79,4 @@ public class SalesReportControllerImpl {
         } catch (Exception e) {
             log.error("Kar/zarar ozeti hatasi: {}", e);
             throw ExceptionMapper.map(e);
-      
+      }

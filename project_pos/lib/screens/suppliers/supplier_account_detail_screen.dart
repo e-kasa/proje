@@ -255,18 +255,9 @@ class _SupplierAccountDetailScreenState
 
             // Hareket Listesi
             if (_filteredTransactions.isEmpty)
-              Container(
-                padding: const EdgeInsets.all(32),
-                alignment: Alignment.center,
-                child: Column(
-                  children: [
-                    Icon(Icons.receipt_long, size: 48,
-                        color: AppColors.textMuted.withOpacity(0.5)),
-                    const SizedBox(height: 12),
-                    const Text('Henuz hareket kaydedilmemis',
-                        style: TextStyle(color: AppColors.textMuted)),
-                  ],
-                ),
+              AppEmptyState.noData(
+                title: 'Henuz hareket kaydedilmemis',
+                description: 'Bu hesaba ait hareket bulunmuyor',
               )
             else
               ..._filteredTransactions.map(_buildTransactionCard),
@@ -738,10 +729,7 @@ class _SupplierAccountDetailScreenState
             onPressed: () async {
               final name = nameCtrl.text.trim();
               if (name.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                  content: Text('Firma adı zorunludur'),
-                  backgroundColor: AppColors.danger,
-                ));
+                AppToast.error(context, 'Firma adı zorunludur');
                 return;
               }
               Navigator.pop(ctx);
@@ -854,4 +842,4 @@ class _SupplierAccountDetailScreenState
   String _formatCurrency(double value) {
     return value.toStringAsFixed(2);
   }
-}
+}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 

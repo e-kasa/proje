@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/widgets/widgets.dart';
 import '../providers/pos_provider.dart';
 
 class ReceiptPreviewDialog extends ConsumerWidget {
@@ -306,48 +307,30 @@ class ReceiptPreviewDialog extends ConsumerWidget {
                 children: [
                   // Close
                   Expanded(
-                    child: OutlinedButton.icon(
+                    child: AppButton.outline(
+                      text: 'Kapat',
+                      icon: Icons.close,
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close, size: 18),
-                      label: const Text('Kapat'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
                   // Print
                   Expanded(
                     flex: 2,
-                    child: ElevatedButton.icon(
+                    child: AppButton.primary(
+                      text: 'Fiş Yazdır',
+                      icon: Icons.print_rounded,
                       onPressed: () async {
                         final notifier = ref.read(posProvider.notifier);
                         final success = await notifier.printLastReceipt();
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(success ? 'Fiş yazdırma komutu gönderildi' : 'Fiş yazdırılamadı'),
-                              backgroundColor: success ? AppColors.success : AppColors.danger,
-                              behavior: SnackBarBehavior.floating,
-                              margin: const EdgeInsets.all(16),
-                            ),
-                          );
+                          if (success) {
+                            AppToast.success(context, 'Fiş yazdırma komutu gönderildi');
+                          } else {
+                            AppToast.error(context, 'Fiş yazdırılamadı');
+                          }
                         }
                       },
-                      icon: const Icon(Icons.print_rounded, size: 20),
-                      label: const Text('Fiş Yazdır'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        elevation: 2,
-                      ),
                     ),
                   ),
                 ],
@@ -379,3 +362,4 @@ class ReceiptPreviewDialog extends ConsumerWidget {
     );
   }
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         

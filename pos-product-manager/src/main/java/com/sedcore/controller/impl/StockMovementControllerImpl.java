@@ -196,4 +196,4 @@ public class StockMovementControllerImpl {
         private Integer quantity;
     }
 }
-                                                
+                                                }

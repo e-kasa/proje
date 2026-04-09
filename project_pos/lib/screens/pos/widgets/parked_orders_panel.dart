@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/widgets/widgets.dart';
 import '../providers/pos_provider.dart';
 
 class ParkedOrdersPanel extends ConsumerWidget {
@@ -84,28 +85,9 @@ class ParkedOrdersPanel extends ConsumerWidget {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.inbox_outlined, size: 64, color: AppColors.textMuted.withOpacity(0.3)),
-          const SizedBox(height: 16),
-          const Text(
-            'Bekleyen sipariş yok',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textMuted,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Siparişleri park etmek için "Park" butonunu kullanın',
-            style: TextStyle(fontSize: 13, color: AppColors.textMuted),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+    return AppEmptyState.noData(
+      title: 'Bekleyen sipariş yok',
+      description: 'Siparişleri park etmek için "Park" butonunu kullanın',
     );
   }
 
@@ -271,68 +253,38 @@ class ParkedOrdersPanel extends ConsumerWidget {
     int index,
     PosNotifier notifier,
     PosState posState,
-  ) {
+  ) async {
     if (posState.cartItems.isEmpty) {
       notifier.restoreParkedOrder(index);
       Navigator.pop(context);
       return;
     }
 
-    showDialog(
+    final confirmed = await AppConfirmationDialog.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Sepet Boş Değil'),
-        content: const Text(
-          'Aktif sepete ürün var. Bekleyen siparişi yüklemek için aktif sepeti temizlemek gerekir.\n\nDevam et?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('İptal'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              notifier.restoreParkedOrder(index);
-              Navigator.pop(ctx);
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-            ),
-            child: const Text('Devam Et'),
-          ),
-        ],
-      ),
+      title: 'Sepet Boş Değil',
+      message: 'Aktif sepete ürün var. Bekleyen siparişi yüklemek için aktif sepeti temizlemek gerekir.\n\nDevam et?',
+      confirmText: 'Devam Et',
     );
+    if (confirmed) {
+      notifier.restoreParkedOrder(index);
+      if (context.mounted) Navigator.pop(context);
+    }
   }
 
   void _showDeleteConfirmation(
     BuildContext context,
     int index,
     PosNotifier notifier,
-  ) {
-    showDialog(
+  ) async {
+    final confirmed = await AppConfirmationDialog.showDelete(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Siparişi Sil'),
-        content: const Text('Bu bekleyen sipariş kalıcı olarak silinecek. Emin misiniz?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('İptal'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              notifier.deleteParkedOrder(index);
-              Navigator.pop(ctx);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
-            ),
-            child: const Text('Sil'),
-          ),
-        ],
-      ),
+      title: 'Siparişi Sil',
+      message: 'Bu bekleyen sipariş kalıcı olarak silinecek. Emin misiniz?',
     );
+    if (confirmed) {
+      notifier.deleteParkedOrder(index);
+    }
   }
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                

@@ -247,4 +247,7 @@ public class SaleControllerImpl {
             }
         }
         m.put("items",     items);
-        m.
+        m.put("hasReturn", hasReturn);
+        return m;
+    }
+}

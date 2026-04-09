@@ -8,6 +8,7 @@ import com.sedcore.repository.StockMovementRepository;
 import com.sedcore.se.ApiResponse;
 import com.sedcore.service.StockMovementService;
 import com.sedcore.util.EntityAuditHelper;
+import com.sedcore.context.CompanyContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +24,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("api/v1/stock-movements")
+@RequestMapping("/product/api/v1/stock-movements")
 @RequiredArgsConstructor
 @Slf4j
 public class StockMovementControllerImpl {
@@ -41,14 +42,23 @@ public class StockMovementControllerImpl {
             @RequestParam(required = false) String movementType
     ) {
         try {
+            // CompanyContext'i kullanarak company-scoped sorgu
+            String currentCompanyCode = CompanyContext.get();
+            if (currentCompanyCode == null || currentCompanyCode.isBlank()) {
+                currentCompanyCode = "syste";
+            }
+
             List<StockMovement> movements;
             if (variantId != null && storeId != null) {
-                movements = stockMovementRepository.findByVariantIdAndStoreId(variantId, storeId);
+                movements = stockMovementRepository.findByVariantIdAndStoreId(variantId, storeId, currentCompanyCode);
             } else if (variantId != null) {
-                movements = stockMovementRepository.findByVariantId(variantId);
+                // Company code'u parameter olarak geç
+                movements = stockMovementRepository.findByVariantId(variantId, currentCompanyCode);
             } else {
                 movements = (List<StockMovement>)stockMovementService.findAll();
             }
+
+            // Movement type'a göre filtrele (company filtering zaten query'de yapıldı)
             var filtered = movements.stream()
                 .filter(m -> movementType == null || movementType.equals(m.getMovementType().name()))
                 .map(this::toMap)
@@ -166,3 +176,4 @@ public class StockMovementControllerImpl {
         private Integer quantity;
     }
 }
+

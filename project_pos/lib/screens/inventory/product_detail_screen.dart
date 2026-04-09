@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 import '../../providers/sector_provider.dart';
 import '../../core/config/sector_config.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
+import '../admin/product_relationship_management_panel.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   final String productId;
@@ -43,7 +43,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
   bool _vehicleCompatLoading = false;
   List<Map<String, dynamic>> _movements = [];
   bool _movementsLoading = false;
-  String? _movementFilter;
 
   final _dateTimeFmt = DateFormat('dd.MM.yyyy HH:mm');
   final _currFmt = NumberFormat.currency(locale: 'tr_TR', symbol: '₺');
@@ -70,12 +69,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
       newTabs.add(_TabDef(_TabType.vehicleCompat, t('product.vehicle_compatibility'), Icons.directions_car));
     }
     newTabs.add(_TabDef(_TabType.history, t('product.history'), Icons.history));
+    newTabs.add(_TabDef(_TabType.relationships, 'İlişkiler', Icons.link));
 
     setState(() {
       _tabs = newTabs;
       _tabController?.dispose();
       _tabController = TabController(length: _tabs.length, vsync: this);
-      
+
       _tabController!.addListener(() {
         if (!_tabController!.indexIsChanging) {
           final tab = _tabs[_tabController!.index];
@@ -227,6 +227,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
             case _TabType.crossRef: return _buildCrossRefTab();
             case _TabType.vehicleCompat: return _buildVehicleCompatTab();
             case _TabType.history: return _buildHistoryTab();
+            case _TabType.relationships: return _buildRelationshipsTab(product);
           }
         }).toList(),
       ),
@@ -453,17 +454,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
 
   Widget _buildHistoryTab() {
     if (_movementsLoading) return const Center(child: CircularProgressIndicator());
-    
-    final now = DateTime.now();
-    final monthStart = DateTime(now.year, now.month, 1);
-    int sold = 0; int bought = 0;
-    for (var m in _movements) {
-      final date = DateTime.tryParse(m['createTime'] ?? '');
-      if (date != null && !date.isBefore(monthStart)) {
-        if (m['movementType'] == 'SALE_OUT') sold += (m['quantity'] as num).toInt();
-        if (m['movementType'] == 'PURCHASE_IN') bought += (m['quantity'] as num).toInt();
-      }
-    }
 
     return Column(
       children: [
@@ -477,7 +467,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
             ],
           ),
         ),
-        _movements.isEmpty 
+        _movements.isEmpty
           ? Expanded(child: Center(child: Text(t('stock.no_movements'), style: const TextStyle(color: AppColors.textMuted))))
           : Expanded(
               child: ListView.builder(
@@ -500,6 +490,17 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
               ),
             ),
       ],
+    );
+  }
+
+  // ─── TAB: RELATIONSHIPS ───────────────────────────────────────────────────
+
+  Widget _buildRelationshipsTab(Map<String, dynamic> product) {
+    return SingleChildScrollView(
+      child: ProductRelationshipManagementPanel(
+        productId: product['id'].toString(),
+        productName: product['name']?.toString() ?? 'Ürün',
+      ),
     );
   }
 
@@ -584,7 +585,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
   }
 }
 
-enum _TabType { general, oem, crossRef, vehicleCompat, history }
+enum _TabType { general, oem, crossRef, vehicleCompat, history, relationships }
 class _TabDef {
   final _TabType type;
   final String label;

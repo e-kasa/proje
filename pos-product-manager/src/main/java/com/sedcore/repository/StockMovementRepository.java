@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -16,13 +18,19 @@ public interface StockMovementRepository extends BaseDaoRepository<StockMovement
     // Purchase ilişkisi üzerinden (purchase.id navigasyonu)
     List<StockMovement> findByPurchaseId(String purchaseId);
 
-    // Variant + Store kombine filtre
-    List<StockMovement> findByVariantIdAndStoreId(String variantId, String storeId);
+    // Variant + Store kombine filtre (company scoped)
+    @Query("SELECT sm FROM StockMovement sm WHERE sm.variant.id = :variantId AND sm.storeId = :storeId AND sm.companyCode = :companyCode ORDER BY sm.createTime DESC")
+    List<StockMovement> findByVariantIdAndStoreId(@Param("variantId") String variantId, @Param("storeId") String storeId, @Param("companyCode") String companyCode);
 
-    // Variant hareketleri (variant.id navigasyonu — @Query ile güvenli)
+    // Variant hareketleri (variant.id navigasyonu — company scoped olmalı)
     // createTime base entity'de (TOpenSimpleCompanyEntity) tanımlı
+    // NOTE: Custom @Query Hibernate @Filter'ı bypass edebilir, company_code explicitly eklendi
+    @Query("SELECT sm FROM StockMovement sm WHERE sm.variant.id = :variantId AND sm.companyCode = :companyCode ORDER BY sm.createTime DESC")
+    List<StockMovement> findByVariantId(@Param("variantId") String variantId, @Param("companyCode") String companyCode);
+
+    // Eski imza (deprecated - backward compatibility için)
     @Query("SELECT sm FROM StockMovement sm WHERE sm.variant.id = :variantId ORDER BY sm.createTime DESC")
-    List<StockMovement> findByVariantId(@Param("variantId") String variantId);
+    List<StockMovement> findByVariantIdWithoutCompanyFilter(@Param("variantId") String variantId);
 
     // Satış hareketleri (sale.id navigasyonu)
     @Query("SELECT sm FROM StockMovement sm WHERE sm.sale.id = :saleId")
@@ -59,21 +67,21 @@ public interface StockMovementRepository extends BaseDaoRepository<StockMovement
 
     // Birlikte satılan ürünleri getir (Recommendation için)
     // Aynı satışta yer alan diğer ürünleri sıklığa göre sırala
+    // Company scoping Hibernate filter tarafından otomatik uygulanır
     @Query(value = """
             SELECT p.id, p.name, p.sku, pv.id as variantId, COUNT(*) as frequency
             FROM stock_movement sm1
             JOIN stock_movement sm2 ON sm1.sale_id = sm2.sale_id AND sm1.id != sm2.id
             JOIN product_variant pv ON sm2.variant_id = pv.id
             JOIN product p ON pv.product_id = p.id
-            WHERE sm1.variant_id IN :variantIds
-              AND sm1.movement_type = 'OUT'
-              AND sm2.movement_type = 'OUT'
+            WHERE sm1.variant_id IN (:variantIds)
+              AND sm1.movement_type = 'SALE_OUT'
+              AND sm2.movement_type = 'SALE_OUT'
               AND p.is_deleted = false
             GROUP BY p.id, p.name, p.sku, pv.id
             ORDER BY frequency DESC
-            LIMIT :limit
             """, nativeQuery = true)
     List<Object[]> findFrequentlyBoughtTogether(
             @Param("variantIds") List<String> variantIds,
-            @Param("limit") int limit);
+            Pageable pageable);
 }

@@ -23,6 +23,7 @@ class RecommendationService {
   /// [excludeIds]: Gösterilmeyecek ürün ID'leri (sepet ürünleri)
   Future<List<Map<String, dynamic>>> getHybridRecommendations({
     required List<String> productIds,
+    List<String>? variantIds,
     int limit = 6,
     List<String>? excludeIds,
   }) async {
@@ -35,6 +36,10 @@ class RecommendationService {
         'productIds': productIds.join(','),
         'limit': limit,
       };
+
+      if (variantIds != null && variantIds.isNotEmpty) {
+        queryParams['variantIds'] = variantIds.join(',');
+      }
 
       if (excludeIds != null && excludeIds.isNotEmpty) {
         queryParams['excludeIds'] = excludeIds.join(',');

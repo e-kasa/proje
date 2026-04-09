@@ -9,7 +9,7 @@ import java.util.Map;
 public interface RecommendationService {
 
     List<RecommendationResponse> getHybridRecommendations(
-            List<String> productIds, int limit, List<String> excludeIds);
+            List<String> productIds, List<String> variantIds, int limit, List<String> excludeIds);
 
     List<RecommendationResponse> getFrequentlyBoughtTogether(
             List<String> variantIds, int limit);

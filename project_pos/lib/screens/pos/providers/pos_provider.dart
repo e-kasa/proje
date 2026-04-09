@@ -49,8 +49,8 @@ class CartItem {
     this.discount = 0,
   });
 
-  String get productId => product['id'].toString();
-  String get variantId => product['variantId']?.toString() ?? productId;
+  String get productId => product['productId']?.toString() ?? product['id'].toString();
+  String get variantId => product['variantId']?.toString() ?? product['id'].toString();
   String get name => product['name']?.toString() ?? '';
   double get unitPrice =>
       (product['sellingPrice'] as num?)?.toDouble() ??
@@ -280,6 +280,7 @@ class PosNotifier extends StateNotifier<PosState> {
   }
 
   final Ref _ref;
+  int _recommendationToken = 0;
 
   Future<void> _loadInitialData() async {
     state = state.copyWith(isLoadingProducts: true);
@@ -425,6 +426,7 @@ class PosNotifier extends StateNotifier<PosState> {
       final productData = <String, dynamic>{
         ...product,
         'id': variantId,              // sepet tekliği için variantId kullan
+        'productId': productId,       // orijinal product ID (öneri sistemi için)
         'variantId': variantId,
         'sku': variant?['sku'] ?? product['sku'],
         'name': variant?['name'] ?? product['name'],
@@ -439,6 +441,7 @@ class PosNotifier extends StateNotifier<PosState> {
     }
     state = state.copyWith(
         cartItems: items, clearError: true, clearCrossLocationAlert: true);
+    loadRecommendations();
   }
 
   /// Mağaza bazlı stok normalizasyonu — her varyanta myStoreStock/availableElsewhere ekler
@@ -546,6 +549,7 @@ class PosNotifier extends StateNotifier<PosState> {
 
   void removeFromCart(String productId) {
     state = state.copyWith(cartItems: state.cartItems.where((i) => i.productId != productId).toList());
+    loadRecommendations();
   }
 
   void updateQuantity(String productId, int quantity) {
@@ -580,7 +584,7 @@ class PosNotifier extends StateNotifier<PosState> {
   }
 
   void clearCart() {
-    state = state.copyWith(cartItems: [], clearCustomer: true, cashReceived: 0, cardAmount: 0, transferAmount: 0, clearNote: true, paymentMethod: PaymentMethod.cash);
+    state = state.copyWith(cartItems: [], clearCustomer: true, cashReceived: 0, cardAmount: 0, transferAmount: 0, clearNote: true, paymentMethod: PaymentMethod.cash, recommendations: []);
   }
 
   void selectCustomer(Map<String, dynamic>? customer) {
@@ -716,31 +720,37 @@ class PosNotifier extends StateNotifier<PosState> {
       return;
     }
 
+    // Debounce: her çağrıda token artar, await sonrasında eski çağrılar iptal olur
+    final token = ++_recommendationToken;
+
     state = state.copyWith(isLoadingRecommendations: true);
     try {
+      final productIds = state.cartItems
+          .map((item) => item.productId)
+          .toSet().toList(); // dedupe
+
       final variantIds = state.cartItems
           .map((item) => item.variantId)
-          .toList();
-
-      // Sepette olan ürünleri exclude list'e ekle (önerilerde gösterilmesin)
-      final excludeIds = state.cartItems
-          .map((item) => item.productId)
-          .toList();
+          .toSet().toList(); // dedupe
 
       final recommendations = await _ref.read(recommendationServiceProvider)
           .getHybridRecommendations(
-            productIds: variantIds,
+            productIds: productIds,
+            variantIds: variantIds,
             limit: 6,
-            excludeIds: excludeIds,
+            excludeIds: productIds,
           );
+
+      // Eski çağrıysa (aradan yeni çağrı geldiyse) sonucu yok say
+      if (token != _recommendationToken) return;
 
       state = state.copyWith(
         recommendations: recommendations,
         isLoadingRecommendations: false,
       );
     } catch (e) {
+      if (token != _recommendationToken) return;
       state = state.copyWith(isLoadingRecommendations: false);
-      // Önerileri yükleyemediyse hata gösterme, sessiz başarısızlık
     }
   }
 

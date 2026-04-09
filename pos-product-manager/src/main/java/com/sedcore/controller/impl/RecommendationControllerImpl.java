@@ -35,17 +35,25 @@ public class RecommendationControllerImpl implements RecommendationController {
     @Override
     public ResponseEntity<?> getHybridRecommendations(
             String productIds,
+            String variantIds,
             int limit,
             String excludeIds) {
 
         try {
-            log.info("Hybrid önerileri getiriliyor | Products: {} | Limit: {}", productIds, limit);
+            log.info("Hybrid önerileri getiriliyor | Products: {} | Variants: {} | Limit: {}", productIds, variantIds, limit);
 
-            // String'i List'e dönüştür
             List<String> productIdList = Arrays.stream(productIds.split(","))
                     .map(String::trim)
                     .filter(s -> !s.isEmpty())
                     .collect(Collectors.toList());
+
+            // variantIds yoksa productIds'i variant olarak da kullan
+            List<String> variantIdList = (variantIds != null && !variantIds.isEmpty())
+                    ? Arrays.stream(variantIds.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList())
+                    : productIdList;
 
             List<String> excludeIdList = excludeIds != null && !excludeIds.isEmpty()
                     ? Arrays.stream(excludeIds.split(","))
@@ -54,9 +62,8 @@ public class RecommendationControllerImpl implements RecommendationController {
                     .collect(Collectors.toList())
                     : List.of();
 
-            // Önerileri getir
             List<RecommendationResponse> recommendations =
-                    recommendationService.getHybridRecommendations(productIdList, limit, excludeIdList);
+                    recommendationService.getHybridRecommendations(productIdList, variantIdList, limit, excludeIdList);
 
             log.info("Hybrid öneriler başarıyla getirildi | Count: {}", recommendations.size());
 
@@ -308,3 +315,4 @@ public class RecommendationControllerImpl implements RecommendationController {
         }
     }
 }
+  

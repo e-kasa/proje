@@ -11,14 +11,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+
+import org.springframework.data.domain.PageRequest;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional(propagation = Propagation.REQUIRED)
 @Slf4j
 @RequiredArgsConstructor
 public class RecommendationServiceImpl implements RecommendationService {
@@ -30,16 +29,25 @@ public class RecommendationServiceImpl implements RecommendationService {
     @Override
     @Cacheable(value = "recommendations", key = "#productIds.stream().sorted().collect(T(java.util.stream.Collectors).joining(','))")
     public List<RecommendationResponse> getHybridRecommendations(
-            List<String> productIds, int limit, List<String> excludeIds) {
+            List<String> productIds, List<String> variantIds, int limit, List<String> excludeIds) {
 
         try {
-            log.info("Hybrid recommendations hesaplaniyor | Products: {} | Exclude: {}", productIds, excludeIds);
+            log.info("Hybrid recommendations hesaplaniyor | Products: {} | Variants: {} | Exclude: {}", productIds, variantIds, excludeIds);
+
+            // variantIds boş/null ise productIds'i kullan (sisteminiz her ürünü varyant olarak kabul ediyor)
+            List<String> effectiveVariantIds = variantIds;
+            if (effectiveVariantIds == null || effectiveVariantIds.isEmpty()) {
+                effectiveVariantIds = productIds;
+                log.info("variantIds boş, productIds kullanılıyor: {}", productIds);
+            }
 
             List<RecommendationResponse> allRecommendations = new ArrayList<>();
 
-            List<RecommendationResponse> frequentlyBought = getFrequentlyBoughtTogether(productIds, limit * 2);
+            // Frequently bought together → variant ID'lerini kullanır (satış hareketi bazlı)
+            List<RecommendationResponse> frequentlyBought = getFrequentlyBoughtTogether(effectiveVariantIds, limit * 2);
             allRecommendations.addAll(frequentlyBought);
 
+            // Similar products → product ID'lerini kullanır (ilişki bazlı)
             List<RecommendationResponse> similarProducts = getSimilarProducts(productIds, limit * 2, null);
             allRecommendations.addAll(similarProducts);
 
@@ -74,7 +82,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         try {
             log.info("Frequently bought together analiz ediliyor | Variants: {}", variantIds);
 
-            List<Object[]> results = stockMovementRepository.findFrequentlyBoughtTogether(variantIds, limit);
+            List<Object[]> results = stockMovementRepository.findFrequentlyBoughtTogether(variantIds, PageRequest.of(0, limit));
 
             return results.stream()
                     .map(row -> RecommendationResponse.builder()
@@ -104,15 +112,25 @@ public class RecommendationServiceImpl implements RecommendationService {
 
             if (relationType != null) {
                 relationships = productIds.stream()
-                        .flatMap(pid -> relationshipService
-                                .getRelationshipsBySourceProductAndType(pid, relationType).stream())
+                        .flatMap(pid -> {
+                            List<ProductRelationship> rels = relationshipService
+                                    .getRelationshipsBySourceProductAndType(pid, relationType);
+                            log.info("getSimilarProducts | pid={} | type={} | found={}", pid, relationType, rels.size());
+                            return rels.stream();
+                        })
                         .collect(Collectors.toList());
             } else {
                 relationships = productIds.stream()
-                        .flatMap(pid -> relationshipService
-                                .getRelationshipsBySourceProduct(pid).stream())
+                        .flatMap(pid -> {
+                            List<ProductRelationship> rels = relationshipService
+                                    .getRelationshipsBySourceProduct(pid);
+                            log.info("getSimilarProducts | pid={} | found={}", pid, rels.size());
+                            return rels.stream();
+                        })
                         .collect(Collectors.toList());
             }
+
+            log.info("Total similar products relationships found: {}", relationships.size());
 
             return relationships.stream()
                     .limit(limit)

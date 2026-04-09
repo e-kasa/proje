@@ -1219,6 +1219,8 @@ VALUES
     ('bnd-p042-0000-0000-0000-000000000042', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'pos.store', 'Mağaza', 'Store'),
     ('bnd-p043-0000-0000-0000-000000000043', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'pos.transfer_amount', 'Havale Tutarı', 'Transfer Amount'),
     ('bnd-p044-0000-0000-0000-000000000044', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'pos.view_receipt', 'Fişi Görüntüle', 'View Receipt'),
+    ('bnd-p045-0000-0000-0000-000000000045', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'pos.recommended_products', 'Önerilen Ürünler', 'Recommended Products'),
+    ('bnd-p046-0000-0000-0000-000000000046', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'pos.add_to_cart', 'Ekle', 'Add'),
 
     -- ── SALES (eksik) ─────────────────────────────────────────────
     ('bnd-sl07-0000-0000-0000-000000000007', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'sales.amount_info', 'Tutar Bilgisi', 'Amount Info'),

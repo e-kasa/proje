@@ -22,7 +22,7 @@ import java.util.List;
 
 
 @RestController
-@RequestMapping("api/v1/products")
+@RequestMapping("/product/api/v1/products")
 @RequiredArgsConstructor
 @Slf4j
 public class ProductControllerImpl implements ProductController {

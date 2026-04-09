@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
-import 'package:animate_do/animate_do.dart';
 import '../../../core/theme/app_colors.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../providers/pos_provider.dart';
@@ -22,12 +20,14 @@ class RecommendationPanel extends ConsumerWidget {
     final posNotifier = ref.read(posProvider.notifier);
     final t = i18nOf(ref);
 
-    // Önerilecek ürün yoksa gösterilme
+    // Önerilecek ürün yoksa gösterme
     if (posState.recommendations.isEmpty && !posState.isLoadingRecommendations) {
       return const SizedBox.shrink();
     }
 
-    return FadeIn(
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -58,54 +58,48 @@ class RecommendationPanel extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 4),
-                Text(
-                  '(${posState.recommendations.length})',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.info.withOpacity(0.6),
+                if (posState.recommendations.isNotEmpty)
+                  Text(
+                    '(${posState.recommendations.length})',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.info.withOpacity(0.6),
+                    ),
                   ),
-                ),
+                if (posState.isLoadingRecommendations) ...[
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.5,
+                      valueColor: AlwaysStoppedAnimation(AppColors.info),
+                    ),
+                  ),
+                ],
               ],
             ),
 
             const SizedBox(height: 10),
 
-            // Yükleniyor göstergesi
-            if (posState.isLoadingRecommendations)
-              SizedBox(
-                height: 80,
-                child: Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator.adaptive(
-                      valueColor: AlwaysStoppedAnimation(AppColors.info),
-                      strokeWidth: 2,
-                    ),
-                  ),
-                ),
-              )
-            else
-              // Önerilen ürünler (yatay scroll)
-              SizedBox(
-                height: 90,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: posState.recommendations.length,
-                  itemBuilder: (ctx, idx) {
-                    final rec = posState.recommendations[idx];
-                    return _RecommendationCard(
-                      recommendation: rec,
-                      onAddToCart: () {
-                        // Ürünü sepete ekle
-                        posNotifier.addToCart(rec);
-                        // Sonra önerileri yeniden yükle
-                        posNotifier.loadRecommendations();
-                      },
-                    );
-                  },
-                ),
+            // Önerilen ürünler (yatay scroll) — loading sırasında da mevcut listeyi göster
+            SizedBox(
+              height: 90,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: posState.recommendations.length,
+                itemBuilder: (ctx, idx) {
+                  final rec = posState.recommendations[idx];
+                  return _RecommendationCard(
+                    recommendation: rec,
+                    addLabel: t('pos.add_to_cart'),
+                    onAddToCart: () {
+                      posNotifier.addToCart(rec);
+                    },
+                  );
+                },
               ),
+            ),
           ],
         ),
       ),
@@ -116,10 +110,12 @@ class RecommendationPanel extends ConsumerWidget {
 /// Tek bir önerilen ürün kartı
 class _RecommendationCard extends StatelessWidget {
   final Map<String, dynamic> recommendation;
+  final String addLabel;
   final VoidCallback onAddToCart;
 
   const _RecommendationCard({
     required this.recommendation,
+    required this.addLabel,
     required this.onAddToCart,
   });
 
@@ -245,7 +241,7 @@ class _RecommendationCard extends StatelessWidget {
 
                         // Fiyat
                         Text(
-                          '₺${(price as num).toStringAsFixed(2)}',
+                          '₺${price.toStringAsFixed(2)}',
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -275,7 +271,7 @@ class _RecommendationCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'Ekle',
+                        addLabel,
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,

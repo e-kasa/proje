@@ -688,4 +688,92 @@ VALUES
      'var-oto1-0000-0000-0000-000000000003','SUBE-01','WH-01','PURCHASE_IN',15)
 ON CONFLICT (id) DO NOTHING;
 
+-- ================================================
+-- 10. PRODUCT RELATIONSHIP (Öneri Sistemi Seed Data)
+-- ================================================
+
+-- ── 10a. PARÇACI ÖNERİLERİ (SEDCORE) ──────────────
+INSERT INTO product_relationship
+(id, create_user, company_code, create_time, last_modified_time,
+ source_product_id, target_product_id, relation_type, weight, is_active, created_by)
+VALUES
+    -- Fren Balata → Fren Diski (COMPLEMENTARY) - Balata değişince disk de kontrol edilir
+    ('rel-oto1-0000-0000-0000-000000000001','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'prd-oto1-0000-0000-0000-000000000001','prd-oto1-0000-0000-0000-000000000004','COMPLEMENTARY',9,true,'SYSTEM'),
+
+    -- Fren Balata → Buji Takımı (COMPLEMENTARY) - Periyodik bakım seti
+    ('rel-oto1-0000-0000-0000-000000000002','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'prd-oto1-0000-0000-0000-000000000001','prd-oto1-0000-0000-0000-000000000005','COMPLEMENTARY',5,true,'SYSTEM'),
+
+    -- Yağ Filtresi → Buji Takımı (COMPLEMENTARY) - Bakım sırasında birlikte değişir
+    ('rel-oto1-0000-0000-0000-000000000003','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'prd-oto1-0000-0000-0000-000000000002','prd-oto1-0000-0000-0000-000000000005','COMPLEMENTARY',8,true,'SYSTEM'),
+
+    -- Yağ Filtresi → Fren Balata (COMPLEMENTARY) - Periyodik bakım
+    ('rel-oto1-0000-0000-0000-000000000004','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'prd-oto1-0000-0000-0000-000000000002','prd-oto1-0000-0000-0000-000000000001','COMPLEMENTARY',6,true,'SYSTEM'),
+
+    -- Akü → Buji Takımı (COMPLEMENTARY) - Elektrik sistemi
+    ('rel-oto1-0000-0000-0000-000000000005','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'prd-oto1-0000-0000-0000-000000000003','prd-oto1-0000-0000-0000-000000000005','COMPLEMENTARY',7,true,'SYSTEM'),
+
+    -- Ön Amortisör → Fren Balata (COMPLEMENTARY) - Süspansiyon bakımında fren de kontrol edilir
+    ('rel-oto1-0000-0000-0000-000000000006','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'prd-oto1-0000-0000-0000-000000000004','prd-oto1-0000-0000-0000-000000000001','COMPLEMENTARY',8,true,'SYSTEM'),
+
+    -- Buji Takımı → Yağ Filtresi (COMPLEMENTARY) - Bakım seti tamamlayıcı
+    ('rel-oto1-0000-0000-0000-000000000007','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'prd-oto1-0000-0000-0000-000000000005','prd-oto1-0000-0000-0000-000000000002','COMPLEMENTARY',9,true,'SYSTEM'),
+
+    -- Buji Takımı → Akü (SIMILAR) - Elektrik sistemi benzer parçalar
+    ('rel-oto1-0000-0000-0000-000000000008','SYSTEM','SEDCORE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'prd-oto1-0000-0000-0000-000000000005','prd-oto1-0000-0000-0000-000000000003','SIMILAR',4,true,'SYSTEM')
+ON CONFLICT (id) DO NOTHING;
+
+-- ── 10b. ELBİSE MAĞAZASI ÖNERİLERİ (SEDCORE1) ────
+INSERT INTO product_relationship
+(id, create_user, company_code, create_time, last_modified_time,
+ source_product_id, target_product_id, relation_type, weight, is_active, created_by)
+VALUES
+    -- T-Shirt → Jean (COMPLEMENTARY) - Üst + Alt kombin
+    ('rel-elb1-0000-0000-0000-000000000001','SYSTEM','SEDCORE1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'prd-elb1-0000-0000-0000-000000000001','prd-elb1-0000-0000-0000-000000000002','COMPLEMENTARY',9,true,'SYSTEM'),
+
+    -- T-Shirt → Sweatshirt (ALTERNATIVE) - Aynı kategoride alternatif
+    ('rel-elb1-0000-0000-0000-000000000002','SYSTEM','SEDCORE1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'prd-elb1-0000-0000-0000-000000000001','prd-elb1-0000-0000-0000-000000000004','ALTERNATIVE',7,true,'SYSTEM'),
+
+    -- Jean → T-Shirt (COMPLEMENTARY) - Alt + Üst kombin
+    ('rel-elb1-0000-0000-0000-000000000003','SYSTEM','SEDCORE1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'prd-elb1-0000-0000-0000-000000000002','prd-elb1-0000-0000-0000-000000000001','COMPLEMENTARY',9,true,'SYSTEM'),
+
+    -- Jean → Sweatshirt (COMPLEMENTARY) - Alt + Üst kombin
+    ('rel-elb1-0000-0000-0000-000000000004','SYSTEM','SEDCORE1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'prd-elb1-0000-0000-0000-000000000002','prd-elb1-0000-0000-0000-000000000004','COMPLEMENTARY',8,true,'SYSTEM'),
+
+    -- Elbise → Kış Montu (COMPLEMENTARY) - Dış giyim tamamlayıcı
+    ('rel-elb1-0000-0000-0000-000000000005','SYSTEM','SEDCORE1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'prd-elb1-0000-0000-0000-000000000003','prd-elb1-0000-0000-0000-000000000005','COMPLEMENTARY',6,true,'SYSTEM'),
+
+    -- Sweatshirt → Jean (COMPLEMENTARY) - Üst + Alt kombin
+    ('rel-elb1-0000-0000-0000-000000000006','SYSTEM','SEDCORE1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'prd-elb1-0000-0000-0000-000000000004','prd-elb1-0000-0000-0000-000000000002','COMPLEMENTARY',9,true,'SYSTEM'),
+
+    -- Sweatshirt → T-Shirt (SIMILAR) - Aynı kategoride benzer
+    ('rel-elb1-0000-0000-0000-000000000007','SYSTEM','SEDCORE1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'prd-elb1-0000-0000-0000-000000000004','prd-elb1-0000-0000-0000-000000000001','SIMILAR',6,true,'SYSTEM'),
+
+    -- Kış Montu → Sweatshirt (COMPLEMENTARY) - İçine giymek için
+    ('rel-elb1-0000-0000-0000-000000000008','SYSTEM','SEDCORE1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'prd-elb1-0000-0000-0000-000000000005','prd-elb1-0000-0000-0000-000000000004','COMPLEMENTARY',8,true,'SYSTEM'),
+
+    -- Kış Montu → Jean (COMPLEMENTARY) - Kombin
+    ('rel-elb1-0000-0000-0000-000000000009','SYSTEM','SEDCORE1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'prd-elb1-0000-0000-0000-000000000005','prd-elb1-0000-0000-0000-000000000002','COMPLEMENTARY',7,true,'SYSTEM'),
+
+    -- Elbise → T-Shirt (ALTERNATIVE) - Alternatif üst giyim
+    ('rel-elb1-0000-0000-0000-000000000010','SYSTEM','SEDCORE1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
+     'prd-elb1-0000-0000-0000-000000000003','prd-elb1-0000-0000-0000-000000000001','ALTERNATIVE',5,true,'SYSTEM')
+ON CONFLICT (id) DO NOTHING;
+
 select * from user_def_access;

@@ -72,6 +72,46 @@ public class AppExceptionHandler {
         return build(HttpStatus.CONFLICT, "CONFLICT", ex.getMessage(), request);
     }
 
+    /** Kaynak bulunamadı (ResourceNotFoundException) → 404 */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleResourceNotFound(
+            ResourceNotFoundException ex, HttpServletRequest request) {
+
+        log.warn("[404] {}", ex.getMessage());
+
+        return build(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", ex.getMessage(), request);
+    }
+
+    /** Veri çakışması (dublicate key vb.) → 409 */
+    @ExceptionHandler(DataConflictException.class)
+    public ResponseEntity<ApiErrorResponse> handleDataConflict(
+            DataConflictException ex, HttpServletRequest request) {
+
+        log.warn("[409] {}", ex.getMessage());
+
+        return build(HttpStatus.CONFLICT, "DATA_CONFLICT", ex.getMessage(), request);
+    }
+
+    /** Şirket izolasyonu ihlali (multi-tenancy) → 403 */
+    @ExceptionHandler(CompanyIsolationViolationException.class)
+    public ResponseEntity<ApiErrorResponse> handleCompanyIsolation(
+            CompanyIsolationViolationException ex, HttpServletRequest request) {
+
+        log.error("[403] Company isolation violation: {}", ex.getMessage());
+
+        return build(HttpStatus.FORBIDDEN, "COMPANY_ISOLATION_VIOLATION", ex.getMessage(), request);
+    }
+
+    /** İşlem gerçekleştirilemiyor → 403 */
+    @ExceptionHandler(OperationNotAllowedException.class)
+    public ResponseEntity<ApiErrorResponse> handleOperationNotAllowed(
+            OperationNotAllowedException ex, HttpServletRequest request) {
+
+        log.warn("[403] {}", ex.getMessage());
+
+        return build(HttpStatus.FORBIDDEN, "OPERATION_NOT_ALLOWED", ex.getMessage(), request);
+    }
+
     // ====================================================================
     // 2. VALIDATION HATALARI (@Valid / @Validated)
     // ====================================================================

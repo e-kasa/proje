@@ -1,0 +1,144 @@
+# Prometheus Configuration for POS Microservices
+#
+# This file provides Prometheus job configurations for monitoring
+# the POS microservices architecture.
+#
+# Location: /etc/prometheus/prometheus.yml (typical Linux installation)
+# After updating, reload: curl -X POST http://prometheus:9090/-/reload
+#
+# Documentation: https://prometheus.io/docs/prometheus/latest/configuration/configuration/
+
+global:
+  scrape_interval: 15s      # Default scrape interval
+  evaluation_interval: 15s  # Default evaluation interval
+  external_labels:
+    cluster: 'pos-system'
+    region: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['localhost:9093']  # Alertmanager address
+
+# POS Product Manager Service
+scrape_configs:
+  - job_name: 'pos-product-manager'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+    # Prometheus metrics endpoint
+    metrics_path: '/product/actuator/prometheus'
+
+    # Service instance configuration
+    static_configs:
+      - targets: ['localhost:8001']
+        labels:
+          service: 'product-manager'
+          version: '1.0.0'
+
+    # Relabel configs for additional labels
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+      - source_labels: [__scheme__]
+        target_label: scheme
+
+    # Service discovery (uncomment for Kubernetes)
+    # kubernetes_sd_configs:
+    #   - role: pod
+    #     namespaces:
+    #       names:
+    #         - 'pos-system'
+    #     selectors:
+    #       - role: 'pod'
+    #         label: 'app=pos-product-manager'
+
+  # API Gateway / API Manager
+  - job_name: 'api-manager'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:8000']
+        labels:
+          service: 'api-gateway'
+
+  # Config Server
+  - job_name: 'config-server'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:8888']
+        labels:
+          service: 'config-server'
+
+  # Security Service
+  - job_name: 'security-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:8002']
+        labels:
+          service: 'security'
+
+---
+# GRAFANA DASHBOARD QUERIES FOR KEY METRICS
+#
+# Sales Metrics:
+#   rate(sales_created_total[5m])           - Sales per 5 minutes
+#   rate(sales_returned_total[5m])          - Returns per 5 minutes
+#   rate(sales_cancelled_total[5m])         - Cancellations per 5 minutes
+#   sales_amount_total                      - Total sales amount
+#
+# Stock Movement Metrics:
+#   rate(movements_created_total[5m])       - Movements per 5 minutes
+#   rate(movements_sale_out_total[5m])      - SALE_OUT movements per 5 minutes
+#   rate(movements_purchase_in_total[5m])   - PURCHASE_IN movements per 5 minutes
+#
+# Recommendation Metrics:
+#   rate(recommendations_requested_total[5m])  - Recommendations/minute
+#   rate(recommendations_cache_hits_total[5m]) / rate(recommendations_requested_total[5m])  - Cache hit ratio
+#   histogram_quantile(0.95, recommendations_response_seconds)  - 95th percentile response time
+#
+# HTTP Metrics (Spring Boot):
+#   rate(http_requests_total[5m])           - Request rate
+#   histogram_quantile(0.95, http_request_duration_seconds) - 95th percentile latency
+#   http_requests_total{status=~"5.."}      - 5xx errors
+#
+# JVM Metrics:
+#   jvm_memory_used_bytes                   - Memory usage
+#   jvm_threads_live_threads                - Live thread count
+#   process_cpu_usage                       - CPU usage percentage
+
+---
+# ALERT RULES (Example)
+# File: /etc/prometheus/rules/pos-alerts.yml
+#
+# groups:
+#   - name: pos_system
+#     interval: 30s
+#     rules:
+#       # High sales cancellation rate
+#       - alert: HighCancellationRate
+#         expr: rate(sales_cancelled_total[5m]) > 0.1
+#         for: 5m
+#         annotations:
+#           summary: "High sales cancellation rate detected"
+#
+#       # Recommendation cache hit ratio too low
+#       - alert: LowCacheHitRatio
+#         expr: rate(recommendations_cache_hits_total[5m]) / rate(recommendations_requested_total[5m]) < 0.5
+#         for: 10m
+#         annotations:
+#           summary: "Recommendation cache hit ratio below 50%"
+#
+#       # Service response time degradation
+#       - alert: SlowServiceResponse
+#         expr: histogram_quantile(0.95, rate(http_request_duration_seconds[5m])) > 1
+#         for: 5m
+#         annotations:
+#           summary: "Service response time degraded (95th percentile > 1s)"
+#
+#       # High error rate
+#       - alert: HighErrorRate
+#         expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+#         for: 5m
+#         annotations:
+#           summary: "High error rate detected (> 5%)"

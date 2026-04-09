@@ -49,12 +49,7 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Veri yuklenemedi'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
+        AppToast.error(context, 'Veri yuklenemedi');
       }
     }
   }
@@ -141,12 +136,7 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
               onPressed: () {
                 if (nameController.text.trim().isNotEmpty && codeController.text.trim().isNotEmpty) {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('✅ ${nameController.text} birimi eklendi'),
-                      backgroundColor: AppColors.success,
-                    ),
-                  );
+                  AppToast.success(context, '${nameController.text} birimi eklendi');
                   _loadUnits();
                 }
               },
@@ -228,12 +218,7 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
               onPressed: () {
                 if (nameController.text.trim().isNotEmpty) {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('✅ Birim güncellendi'),
-                      backgroundColor: AppColors.success,
-                    ),
-                  );
+                  AppToast.success(context, 'Birim güncellendi');
                   _loadUnits();
                 }
               },
@@ -250,71 +235,18 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
     );
   }
 
-  void _showDeleteDialog(Map<String, dynamic> unit) {
-    showDialog(
+  void _showDeleteDialog(Map<String, dynamic> unit) async {
+    final confirmed = await AppConfirmationDialog.showDelete(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.warning, color: AppColors.danger),
-            const SizedBox(width: 12),
-            Text(t('inventory.delete_unit')),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('${unit['name']} (${unit['code']}) birimini silmek istediğinizden emin misiniz?'),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.warning.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.warning.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.info_outline, color: AppColors.warning, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${unit['productCount']} ürün bu birimi kullanıyor',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('İptal'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('🗑️ ${unit['name']} silindi'),
-                  backgroundColor: AppColors.danger,
-                ),
-              );
-              _loadUnits();
-            },
-            icon: const Icon(Icons.delete),
-            label: const Text('Sil'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ],
-      ),
+      title: t('inventory.delete_unit'),
+      message: '${unit['name']} (${unit['code']}) birimini silmek istediğinizden emin misiniz?\n${unit['productCount']} ürün bu birimi kullanıyor',
+      itemName: unit['name'] ?? '',
     );
+
+    if (!confirmed) return;
+
+    AppToast.success(context, '${unit['name']} silindi');
+    _loadUnits();
   }
 
   @override
@@ -450,34 +382,10 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.straighten_outlined,
-            size: 80,
-            color: AppColors.textMuted.withOpacity(0.5),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            t('inventory.no_units'),
-            style: TextStyle(
-              fontSize: 16,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            t('inventory.add_unit_hint'),
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textMuted,
-            ),
-          ),
-        ],
-      ),
+    return AppEmptyState.noData(
+      icon: Icons.straighten_outlined,
+      title: t('inventory.no_units'),
+      description: t('inventory.add_unit_hint'),
     );
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'package:project_pos/core/widgets/widgets.dart';
 import '../../../../core/config/sector_config.dart';
 import '../models/wizard_state.dart';
 import '../widgets/wizard_common_widgets.dart';
@@ -102,16 +103,7 @@ class BasicInfoStep extends ConsumerWidget {
                               if (state.skuController.text.isNotEmpty) {
                                 Clipboard.setData(ClipboardData(
                                     text: state.skuController.text));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content:
-                                        Text(t('product.sku_copied')),
-                                    duration:
-                                        const Duration(milliseconds: 1200),
-                                    behavior: SnackBarBehavior.floating,
-                                    backgroundColor: AppColors.dark,
-                                  ),
-                                );
+                                AppToast.success(context, t('product.sku_copied'));
                               }
                             },
                             tooltip: t('common.copy'),

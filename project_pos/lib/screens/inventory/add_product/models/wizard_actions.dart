@@ -171,21 +171,10 @@ extension WizardSubmit on WizardState {
       if (!context.mounted) return false;
 
       if (andContinue) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('\u2713 $savedName kaydedildi ($savedVariantCount varyant). Yeni \u00fcr\u00fcn ekleyebilirsiniz.'),
-            backgroundColor: AppColors.success,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        AppToast.success(context, '$savedName kaydedildi ($savedVariantCount varyant). Yeni \u00fcr\u00fcn ekleyebilirsiniz.');
         return true; // signal success — caller handles reset
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('\u2705 $savedName ba\u015far\u0131yla kaydedildi! $savedVariantCount varyant olu\u015fturuldu.'),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        AppToast.success(context, '$savedName ba\u015far\u0131yla kaydedildi! $savedVariantCount varyant olu\u015fturuldu.');
         if (fromBulkImport && tempId != null) {
           Navigator.pop(context, UserDecision.create(tempId: tempId, product: payload));
         } else {
@@ -208,7 +197,7 @@ extension WizardSubmit on WizardState {
       isSaving = false;
       notify();
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('\u274c $msg'), backgroundColor: AppColors.danger));
+        AppToast.error(context, msg);
       }
       return false;
     }

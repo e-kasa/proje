@@ -59,16 +59,7 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
     _barcodeController.clear();
     _barcodeFocus.requestFocus();
     if (msg != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(msg),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: const EdgeInsets.all(12),
-        ),
-      );
+      AppToast.info(context, msg);
     }
   }
 
@@ -98,20 +89,7 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
   }
 
   void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(children: [
-          const Icon(Icons.error_outline, color: Colors.white, size: 18),
-          const SizedBox(width: 8),
-          Expanded(child: Text(msg)),
-        ]),
-        backgroundColor: AppColors.danger,
-        behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(12),
-      ),
-    );
+    AppToast.error(context, msg);
   }
 
   void _showResultSheet(BatchSaveResult result) {
@@ -222,24 +200,12 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
 
   void _confirmClear() async {
     final t = i18nOf(ref);
-    final ok = await showDialog<bool>(
+    final ok = await AppConfirmationDialog.showWarning(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(t('batch.clear_list')),
-        content: Text(t('batch.clear_list_confirm')),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(t('common.cancel'))),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
-            child: Text(t('batch.clear')),
-          ),
-        ],
-      ),
+      title: t('batch.clear_list'),
+      message: t('batch.clear_list_confirm'),
     );
-    if (ok == true) ref.read(batchEntryProvider.notifier).clearAll();
+    if (ok) ref.read(batchEntryProvider.notifier).clearAll();
   }
 
   // ── SEARCH / BARCODE BAR ──────────────────────────────────────────────────

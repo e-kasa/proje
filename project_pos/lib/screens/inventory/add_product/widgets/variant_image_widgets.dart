@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../models/wizard_state.dart';
 
@@ -215,12 +216,7 @@ class ColorGroupedView extends ConsumerWidget {
       state.variants[index].images = [...state.variants[index].images, newImage];
     }
     onChanged();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$color - ${t('product.image_added_to_all')} (${variantIndices.length} ${t('product.variant')})'),
-        backgroundColor: AppColors.success,
-      ),
-    );
+    AppToast.success(context, '$color - ${t('product.image_added_to_all')} (${variantIndices.length} ${t('product.variant')})');
   }
 
   void _removeColorGroupImage(BuildContext context, String color, List<int> variantIndices, int imageIndex, String Function(String) t) {
@@ -232,12 +228,7 @@ class ColorGroupedView extends ConsumerWidget {
       }
     }
     onChanged();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$color - ${t('product.image_removed_from_all')}'),
-        backgroundColor: AppColors.success,
-      ),
-    );
+    AppToast.success(context, '$color - ${t('product.image_removed_from_all')}');
   }
 
   void _applyImagesToColorGroup(BuildContext context, String color, List<int> variantIndices, String Function(String) t) {
@@ -247,12 +238,7 @@ class ColorGroupedView extends ConsumerWidget {
       state.variants[index].images = List<String>.from(firstVariantImages);
     }
     onChanged();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$color - ${t('product.images_copied_to_sizes')} (${variantIndices.length})'),
-        backgroundColor: AppColors.success,
-      ),
-    );
+    AppToast.success(context, '$color - ${t('product.images_copied_to_sizes')} (${variantIndices.length})');
   }
 }
 
@@ -379,9 +365,7 @@ class VariantImageAccordion extends ConsumerWidget {
       'variant_${variantIndex}_image_${state.variants[variantIndex].images.length + 1}.jpg',
     ];
     onChanged();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(t('product.variant_image_added')), backgroundColor: AppColors.success),
-    );
+    AppToast.success(context, t('product.variant_image_added'));
   }
 
   void _removeVariantImage(BuildContext context, int imageIndex, String Function(String) t) {
@@ -389,8 +373,6 @@ class VariantImageAccordion extends ConsumerWidget {
     images.removeAt(imageIndex);
     state.variants[variantIndex].images = images;
     onChanged();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(t('product.variant_image_removed')), backgroundColor: AppColors.success),
-    );
+    AppToast.success(context, t('product.variant_image_removed'));
   }
 }

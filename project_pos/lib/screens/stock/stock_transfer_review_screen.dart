@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/stock_management_models.dart';
 import '../../services/service_locator.dart';
 import '../../core/widgets/widgets.dart';
+import '../../core/theme/app_colors.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 
 /// STOK TRANSFER ONAY EKRANI
@@ -69,7 +70,7 @@ class _StockTransferReviewScreenState
     final t = i18nOf(ref);
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: Colors.grey[100],
+        backgroundColor: AppColors.bgLight,
         appBar: AppAppBar.standard(
           title: t('stock.transfer_review'),
         ),
@@ -78,7 +79,7 @@ class _StockTransferReviewScreenState
     }
     if (_error != null || _response == null) {
       return Scaffold(
-        backgroundColor: Colors.grey[100],
+        backgroundColor: AppColors.bgLight,
         appBar: AppAppBar.standard(
           title: t('stock.transfer_review'),
         ),
@@ -754,10 +755,10 @@ class _StockTransferReviewScreenState
             ),
           ),
           const SizedBox(width: 12),
-          ElevatedButton.icon(
+          AppButton.primary(
             onPressed: allDecided ? () {} : null,
-            icon: const Icon(Icons.check),
-            label: Text(t('stock.approve')),
+            icon: Icons.check,
+            text: t('stock.approve'),
           ),
         ],
       ),

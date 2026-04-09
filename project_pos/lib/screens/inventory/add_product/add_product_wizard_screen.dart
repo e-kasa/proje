@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/core/config/sector_config.dart';
 import '../../../providers/sector_provider.dart';
@@ -98,20 +99,13 @@ class _AddProductWizardScreenState
   void _next() {
     final error = _state.validateStep(_currentStep);
     if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error), backgroundColor: AppColors.danger),
-      );
+      AppToast.error(context, error);
       return;
     }
     if (_currentStep == 1 &&
         _state.productType == 'variant' &&
         _state.variants.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_t('wizard.no_variant_created_default_used')),
-          backgroundColor: AppColors.warning,
-        ),
-      );
+      AppToast.warning(context, _t('wizard.no_variant_created_default_used'));
     }
     if (_currentStep < _totalSteps - 1) {
       setState(() => _currentStep++);
@@ -159,30 +153,14 @@ class _AddProductWizardScreenState
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         if (_hasUnsavedChanges()) {
-          final shouldPop = await showDialog<bool>(
+          final shouldPop = await AppConfirmationDialog.showWarning(
             context: context,
-            builder: (ctx) => AlertDialog(
-              title: Text(_t('common.are_you_sure')),
-              content: Text(
-                _savedCount > 0
-                    ? '$_savedCount ${_t('wizard.products_saved_changes_lost')}'
-                    : _t('wizard.changes_will_be_lost'),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: Text(_t('common.cancel')),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  style:
-                      FilledButton.styleFrom(backgroundColor: AppColors.danger),
-                  child: Text(_t('wizard.exit')),
-                ),
-              ],
-            ),
+            title: _t('common.are_you_sure'),
+            message: _savedCount > 0
+                ? '$_savedCount ${_t('wizard.products_saved_changes_lost')}'
+                : _t('wizard.changes_will_be_lost'),
           );
-          if (shouldPop == true && mounted) {
+          if (shouldPop && mounted) {
             Navigator.pop(context, _savedCount > 0);
           }
         } else {

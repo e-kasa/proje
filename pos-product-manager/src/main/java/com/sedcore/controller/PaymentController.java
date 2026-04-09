@@ -2,7 +2,7 @@ package com.sedcore.controller;
 
 import com.sedcore.model.PaymentRequest;
 import com.sedcore.model.PaymentResponse;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;

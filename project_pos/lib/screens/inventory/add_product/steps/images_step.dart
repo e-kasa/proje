@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../../../../core/config/sector_config.dart';
 import '../models/wizard_state.dart';
@@ -525,16 +526,12 @@ class ImagesStep extends ConsumerWidget {
 
   void _addProductImage(BuildContext context) {
     // TODO: Implement real image picker (image_picker package)
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Gorsel secici yaklasimda...'), backgroundColor: AppColors.info),
-    );
+    AppToast.info(context, 'Gorsel secici yaklasimda...');
   }
 
   void _removeProductImage(BuildContext context, int index) {
     state.productImages.removeAt(index);
     onChanged();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('\ud83d\uddd1\ufe0f G\u00f6rsel kald\u0131r\u0131ld\u0131'), backgroundColor: AppColors.success),
-    );
+    AppToast.success(context, 'G\u00f6rsel kald\u0131r\u0131ld\u0131');
   }
 }

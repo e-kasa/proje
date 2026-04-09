@@ -2,11 +2,9 @@ package com.sedcore.controller;
 
 import com.sedcore.entity.CategoryVariant;
 import com.sedcore.enums.AttributeType;
-import com.sedcore.enums.ProductStatus;
-import com.sedcore.model.CategoryVariantResponse;
 import com.sedcore.model.DtoCategory;
 import com.sedcore.model.DtoCategoryUI;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;

@@ -370,15 +370,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
         ),
         Expanded(
           child: _oemNumbers.isEmpty 
-            ? Center(child: Text(t('common.no_result'), style: const TextStyle(color: AppColors.textMuted)))
+            ? AppEmptyState.noData(title: t('common.no_result'))
             : ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 itemCount: _oemNumbers.length,
                 itemBuilder: (context, index) {
                   final oem = _oemNumbers[index];
-                  return Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: const BorderSide(color: AppColors.border)),
+                  return AppCard(
                     child: ListTile(leading: const Icon(Icons.tag, color: AppColors.textMuted), title: Text(oem['oemNumber'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Text(oem['manufacturer'] ?? '')),
                   );
                 },
@@ -400,26 +398,23 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('${t('product.cross_references')} (${_crossRefs.length})', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ElevatedButton.icon(
+              AppButton.primary(
+                text: t('common.add'),
+                icon: Icons.add,
                 onPressed: _showAddCrossReferenceDialog,
-                icon: const Icon(Icons.add),
-                label: Text(t('common.add')),
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
               ),
             ],
           ),
         ),
         Expanded(
-          child: _crossRefs.isEmpty 
-            ? Center(child: Text(t('common.no_result'), style: const TextStyle(color: AppColors.textMuted)))
+          child: _crossRefs.isEmpty
+            ? AppEmptyState.noData(title: t('common.no_result'))
             : ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 itemCount: _crossRefs.length,
                 itemBuilder: (context, index) {
                   final cr = _crossRefs[index];
-                  return Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: const BorderSide(color: AppColors.border)),
+                  return AppCard(
                     child: ListTile(leading: const Icon(Icons.swap_horiz, color: AppColors.info), title: Text(cr['crossRefNumber'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Text(cr['crossRefBrand'] ?? '')),
                   );
                 },
@@ -433,16 +428,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
 
   Widget _buildVehicleCompatTab() {
     if (_vehicleCompatLoading) return const Center(child: CircularProgressIndicator());
-    return _vehicleCompats.isEmpty 
-      ? Center(child: Text(t('common.no_result'), style: const TextStyle(color: AppColors.textMuted)))
+    return _vehicleCompats.isEmpty
+      ? AppEmptyState.noData(title: t('common.no_result'))
       : ListView.builder(
           padding: const EdgeInsets.all(20),
           itemCount: _vehicleCompats.length,
           itemBuilder: (context, index) {
             final vc = _vehicleCompats[index];
-            return Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: const BorderSide(color: AppColors.border)),
+            return AppCard(
               child: ListTile(leading: const Icon(Icons.directions_car, color: AppColors.primary), title: Text('${vc['make'] ?? ''} ${vc['model'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Text('${vc['yearStart'] ?? ''} - ${vc['yearEnd'] ?? t('common.current')}')),
             );
           },
@@ -467,7 +460,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
           ),
         ),
         _movements.isEmpty
-          ? Expanded(child: Center(child: Text(t('stock.no_movements'), style: const TextStyle(color: AppColors.textMuted))))
+          ? Expanded(child: AppEmptyState.noData(title: t('stock.no_movements')))
           : Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -475,9 +468,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
                 itemBuilder: (context, index) {
                   final m = _movements[index];
                   final cfg = _movementConfig(m['movementType'] ?? '');
-                  return Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: const BorderSide(color: AppColors.border)),
+                  return AppCard(
                     child: ListTile(
                       leading: CircleAvatar(backgroundColor: (cfg['color'] as Color).withOpacity(0.1), child: Icon(cfg['icon'] as IconData, color: cfg['color'] as Color, size: 20)),
                       title: Text(cfg['label'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
@@ -591,4 +582,3 @@ class _TabDef {
   final IconData icon;
   const _TabDef(this.type, this.label, this.icon);
 }
-                                                                                                                                             

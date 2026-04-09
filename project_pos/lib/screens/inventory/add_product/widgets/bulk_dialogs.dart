@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/widgets/widgets.dart';
 
 import '../models/wizard_state.dart';
 
@@ -11,9 +12,7 @@ Future<void> showBulkStockDialog({
   required String Function(String) t,
 }) async {
   if (state.variants.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(t('product.no_variants_yet')), backgroundColor: AppColors.warning),
-    );
+    AppToast.warning(context, t('product.no_variants_yet'));
     return;
   }
   final controller = TextEditingController();
@@ -41,7 +40,7 @@ Future<void> showBulkStockDialog({
       }
     }
     onChanged();
-    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${state.variants.length} ${t('product.variants_stock_applied')} ($result)'), backgroundColor: AppColors.success));
+    if (context.mounted) AppToast.success(context, '${state.variants.length} ${t('product.variants_stock_applied')} ($result)');
   }
 }
 
@@ -53,7 +52,7 @@ Future<void> showBulkPurchasePriceDialog({
   required String Function(String) t,
 }) async {
   if (state.variants.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('product.no_variants_yet')), backgroundColor: AppColors.warning));
+    AppToast.warning(context, t('product.no_variants_yet'));
     return;
   }
   final controller = TextEditingController();
@@ -75,7 +74,7 @@ Future<void> showBulkPurchasePriceDialog({
   if (result != null) {
     for (var variant in state.variants) { variant.purchasePrice = result; }
     onChanged();
-    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${state.variants.length} ${t('product.variants_purchase_applied')} (\u20ba${result.toStringAsFixed(2)})'), backgroundColor: AppColors.success));
+    if (context.mounted) AppToast.success(context, '${state.variants.length} ${t('product.variants_purchase_applied')} (\u20ba${result.toStringAsFixed(2)})');
   }
 }
 
@@ -87,7 +86,7 @@ Future<void> showBulkSalePriceDialog({
   required String Function(String) t,
 }) async {
   if (state.variants.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('product.no_variants_yet')), backgroundColor: AppColors.warning));
+    AppToast.warning(context, t('product.no_variants_yet'));
     return;
   }
   final controller = TextEditingController();
@@ -109,6 +108,7 @@ Future<void> showBulkSalePriceDialog({
   if (result != null) {
     for (var variant in state.variants) { variant.salePrice = result; }
     onChanged();
-    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${state.variants.length} ${t('product.variants_sale_applied')} (\u20ba${result.toStringAsFixed(2)})'), backgroundColor: AppColors.success));
+    if (context.mounted) AppToast.success(context, '${state.variants.length} ${t('product.variants_sale_applied')} (\u20ba${result.toStringAsFixed(2)})');
+
   }
 }

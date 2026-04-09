@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/stock_management_models.dart';
 import '../../services/service_locator.dart';
 import '../../core/widgets/widgets.dart';
+import '../../core/theme/app_colors.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 
 /// STOK SAYIM INCELEME EKRANI
@@ -81,13 +82,13 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
     final t = i18nOf(ref);
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: Colors.grey[100],
+        backgroundColor: AppColors.bgLight,
         body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (_error != null || _response == null) {
       return Scaffold(
-        backgroundColor: Colors.grey[100],
+        backgroundColor: AppColors.bgLight,
         body: Center(child: Text(t('stock.data_load_failed'))),
       );
     }
@@ -728,10 +729,10 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
             ),
           ),
           const SizedBox(width: 12),
-          ElevatedButton.icon(
+          AppButton.primary(
             onPressed: allDecided ? () {} : null,
-            icon: const Icon(Icons.check),
-            label: Text(t('common.save')),
+            icon: Icons.check,
+            text: t('common.save'),
           ),
         ],
       ),

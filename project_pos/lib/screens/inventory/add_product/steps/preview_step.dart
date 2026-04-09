@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'package:project_pos/core/widgets/widgets.dart';
 import '../../../../core/config/sector_config.dart';
 import '../models/wizard_state.dart';
 import '../widgets/variant_image_widgets.dart';
@@ -668,12 +669,7 @@ class PreviewStep extends ConsumerWidget {
             itemBuilder: (context, index) {
               if (index == state.productImages.length) {
                 return buildAddImageButton(() {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(t('product.image_picker_coming')),
-                      backgroundColor: AppColors.info,
-                    ),
-                  );
+                  AppToast.info(context, t('product.image_picker_coming'));
                 }, isMobile: isMobile, t: t);
               }
               return buildImagePreview(state.productImages[index], () {
@@ -760,27 +756,7 @@ class PreviewStep extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(8),
                   onTap: () {
                     Clipboard.setData(ClipboardData(text: jsonString));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Row(
-                          children: [
-                            const Icon(
-                              Icons.check_circle_rounded,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(t('common.copied')),
-                          ],
-                        ),
-                        backgroundColor: AppColors.success,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
+                    AppToast.success(context, t('common.copied'));
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(

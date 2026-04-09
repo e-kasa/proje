@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'package:project_pos/core/widgets/widgets.dart';
 import '../providers/batch_entry_provider.dart';
 
 class BarcodeSearchInput extends ConsumerStatefulWidget {
@@ -37,11 +38,7 @@ class _BarcodeSearchInputState extends ConsumerState<BarcodeSearchInput> {
     _focusNode.requestFocus();
 
     if (result != null) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text(result), duration: const Duration(seconds: 2)),
-        );
+      AppToast.info(context, result);
     }
   }
 

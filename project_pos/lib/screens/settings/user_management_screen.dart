@@ -288,10 +288,11 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     final isActive = user['isActive'] == true || user['active'] == true;
     final firstLetter = name.isNotEmpty ? name[0].toUpperCase() : '?';
 
-    return AppCard(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: AppCard(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
         child: Row(
           children: [
             // Avatar
@@ -373,6 +374,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -385,3 +387,4 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     return AppColors.info;
   }
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      

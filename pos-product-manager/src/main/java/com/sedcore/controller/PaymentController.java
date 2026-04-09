@@ -24,5 +24,4 @@ public interface PaymentController {
 
     ResponseEntity<ApiResponse<PaymentResponse>> cancel(String id, Map<String, String> body);
 
-    ResponseEntity<ApiResponse<PaymentResponse>> verify(String id, Map<String, String> body);
-}
+    ResponseEntity<ApiResponse<PaymentResponse>> verify(String id, Map<String, Strin

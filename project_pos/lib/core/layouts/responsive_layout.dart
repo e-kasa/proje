@@ -405,3 +405,4 @@ class _AppBarIconBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) => IconButton(icon: Icon(icon, size: 20, color: AppColors.textSecondary), onPressed: onPressed);
 }
+                                                                                                              

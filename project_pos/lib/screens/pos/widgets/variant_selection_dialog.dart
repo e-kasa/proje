@@ -331,6 +331,4 @@ class _VariantSelectionDialogState extends State<VariantSelectionDialog> {
       }
     }
 
-    return attributes.join(' • ');
-  }
-}
+  

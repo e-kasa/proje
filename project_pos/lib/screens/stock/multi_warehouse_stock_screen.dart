@@ -5,6 +5,7 @@ import '../../models/stock_management_models.dart';
 import '../../services/service_locator.dart';
 import '../../core/widgets/widgets.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_constants.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 
 /// MULTI-WAREHOUSE STOK EKRANI
@@ -221,7 +222,7 @@ class _MultiWarehouseStockScreenState
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppConstants.borderRadiusMedium,
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(
@@ -256,7 +257,7 @@ class _MultiWarehouseStockScreenState
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppConstants.borderRadiusMedium,
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -326,10 +327,3 @@ class _MultiWarehouseStockScreenState
               fontWeight: FontWeight.bold,
               color: statusColor,
               fontSize: 13,
-            ),
-          )
-        ],
-      ),
-    );
-  }
-}

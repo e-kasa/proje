@@ -176,7 +176,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
               const Icon(Icons.error_outline, size: 64, color: AppColors.danger),
               const SizedBox(height: 16),
               Text(_error ?? t('common.error')),
-              ElevatedButton(onPressed: _loadProduct, child: Text(t('common.retry'))),
+              AppButton.primary(text: t('common.retry'), onPressed: _loadProduct),
             ],
           ),
         ),
@@ -360,11 +360,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('${cfg.labels.oemField} (${_oemNumbers.length})', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ElevatedButton.icon(
+              AppButton.primary(
+                text: t('common.add'),
+                icon: Icons.add,
                 onPressed: _showAddOemDialog,
-                icon: const Icon(Icons.add),
-                label: Text(t('common.add')),
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
               ),
             ],
           ),
@@ -592,3 +591,4 @@ class _TabDef {
   final IconData icon;
   const _TabDef(this.type, this.label, this.icon);
 }
+                                                                                                                                             

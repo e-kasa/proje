@@ -4,6 +4,7 @@ import 'package:animate_do/animate_do.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/common/section_header.dart';
+import '../../core/widgets/widgets.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 
 class InventoryScreen extends ConsumerWidget {
@@ -106,7 +107,7 @@ class InventoryScreen extends ConsumerWidget {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return Card(
+    return AppCard(
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -147,9 +148,4 @@ class InventoryScreen extends ConsumerWidget {
                 ],
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+ 

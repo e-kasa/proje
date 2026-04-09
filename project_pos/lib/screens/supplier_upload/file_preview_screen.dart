@@ -38,21 +38,11 @@ class _FilePreviewScreenState extends State<FilePreviewScreen> {
 
       if (mounted) {
         // Analiz ekranına geç (Ekran 3)
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Dosya analiz için gönderildi'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppToast.success(context, 'Dosya analiz için gönderildi');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Hata: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppToast.error(context, 'Hata: $e');
       }
     } finally {
       if (mounted) {

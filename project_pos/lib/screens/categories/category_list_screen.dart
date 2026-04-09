@@ -57,9 +57,7 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: $e')),
-        );
+        AppToast.error(context, 'Hata: $e');
       }
     }
   }
@@ -154,19 +152,11 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
         await ref.read(categoryServiceProvider).deleteCategory(id);
         _loadCategories();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('Kategori başarıyla silindi'),
-                backgroundColor: AppColors.success),
-          );
+          AppToast.success(context, 'Kategori başarıyla silindi');
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text('❌ Silinemedi: $e'),
-                backgroundColor: AppColors.danger),
-          );
+          AppToast.error(context, 'Silinemedi: $e');
         }
       }
     }
@@ -206,13 +196,11 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
       });
       _loadCategories();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errors.isEmpty
-                ? 'Kategoriler silindi'
-                : '${errors.length} kategori silinemedi (alt kategorileri var)'),
-          ),
-        );
+        if (errors.isEmpty) {
+          AppToast.success(context, 'Kategoriler silindi');
+        } else {
+          AppToast.warning(context, '${errors.length} kategori silinemedi (alt kategorileri var)');
+        }
       }
     }
   }

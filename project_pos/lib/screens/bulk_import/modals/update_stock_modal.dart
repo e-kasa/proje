@@ -38,12 +38,7 @@ class _UpdateStockModalState extends State<UpdateStockModal> {
     final stockValue = int.tryParse(_stockController.text) ?? 0;
 
     if (stockValue <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Lütfen geçerli bir stok miktarı girin'),
-          backgroundColor: AppColors.warning,
-        ),
-      );
+      AppToast.warning(context, 'Lütfen geçerli bir stok miktarı girin');
       return;
     }
 

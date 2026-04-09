@@ -93,12 +93,7 @@ class _SupplierImportReviewScreenState
       if (!mounted) return;
       Navigator.pop(context);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Hata: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      AppToast.error(context, 'Hata: ${e.toString()}');
     }
   }
 

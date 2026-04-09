@@ -175,14 +175,12 @@ class _AddIncomeScreenState extends ConsumerState<AddIncomeScreen> {
                     const SizedBox(height: 16),
 
                     // Description
-                    TextFormField(
+                    AppInput(
                       controller: _descriptionController,
+                      label: 'Aciklama',
+                      prefixIcon: Icons.description,
+                      hint: 'Gelir aciklamasi...',
                       maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'Aciklama',
-                        prefixIcon: Icon(Icons.description),
-                        hintText: 'Gelir aciklamasi...',
-                      ),
                     ),
                   ],
                 ),

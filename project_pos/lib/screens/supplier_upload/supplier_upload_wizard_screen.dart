@@ -626,9 +626,7 @@ class _SupplierUploadWizardScreenState
     } catch (e) {
       AppLogger.error('Kararlar kaydedilemedi', tag: 'SupplierUpload', error: e);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Kaydetme hatasi: $e'), backgroundColor: Colors.red),
-        );
+        AppToast.error(context, 'Kaydetme hatasi: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

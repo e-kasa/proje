@@ -288,4 +288,3 @@ class _AccountSelectContentState extends State<_AccountSelectContent> with Singl
     );
   }
 }
-                                                                                         

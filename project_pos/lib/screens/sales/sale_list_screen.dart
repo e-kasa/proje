@@ -154,21 +154,11 @@ class SaleListNotifier extends StateNotifier<SaleListState> {
       await _service.cancelSale(id, reason);
       await load();
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Satış iptal edildi'),
-            backgroundColor: Colors.orange,
-          ),
-        );
+        AppToast.warning(context, 'Satış iptal edildi');
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('İptal hatası: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppToast.error(context, 'İptal hatası: $e');
       }
     }
   }
@@ -515,26 +505,14 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
         : <String>[];
     final moreCount = (items?.length ?? 0) - 3;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppConstants.borderRadiusMedium,
-        side: BorderSide(
-          color: cancelled
-              ? Colors.red.withOpacity(0.3)
-              : theme.colorScheme.outlineVariant.withOpacity(0.5),
-        ),
-      ),
-      child: InkWell(
-        borderRadius: AppConstants.borderRadiusMedium,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: AppCard(
         onTap: () async {
           await context.push('/sales/detail/${s['id']}');
           if (mounted) ref.read(saleListProvider.notifier).load();
         },
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
+        child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -660,7 +638,6 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
             ],
           ),
         ),
-      ),
     );
   }
 
@@ -726,23 +703,9 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
 
   Widget _buildEmpty() {
     final t = i18nOf(ref);
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.point_of_sale_outlined, size: 64, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          Text(
-            t('sales.no_sales'),
-            style: TextStyle(color: Colors.grey[500], fontSize: 16),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            t('sales.new_sale_hint'),
-            style: TextStyle(color: Colors.grey[400], fontSize: 13),
-          ),
-        ],
-      ),
+    return AppEmptyState.noData(
+      title: t('sales.no_sales'),
+      description: t('sales.new_sale_hint'),
     );
   }
 }

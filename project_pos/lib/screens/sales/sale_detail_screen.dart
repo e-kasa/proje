@@ -937,22 +937,12 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
       try {
         await ref.read(salesServiceProvider).cancelSale(widget.saleId, reason);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(t('sales.sale_cancelled_success')),
-              backgroundColor: Colors.orange,
-            ),
-          );
+          AppToast.warning(context, t('sales.sale_cancelled_success'));
           _load();
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${t('sales.cancel_error')}: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppToast.error(context, '${t('sales.cancel_error')}: $e');
         }
       }
     }

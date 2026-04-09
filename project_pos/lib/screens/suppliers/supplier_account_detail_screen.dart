@@ -781,21 +781,11 @@ class _SupplierAccountDetailScreenState
         },
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Bilgiler güncellendi'),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        AppToast.success(context, 'Bilgiler güncellendi');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Hata: $e'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
+        AppToast.error(context, 'Hata: $e');
       }
     }
   }
@@ -813,20 +803,10 @@ class _SupplierAccountDetailScreenState
           widget.supplierId,
           result,
         );
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Ödeme kaydedildi'),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        AppToast.success(context, 'Ödeme kaydedildi');
         _loadAll();
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Hata: $e'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
+        AppToast.error(context, 'Hata: $e');
       }
     }
   }
@@ -842,4 +822,4 @@ class _SupplierAccountDetailScreenState
   String _formatCurrency(double value) {
     return value.toStringAsFixed(2);
   }
-}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+}

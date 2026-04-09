@@ -96,21 +96,11 @@ class _SupplierFileUploadScreenState extends State<SupplierFileUploadScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
+    AppToast.error(context, message);
   }
 
   void _showSuccess(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-      ),
-    );
+    AppToast.success(context, message);
   }
 
   String _formatFileSize(int bytes) {

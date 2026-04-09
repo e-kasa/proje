@@ -66,12 +66,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
         _totalExpense = 0;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Veri yuklenemedi'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
+        AppToast.error(context, 'Veri yuklenemedi');
       }
     }
   }
@@ -218,14 +213,9 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                 // Payment list
                 Expanded(
                   child: _filteredPayments.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'Odeme bulunamadi',
-                            style: TextStyle(
-                              color: AppColors.textMuted,
-                              fontSize: 16,
-                            ),
-                          ),
+                      ? AppEmptyState.noData(
+                          title: 'Odeme bulunamadi',
+                          description: 'Henuz odeme kaydi yok',
                         )
                       : ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -313,11 +303,9 @@ class _PaymentCard extends StatelessWidget {
     final currencyFormat =
         NumberFormat.currency(locale: 'tr_TR', symbol: '\u20BA');
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: AppCard(
         child: Row(
           children: [
             // Icon

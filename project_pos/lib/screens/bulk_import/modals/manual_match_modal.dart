@@ -44,12 +44,7 @@ class _ManualMatchModalState extends State<ManualMatchModal> {
 
   void _confirm() {
     if (_selectedProduct == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Lütfen eşleştirilecek bir ürün seçin'),
-          backgroundColor: AppColors.warning,
-        ),
-      );
+      AppToast.warning(context, 'Lütfen eşleştirilecek bir ürün seçin');
       return;
     }
 

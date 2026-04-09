@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 
 class PartSearchScreen extends ConsumerStatefulWidget {
@@ -93,9 +94,7 @@ class _PartSearchScreenState extends ConsumerState<PartSearchScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Arama hatasi: $e'), backgroundColor: AppColors.danger),
-        );
+        AppToast.error(context, 'Arama hatasi: $e');
       }
     }
   }

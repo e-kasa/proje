@@ -760,4 +760,8 @@ class _StockTransferReviewScreenState
             icon: Icons.check,
             text: t('stock.approve'),
           ),
-        
+        ],
+      ),
+    );
+  }
+}

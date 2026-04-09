@@ -57,9 +57,10 @@ class CartPanel extends ConsumerWidget {
           const Text('Satış Sepeti', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const Spacer(),
           if (state.cartItems.isNotEmpty)
-            TextButton(
+            AppButton.danger(
+              text: 'Temizle',
               onPressed: () => notifier.clearCart(),
-              child: const Text('Temizle', style: TextStyle(color: AppColors.danger)),
+              size: ButtonSize.small,
             ),
         ],
       ),
@@ -112,15 +113,9 @@ class CartPanel extends ConsumerWidget {
 
   Widget _buildItemList(PosState state, PosNotifier notifier) {
     if (state.cartItems.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add_shopping_cart_rounded, size: 48, color: AppColors.border),
-            const SizedBox(height: 12),
-            const Text('Sepetiniz Boş', style: TextStyle(color: AppColors.textMuted)),
-          ],
-        ),
+      return AppEmptyState.noData(
+        title: 'Sepetiniz Boş',
+        description: 'Ürün eklemek için listeden seçim yapın',
       );
     }
 

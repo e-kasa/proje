@@ -134,12 +134,7 @@ class _EditProductModalState extends ConsumerState<EditProductModal> {
   void _saveProduct() {
     if (_resolutionMode == 'match') {
       if (_selectedExistingProductId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Lütfen eşleştirilecek ürünü seçin'),
-            backgroundColor: AppColors.warning,
-          ),
-        );
+        AppToast.warning(context, 'Lütfen eşleştirilecek ürünü seçin');
         return;
       }
 

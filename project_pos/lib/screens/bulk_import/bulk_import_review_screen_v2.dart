@@ -237,9 +237,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
 
   void _showAddVariantModal(AnalyzedProduct product) {
     // TODO: Create dedicated add variant modal
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Varyant ekleme modalı yakında eklenecek')),
-    );
+    AppToast.info(context, 'Varyant ekleme modalı yakında eklenecek');
   }
 
   void _showUpdateVariantModal(AnalyzedProduct product) {
@@ -248,15 +246,11 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
 
   void _showCreateVariantsModal(AnalyzedProduct product) {
     // TODO: Integrate quick_variant_modal.dart
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Varyant oluşturma modalı yakında eklenecek')),
-    );
+    AppToast.info(context, 'Varyant oluşturma modalı yakında eklenecek');
   }
 
   void _showCreateVariantGroupModal(AnalyzedProduct product) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Varyant grubu oluşturma modalı yakında eklenecek')),
-    );
+    AppToast.info(context, 'Varyant grubu oluşturma modalı yakında eklenecek');
   }
 
   Future<void> _navigateToAddProduct(AnalyzedProduct product) async {
@@ -329,12 +323,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
       }
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Karar kaydedildi: ${decision.action.name}'),
-        backgroundColor: AppColors.success,
-      ),
-    );
+    AppToast.success(context, 'Karar kaydedildi: ${decision.action.name}');
   }
 
   void _skipProduct(AnalyzedProduct product) {
@@ -347,12 +336,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
       }
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Ürün atlandı'),
-        backgroundColor: AppColors.textMuted,
-      ),
-    );
+    AppToast.info(context, 'Ürün atlandı');
   }
 
   void _directSaveProduct(AnalyzedProduct product) {
@@ -438,24 +422,14 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
       _selectedProducts.clear();
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$processed ürün için önerilen aksiyonlar uygulandı'),
-        backgroundColor: AppColors.success,
-      ),
-    );
+    AppToast.success(context, '$processed ürün için önerilen aksiyonlar uygulandı');
   }
 
   void _bulkSaveNew(List<AnalyzedProduct> products) {
     final newProducts = products.where((p) => p.status == ProductStatus.NEW).toList();
 
     if (newProducts.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Seçili ürünler arasında YENİ durumda ürün bulunamadı'),
-          backgroundColor: AppColors.warning,
-        ),
-      );
+      AppToast.warning(context, 'Seçili ürünler arasında YENİ durumda ürün bulunamadı');
       return;
     }
 
@@ -501,12 +475,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
       _selectedProducts.clear();
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${products.length} yeni ürün kaydedildi'),
-        backgroundColor: AppColors.success,
-      ),
-    );
+    AppToast.success(context, '${products.length} yeni ürün kaydedildi');
   }
 
   void _bulkUpdateStock(List<AnalyzedProduct> products) {
@@ -515,12 +484,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
     ).toList();
 
     if (conflictProducts.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Seçili ürünler arasında ÇAKIŞMA durumda ürün bulunamadı'),
-          backgroundColor: AppColors.warning,
-        ),
-      );
+      AppToast.warning(context, 'Seçili ürünler arasında ÇAKIŞMA durumda ürün bulunamadı');
       return;
     }
 
@@ -572,12 +536,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
       _selectedProducts.clear();
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${products.length} ürünün stoğu güncellendi'),
-        backgroundColor: AppColors.success,
-      ),
-    );
+    AppToast.success(context, '${products.length} ürünün stoğu güncellendi');
   }
 
   void _bulkSkip(List<AnalyzedProduct> products) {
@@ -623,12 +582,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
       _selectedProducts.clear();
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${products.length} ürün atlandı'),
-        backgroundColor: AppColors.textMuted,
-      ),
-    );
+    AppToast.info(context, '${products.length} ürün atlandı');
   }
 
   // ========== SMART SUGGESTIONS: APPLY TO SIMILAR ==========
@@ -807,12 +761,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
       await Future.delayed(const Duration(milliseconds: 30));
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${targets.length} ürüne karar uygulandı'),
-        backgroundColor: AppColors.success,
-      ),
-    );
+    AppToast.success(context, '${targets.length} ürüne karar uygulandı');
   }
 
   void _changeDecision(AnalyzedProduct product) {
@@ -844,12 +793,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
                 }
               });
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Karar iptal edildi. Yeni bir karar verebilirsiniz.'),
-                  backgroundColor: AppColors.info,
-                ),
-              );
+              AppToast.info(context, 'Karar iptal edildi. Yeni bir karar verebilirsiniz.');
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.warning),
             child: const Text('Evet, İptal Et'),
@@ -930,12 +874,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
         .toList();
 
     if (decisions.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Kaydedilecek ürün yok. Lütfen en az bir ürün için karar verin.'),
-          backgroundColor: AppColors.warning,
-        ),
-      );
+      AppToast.warning(context, 'Kaydedilecek ürün yok. Lütfen en az bir ürün için karar verin.');
       return;
     }
 

@@ -823,13 +823,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
 
   void _downloadTemplate() {
     final sector = _sectors.firstWhere((s) => s['key'] == _selectedSector);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${sector['label']} şablonu indiriliyor...'),
-        backgroundColor: AppColors.success,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    AppToast.success(context, '${sector['label']} şablonu indiriliyor...');
     // TODO: Call backend to download sector-specific template
     // ref.read(bulkImportServiceProvider).downloadTemplate(_selectedSector);
   }

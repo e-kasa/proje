@@ -195,19 +195,12 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
                           'vehicleIds': selectedVehicleIds.toList(),
                         });
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('${selectedVehicleIds.length} arac uyumlulugu eklendi'),
-                              backgroundColor: AppColors.success,
-                            ),
-                          );
+                          AppToast.success(context, '${selectedVehicleIds.length} arac uyumlulugu eklendi');
                         }
                         _loadCompatibilities();
                       } catch (e) {
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Hata: $e'), backgroundColor: AppColors.danger),
-                          );
+                          AppToast.error(context, 'Hata: $e');
                         }
                       }
                     },
@@ -223,16 +216,12 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
       final apiClient = ref.read(apiClientProvider);
       await apiClient.delete('product/api/vehicle-compatibility/${compat['id']}');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Uyumluluk kaldirildi'), backgroundColor: AppColors.success),
-        );
+        AppToast.success(context, 'Uyumluluk kaldirildi');
       }
       _loadCompatibilities();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: $e'), backgroundColor: AppColors.danger),
-        );
+        AppToast.error(context, 'Hata: $e');
       }
     }
   }

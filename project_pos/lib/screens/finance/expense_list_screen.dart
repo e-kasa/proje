@@ -6,7 +6,6 @@ import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
-import '../../core/widgets/widgets.dart';
 import '../../services/finance_service.dart';
 import '../../core/api/api_client.dart';
 

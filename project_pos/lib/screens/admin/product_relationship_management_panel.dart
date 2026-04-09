@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/i18n_helper.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/recommendation_service.dart';
 import '../../services/product_service.dart';
 import '../../services/service_locator.dart';
@@ -54,12 +55,7 @@ class _ProductRelationshipManagementPanelState
     } catch (e) {
       setState(() => isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('İlişkiler yüklenemedi: $e'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
+        AppToast.error(context, 'İlişkiler yüklenemedi: $e');
       }
     }
   }
@@ -220,21 +216,11 @@ class _ProductRelationshipManagementPanelState
                         Navigator.pop(ctx);
                         _loadRelationships();
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('İlişki başarıyla eklendi'),
-                              backgroundColor: AppColors.success,
-                            ),
-                          );
+                          AppToast.success(context, 'İlişki başarıyla eklendi');
                         }
                       } catch (e) {
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Hata: $e'),
-                              backgroundColor: AppColors.danger,
-                            ),
-                          );
+                          AppToast.error(context, 'Hata: $e');
                         }
                       }
                     },
@@ -279,21 +265,11 @@ class _ProductRelationshipManagementPanelState
       await ref.read(recommendationServiceProvider).deleteRelationship(relationshipId);
       _loadRelationships();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('İlişki silinました'),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        AppToast.success(context, 'İlişki silindi');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Silinirken hata: $e'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
+        AppToast.error(context, 'Silinirken hata: $e');
       }
     }
   }

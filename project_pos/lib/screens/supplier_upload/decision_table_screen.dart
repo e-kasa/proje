@@ -184,21 +184,11 @@ class _DecisionTableScreenState extends State<DecisionTableScreen> {
       await Future.delayed(const Duration(seconds: 1));
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Kararlar basariyla kaydedildi!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppToast.success(context, 'Kararlar basariyla kaydedildi!');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Hata: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppToast.error(context, 'Hata: $e');
       }
     } finally {
       if (mounted) {

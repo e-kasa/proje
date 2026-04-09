@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:animate_do/animate_do.dart';
 import '../../core/theme/app_colors.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
+import 'package:project_pos/core/widgets/widgets.dart';
 import 'providers/pos_provider.dart';
 import 'widgets/product_grid_item.dart';
 import 'widgets/cart_panel.dart';
@@ -57,17 +58,13 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     ref.listen<PosState>(posProvider, (previous, next) {
       // 1. Hata Mesajları
       if (next.error != null && next.error!.isNotEmpty && next.error != previous?.error) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.error!), backgroundColor: AppColors.danger, behavior: SnackBarBehavior.floating),
-        );
+        AppToast.error(context, next.error!);
         ref.read(posProvider.notifier).clearMessages();
       }
 
       // 2. Başarı Mesajları
       if (next.successMessage != null && next.successMessage!.isNotEmpty && next.successMessage != previous?.successMessage) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.successMessage!), backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating),
-        );
+        AppToast.success(context, next.successMessage!);
         ref.read(posProvider.notifier).clearMessages();
       }
 

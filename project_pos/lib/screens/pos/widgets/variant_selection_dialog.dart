@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
+import 'package:project_pos/core/widgets/widgets.dart';
 
 /// Dialog untuk memilih varian produk sebelum menambahkan ke keranjang.
 ///
@@ -119,19 +120,19 @@ class _VariantSelectionDialogState extends State<VariantSelectionDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                TextButton(
+                AppButton.outline(
+                  text: 'İptal',
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Batal'),
                 ),
                 const SizedBox(width: 12),
-                ElevatedButton(
+                AppButton.primary(
+                  text: 'Seçimi Onayla',
                   onPressed: _selectedVariant != null
                       ? () {
                           widget.onVariantSelected(_selectedVariant!);
                           Navigator.pop(context);
                         }
                       : null,
-                  child: const Text('Seçimi Onayla'),
                 ),
               ],
             ),

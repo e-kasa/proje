@@ -15,7 +15,7 @@ import java.util.Map;
  * POS önerme sistemi REST endpoint'leri
  */
 @RestController
-@RequestMapping("/product/api/v1/recommendations")
+@RequestMapping("api/v1/recommendations")
 public interface RecommendationController {
 
     /**
@@ -23,8 +23,7 @@ public interface RecommendationController {
      *
      * GET /api/v1/recommendations/hybrid?productIds=123,456&limit=6&excludeIds=789
      *
-     * @param productIds Sepetteki ürün ID'leri (comma-separated) — similar products için
-     * @param variantIds Sepetteki varyant ID'leri (comma-separated) — frequently bought için
+     * @param productIds Sepetteki ürün ID'leri (comma-separated)
      * @param limit Kaç ürün (default: 6)
      * @param excludeIds Gösterilmeyecek ürün ID'leri (sepet ürünleri)
      * @return Önerilecek ürünler
@@ -32,7 +31,6 @@ public interface RecommendationController {
     @GetMapping("/hybrid")
     ResponseEntity<?> getHybridRecommendations(
             @RequestParam String productIds,
-            @RequestParam(required = false) String variantIds,
             @RequestParam(defaultValue = "6") int limit,
             @RequestParam(required = false) String excludeIds);
 

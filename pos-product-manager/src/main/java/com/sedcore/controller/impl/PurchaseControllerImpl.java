@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/product/api/v1/purchases")
+@RequestMapping("api/v1/purchases")
 @RequiredArgsConstructor
 @Slf4j
 public class PurchaseControllerImpl {

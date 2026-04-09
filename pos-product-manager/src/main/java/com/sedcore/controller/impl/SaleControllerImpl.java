@@ -71,7 +71,7 @@ public class SaleControllerImpl {
                 .collect(Collectors.toList());
             return ResponseEntity.ok(ApiResponse.success(filtered));
         } catch (Exception e) {
-            log.error("Satış listesi hatası: {}", e.getMessage());
+            log.error("Satış listesi hatası: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -86,7 +86,7 @@ public class SaleControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Satış getirme hatası: {}", e.getMessage());
+            log.error("Satış getirme hatası: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -101,7 +101,7 @@ public class SaleControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Satış numarasına göre getirme hatası: {}", e.getMessage());
+            log.error("Satış numarasına göre getirme hatası: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -121,7 +121,7 @@ public class SaleControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Satış oluşturma hatası: {}", e.getMessage());
+            log.error("Satış oluşturma hatası: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -144,7 +144,7 @@ public class SaleControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Satis iadesi hatasi: {}", e.getMessage());
+            log.error("Satis iadesi hatasi: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -163,7 +163,7 @@ public class SaleControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Satış iptal hatası: {}", e.getMessage());
+            log.error("Satış iptal hatası: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -187,7 +187,7 @@ public class SaleControllerImpl {
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
             return ResponseEntity.ok(ApiResponse.success(s));
         } catch (Exception e) {
-            log.error("İstatistik alma hatası: {}", e.getMessage());
+            log.error("İstatistik alma hatası: {}", e);
             throw ExceptionMapper.map(e);
         }
     }

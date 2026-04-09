@@ -31,7 +31,7 @@ public class UnitControllerImpl implements UnitController {
         try {
             return ResponseEntity.ok(ApiResponse.success("Birimler getirildi", unitService.getActiveUnits()));
         } catch (Exception e) {
-            log.error("Birimler getirilirken hata: {}", e.getMessage());
+            log.error("Birimler getirilirken hata: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -43,7 +43,7 @@ public class UnitControllerImpl implements UnitController {
         try {
             return ResponseEntity.ok(ApiResponse.success("Tüm birimler getirildi", unitService.getAllUnits()));
         } catch (Exception e) {
-            log.error("Tüm birimler getirilirken hata: {}", e.getMessage());
+            log.error("Tüm birimler getirilirken hata: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -56,7 +56,7 @@ public class UnitControllerImpl implements UnitController {
             UnitResponse response = unitService.createUnit(request);
             return ResponseEntity.ok(ApiResponse.success("Birim oluşturuldu", response));
         } catch (Exception e) {
-            log.error("Birim oluşturulurken hata: {}", e.getMessage());
+            log.error("Birim oluşturulurken hata: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -69,7 +69,7 @@ public class UnitControllerImpl implements UnitController {
             UnitResponse response = unitService.updateUnit(id, request);
             return ResponseEntity.ok(ApiResponse.success("Birim güncellendi", response));
         } catch (Exception e) {
-            log.error("Birim güncellenirken hata: {}", e.getMessage());
+            log.error("Birim güncellenirken hata: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -82,7 +82,7 @@ public class UnitControllerImpl implements UnitController {
             unitService.deleteUnit(id);
             return ResponseEntity.ok(ApiResponse.success("Birim silindi", null));
         } catch (Exception e) {
-            log.error("Birim silinirken hata: {}", e.getMessage());
+            log.error("Birim silinirken hata: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -95,7 +95,7 @@ public class UnitControllerImpl implements UnitController {
             UnitResponse response = unitService.toggleStatus(id);
             return ResponseEntity.ok(ApiResponse.success("Birim durumu değiştirildi", response));
         } catch (Exception e) {
-            log.error("Birim durumu değiştirilirken hata: {}", e.getMessage());
+            log.error("Birim durumu değiştirilirken hata: {}", e);
             throw ExceptionMapper.map(e);
         }
     }

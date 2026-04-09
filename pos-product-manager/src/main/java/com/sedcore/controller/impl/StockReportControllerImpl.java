@@ -32,7 +32,7 @@ public class StockReportControllerImpl {
         try {
             return ResponseEntity.ok(ApiResponse.success(stockReportService.getStockValueSummary()));
         } catch (Exception e) {
-            log.error("Stok deger ozeti hatasi: {}", e.getMessage());
+            log.error("Stok deger ozeti hatasi: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -45,7 +45,7 @@ public class StockReportControllerImpl {
         try {
             return ResponseEntity.ok(ApiResponse.success(stockReportService.getMovementSummary(startDate, endDate)));
         } catch (Exception e) {
-            log.error("Stok hareket ozeti hatasi: {}", e.getMessage());
+            log.error("Stok hareket ozeti hatasi: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -56,7 +56,7 @@ public class StockReportControllerImpl {
         try {
             return ResponseEntity.ok(ApiResponse.success(stockReportService.getCriticalAlerts()));
         } catch (Exception e) {
-            log.error("Kritik stok alarmlari hatasi: {}", e.getMessage());
+            log.error("Kritik stok alarmlari hatasi: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -68,7 +68,7 @@ public class StockReportControllerImpl {
         try {
             return ResponseEntity.ok(ApiResponse.success(stockReportService.getWarehouseBreakdown(warehouseId)));
         } catch (Exception e) {
-            log.error("Depo stok detayi hatasi: {}", e.getMessage());
+            log.error("Depo stok detayi hatasi: {}", e);
             throw ExceptionMapper.map(e);
         }
     }

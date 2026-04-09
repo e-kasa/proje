@@ -43,9 +43,9 @@ public class WarehouseControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(
                     warehouses.stream().map(this::toMap).collect(Collectors.toList())));
         } catch (Exception e) {
-            log.error("Depo listesi hatasi: {}", e.getMessage());
+            log.error("Depo listesi hatasi: {}", e);
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Depolar alinamadi: " + e.getMessage()));
+                    .body(ApiResponse.error("Depolar alinamadi: " + e));
         }
     }
 
@@ -57,6 +57,7 @@ public class WarehouseControllerImpl {
                     .orElseThrow(() -> new RuntimeException("Depo bulunamadi: " + id));
             return ResponseEntity.ok(ApiResponse.success(toMap(wh)));
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
         }
     }

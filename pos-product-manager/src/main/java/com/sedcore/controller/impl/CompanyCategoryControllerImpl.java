@@ -48,9 +48,9 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
                     ApiResponse.success("Firma kategorileri getirildi", categories)
             );
         } catch (Exception e) {
-            log.error("Firma kategorileri getirilirken hata: {}", e.getMessage());
+            log.error("Firma kategorileri getirilirken hata: {}", e);
             return ResponseEntity.badRequest().body(
-                    ApiResponse.error("Firma kategorileri getirilemedi: " + e.getMessage())
+                    ApiResponse.error("Firma kategorileri getirilemedi: " + e)
             );
         }
     }
@@ -65,9 +65,9 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
                     ApiResponse.success("Kategori listesi getirildi", list)
             );
         } catch (Exception e) {
-            log.error("Kategori listesi getirilirken hata: {}", e.getMessage());
+            log.error("Kategori listesi getirilirken hata: {}", e);
             return ResponseEntity.badRequest().body(
-                    ApiResponse.error("Kategori listesi getirilemedi: " + e.getMessage())
+                    ApiResponse.error("Kategori listesi getirilemedi: " + e)
             );
         }
     }
@@ -82,9 +82,9 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
                     ApiResponse.success("Global kategoriler getirildi", categories)
             );
         } catch (Exception e) {
-            log.error("Global kategoriler getirilirken hata: {}", e.getMessage());
+            log.error("Global kategoriler getirilirken hata: {}", e);
             return ResponseEntity.badRequest().body(
-                    ApiResponse.error("Global kategoriler getirilemedi: " + e.getMessage())
+                    ApiResponse.error("Global kategoriler getirilemedi: " + e)
             );
         }
     }
@@ -99,9 +99,9 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
                     ApiResponse.success("Kategori firmaya eklendi", response)
             );
         } catch (Exception e) {
-            log.error("Kategori eklenirken hata: {}", e.getMessage());
+            log.error("Kategori eklenirken hata: {}", e);
             return ResponseEntity.badRequest().body(
-                    ApiResponse.error("Kategori eklenemedi: " + e.getMessage())
+                    ApiResponse.error("Kategori eklenemedi: " + e)
             );
         }
     }
@@ -115,9 +115,9 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
                     ApiResponse.success("Kategori firmadan kaldırıldı", null)
             );
         } catch (Exception e) {
-            log.error("Kategori kaldırılırken hata: {}", e.getMessage());
+            log.error("Kategori kaldırılırken hata: {}", e);
             return ResponseEntity.badRequest().body(
-                    ApiResponse.error("Kategori kaldırılamadı: " + e.getMessage())
+                    ApiResponse.error("Kategori kaldırılamadı: " + e)
             );
         }
     }
@@ -135,9 +135,9 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
                     )
             );
         } catch (Exception e) {
-            log.error("Toplu kategori güncellenirken hata: {}", e.getMessage());
+            log.error("Toplu kategori güncellenirken hata: {}", e);
             return ResponseEntity.badRequest().body(
-                    ApiResponse.error("Kategori seçimi kaydedilemedi: " + e.getMessage())
+                    ApiResponse.error("Kategori seçimi kaydedilemedi: " + e)
             );
         }
     }

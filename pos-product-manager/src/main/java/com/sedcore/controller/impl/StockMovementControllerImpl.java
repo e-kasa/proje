@@ -77,7 +77,7 @@ public class StockMovementControllerImpl {
                 .collect(Collectors.toList());
             return ResponseEntity.ok(ApiResponse.success(filtered));
         } catch (Exception e) {
-            log.error("Stok hareketi listesi hatası: {}", e.getMessage());
+            log.error("Stok hareketi listesi hatası: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -92,7 +92,7 @@ public class StockMovementControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Stok hareketi getirme hatası: {}", e.getMessage());
+            log.error("Stok hareketi getirme hatası: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -126,7 +126,7 @@ public class StockMovementControllerImpl {
         } catch (IllegalArgumentException e) {
             throw ExceptionMapper.map(e);
         } catch (Exception e) {
-            log.error("Stok hareketi oluşturma hatası: {}", e.getMessage());
+            log.error("Stok hareketi oluşturma hatası: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -144,6 +144,7 @@ public class StockMovementControllerImpl {
                 .filter(m -> m.getMovementType().name().endsWith("_OUT")).count());
             return ResponseEntity.ok(ApiResponse.success(s));
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
         }
     }

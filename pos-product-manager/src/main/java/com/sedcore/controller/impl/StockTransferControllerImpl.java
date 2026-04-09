@@ -49,7 +49,7 @@ public class StockTransferControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Transfer listesi hatasi: {}", e.getMessage());
+            log.error("Transfer listesi hatasi: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -64,6 +64,7 @@ public class StockTransferControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -80,7 +81,7 @@ public class StockTransferControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Transfer hatasi: {}", e.getMessage());
+            log.error("Transfer hatasi: {}", e);
             throw ExceptionMapper.map(e);
         }
     }

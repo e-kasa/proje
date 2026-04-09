@@ -41,9 +41,9 @@ public class CategoryAttributeControllerImpl implements CategoryAttributeControl
                     toResponse(result)
             ));
         } catch (Exception e) {
-            log.error("Özellik oluşturulurken hata: {}", e.getMessage(), e);
+            log.error("Özellik oluşturulurken hata: {}", e, e);
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e.getMessage()));
+                    .body(ApiResponse.error("Hata: " + e));
         }
     }
 
@@ -73,9 +73,9 @@ public class CategoryAttributeControllerImpl implements CategoryAttributeControl
                     toResponse(result)
             ));
         } catch (Exception e) {
-            log.error("Özellik güncellenirken hata: {}", e.getMessage(), e);
+            log.error("Özellik güncellenirken hata: {}", e, e);
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e.getMessage()));
+                    .body(ApiResponse.error("Hata: " + e));
         }
     }
 
@@ -85,9 +85,9 @@ public class CategoryAttributeControllerImpl implements CategoryAttributeControl
             categoryAttributeService.deleteCategoryAttribute(id);
             return ResponseEntity.ok(ApiResponse.success("Özellik silindi",null ));
         } catch (Exception e) {
-            log.error("Özellik silinirken hata: {}", e.getMessage(), e);
+            log.error("Özellik silinirken hata: {}", e, e);
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e.getMessage()));
+                    .body(ApiResponse.error("Hata: " + e));
         }
     }
 
@@ -102,9 +102,9 @@ public class CategoryAttributeControllerImpl implements CategoryAttributeControl
                     .collect(Collectors.toList());
             return ResponseEntity.ok(ApiResponse.success("Özellikler getirildi",response));
         } catch (Exception e) {
-            log.error("Özellikler getirilirken hata: {}", e.getMessage(), e);
+            log.error("Özellikler getirilirken hata: {}", e, e);
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e.getMessage()));
+                    .body(ApiResponse.error("Hata: " + e));
         }
     }
 
@@ -119,9 +119,9 @@ public class CategoryAttributeControllerImpl implements CategoryAttributeControl
                     .collect(Collectors.toList());
             return ResponseEntity.ok(ApiResponse.success( "Zorunlu özellikler getirildi",response));
         } catch (Exception e) {
-            log.error("Zorunlu özellikler getirilirken hata: {}", e.getMessage(), e);
+            log.error("Zorunlu özellikler getirilirken hata: {}", e, e);
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e.getMessage()));
+                    .body(ApiResponse.error("Hata: " + e));
         }
     }
 
@@ -137,9 +137,9 @@ public class CategoryAttributeControllerImpl implements CategoryAttributeControl
             return ResponseEntity.ok(ApiResponse.success(
                     "Filtrelenebilir özellikler getirildi",response));
         } catch (Exception e) {
-            log.error("Filtrelenebilir özellikler getirilirken hata: {}", e.getMessage(), e);
+            log.error("Filtrelenebilir özellikler getirilirken hata: {}", e, e);
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e.getMessage()));
+                    .body(ApiResponse.error("Hata: " + e));
         }
     }
 

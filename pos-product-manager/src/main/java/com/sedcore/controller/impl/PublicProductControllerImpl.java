@@ -68,7 +68,7 @@ public class PublicProductControllerImpl {
             Page<ProductResponse> result = productService.listProducts(pageable);
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
-            log.error("Public ürün listesi hatası: {}", e.getMessage());
+            log.error("Public ürün listesi hatası: {}", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Ürünler yüklenemedi"));
         }
@@ -89,7 +89,7 @@ public class PublicProductControllerImpl {
             ProductResponse result = productService.getProduct(id);
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
-            log.error("Public ürün getirme hatası id={}: {}", id, e.getMessage());
+            log.error("Public ürün getirme hatası id={}: {}", id, e);
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error("Ürün bulunamadı"));
         }
@@ -115,7 +115,7 @@ public class PublicProductControllerImpl {
             Page<ProductResponse> result = productService.searchProducts(keyword, pageable);
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
-            log.error("Public ürün arama hatası: {}", e.getMessage());
+            log.error("Public ürün arama hatası: {}", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Arama yapılamadı"));
         }

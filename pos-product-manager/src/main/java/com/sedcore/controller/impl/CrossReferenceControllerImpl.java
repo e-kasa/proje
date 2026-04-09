@@ -30,7 +30,7 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
         try {
             return ResponseEntity.ok(ApiResponse.success("Capraz referanslar getirildi", crossReferenceService.getByVariantId(variantId)));
         } catch (Exception e) {
-            log.error("Capraz referanslar getirilirken hata: {}", e.getMessage());
+            log.error("Capraz referanslar getirilirken hata: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -42,7 +42,7 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
             CrossReferenceResponse response = crossReferenceService.createCrossReference(request);
             return ResponseEntity.ok(ApiResponse.success("Capraz referans eklendi", response));
         } catch (Exception e) {
-            log.error("Capraz referans eklenirken hata: {}", e.getMessage());
+            log.error("Capraz referans eklenirken hata: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -55,7 +55,7 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
             List<CrossReferenceResponse> responses = crossReferenceService.bulkCreate(variantId, requests);
             return ResponseEntity.ok(ApiResponse.success("Capraz referanslar toplu eklendi", responses));
         } catch (Exception e) {
-            log.error("Capraz referanslar toplu eklenirken hata: {}", e.getMessage());
+            log.error("Capraz referanslar toplu eklenirken hata: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -67,7 +67,7 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
             crossReferenceService.deleteCrossReference(id);
             return ResponseEntity.ok(ApiResponse.success("Capraz referans silindi", null));
         } catch (Exception e) {
-            log.error("Capraz referans silinirken hata: {}", e.getMessage());
+            log.error("Capraz referans silinirken hata: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -78,7 +78,7 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
         try {
             return ResponseEntity.ok(ApiResponse.success("Arama sonuclari", crossReferenceService.searchByCrossRefNumber(q)));
         } catch (Exception e) {
-            log.error("Capraz referans aranirken hata: {}", e.getMessage());
+            log.error("Capraz referans aranirken hata: {}", e);
             throw ExceptionMapper.map(e);
         }
     }

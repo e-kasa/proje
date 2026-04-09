@@ -30,7 +30,7 @@ public class OemNumberControllerImpl implements OemNumberController {
         try {
             return ResponseEntity.ok(ApiResponse.success("OEM numaralari getirildi", oemNumberService.getByVariantId(variantId)));
         } catch (Exception e) {
-            log.error("OEM numaralari getirilirken hata: {}", e.getMessage());
+            log.error("OEM numaralari getirilirken hata: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -42,7 +42,7 @@ public class OemNumberControllerImpl implements OemNumberController {
             OemNumberResponse response = oemNumberService.createOemNumber(request);
             return ResponseEntity.ok(ApiResponse.success("OEM numarasi eklendi", response));
         } catch (Exception e) {
-            log.error("OEM numarasi eklenirken hata: {}", e.getMessage());
+            log.error("OEM numarasi eklenirken hata: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -55,7 +55,7 @@ public class OemNumberControllerImpl implements OemNumberController {
             List<OemNumberResponse> responses = oemNumberService.bulkCreate(variantId, requests);
             return ResponseEntity.ok(ApiResponse.success("OEM numaralari toplu eklendi", responses));
         } catch (Exception e) {
-            log.error("OEM numaralari toplu eklenirken hata: {}", e.getMessage());
+            log.error("OEM numaralari toplu eklenirken hata: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -67,7 +67,7 @@ public class OemNumberControllerImpl implements OemNumberController {
             oemNumberService.deleteOemNumber(id);
             return ResponseEntity.ok(ApiResponse.success("OEM numarasi silindi", null));
         } catch (Exception e) {
-            log.error("OEM numarasi silinirken hata: {}", e.getMessage());
+            log.error("OEM numarasi silinirken hata: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -78,7 +78,7 @@ public class OemNumberControllerImpl implements OemNumberController {
         try {
             return ResponseEntity.ok(ApiResponse.success("Arama sonuclari", oemNumberService.searchByOemNumber(q)));
         } catch (Exception e) {
-            log.error("OEM aranirken hata: {}", e.getMessage());
+            log.error("OEM aranirken hata: {}", e);
             throw ExceptionMapper.map(e);
         }
     }

@@ -91,7 +91,7 @@ public class AccountStatementControllerImpl {
 
             return ResponseEntity.ok(ApiResponse.success(entry));
         } catch (Exception e) {
-            log.error("Hesap ekstresi hatasi: {}", e.getMessage());
+            log.error("Hesap ekstresi hatasi: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -138,7 +138,7 @@ public class AccountStatementControllerImpl {
 
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
-            log.error("Vadesi gecmis islemler hatasi: {}", e.getMessage());
+            log.error("Vadesi gecmis islemler hatasi: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -183,7 +183,7 @@ public class AccountStatementControllerImpl {
 
             return ResponseEntity.ok(ApiResponse.success(summary));
         } catch (Exception e) {
-            log.error("Hesap ozeti hatasi: {}", e.getMessage());
+            log.error("Hesap ozeti hatasi: {}", e);
             throw ExceptionMapper.map(e);
         }
     }

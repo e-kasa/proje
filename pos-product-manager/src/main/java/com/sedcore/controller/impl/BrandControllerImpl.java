@@ -31,7 +31,7 @@ public class BrandControllerImpl implements BrandController {
         try {
             return ResponseEntity.ok(ApiResponse.success("Markalar getirildi", brandService.getActiveBrands()));
         } catch (Exception e) {
-            log.error("Markalar getirilirken hata: {}", e.getMessage());
+            log.error("Markalar getirilirken hata: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -43,7 +43,7 @@ public class BrandControllerImpl implements BrandController {
         try {
             return ResponseEntity.ok(ApiResponse.success("Tüm markalar getirildi", brandService.getAllBrands()));
         } catch (Exception e) {
-            log.error("Tüm markalar getirilirken hata: {}", e.getMessage());
+            log.error("Tüm markalar getirilirken hata: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -56,7 +56,7 @@ public class BrandControllerImpl implements BrandController {
             BrandResponse response = brandService.createBrand(request);
             return ResponseEntity.ok(ApiResponse.success("Marka oluşturuldu", response));
         } catch (Exception e) {
-            log.error("Marka oluşturulurken hata: {}", e.getMessage());
+            log.error("Marka oluşturulurken hata: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -69,7 +69,7 @@ public class BrandControllerImpl implements BrandController {
             BrandResponse response = brandService.updateBrand(id, request);
             return ResponseEntity.ok(ApiResponse.success("Marka güncellendi", response));
         } catch (Exception e) {
-            log.error("Marka güncellenirken hata: {}", e.getMessage());
+            log.error("Marka güncellenirken hata: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -82,7 +82,7 @@ public class BrandControllerImpl implements BrandController {
             brandService.deleteBrand(id);
             return ResponseEntity.ok(ApiResponse.success("Marka silindi", null));
         } catch (Exception e) {
-            log.error("Marka silinirken hata: {}", e.getMessage());
+            log.error("Marka silinirken hata: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -95,7 +95,7 @@ public class BrandControllerImpl implements BrandController {
             BrandResponse response = brandService.toggleStatus(id);
             return ResponseEntity.ok(ApiResponse.success("Marka durumu değiştirildi", response));
         } catch (Exception e) {
-            log.error("Marka durumu değiştirilirken hata: {}", e.getMessage());
+            log.error("Marka durumu değiştirilirken hata: {}", e);
             throw ExceptionMapper.map(e);
         }
     }

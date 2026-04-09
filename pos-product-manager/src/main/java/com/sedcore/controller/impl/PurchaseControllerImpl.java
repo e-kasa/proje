@@ -41,6 +41,7 @@ public class PurchaseControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.mapAndLog(e, "listPurchases");
         }
     }
@@ -53,6 +54,7 @@ public class PurchaseControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.notFound("Purchase[" + id + "]");
         }
     }
@@ -69,6 +71,7 @@ public class PurchaseControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.mapAndLog(e, "createPurchase");
         }
     }
@@ -85,6 +88,7 @@ public class PurchaseControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.mapAndLog(e, "updatePurchase(" + id + ")");
         }
     }
@@ -102,6 +106,7 @@ public class PurchaseControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.mapAndLog(e, "createPurchaseReturn(" + id + ")");
         }
     }
@@ -116,6 +121,7 @@ public class PurchaseControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.mapAndLog(e, "cancelPurchase(" + id + ")");
         }
     }
@@ -146,6 +152,7 @@ public class PurchaseControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.mapAndLog(e, "getPurchaseStats");
         }
     }

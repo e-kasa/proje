@@ -56,7 +56,7 @@ public class SupplierControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Tedarikci listesi hatasi: {}", e.getMessage());
+            log.error("Tedarikci listesi hatasi: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -69,6 +69,7 @@ public class SupplierControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -83,7 +84,7 @@ public class SupplierControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Tedarikci olusturma hatasi: {}", e.getMessage());
+            log.error("Tedarikci olusturma hatasi: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -98,6 +99,7 @@ public class SupplierControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -111,6 +113,7 @@ public class SupplierControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -123,6 +126,7 @@ public class SupplierControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -148,6 +152,7 @@ public class SupplierControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -160,6 +165,7 @@ public class SupplierControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -172,6 +178,7 @@ public class SupplierControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -186,7 +193,7 @@ public class SupplierControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Odeme kaydi hatasi: supplierId={}, {}", id, e.getMessage());
+            log.error("Odeme kaydi hatasi: supplierId={}, {}", id, e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -205,6 +212,7 @@ public class SupplierControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
         }
     }

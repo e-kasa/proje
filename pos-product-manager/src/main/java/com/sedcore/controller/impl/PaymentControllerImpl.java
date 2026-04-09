@@ -48,7 +48,7 @@ public class PaymentControllerImpl implements PaymentController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Odeme olusturma hatasi: {}", e.getMessage());
+            log.error("Odeme olusturma hatasi: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -62,6 +62,7 @@ public class PaymentControllerImpl implements PaymentController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -97,7 +98,7 @@ public class PaymentControllerImpl implements PaymentController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Odeme listesi hatasi: {}", e.getMessage());
+            log.error("Odeme listesi hatasi: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -135,7 +136,7 @@ public class PaymentControllerImpl implements PaymentController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Odeme iptal hatasi: id={}, {}", id, e.getMessage());
+            log.error("Odeme iptal hatasi: id={}, {}", id, e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -152,7 +153,7 @@ public class PaymentControllerImpl implements PaymentController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Odeme onay hatasi: id={}, {}", id, e.getMessage());
+            log.error("Odeme onay hatasi: id={}, {}", id, e);
             throw ExceptionMapper.map(e);
         }
     }

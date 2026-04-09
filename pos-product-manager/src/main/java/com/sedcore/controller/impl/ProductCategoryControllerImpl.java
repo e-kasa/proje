@@ -40,9 +40,9 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
                     toResponse(result)
             ));
         } catch (Exception e) {
-            log.error("Ürün kategoriye eklenirken hata: {}", e.getMessage(), e);
+            log.error("Ürün kategoriye eklenirken hata: {}", e, e);
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e.getMessage()));
+                    .body(ApiResponse.error("Hata: " + e));
         }
     }
 
@@ -53,9 +53,9 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
             productCategoryService.removeCategoryFromProduct(productId, categoryId);
             return ResponseEntity.ok(ApiResponse.success("Ürün kategoriden çıkarıldı",null));
         } catch (Exception e) {
-            log.error("Ürün kategoriden çıkarılırken hata: {}", e.getMessage(), e);
+            log.error("Ürün kategoriden çıkarılırken hata: {}", e, e);
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e.getMessage()));
+                    .body(ApiResponse.error("Hata: " + e));
         }
     }
 
@@ -66,9 +66,9 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
             productCategoryService.changePrimaryCategory(productId, newPrimaryCategoryId);
             return ResponseEntity.ok(ApiResponse.success( "Ana kategori değiştirildi",null));
         } catch (Exception e) {
-            log.error("Ana kategori değiştirilirken hata: {}", e.getMessage(), e);
+            log.error("Ana kategori değiştirilirken hata: {}", e, e);
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e.getMessage()));
+                    .body(ApiResponse.error("Hata: " + e));
         }
     }
 
@@ -82,9 +82,9 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
                     .collect(Collectors.toList());
             return ResponseEntity.ok(ApiResponse.success( "Kategoriler getirildi",response));
         } catch (Exception e) {
-            log.error("Kategoriler getirilirken hata: {}", e.getMessage(), e);
+            log.error("Kategoriler getirilirken hata: {}", e, e);
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e.getMessage()));
+                    .body(ApiResponse.error("Hata: " + e));
         }
     }
 
@@ -98,9 +98,9 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
                     toResponse(primary)
             ));
         } catch (Exception e) {
-            log.error("Ana kategori getirilirken hata: {}", e.getMessage(), e);
+            log.error("Ana kategori getirilirken hata: {}", e, e);
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e.getMessage()));
+                    .body(ApiResponse.error("Hata: " + e));
         }
     }
 
@@ -114,9 +114,9 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
                     .collect(Collectors.toList());
             return ResponseEntity.ok(ApiResponse.success( "Ürünler getirildi",response));
         } catch (Exception e) {
-            log.error("Ürünler getirilirken hata: {}", e.getMessage(), e);
+            log.error("Ürünler getirilirken hata: {}", e, e);
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e.getMessage()));
+                    .body(ApiResponse.error("Hata: " + e));
         }
     }
 
@@ -131,9 +131,9 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
                     .collect(Collectors.toList());
             return ResponseEntity.ok(ApiResponse.success( "Öne çıkan ürünler getirildi",response));
         } catch (Exception e) {
-            log.error("Öne çıkan ürünler getirilirken hata: {}", e.getMessage(), e);
+            log.error("Öne çıkan ürünler getirilirken hata: {}", e, e);
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e.getMessage()));
+                    .body(ApiResponse.error("Hata: " + e));
         }
     }
 
@@ -144,9 +144,9 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
             productCategoryService.featureProductInCategory(productId, categoryId, featured);
             return ResponseEntity.ok(ApiResponse.success( "Öne çıkarma durumu güncellendi",null));
         } catch (Exception e) {
-            log.error("Öne çıkarma güncellenirken hata: {}", e.getMessage(), e);
+            log.error("Öne çıkarma güncellenirken hata: {}", e, e);
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e.getMessage()));
+                    .body(ApiResponse.error("Hata: " + e));
         }
     }
 
@@ -157,9 +157,9 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
             productCategoryService.updateDisplayOrder(productId, categoryId, displayOrder);
             return ResponseEntity.ok(ApiResponse.success( "Görüntüleme sırası güncellendi",null));
         } catch (Exception e) {
-            log.error("Görüntüleme sırası güncellenirken hata: {}", e.getMessage(), e);
+            log.error("Görüntüleme sırası güncellenirken hata: {}", e, e);
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e.getMessage()));
+                    .body(ApiResponse.error("Hata: " + e));
         }
     }
 

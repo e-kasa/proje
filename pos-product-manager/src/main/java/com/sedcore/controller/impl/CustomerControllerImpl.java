@@ -54,7 +54,7 @@ public class CustomerControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Müşteri listesi hatası: {}", e.getMessage());
+            log.error("Müşteri listesi hatası: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -69,6 +69,7 @@ public class CustomerControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.mapAndLog(e, "getCustomer(" + id + ")");
         }
     }
@@ -92,7 +93,7 @@ public class CustomerControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Müşteri oluşturma hatası: {}", e.getMessage());
+            log.error("Müşteri oluşturma hatası: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -121,6 +122,7 @@ public class CustomerControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -138,6 +140,7 @@ public class CustomerControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -155,6 +158,7 @@ public class CustomerControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -171,6 +175,7 @@ public class CustomerControllerImpl {
             stats.put("corporateCustomers", all.stream().filter(c -> c.getCustomerType() != null && c.getCustomerType().name().equals("CORPORATE")).count());
             return ResponseEntity.ok(ApiResponse.success(stats));
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -187,6 +192,7 @@ public class CustomerControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -199,6 +205,7 @@ public class CustomerControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -213,7 +220,7 @@ public class CustomerControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Tahsilat kaydi hatasi: customerId={}, {}", id, e.getMessage());
+            log.error("Tahsilat kaydi hatasi: customerId={}, {}", id, e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -232,6 +239,7 @@ public class CustomerControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
         }
     }

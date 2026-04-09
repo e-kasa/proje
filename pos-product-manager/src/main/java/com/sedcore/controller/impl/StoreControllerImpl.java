@@ -38,9 +38,9 @@ public class StoreControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(
                     stores.stream().map(this::toMap).collect(Collectors.toList())));
         } catch (Exception e) {
-            log.error("Magaza listesi hatasi: {}", e.getMessage());
+            log.error("Magaza listesi hatasi: {}", e);
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Magazalar alinamadi: " + e.getMessage()));
+                    .body(ApiResponse.error("Magazalar alinamadi: " + e));
         }
     }
 
@@ -52,6 +52,7 @@ public class StoreControllerImpl {
                     .orElseThrow(() -> new RuntimeException("Magaza bulunamadi: " + id));
             return ResponseEntity.ok(ApiResponse.success(toMap(store)));
         } catch (Exception e) {
+            log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
         }
     }

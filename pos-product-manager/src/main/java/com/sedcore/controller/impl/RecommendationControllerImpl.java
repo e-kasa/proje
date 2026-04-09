@@ -84,7 +84,7 @@ public class RecommendationControllerImpl implements RecommendationController {
         } catch (Exception e) {
             log.error("Hybrid öneriler getirme hatası", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(e.getMessage()));
+                    .body(ApiResponse.error(e));
         }
     }
 
@@ -114,7 +114,7 @@ public class RecommendationControllerImpl implements RecommendationController {
         } catch (Exception e) {
             log.error("Frequently bought together hatası", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(e.getMessage()));
+                    .body(ApiResponse.error(e));
         }
     }
 
@@ -145,7 +145,7 @@ public class RecommendationControllerImpl implements RecommendationController {
         } catch (Exception e) {
             log.error("Benzer ürünler getirme hatası", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(e.getMessage()));
+                    .body(ApiResponse.error(e));
         }
     }
 
@@ -167,7 +167,7 @@ public class RecommendationControllerImpl implements RecommendationController {
         } catch (Exception e) {
             log.error("İlişki oluşturma hatası", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e.getMessage()));
+                    .body(ApiResponse.error(e));
         }
     }
 
@@ -189,7 +189,7 @@ public class RecommendationControllerImpl implements RecommendationController {
         } catch (Exception e) {
             log.error("İlişki güncelleme hatası", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e.getMessage()));
+                    .body(ApiResponse.error(e));
         }
     }
 
@@ -211,7 +211,7 @@ public class RecommendationControllerImpl implements RecommendationController {
         } catch (Exception e) {
             log.error("İlişki silme hatası", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e.getMessage()));
+                    .body(ApiResponse.error(e));
         }
     }
 
@@ -246,7 +246,7 @@ public class RecommendationControllerImpl implements RecommendationController {
         } catch (Exception e) {
             log.error("İlişkiler getirme hatası", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(e.getMessage()));
+                    .body(ApiResponse.error(e));
         }
     }
 
@@ -270,7 +270,7 @@ public class RecommendationControllerImpl implements RecommendationController {
         } catch (Exception e) {
             log.error("Toplu import hatası", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e.getMessage()));
+                    .body(ApiResponse.error(e));
         }
     }
 
@@ -296,7 +296,7 @@ public class RecommendationControllerImpl implements RecommendationController {
         } catch (Exception e) {
             log.error("Cache temizleme hatası", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(e.getMessage()));
+                    .body(ApiResponse.error(e));
         }
     }
 
@@ -321,7 +321,7 @@ public class RecommendationControllerImpl implements RecommendationController {
         } catch (Exception e) {
             log.error("İstatistik getirme hatası", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(e.getMessage()));
+                    .body(ApiResponse.error(e));
         }
     }
 }

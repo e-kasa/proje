@@ -154,4 +154,6 @@ public class PurchaseControllerImpl {
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.mapAndLog(e, "getPurchaseStats");
-      
+        }
+    }
+}

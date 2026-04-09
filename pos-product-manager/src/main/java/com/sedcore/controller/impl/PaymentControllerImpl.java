@@ -94,7 +94,7 @@ public class PaymentControllerImpl implements PaymentController {
             if (purchaseId != null) {
                 return ResponseEntity.ok(ApiResponse.success(paymentService.getByPurchase(purchaseId)));
             }
-            throw ExceptionMapper.map(e);
+            throw new TOpenException(new TOpenMessage(TMessageType.PAYMENT_LIST_ERROR_2100));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -155,4 +155,6 @@ public class PaymentControllerImpl implements PaymentController {
         } catch (Exception e) {
             log.error("Odeme onay hatasi: id={}, {}", id, e);
             throw ExceptionMapper.map(e);
-      
+        }
+    }
+}

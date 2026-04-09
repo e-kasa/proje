@@ -95,7 +95,7 @@ public class CustomerControllerImpl {
             throw e;
         } catch (Exception e) {
             log.error("Müşteri oluşturma hatası: {}", e);
-            throw new TOpenException(new TOpenMessage(TMessageType.CUSTOMER_GET_ERROR_1404));
+            throw new TOpenException(new TOpenMessage(TMessageType.CUSTOMER_CREATE_ERROR_1401));
         }
     }
 

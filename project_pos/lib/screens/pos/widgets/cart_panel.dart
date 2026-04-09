@@ -1,658 +1,200 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/src/intl/number_format.dart';
-import 'package:project_pos/core/theme/app_colors.dart';
-import 'package:project_pos/core/utils/i18n_helper.dart';
-import 'package:project_pos/services/service_locator.dart';
+import 'package:intl/intl.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/widgets.dart';
 import '../providers/pos_provider.dart';
 import 'cart_item_row.dart';
-import 'quick_customer_dialog.dart';
-import 'package:project_pos/core/widgets/widgets.dart';
-import 'recommendation_panel.dart';
 
 class CartPanel extends ConsumerWidget {
   final VoidCallback onPaymentPressed;
+  final NumberFormat currencyFormat;
 
   const CartPanel({
     super.key,
-    required this.onPaymentPressed, required NumberFormat currencyFormat,
+    required this.onPaymentPressed,
+    required this.currencyFormat,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final posState = ref.watch(posProvider);
     final notifier = ref.read(posProvider.notifier);
-    final t = i18nOf(ref);
-
-    // Sepet değiştiğinde önerileri yükle
-    ref.listen(
-      posProvider.select((state) => state.cartItems.map((i) => i.variantId).toList()),
-      (prev, next) {
-        if (next.isNotEmpty && (prev == null || prev.length != next.length)) {
-          notifier.loadRecommendations();
-        } else if (next.isEmpty) {
-          // Sepet boşsa önerileri temizle
-          ref.read(posProvider.notifier).loadRecommendations();
-        }
-      },
-    );
 
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(
-          left: BorderSide(color: AppColors.border),
-        ),
-      ),
-      child: Column(
-        children: [
-          // Header
-          _buildHeader(context, posState, notifier, t),
-
-          // Müşteri seçimi
-          _buildCustomerSection(context, posState, notifier, ref, t),
-
-          const Divider(height: 1),
-
-          // Sepet listesi
-          Expanded(
-            child: posState.cartItems.isEmpty
-                ? _buildEmptyCart(t)
-                : Column(
-                    children: [
-                      // Ürün Önerileri (Sepet boş değilse göster)
-                      if (posState.recommendations.isNotEmpty || posState.isLoadingRecommendations)
-                        const RecommendationPanel(),
-
-                      // Sepet ürünleri
-                      Expanded(
-                        child: _buildCartList(posState, notifier),
-                      ),
-                    ],
-                  ),
-          ),
-
-          const Divider(height: 1),
-
-          // Toplam & Ödeme
-          _buildTotalSection(posState, notifier, t),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader(
-      BuildContext context, PosState posState, PosNotifier notifier, String Function(String) t) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.05),
-        border: Border(bottom: BorderSide(color: AppColors.border)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.shopping_cart, color: AppColors.primary, size: 22),
-          const SizedBox(width: 8),
-          Text(
-            t('pos.cart'),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          if (posState.totalItems > 0)
-            Container(
-              margin: const EdgeInsets.only(left: 8),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '${posState.totalItems}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          const Spacer(),
-          if (posState.cartItems.isNotEmpty) ...[
-            TextButton.icon(
-              onPressed: () => _showParkDialog(context, notifier, t),
-              icon: const Icon(Icons.pause_circle_outline,
-                  size: 16, color: AppColors.primary),
-              label: Text(
-                t('pos.park_order'),
-                style: const TextStyle(fontSize: 12, color: AppColors.primary),
-              ),
-              style: TextButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-            ),
-            const SizedBox(width: 4),
-            TextButton.icon(
-              onPressed: () => _confirmClearCart(context, notifier, t),
-              icon: const Icon(Icons.delete_outline,
-                  size: 16, color: AppColors.danger),
-              label: Text(
-                t('common.clear'),
-                style: const TextStyle(fontSize: 12, color: AppColors.danger),
-              ),
-              style: TextButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCustomerSection(BuildContext context, PosState posState,
-      PosNotifier notifier, WidgetRef ref, String Function(String) t) {
-    return InkWell(
-      onTap: () => _showCustomerPicker(context, notifier, ref, t),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        color: posState.selectedCustomer != null
-            ? AppColors.bgInfo.withOpacity(0.3)
-            : null,
-        child: Row(
-          children: [
-            Icon(
-              posState.selectedCustomer != null
-                  ? Icons.person
-                  : Icons.person_add_alt,
-              size: 18,
-              color: posState.selectedCustomer != null
-                  ? AppColors.info
-                  : AppColors.textMuted,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                posState.selectedCustomer?['name']?.toString() ??
-                    t('pos.select_customer'),
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: posState.selectedCustomer != null
-                      ? FontWeight.w600
-                      : FontWeight.w400,
-                  color: posState.selectedCustomer != null
-                      ? AppColors.info
-                      : AppColors.textMuted,
-                ),
-              ),
-            ),
-            if (posState.selectedCustomer != null)
-              InkWell(
-                onTap: () => notifier.selectCustomer(null),
-                child: const Icon(Icons.close, size: 16, color: AppColors.textMuted),
-              )
-            else
-              const Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyCart(String Function(String) t) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.shopping_cart_outlined,
-              size: 56, color: AppColors.textMuted.withOpacity(0.3)),
-          const SizedBox(height: 12),
-          Text(
-            t('pos.cart_empty'),
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textMuted,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            t('pos.cart_empty_hint'),
-            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCartList(PosState posState, PosNotifier notifier) {
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      itemCount: posState.cartItems.length,
-      separatorBuilder: (_, __) => Divider(
-        height: 1,
-        color: AppColors.border.withOpacity(0.5),
-        indent: 12,
-        endIndent: 12,
-      ),
-      itemBuilder: (context, index) {
-        final item = posState.cartItems[index];
-        return CartItemRow(
-          item: item,
-          onRemove: () => notifier.removeFromCart(item.productId),
-          onQuantityChanged: (qty) =>
-              notifier.updateQuantity(item.productId, qty),
-          onDiscountChanged: (disc) =>
-              notifier.updateDiscount(item.productId, disc),
-        );
-      },
-    );
-  }
-
-  Widget _buildTotalSection(PosState posState, PosNotifier notifier, String Function(String) t) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.border)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: const Offset(0, -2),
+            offset: const Offset(-4, 0),
           ),
         ],
       ),
       child: Column(
         children: [
-          // Ara toplam
-          _buildSummaryRow(t('pos.subtotal'), posState.subtotal),
-          if (posState.totalDiscount > 0)
-            _buildSummaryRow(
-              t('pos.discount'),
-              -posState.totalDiscount,
-              color: AppColors.success,
-            ),
-          _buildSummaryRow(t('pos.tax'), posState.totalTax),
-          const SizedBox(height: 8),
-          const Divider(height: 1),
-          const SizedBox(height: 8),
-
-          // Genel toplam
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                t('pos.grand_total'),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              Text(
-                '${posState.grandTotal.toStringAsFixed(2)} \u20BA',
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // Ödeme butonu
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton.icon(
-              onPressed: posState.cartItems.isEmpty ? null : onPaymentPressed,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 2,
-              ),
-              icon: const Icon(Icons.payment, size: 20),
-              label: Text(
-                t('pos.payment'),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
+          _buildHeader(context, notifier, posState),
+          _buildCustomerSection(context, notifier, posState),
+          Expanded(child: _buildItemList(posState, notifier)),
+          _buildSummary(posState),
+          _buildActionButtons(posState),
         ],
       ),
     );
   }
 
-  Widget _buildSummaryRow(String label, double amount, {Color? color}) {
-    final isNegative = amount < 0;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+  Widget _buildHeader(BuildContext context, PosNotifier notifier, PosState state) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: AppColors.primary.withOpacity(0.05),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
+          const Icon(Icons.shopping_basket_rounded, color: AppColors.primary),
+          const SizedBox(width: 12),
+          const Text('Satış Sepeti', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const Spacer(),
+          if (state.cartItems.isNotEmpty)
+            TextButton(
+              onPressed: () => notifier.clearCart(),
+              child: const Text('Temizle', style: TextStyle(color: AppColors.danger)),
             ),
-          ),
-          Text(
-            '${isNegative ? "-" : ""}${amount.abs().toStringAsFixed(2)} \u20BA',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: color ?? AppColors.textPrimary,
-            ),
-          ),
         ],
       ),
     );
   }
 
-  void _showParkDialog(BuildContext context, PosNotifier notifier, String Function(String) t) {
-    final labelController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(t('pos.park_order')),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(t('pos.park_order_label_hint')),
-            const SizedBox(height: 12),
-            TextField(
-              controller: labelController,
-              decoration: InputDecoration(
-                hintText: t('pos.park_order_placeholder'),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              ),
-              maxLength: 50,
-            ),
-          ],
+  Widget _buildCustomerSection(BuildContext context, PosNotifier notifier, PosState state) {
+    return InkWell(
+      onTap: () => _showCustomerPicker(context, notifier),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: AppColors.border.withOpacity(0.5))),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(t('common.cancel')),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              notifier.parkCurrentOrder(label: labelController.text.isNotEmpty ? labelController.text : null);
-              Navigator.pop(ctx);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-            ),
-            child: Text(t('pos.park_order')),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmClearCart(BuildContext context, PosNotifier notifier, String Function(String) t) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(t('pos.clear_cart')),
-        content: Text(t('pos.clear_cart_confirm')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(t('common.cancel')),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              notifier.clearCart();
-              Navigator.pop(ctx);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
-            ),
-            child: Text(t('common.clear')),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showCustomerPicker(
-      BuildContext context, PosNotifier notifier, WidgetRef ref, String Function(String) t) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => _CustomerPickerSheet(
-        onSelected: (customer) {
-          notifier.selectCustomer(customer);
-          Navigator.pop(ctx);
-        },
-        ref: ref,
-        t: t,
-      ),
-    );
-  }
-}
-
-// ─── Customer Picker Bottom Sheet ────────────────────────────────
-class _CustomerPickerSheet extends StatefulWidget {
-  final ValueChanged<Map<String, dynamic>> onSelected;
-  final WidgetRef ref;
-  final String Function(String) t;
-
-  const _CustomerPickerSheet({
-    required this.onSelected,
-    required this.ref,
-    required this.t,
-  });
-
-  @override
-  State<_CustomerPickerSheet> createState() => _CustomerPickerSheetState();
-}
-
-class _CustomerPickerSheetState extends State<_CustomerPickerSheet> {
-  List<Map<String, dynamic>> _customers = [];
-  List<Map<String, dynamic>> _filtered = [];
-  bool _isLoading = true;
-  final _searchController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCustomers();
-  }
-
-  Future<void> _loadCustomers() async {
-    try {
-      final customers = await widget.ref
-          .read(customerServiceProvider)
-          .getCustomers();
-      if (mounted) {
-        setState(() {
-          _customers = customers;
-          _filtered = customers;
-          _isLoading = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  void _filter(String query) {
-    final q = query.toLowerCase();
-    setState(() {
-      _filtered = _customers.where((c) {
-        return (c['name']?.toString().toLowerCase() ?? '').contains(q) ||
-            (c['phone']?.toString() ?? '').contains(q);
-      }).toList();
-    });
-  }
-
-  Future<void> _showQuickCustomerDialog() async {
-    final newCustomer = await QuickCustomerDialog.show(
-      context,
-      onCustomerCreated: (customer) {
-        // Add the new customer to the list and auto-select
-        setState(() {
-          _customers.insert(0, customer);
-          _filtered = _customers;
-        });
-      },
-    );
-
-    if (newCustomer != null && mounted) {
-      // Auto-select the newly created customer
-      widget.onSelected(newCustomer);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.6,
-      maxChildSize: 0.85,
-      minChildSize: 0.4,
-      expand: false,
-      builder: (_, scrollController) {
-        return Column(
+        child: Row(
           children: [
-            // Handle
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: state.selectedCustomer != null ? AppColors.success : AppColors.bgLight,
+              child: Icon(
+                state.selectedCustomer != null ? Icons.person : Icons.person_add_alt_1,
+                size: 16,
+                color: state.selectedCustomer != null ? Colors.white : AppColors.textMuted,
               ),
             ),
-            // Title with Create Button
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.t('pos.select_customer_title'),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
+                    state.selectedCustomer != null ? state.selectedCustomer!['name'] : 'Müşteri Seçin',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      color: state.selectedCustomer != null ? AppColors.textPrimary : AppColors.textMuted,
                     ),
                   ),
-                  const Spacer(),
-                  SizedBox(
-                    height: 36,
-                    child: ElevatedButton.icon(
-                      onPressed: _showQuickCustomerDialog,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                      ),
-                      icon: const Icon(Icons.person_add, size: 16),
-                      label: Text(
-                        widget.t('common.add'),
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ),
+                  if (state.selectedCustomer != null)
+                    Text(state.selectedCustomer!['phone'] ?? '', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
                 ],
               ),
             ),
-            // Search
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: TextField(
-                controller: _searchController,
-                onChanged: _filter,
-                decoration: InputDecoration(
-                  hintText: widget.t('pos.search_customer'),
-                  prefixIcon: const Icon(Icons.search, size: 20),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
-                ),
-              ),
-            ),
-            // List
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _filtered.isEmpty
-                      ? Center(
-                          child: Text(widget.t('pos.customer_not_found'),
-                              style: const TextStyle(color: AppColors.textMuted)),
-                        )
-                      : ListView.separated(
-                          controller: scrollController,
-                          itemCount: _filtered.length,
-                          separatorBuilder: (_, __) =>
-                              const Divider(height: 1),
-                          itemBuilder: (_, index) {
-                            final c = _filtered[index];
-                            return ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor:
-                                    AppColors.primary.withOpacity(0.1),
-                                child: Text(
-                                  (c['name']?.toString() ?? '?')
-                                      .substring(0, 1)
-                                      .toUpperCase(),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                              ),
-                              title: Text(c['name']?.toString() ?? ''),
-                              subtitle: Text(
-                                c['phone']?.toString() ?? '',
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                              trailing: const Icon(Icons.chevron_right,
-                                  size: 18, color: AppColors.textMuted),
-                              onTap: () => widget.onSelected(c),
-                            );
-                          },
-                        ),
-            ),
+            const Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildItemList(PosState state, PosNotifier notifier) {
+    if (state.cartItems.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add_shopping_cart_rounded, size: 48, color: AppColors.border),
+            const SizedBox(height: 12),
+            const Text('Sepetiniz Boş', style: TextStyle(color: AppColors.textMuted)),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: state.cartItems.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final item = state.cartItems[index];
+        return CartItemRow(
+          item: item,
+          onQuantityChanged: (qty) => notifier.updateQuantity(item.productId, qty),
+          onDiscountChanged: (disc) => notifier.updateDiscount(item.productId, disc),
+          onRemove: () => notifier.removeFromCart(item.productId),
         );
       },
     );
   }
+
+  Widget _buildSummary(PosState state) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.bgLight,
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: Column(
+        children: [
+          _summaryRow('Ara Toplam', currencyFormat.format(state.subtotal)),
+          if (state.totalDiscount > 0)
+            _summaryRow('İndirim', '-${currencyFormat.format(state.totalDiscount)}', color: AppColors.danger),
+          _summaryRow('KDV', currencyFormat.format(state.totalTax)),
+          const Divider(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('TOPLAM', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+              Text(currencyFormat.format(state.grandTotal), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 22, color: AppColors.primary)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(PosState state) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Expanded(
+            child: AppButton.primary(
+              text: 'ÖDEME YAP',
+              icon: Icons.payments_rounded,
+              onPressed: state.cartItems.isEmpty ? null : onPaymentPressed,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryRow(String label, String value, {Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+          Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color ?? AppColors.textPrimary)),
+        ],
+      ),
+    );
+  }
+
+  void _showCustomerPicker(BuildContext context, PosNotifier notifier) {
+    // Burada müşteri seçici dialog açılacak
+  }
 }
-  

@@ -91,7 +91,7 @@ public class AccountStatementControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(entry));
         } catch (Exception e) {
             log.error("Hesap ekstresi hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -138,7 +138,7 @@ public class AccountStatementControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Vadesi gecmis islemler hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -183,7 +183,7 @@ public class AccountStatementControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(summary));
         } catch (Exception e) {
             log.error("Hesap ozeti hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 }

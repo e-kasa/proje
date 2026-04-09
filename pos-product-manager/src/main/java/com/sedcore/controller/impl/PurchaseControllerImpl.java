@@ -37,10 +37,11 @@ public class PurchaseControllerImpl {
         try {
             return ResponseEntity.ok(ApiResponse.success(
                     purchaseService.listPurchases(supplierId, isCancelled)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Satin alma listesi hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Liste alinamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -49,8 +50,11 @@ public class PurchaseControllerImpl {
     public ResponseEntity<ApiResponse<PurchaseResponse>> getById(@PathVariable String id) {
         try {
             return ResponseEntity.ok(ApiResponse.success(purchaseService.getPurchase(id)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            log.error("Satin alma getirme hatasi: {}", e.getMessage());
+            throw new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006));
         }
     }
 
@@ -63,10 +67,11 @@ public class PurchaseControllerImpl {
             log.info("Satin alma olusturuldu: fatura={}, tedarikci={}",
                     response.getInvoiceNumber(), response.getSupplierName());
             return ResponseEntity.ok(ApiResponse.success(response));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Satin alma hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Satin alma olusturulamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -79,10 +84,11 @@ public class PurchaseControllerImpl {
             PurchaseResponse response = purchaseService.updatePurchase(id, request);
             log.info("Satin alma guncellendi: id={}", id);
             return ResponseEntity.ok(ApiResponse.success(response));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Satin alma guncelleme hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Guncelleme basarisiz: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -96,10 +102,11 @@ public class PurchaseControllerImpl {
             log.info("Satin alma iadesi olusturuldu: purchaseId={}, tutar={}",
                     id, response.getTotalReturnAmount());
             return ResponseEntity.ok(ApiResponse.success(response));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Satin alma iadesi hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Iade olusturulamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -110,8 +117,11 @@ public class PurchaseControllerImpl {
             PurchaseResponse response = purchaseService.cancelPurchase(id);
             log.info("Satin alma iptal edildi: id={}", id);
             return ResponseEntity.ok(ApiResponse.success(response));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            log.error("Satin alma iptal hatasi: {}", e.getMessage());
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -138,8 +148,11 @@ public class PurchaseControllerImpl {
             s.put("totalDebt", totalDebt);
 
             return ResponseEntity.ok(ApiResponse.success(s));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            log.error("Satin alma istatistikleri hatasi: {}", e.getMessage());
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 }

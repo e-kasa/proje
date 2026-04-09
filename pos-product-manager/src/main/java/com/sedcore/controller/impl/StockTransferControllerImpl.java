@@ -45,9 +45,11 @@ public class StockTransferControllerImpl {
             }
             var result = transfers.stream().map(this::toMap).collect(Collectors.toList());
             return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Transfer listesi hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -56,10 +58,12 @@ public class StockTransferControllerImpl {
     public ResponseEntity<ApiResponse<Map<String, Object>>> getById(@PathVariable String id) {
         try {
             StockTransfer transfer = stockTransferRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Transfer bulunamadi: " + id));
+                    .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
             return ResponseEntity.ok(ApiResponse.success(toMap(transfer)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -72,9 +76,11 @@ public class StockTransferControllerImpl {
             log.info("Transfer tamamlandi: ID={}, {} -> {}",
                     transfer.getId(), transfer.getFromWarehouseId(), transfer.getToWarehouseId());
             return ResponseEntity.ok(ApiResponse.success(toMap(transfer)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Transfer hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 

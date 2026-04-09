@@ -52,10 +52,11 @@ public class SupplierControllerImpl {
                     || (s.getEmail() != null && s.getEmail().toLowerCase().contains(q)))
                 .collect(Collectors.toList());
             return ResponseEntity.ok(ApiResponse.success(filtered));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Tedarikci listesi hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                .body(ApiResponse.error("Tedarikci listesi alinamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -64,8 +65,10 @@ public class SupplierControllerImpl {
     public ResponseEntity<ApiResponse<SupplierResponse>> getById(@PathVariable String id) {
         try {
             return ResponseEntity.ok(ApiResponse.success(supplierService.getSupplier(id)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -76,10 +79,11 @@ public class SupplierControllerImpl {
             Supplier saved = supplierService.createSupplier(dto);
             log.info("Tedarikci olusturuldu: {}", saved.getName());
             return ResponseEntity.ok(ApiResponse.success(supplierService.getSupplier(saved.getId())));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Tedarikci olusturma hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                .body(ApiResponse.error("Tedarikci olusturulamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -90,9 +94,10 @@ public class SupplierControllerImpl {
             @RequestBody SupplierDto dto) {
         try {
             return ResponseEntity.ok(ApiResponse.success(supplierService.updateSupplier(id, dto)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            return ResponseEntity.badRequest()
-                .body(ApiResponse.error("Guncelleme hatasi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -102,8 +107,10 @@ public class SupplierControllerImpl {
         try {
             supplierService.deleteSupplier(id);
             return ResponseEntity.ok(ApiResponse.success(null));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -112,8 +119,10 @@ public class SupplierControllerImpl {
     public ResponseEntity<ApiResponse<SupplierResponse>> toggleStatus(@PathVariable String id) {
         try {
             return ResponseEntity.ok(ApiResponse.success(supplierService.toggleStatus(id)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -135,8 +144,10 @@ public class SupplierControllerImpl {
                         && s.getCustomerType().name().equals("CORPORATE"))
                     .count());
             return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -145,8 +156,10 @@ public class SupplierControllerImpl {
     public ResponseEntity<ApiResponse<SupplierAccountResponse>> getAccount(@PathVariable String id) {
         try {
             return ResponseEntity.ok(ApiResponse.success(supplierService.getSupplierAccount(id)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -155,8 +168,10 @@ public class SupplierControllerImpl {
     public ResponseEntity<ApiResponse<List<AccountTransactionResponse>>> getTransactions(@PathVariable String id) {
         try {
             return ResponseEntity.ok(ApiResponse.success(supplierService.getSupplierTransactions(id)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -167,9 +182,11 @@ public class SupplierControllerImpl {
             @RequestBody SupplierPaymentDto dto) {
         try {
             return ResponseEntity.ok(ApiResponse.success(supplierService.recordPayment(id, dto)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Odeme kaydi hatasi: supplierId={}, {}", id, e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -184,8 +201,10 @@ public class SupplierControllerImpl {
                 throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
             }
             return ResponseEntity.ok(ApiResponse.success(supplierService.updateCreditLimit(id, newLimit)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 }

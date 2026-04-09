@@ -34,7 +34,7 @@ public class PartSearchControllerImpl implements PartSearchController {
             return ResponseEntity.ok(ApiResponse.success(results.size() + " sonuc bulundu", results));
         } catch (Exception e) {
             log.error("Parca aranirken hata: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 }

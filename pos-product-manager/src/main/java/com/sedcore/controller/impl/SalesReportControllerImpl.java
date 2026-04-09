@@ -37,7 +37,7 @@ public class SalesReportControllerImpl {
                     salesReportService.getSalesSummary(startDate, endDate, groupBy)));
         } catch (Exception e) {
             log.error("Satis ozeti hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -52,7 +52,7 @@ public class SalesReportControllerImpl {
                     salesReportService.getProductSalesAnalysis(startDate, endDate, limit)));
         } catch (Exception e) {
             log.error("Urun satis analizi hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -67,7 +67,7 @@ public class SalesReportControllerImpl {
                     salesReportService.getCustomerSalesAnalysis(startDate, endDate, limit)));
         } catch (Exception e) {
             log.error("Musteri satis analizi hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -81,7 +81,7 @@ public class SalesReportControllerImpl {
                     salesReportService.getProfitOverview(startDate, endDate)));
         } catch (Exception e) {
             log.error("Kar/zarar ozeti hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 }

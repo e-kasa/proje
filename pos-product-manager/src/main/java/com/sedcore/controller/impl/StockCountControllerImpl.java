@@ -53,9 +53,11 @@ public class StockCountControllerImpl {
             log.info("Stok sayimi islendi - Magaza: {}, Depo: {}, Duzeltme: {}",
                     request.getStoreId(), request.getWarehouseId(), adjustments.size());
             return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Stok sayim hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 

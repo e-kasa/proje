@@ -51,9 +51,11 @@ public class CustomerControllerImpl {
                 .map(this::toMap)
                 .collect(Collectors.toList());
             return ResponseEntity.ok(ApiResponse.success(filtered));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Müşteri listesi hatası: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -62,10 +64,12 @@ public class CustomerControllerImpl {
     public ResponseEntity<ApiResponse<Map<String, Object>>> getById(@PathVariable String id) {
         try {
             var customer = customerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Müşteri bulunamadı: " + id));
+                .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
             return ResponseEntity.ok(ApiResponse.success(toMap(customer)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -85,9 +89,11 @@ public class CustomerControllerImpl {
             customer = customerRepository.save(customer);
             log.info("Müşteri oluşturuldu: {}", customer.getName());
             return ResponseEntity.ok(ApiResponse.success(toMap(customer)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Müşteri oluşturma hatası: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -112,8 +118,10 @@ public class CustomerControllerImpl {
             entityAuditHelper.prepare(customer);
             customer = customerRepository.save(customer);
             return ResponseEntity.ok(ApiResponse.success(toMap(customer)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -122,13 +130,15 @@ public class CustomerControllerImpl {
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable String id) {
         try {
             Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Müşteri bulunamadı: " + id));
+                .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
             customer.setIsActive(false); // soft delete
             entityAuditHelper.prepare(customer);
             customerRepository.save(customer);
             return ResponseEntity.ok(ApiResponse.success(null));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -137,13 +147,15 @@ public class CustomerControllerImpl {
     public ResponseEntity<ApiResponse<Map<String, Object>>> toggleStatus(@PathVariable String id) {
         try {
             Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Müşteri bulunamadı: " + id));
+                .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
             customer.setIsActive(customer.getIsActive() == null || !customer.getIsActive());
             entityAuditHelper.prepare(customer);
             customer = customerRepository.save(customer);
             return ResponseEntity.ok(ApiResponse.success(toMap(customer)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -159,7 +171,7 @@ public class CustomerControllerImpl {
             stats.put("corporateCustomers", all.stream().filter(c -> c.getCustomerType() != null && c.getCustomerType().name().equals("CORPORATE")).count());
             return ResponseEntity.ok(ApiResponse.success(stats));
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -172,8 +184,10 @@ public class CustomerControllerImpl {
     public ResponseEntity<ApiResponse<CustomerAccountResponse>> getAccount(@PathVariable String id) {
         try {
             return ResponseEntity.ok(ApiResponse.success(customerService.getCustomerAccount(id)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -182,8 +196,10 @@ public class CustomerControllerImpl {
     public ResponseEntity<ApiResponse<List<AccountTransactionResponse>>> getTransactions(@PathVariable String id) {
         try {
             return ResponseEntity.ok(ApiResponse.success(customerService.getCustomerTransactions(id)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -194,9 +210,11 @@ public class CustomerControllerImpl {
             @RequestBody CustomerPaymentDto dto) {
         try {
             return ResponseEntity.ok(ApiResponse.success(customerService.recordPayment(id, dto)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Tahsilat kaydi hatasi: customerId={}, {}", id, e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -211,8 +229,10 @@ public class CustomerControllerImpl {
                 throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
             }
             return ResponseEntity.ok(ApiResponse.success(customerService.updateCreditLimit(id, newLimit)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 

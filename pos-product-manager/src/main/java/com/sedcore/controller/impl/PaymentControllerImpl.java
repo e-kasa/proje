@@ -44,10 +44,11 @@ public class PaymentControllerImpl implements PaymentController {
             @Valid @RequestBody PaymentRequest request) {
         try {
             return ResponseEntity.ok(ApiResponse.success(paymentService.createPayment(request)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Odeme olusturma hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Odeme olusturulamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -57,8 +58,10 @@ public class PaymentControllerImpl implements PaymentController {
     public ResponseEntity<ApiResponse<PaymentResponse>> getById(@PathVariable String id) {
         try {
             return ResponseEntity.ok(ApiResponse.success(paymentService.getPayment(id)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -89,11 +92,12 @@ public class PaymentControllerImpl implements PaymentController {
             if (purchaseId != null) {
                 return ResponseEntity.ok(ApiResponse.success(paymentService.getByPurchase(purchaseId)));
             }
-            return ResponseEntity.badRequest().body(
-                    ApiResponse.error("customerId, supplierId, saleId veya purchaseId parametresi gerekli"));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Odeme listesi hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -127,10 +131,11 @@ public class PaymentControllerImpl implements PaymentController {
         try {
             String reason = body != null ? body.get("reason") : null;
             return ResponseEntity.ok(ApiResponse.success(paymentService.cancelPayment(id, reason)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Odeme iptal hatasi: id={}, {}", id, e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Odeme iptal edilemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -143,10 +148,11 @@ public class PaymentControllerImpl implements PaymentController {
         try {
             String verifiedBy = body != null ? body.get("verifiedBy") : null;
             return ResponseEntity.ok(ApiResponse.success(paymentService.verifyPayment(id, verifiedBy)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Odeme onay hatasi: id={}, {}", id, e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Odeme onaylanamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 }

@@ -51,7 +51,7 @@ public class StoreControllerImpl {
                     .orElseThrow(() -> new RuntimeException("Magaza bulunamadi: " + id));
             return ResponseEntity.ok(ApiResponse.success(toMap(store)));
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 

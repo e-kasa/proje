@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../theme/app_colors.dart';
 import '../utils/responsive.dart';
+import '../widgets/app_app_bar.dart';
 import 'adaptive_sidebar.dart';
 import 'adaptive_bottom_nav.dart';
 import 'right_menu_drawer.dart';
@@ -386,10 +387,8 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
   }
 
   PreferredSizeWidget _buildMobileAppBar(String location) {
-    return AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      title: Text(_getPageTitle(location, ref.read(i18nProvider)), style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+    return AppAppBar.standard(
+      title: _getPageTitle(location, ref.read(i18nProvider)),
       actions: [
         IconButton(icon: const Icon(Icons.menu, color: AppColors.textPrimary), onPressed: _openRightDrawer),
       ],

@@ -88,13 +88,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
   void _onQuickSell(Map<String, dynamic> product) {
     final t = i18nOf(ref);
     context.go('/pos');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${product['name']} ${t('stock.added_to_pos')}'),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    AppToast.success(context, '${product['name']} ${t('stock.added_to_pos')}');
   }
 
   void _onEditProduct(Map<String, dynamic> product) {
@@ -108,20 +102,17 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
+            AppInput(
               controller: stockController,
-              decoration: InputDecoration(
-                labelText: t('stock.new_stock_quantity'),
-                border: const OutlineInputBorder(),
-              ),
+              label: t('stock.new_stock_quantity'),
               keyboardType: TextInputType.number,
             ),
           ],
         ),
         actions: [
-          TextButton(
+          AppButton.outline(
             onPressed: () => Navigator.pop(context),
-            child: Text(t('common.cancel')),
+            text: t('common.cancel'),
           ),
           AppButton.primary(
             onPressed: () async {
@@ -139,12 +130,11 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
                   );
 
               if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(success ? t('stock.stock_updated') : t('stock.update_failed')),
-                  backgroundColor: success ? AppColors.success : AppColors.danger,
-                ),
-              );
+              if (success) {
+                AppToast.success(context, t('stock.stock_updated'));
+              } else {
+                AppToast.error(context, t('stock.update_failed'));
+              }
             },
             text: t('common.save'),
           ),
@@ -287,12 +277,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
 
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(t('stock.count_feature_coming_soon')),
-              backgroundColor: AppColors.info,
-            ),
-          );
+          AppToast.warning(context, t('stock.count_feature_coming_soon'));
         },
         icon: const Icon(Icons.inventory),
         label: Text(t('stock.stock_count')),

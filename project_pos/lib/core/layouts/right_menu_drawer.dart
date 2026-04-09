@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../theme/app_colors.dart';
+import '../widgets/app_confirmation_dialog.dart';
 import '../../providers/auth_provider.dart';
 
 /// Mobilde sag taraftan acilan tam menu drawer
@@ -274,32 +275,19 @@ class RightMenuDrawer extends ConsumerWidget {
           borderRadius: BorderRadius.circular(10),
           side: BorderSide(color: AppColors.danger.withOpacity(0.3)),
         ),
-        onTap: () {
+        onTap: () async {
           Navigator.of(context).pop();
-          showDialog(
+          final confirmed = await AppConfirmationDialog.showWarning(
             context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Cikis Yap'),
-              content: const Text('Cikis yapmak istediginizden emin misiniz?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Iptal'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    ref.read(authProvider.notifier).logout();
-                    Navigator.pop(ctx);
-                    context.go('/login');
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.danger,
-                  ),
-                  child: const Text('Cikis Yap'),
-                ),
-              ],
-            ),
+            title: 'Cikis Yap',
+            message: 'Cikis yapmak istediginizden emin misiniz?',
+            confirmText: 'Cikis Yap',
+            cancelText: 'Iptal',
           );
+          if (confirmed && context.mounted) {
+            ref.read(authProvider.notifier).logout();
+            context.go('/login');
+          }
         },
       ),
     );

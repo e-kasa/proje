@@ -61,9 +61,7 @@ class _CompanyRegistrationScreenState
   void _nextStep() {
     if (_currentStep == 1) {
       if (_selectedSector == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Lütfen bir sektör seçin'), backgroundColor: AppColors.danger),
-        );
+        AppToast.error(context, 'Lütfen bir sektör seçin');
         return;
       }
       setState(() => _currentStep++);
@@ -105,12 +103,7 @@ class _CompanyRegistrationScreenState
       if (mounted) context.go('/dashboard');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Kayıt başarısız: ${e.toString().replaceAll('Exception: ', '')}'),
-          backgroundColor: AppColors.danger,
-        ),
-      );
+      AppToast.error(context, 'Kayıt başarısız: ${e.toString().replaceAll('Exception: ', '')}');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

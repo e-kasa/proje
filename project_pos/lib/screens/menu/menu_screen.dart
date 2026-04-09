@@ -264,17 +264,9 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.search_off_rounded, size: 80, color: AppColors.border),
-          const SizedBox(height: 16),
-          const Text('Sonuç Bulunamadı', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-          const SizedBox(height: 8),
-          const Text('Aradığınız kelimeye uygun bir modül bulunamadı.', style: TextStyle(color: AppColors.textMuted)),
-        ],
-      ),
+    return AppEmptyState.search(
+      title: 'Sonuç Bulunamadı',
+      description: 'Aradığınız kelimeye uygun bir modül bulunamadı.',
     );
   }
 }

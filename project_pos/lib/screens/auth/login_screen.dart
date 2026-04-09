@@ -56,24 +56,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       if (mounted) context.go('/dashboard');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.error_outline, color: Colors.white, size: 18),
-              const SizedBox(width: 8),
-              Expanded(
-                  child: Text(ref.read(i18nProvider).bundle('auth.login_failed'),
-                      style: const TextStyle(fontWeight: FontWeight.w500))),
-            ],
-          ),
-          backgroundColor: AppColors.danger,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
+      AppToast.error(context, ref.read(i18nProvider).bundle('auth.login_failed'));
     }
   }
 

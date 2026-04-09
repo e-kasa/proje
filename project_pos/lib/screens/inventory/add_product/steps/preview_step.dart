@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/config/sector_config.dart';
 import '../models/wizard_state.dart';
 import '../widgets/variant_image_widgets.dart';
 
-class PreviewStep extends StatelessWidget {
+class PreviewStep extends ConsumerWidget {
   final WizardState state;
   final bool isMobile;
 
@@ -24,7 +25,8 @@ class PreviewStep extends StatelessWidget {
   };
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
     final totalStock = state.variants
         .fold<int>(0, (sum, v) => sum + (v.inventory?.physicalQuantity ?? 0));
     final totalPurchase = state.variants.fold<double>(
@@ -35,24 +37,24 @@ class PreviewStep extends StatelessWidget {
 
     return Column(
       children: [
-        _buildSummaryRow(totalStock, totalPurchase, totalSale, profit),
+        _buildSummaryRow(totalStock, totalPurchase, totalSale, profit, t),
         const SizedBox(height: 16),
-        _buildProductInfo(),
+        _buildProductInfo(t),
         const SizedBox(height: 16),
         if (state.isParcaci &&
             (state.oemNumbers.isNotEmpty ||
                 state.crossReferences.isNotEmpty ||
                 state.shelfNumberController.text.isNotEmpty)) ...[
-          _buildAutoPartsInfo(),
+          _buildAutoPartsInfo(t),
           const SizedBox(height: 16),
         ],
-        _buildLocationInfo(),
+        _buildLocationInfo(t),
         const SizedBox(height: 16),
-        _buildVariantsTable(context),
+        _buildVariantsTable(context, t),
         const SizedBox(height: 16),
-        _buildImagesSection(context),
+        _buildImagesSection(context, t),
         const SizedBox(height: 16),
-        _buildJsonPayload(context),
+        _buildJsonPayload(context, t),
       ],
     );
   }
@@ -60,34 +62,34 @@ class PreviewStep extends StatelessWidget {
   // ─── Summary Row ──────────────────────────────────────────────────────────
 
   Widget _buildSummaryRow(
-      int stock, double purchase, double sale, double profit) {
+      int stock, double purchase, double sale, double profit, String Function(String) t) {
     final items = [
       _SummaryItem(
-        label: 'Varyant',
+        label: t('product.variant'),
         value: '${state.variants.length}',
         color: _accentColor,
         icon: Icons.layers_rounded,
       ),
       _SummaryItem(
-        label: 'Stok',
+        label: t('inventory.stock'),
         value: '$stock',
         color: AppColors.info,
         icon: Icons.inventory_2_rounded,
       ),
       _SummaryItem(
-        label: 'Alis',
+        label: t('product.purchase'),
         value: '\u20ba${purchase.toStringAsFixed(0)}',
         color: AppColors.danger,
         icon: Icons.shopping_cart_rounded,
       ),
       _SummaryItem(
-        label: 'Satis',
+        label: t('product.sale'),
         value: '\u20ba${sale.toStringAsFixed(0)}',
         color: AppColors.success,
         icon: Icons.point_of_sale_rounded,
       ),
       _SummaryItem(
-        label: 'Kar',
+        label: t('product.profit'),
         value: '\u20ba${profit.toStringAsFixed(0)}',
         color: profit >= 0 ? AppColors.success : AppColors.danger,
         icon: Icons.trending_up_rounded,
@@ -163,7 +165,7 @@ class PreviewStep extends StatelessWidget {
 
   // ─── Product Info ─────────────────────────────────────────────────────────
 
-  Widget _buildProductInfo() {
+  Widget _buildProductInfo(String Function(String) t) {
     final categoryLabel = state.categories
         .firstWhere((c) => c['value'] == state.selectedCategory,
             orElse: () => <String, String>{'label': '-'})['label']
@@ -173,40 +175,40 @@ class PreviewStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _header(Icons.info_outline_rounded, 'Urun Bilgileri'),
+          _header(Icons.info_outline_rounded, t('product.product_info')),
           const SizedBox(height: 16),
-          _infoRow('Urun Adi', state.productNameController.text),
+          _infoRow(t('product.product_name'), state.productNameController.text),
           _divider(),
           _infoRow('SKU', state.skuController.text),
           _divider(),
-          _infoRow('Kategori', categoryLabel),
+          _infoRow(t('product.category'), categoryLabel),
           _divider(),
           _infoRow(
-            'Marka',
+            t('product.brand'),
             state.brandController.text.isEmpty
                 ? '-'
                 : state.brandController.text,
           ),
           _divider(),
-          _infoRow('Birim', state.selectedUnit),
+          _infoRow(t('product.unit'), state.selectedUnit),
           _divider(),
-          _infoRow('Alis Fiyati', '\u20ba${state.basePurchasePriceController.text}'),
+          _infoRow(t('product.purchase_price'), '\u20ba${state.basePurchasePriceController.text}'),
           _divider(),
-          _infoRow('Satis Fiyati', '\u20ba${state.basePriceController.text}'),
+          _infoRow(t('product.sale_price'), '\u20ba${state.basePriceController.text}'),
           _divider(),
           _infoRow(
-            'KDV',
+            t('product.vat'),
             '% ${state.selectedVatRate}'
-            '${state.vatIncluded ? " (Dahil)" : " (Haric)"}',
+            '${state.vatIncluded ? " (${t('product.included')})" : " (${t('product.excluded')})"}',
           ),
           _divider(),
-          _sectorRow(),
+          _sectorRow(t),
         ],
       ),
     );
   }
 
-  Widget _sectorRow() {
+  Widget _sectorRow(String Function(String) t) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
@@ -215,7 +217,7 @@ class PreviewStep extends StatelessWidget {
           SizedBox(
             width: 130,
             child: Text(
-              'Sektor',
+              t('product.sector'),
               style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
             ),
           ),
@@ -242,15 +244,15 @@ class PreviewStep extends StatelessWidget {
 
   // ─── Auto Parts Info ──────────────────────────────────────────────────────
 
-  Widget _buildAutoPartsInfo() {
+  Widget _buildAutoPartsInfo(String Function(String) t) {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _header(Icons.build_circle_rounded, 'Oto Parca Bilgileri'),
+          _header(Icons.build_circle_rounded, t('product.auto_parts_info')),
           const SizedBox(height: 16),
           if (state.shelfNumberController.text.isNotEmpty) ...[
-            _infoRow('Raf Konumu', state.shelfNumberController.text),
+            _infoRow(t('product.shelf_location'), state.shelfNumberController.text),
             if (state.oemNumbers.isNotEmpty || state.crossReferences.isNotEmpty)
               _divider(),
           ],
@@ -263,7 +265,7 @@ class PreviewStep extends StatelessWidget {
                   SizedBox(
                     width: 130,
                     child: Text(
-                      'OEM Numaralari',
+                      t('product.oem_numbers'),
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -299,7 +301,7 @@ class PreviewStep extends StatelessWidget {
                   SizedBox(
                     width: 130,
                     child: Text(
-                      'Capraz Referanslar',
+                      t('product.cross_references'),
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -365,15 +367,15 @@ class PreviewStep extends StatelessWidget {
 
   // ─── Location Info ────────────────────────────────────────────────────────
 
-  Widget _buildLocationInfo() {
+  Widget _buildLocationInfo(String Function(String) t) {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _header(Icons.location_on_rounded, 'Konum'),
+          _header(Icons.location_on_rounded, t('product.location')),
           const SizedBox(height: 16),
           _infoRow(
-            'Magaza',
+            t('product.store'),
             state.selectedStores.isEmpty
                 ? '-'
                 : state.selectedStores
@@ -386,7 +388,7 @@ class PreviewStep extends StatelessWidget {
           ),
           _divider(),
           _infoRow(
-            'Depo',
+            t('product.warehouse'),
             state.selectedWarehouses.isEmpty
                 ? '-'
                 : state.selectedWarehouses
@@ -404,7 +406,7 @@ class PreviewStep extends StatelessWidget {
 
   // ─── Variants Table ───────────────────────────────────────────────────────
 
-  Widget _buildVariantsTable(BuildContext context) {
+  Widget _buildVariantsTable(BuildContext context, String Function(String) t) {
     final totalStock = state.variants
         .fold<int>(0, (sum, v) => sum + (v.inventory?.physicalQuantity ?? 0));
     final totalPurchase = state.variants.fold<double>(
@@ -419,7 +421,7 @@ class PreviewStep extends StatelessWidget {
         children: [
           _header(
             Icons.table_chart_rounded,
-            'Varyantlar (${state.variants.length})',
+            '${t('product.variants')} (${state.variants.length})',
           ),
           const SizedBox(height: 12),
           if (isMobile)
@@ -434,7 +436,7 @@ class PreviewStep extends StatelessWidget {
                   Icon(Icons.swipe_rounded, size: 14, color: AppColors.info),
                   const SizedBox(width: 4),
                   Text(
-                    'Kaydirarak tum sutunlari gorun',
+                    t('common.scroll_to_see_all'),
                     style: TextStyle(fontSize: 10, color: AppColors.info),
                   ),
                 ],
@@ -454,12 +456,12 @@ class PreviewStep extends StatelessWidget {
               horizontalMargin: 8,
               columns: [
                 _tableColumn('#'),
-                _tableColumn('Varyant'),
+                _tableColumn(t('product.variant')),
                 _tableColumn('SKU'),
-                _tableColumn('Stok'),
-                _tableColumn('Alis'),
-                _tableColumn('Satis'),
-                _tableColumn('Kar'),
+                _tableColumn(t('inventory.stock')),
+                _tableColumn(t('product.purchase')),
+                _tableColumn(t('product.sale')),
+                _tableColumn(t('product.profit')),
               ],
               rows: [
                 ...state.variants.asMap().entries.map((entry) {
@@ -558,7 +560,7 @@ class PreviewStep extends StatelessWidget {
                   cells: [
                     const DataCell(SizedBox.shrink()),
                     DataCell(Text(
-                      'TOPLAM',
+                      t('common.total').toUpperCase(),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
@@ -625,14 +627,14 @@ class PreviewStep extends StatelessWidget {
 
   // ─── Images Section ───────────────────────────────────────────────────────
 
-  Widget _buildImagesSection(BuildContext context) {
+  Widget _buildImagesSection(BuildContext context, String Function(String) t) {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              _header(Icons.image_rounded, 'Gorseller'),
+              _header(Icons.image_rounded, t('product.images')),
               const Spacer(),
               Container(
                 padding:
@@ -642,7 +644,7 @@ class PreviewStep extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '${state.productImages.length} gorsel',
+                  '${state.productImages.length} ${t('common.image')}',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -667,12 +669,12 @@ class PreviewStep extends StatelessWidget {
               if (index == state.productImages.length) {
                 return buildAddImageButton(() {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Gorsel secici yakinda eklenecek...'),
+                    SnackBar(
+                      content: Text(t('product.image_picker_coming')),
                       backgroundColor: AppColors.info,
                     ),
                   );
-                }, isMobile: isMobile);
+                }, isMobile: isMobile, t: t);
               }
               return buildImagePreview(state.productImages[index], () {
                 state.productImages.removeAt(index);
@@ -692,7 +694,7 @@ class PreviewStep extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Henuz gorsel eklenmedi',
+                      t('product.no_images_yet'),
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textMuted,
@@ -709,7 +711,7 @@ class PreviewStep extends StatelessWidget {
 
   // ─── JSON Payload ─────────────────────────────────────────────────────────
 
-  Widget _buildJsonPayload(BuildContext context) {
+  Widget _buildJsonPayload(BuildContext context, String Function(String) t) {
     final jsonString = state.buildJsonPreview();
 
     return Container(
@@ -768,7 +770,7 @@ class PreviewStep extends StatelessWidget {
                               size: 18,
                             ),
                             const SizedBox(width: 8),
-                            const Text('Kopyalandi!'),
+                            Text(t('common.copied')),
                           ],
                         ),
                         backgroundColor: AppColors.success,
@@ -802,7 +804,7 @@ class PreviewStep extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Kopyala',
+                          t('common.copy'),
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.7),
                             fontSize: 11,

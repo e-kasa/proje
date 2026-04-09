@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../../../../core/config/sector_config.dart';
 import '../models/wizard_state.dart';
 import '../widgets/variant_image_widgets.dart';
 
-class ImagesStep extends StatelessWidget {
+class ImagesStep extends ConsumerWidget {
   final WizardState state;
   final VoidCallback onChanged;
   final bool isMobile;
@@ -25,13 +26,14 @@ class ImagesStep extends StatelessWidget {
       };
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
     return SingleChildScrollView(
       child: Column(
         children: [
-          _buildProductImages(context),
+          _buildProductImages(context, t),
           const SizedBox(height: 16),
-          if (state.variants.isNotEmpty) _buildVariantImages(context),
+          if (state.variants.isNotEmpty) _buildVariantImages(context, t),
         ],
       ),
     );
@@ -39,14 +41,14 @@ class ImagesStep extends StatelessWidget {
 
   // ─── Product Images ─────────────────────────────────────────────────────────
 
-  Widget _buildProductImages(BuildContext context) {
+  Widget _buildProductImages(BuildContext context, String Function(String) t) {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _header(
             icon: Icons.image,
-            title: 'Urun Gorselleri',
+            title: t('product.product_images'),
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
@@ -54,7 +56,7 @@ class ImagesStep extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                '${state.productImages.length} gorsel',
+                '${state.productImages.length} ${t('common.image')}',
                 style: TextStyle(
                   color: _accentColor,
                   fontSize: 12,
@@ -66,7 +68,7 @@ class ImagesStep extends StatelessWidget {
           const SizedBox(height: 16),
 
           if (state.productImages.isEmpty)
-            _buildEmptyProductState(context)
+            _buildEmptyProductState(context, t)
           else
             GridView.builder(
               shrinkWrap: true,
@@ -80,7 +82,7 @@ class ImagesStep extends StatelessWidget {
               itemCount: state.productImages.length + 1,
               itemBuilder: (context, index) {
                 if (index == state.productImages.length) {
-                  return buildAddImageButton(() => _addProductImage(context), isMobile: isMobile);
+                  return buildAddImageButton(() => _addProductImage(context), isMobile: isMobile, t: t);
                 }
                 return buildImagePreview(state.productImages[index], () => _removeProductImage(context, index));
               },
@@ -90,7 +92,7 @@ class ImagesStep extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyProductState(BuildContext context) {
+  Widget _buildEmptyProductState(BuildContext context, String Function(String) t) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
@@ -120,7 +122,7 @@ class ImagesStep extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            'Henuz gorsel eklenmedi',
+            t('product.no_images_yet'),
             style: TextStyle(
               color: AppColors.textMuted,
               fontSize: 14,
@@ -129,7 +131,7 @@ class ImagesStep extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Urun gorselleri ekleyerek vitrin gorunumunu zenginlestirin',
+            t('product.add_images_hint'),
             style: TextStyle(
               color: AppColors.textMuted.withOpacity(0.7),
               fontSize: 12,
@@ -140,7 +142,7 @@ class ImagesStep extends StatelessWidget {
             onPressed: () => _addProductImage(context),
             icon: Icon(Icons.add, size: 18, color: _accentColor),
             label: Text(
-              'Ilk Gorseli Ekle',
+              t('product.add_first_image'),
               style: TextStyle(color: _accentColor, fontWeight: FontWeight.w600),
             ),
             style: TextButton.styleFrom(
@@ -156,15 +158,15 @@ class ImagesStep extends StatelessWidget {
 
   // ─── Variant Images ─────────────────────────────────────────────────────────
 
-  Widget _buildVariantImages(BuildContext context) {
+  Widget _buildVariantImages(BuildContext context, String Function(String) t) {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _header(
             icon: Icons.collections,
-            title: 'Varyant Gorselleri',
-            subtitle: 'Her varyant icin ozel gorseller (istege bagli)',
+            title: t('product.variant_images'),
+            subtitle: t('product.variant_images_hint'),
           ),
           const SizedBox(height: 16),
 
@@ -196,11 +198,11 @@ class ImagesStep extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        state.colorGroupedView ? 'Renk Gruplu Gorunum' : 'Varyant Listesi',
+                        state.colorGroupedView ? t('product.color_grouped_view') : t('product.variant_list'),
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                       ),
                       Text(
-                        state.colorGroupedView ? 'Renkler gruplandirilmis' : 'Tum varyantlar ayri ayri',
+                        state.colorGroupedView ? t('product.colors_grouped') : t('product.all_variants_separate'),
                         style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
                       ),
                     ],
@@ -234,7 +236,7 @@ class ImagesStep extends StatelessWidget {
                     children: [
                       Icon(Icons.filter_list, size: 18, color: _accentColor),
                       const SizedBox(width: 8),
-                      const Text('Gruplandirma:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                      Text('${t('product.grouping')}:', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                       const SizedBox(width: 12),
                       Expanded(
                         child: DropdownButtonHideUnderline(
@@ -275,7 +277,7 @@ class ImagesStep extends StatelessWidget {
               Expanded(
                 child: TextField(
                   decoration: InputDecoration(
-                    hintText: 'Varyant ara...',
+                    hintText: t('product.search_variant'),
                     prefixIcon: const Icon(Icons.search, size: 20),
                     suffixIcon: state.variantSearchQuery.isNotEmpty
                         ? IconButton(
@@ -326,7 +328,7 @@ class ImagesStep extends StatelessWidget {
             children: [
               _quickActionButton(
                 icon: Icons.unfold_more,
-                label: 'Tumunu Ac',
+                label: t('common.expand_all'),
                 onPressed: () {
                   state.expandedVariants.addAll(List.generate(state.variants.length, (i) => i));
                   onChanged();
@@ -335,7 +337,7 @@ class ImagesStep extends StatelessWidget {
               const SizedBox(width: 8),
               _quickActionButton(
                 icon: Icons.unfold_less,
-                label: 'Tumunu Kapat',
+                label: t('common.collapse_all'),
                 onPressed: () {
                   state.expandedVariants.clear();
                   onChanged();
@@ -347,7 +349,7 @@ class ImagesStep extends StatelessWidget {
 
           // Variant list
           if (state.getFilteredVariants().isEmpty)
-            _buildEmptyVariantSearch()
+            _buildEmptyVariantSearch(t)
           else if (state.colorGroupedView && state.hasColorAttribute())
             ColorGroupedView(state: state, onChanged: onChanged, isMobile: isMobile)
           else
@@ -373,7 +375,7 @@ class ImagesStep extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyVariantSearch() {
+  Widget _buildEmptyVariantSearch(String Function(String) t) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 24),
@@ -403,7 +405,7 @@ class ImagesStep extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Varyant bulunamadi',
+            t('product.variant_not_found'),
             style: TextStyle(
               color: AppColors.textMuted,
               fontSize: 14,

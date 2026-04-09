@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../models/wizard_state.dart';
 
 /// Add image button (dashed border).
-Widget buildAddImageButton(VoidCallback onTap, {required bool isMobile}) {
+Widget buildAddImageButton(VoidCallback onTap, {required bool isMobile, required String Function(String) t}) {
   return InkWell(
     onTap: onTap,
     borderRadius: BorderRadius.circular(12),
@@ -20,7 +21,7 @@ Widget buildAddImageButton(VoidCallback onTap, {required bool isMobile}) {
           Icon(Icons.add_photo_alternate, color: AppColors.primary, size: isMobile ? 24 : 32),
           const SizedBox(height: 4),
           Text(
-            'Ekle',
+            t('common.add'),
             style: TextStyle(color: AppColors.primary, fontSize: isMobile ? 10 : 11, fontWeight: FontWeight.w600),
           ),
         ],
@@ -62,7 +63,7 @@ Widget buildImagePreview(String imagePath, VoidCallback onRemove) {
 }
 
 /// Color grouped view for variant images.
-class ColorGroupedView extends StatelessWidget {
+class ColorGroupedView extends ConsumerWidget {
   final WizardState state;
   final VoidCallback onChanged;
   final bool isMobile;
@@ -75,7 +76,8 @@ class ColorGroupedView extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
     final colorGroups = state.groupVariantsByColor();
 
     return ListView.separated(
@@ -86,12 +88,12 @@ class ColorGroupedView extends StatelessWidget {
       itemBuilder: (context, index) {
         final color = colorGroups.keys.elementAt(index);
         final variantIndices = colorGroups[color]!;
-        return _buildColorGroup(context, color, variantIndices);
+        return _buildColorGroup(context, color, variantIndices, t);
       },
     );
   }
 
-  Widget _buildColorGroup(BuildContext context, String color, List<int> variantIndices) {
+  Widget _buildColorGroup(BuildContext context, String color, List<int> variantIndices, String Function(String) t) {
     final firstVariant = state.variants[variantIndices.first];
     final groupImages = firstVariant.images;
 
@@ -132,17 +134,17 @@ class ColorGroupedView extends StatelessWidget {
                   children: [
                     Text(color, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     Text(
-                      '${variantIndices.length} varyant (${groupImages.length} g\u00f6rsel)',
+                      '${variantIndices.length} ${t('product.variant')} (${groupImages.length} ${t('product.image')})',
                       style: TextStyle(fontSize: 11, color: AppColors.textMuted),
                     ),
                   ],
                 ),
               ),
               TextButton.icon(
-                onPressed: () => _applyImagesToColorGroup(context, color, variantIndices),
+                onPressed: () => _applyImagesToColorGroup(context, color, variantIndices, t),
                 icon: const Icon(Icons.sync, size: 16),
                 label: Text(
-                  isMobile ? 'Uygula' : 'T\u00fcm\u00fcne uygula',
+                  isMobile ? t('common.apply') : t('product.apply_to_all'),
                   style: const TextStyle(fontSize: 11),
                 ),
                 style: TextButton.styleFrom(
@@ -168,13 +170,14 @@ class ColorGroupedView extends StatelessWidget {
             itemBuilder: (context, imgIndex) {
               if (imgIndex == groupImages.length) {
                 return buildAddImageButton(
-                  () => _addColorGroupImage(context, color, variantIndices),
+                  () => _addColorGroupImage(context, color, variantIndices, t),
                   isMobile: isMobile,
+                  t: t,
                 );
               }
               return buildImagePreview(
                 groupImages[imgIndex],
-                () => _removeColorGroupImage(context, color, variantIndices, imgIndex),
+                () => _removeColorGroupImage(context, color, variantIndices, imgIndex, t),
               );
             },
           ),
@@ -206,7 +209,7 @@ class ColorGroupedView extends StatelessWidget {
     );
   }
 
-  void _addColorGroupImage(BuildContext context, String color, List<int> variantIndices) {
+  void _addColorGroupImage(BuildContext context, String color, List<int> variantIndices, String Function(String) t) {
     final newImage = 'color_${color}_image_${state.variants[variantIndices.first].images.length + 1}.jpg';
     for (final index in variantIndices) {
       state.variants[index].images = [...state.variants[index].images, newImage];
@@ -214,13 +217,13 @@ class ColorGroupedView extends StatelessWidget {
     onChanged();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('\u2705 $color renginin t\u00fcm bedenlerine g\u00f6rsel eklendi (${variantIndices.length} varyant)'),
+        content: Text('$color - ${t('product.image_added_to_all')} (${variantIndices.length} ${t('product.variant')})'),
         backgroundColor: AppColors.success,
       ),
     );
   }
 
-  void _removeColorGroupImage(BuildContext context, String color, List<int> variantIndices, int imageIndex) {
+  void _removeColorGroupImage(BuildContext context, String color, List<int> variantIndices, int imageIndex, String Function(String) t) {
     for (final index in variantIndices) {
       final images = List<String>.from(state.variants[index].images);
       if (images.length > imageIndex) {
@@ -231,13 +234,13 @@ class ColorGroupedView extends StatelessWidget {
     onChanged();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('\ud83d\uddd1\ufe0f $color renginin t\u00fcm bedenlerinden g\u00f6rsel kald\u0131r\u0131ld\u0131'),
+        content: Text('$color - ${t('product.image_removed_from_all')}'),
         backgroundColor: AppColors.success,
       ),
     );
   }
 
-  void _applyImagesToColorGroup(BuildContext context, String color, List<int> variantIndices) {
+  void _applyImagesToColorGroup(BuildContext context, String color, List<int> variantIndices, String Function(String) t) {
     if (variantIndices.isEmpty) return;
     final firstVariantImages = state.variants[variantIndices.first].images;
     for (final index in variantIndices) {
@@ -246,7 +249,7 @@ class ColorGroupedView extends StatelessWidget {
     onChanged();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('\u2705 $color renginin g\u00f6rselleri ${variantIndices.length} bedene kopyaland\u0131'),
+        content: Text('$color - ${t('product.images_copied_to_sizes')} (${variantIndices.length})'),
         backgroundColor: AppColors.success,
       ),
     );
@@ -254,7 +257,7 @@ class ColorGroupedView extends StatelessWidget {
 }
 
 /// Variant image accordion (expansion tile).
-class VariantImageAccordion extends StatelessWidget {
+class VariantImageAccordion extends ConsumerWidget {
   final WizardState state;
   final ProductVariant variant;
   final int variantIndex;
@@ -271,7 +274,8 @@ class VariantImageAccordion extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
     final isExpanded = state.expandedVariants.contains(variantIndex);
 
     return Container(
@@ -358,9 +362,9 @@ class VariantImageAccordion extends StatelessWidget {
               itemCount: variant.images.length + 1,
               itemBuilder: (context, imageIndex) {
                 if (imageIndex == variant.images.length) {
-                  return buildAddImageButton(() => _addVariantImage(context), isMobile: isMobile);
+                  return buildAddImageButton(() => _addVariantImage(context, t), isMobile: isMobile, t: t);
                 }
-                return buildImagePreview(variant.images[imageIndex], () => _removeVariantImage(context, imageIndex));
+                return buildImagePreview(variant.images[imageIndex], () => _removeVariantImage(context, imageIndex, t));
               },
             ),
           ],
@@ -369,24 +373,24 @@ class VariantImageAccordion extends StatelessWidget {
     );
   }
 
-  void _addVariantImage(BuildContext context) {
+  void _addVariantImage(BuildContext context, String Function(String) t) {
     state.variants[variantIndex].images = [
       ...state.variants[variantIndex].images,
       'variant_${variantIndex}_image_${state.variants[variantIndex].images.length + 1}.jpg',
     ];
     onChanged();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('\u2705 Varyant g\u00f6rseli eklendi'), backgroundColor: AppColors.success),
+      SnackBar(content: Text(t('product.variant_image_added')), backgroundColor: AppColors.success),
     );
   }
 
-  void _removeVariantImage(BuildContext context, int imageIndex) {
+  void _removeVariantImage(BuildContext context, int imageIndex, String Function(String) t) {
     final images = List<String>.from(state.variants[variantIndex].images);
     images.removeAt(imageIndex);
     state.variants[variantIndex].images = images;
     onChanged();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('\ud83d\uddd1\ufe0f Varyant g\u00f6rseli kald\u0131r\u0131ld\u0131'), backgroundColor: AppColors.success),
+      SnackBar(content: Text(t('product.variant_image_removed')), backgroundColor: AppColors.success),
     );
   }
 }

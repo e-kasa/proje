@@ -18,6 +18,7 @@ class ExpenseListScreen extends ConsumerStatefulWidget {
 }
 
 class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
+  String Function(String) get t => i18nOf(ref);
   late FinanceService _financeService;
   List<Map<String, dynamic>> _expenses = [];
   List<Map<String, dynamic>> _categories = [];
@@ -27,7 +28,6 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
   String _searchQuery = '';
 
   List<Map<String, String?>> _getStatusOptions() {
-    final t = i18nOf(ref);
     return [
       {'value': null, 'label': t('common.all')},
       {'value': 'paid', 'label': t('finance.paid')},
@@ -105,7 +105,6 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final t = i18nOf(ref);
     final isMobile = MediaQuery.of(context).size.width < 600;
 
     return Scaffold(
@@ -167,7 +166,6 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
   }
 
   Widget _buildStatsSection() {
-    final t = i18nOf(ref);
     final totalExpenses = _expenses.fold<double>(
       0,
       (sum, e) => sum + (e['amount'] as num).toDouble(),
@@ -328,7 +326,6 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
   }
 
   Widget _buildExpenseCard(Map<String, dynamic> expense, bool isMobile) {
-    final t = i18nOf(ref);
     final date = DateTime.parse(expense['date']);
     final amount = (expense['amount'] as num).toDouble();
     final status = expense['status'] as String;

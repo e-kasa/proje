@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
-import 'package:project_pos/core/utils/i18n_helper.dart';
+
 import '../models/wizard_state.dart';
 
 /// Category picker button that shows the selected category and opens a bottom sheet.
@@ -8,11 +8,13 @@ class CategoryPickerButton extends StatefulWidget {
   final WizardState state;
   final VoidCallback onChanged;
   final Color accentColor;
+  final String Function(String) t;
 
   const CategoryPickerButton({
     super.key,
     required this.state,
     required this.onChanged,
+    required this.t,
     this.accentColor = AppColors.primary,
   });
 
@@ -146,10 +148,10 @@ class _CategoryPickerButtonState extends State<CategoryPickerButton>
               ),
               Text(
                 level == 0
-                    ? 'Ana Kategori'
+                    ? widget.t('product.main_category')
                     : level == 1
-                        ? 'Alt Kategori'
-                        : 'Alt-Alt Kategori',
+                        ? widget.t('product.sub_category')
+                        : widget.t('product.sub_sub_category'),
                 style: TextStyle(fontSize: 10, color: levelColor),
               ),
             ],
@@ -175,7 +177,7 @@ class _CategoryPickerButtonState extends State<CategoryPickerButton>
           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey.shade400),
         ),
         const SizedBox(width: 8),
-        Text('Y\u00fckleniyor...', style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
+        Text(widget.t('common.loading'), style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
       ]);
     }
     return Row(
@@ -183,7 +185,7 @@ class _CategoryPickerButtonState extends State<CategoryPickerButton>
         Icon(Icons.account_tree_outlined, size: 18, color: Colors.grey.shade400),
         const SizedBox(width: 8),
         Expanded(
-          child: Text('Kategori se\u00e7in', style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
+          child: Text(widget.t('product.select_category'), style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
         ),
         Icon(Icons.keyboard_arrow_down, color: Colors.grey.shade400),
       ],
@@ -199,6 +201,7 @@ class _CategoryPickerButtonState extends State<CategoryPickerButton>
         state: widget.state,
         accentColor: widget.accentColor,
         onChanged: widget.onChanged,
+        t: widget.t,
       ),
     );
   }
@@ -209,11 +212,13 @@ class _CategoryPickerSheet extends StatefulWidget {
   final WizardState state;
   final Color accentColor;
   final VoidCallback onChanged;
+  final String Function(String) t;
 
   const _CategoryPickerSheet({
     required this.state,
     required this.accentColor,
     required this.onChanged,
+    required this.t,
   });
 
   @override
@@ -295,10 +300,10 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Kategori Se\u00e7',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                              const Text('Firmaya tan\u0131ml\u0131 kategoriler',
-                                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                              Text(widget.t('product.select_category'),
+                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                              Text(widget.t('product.company_categories'),
+                                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                             ],
                           ),
                         ),
@@ -328,7 +333,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                         Navigator.pop(context);
                       },
                       icon: const Icon(Icons.clear, size: 14),
-                      label: const Text('Temizle'),
+                      label: Text(widget.t('common.clear')),
                       style: TextButton.styleFrom(foregroundColor: AppColors.danger),
                     ),
                 ],
@@ -347,7 +352,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                 },
                 style: const TextStyle(fontSize: 13),
                 decoration: InputDecoration(
-                  hintText: 'Kategori ara...',
+                  hintText: '${widget.t('product.category')} ${widget.t('common.search').toLowerCase()}...',
                   hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
                   prefixIcon: Icon(Icons.search, size: 18, color: Colors.grey.shade400),
                   suffixIcon: _searchQuery.isNotEmpty
@@ -392,7 +397,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                           Icon(Icons.search_off, size: 40, color: Colors.grey.shade300),
                           const SizedBox(height: 8),
                           Text(
-                            'Sonu\u00e7 bulunamad\u0131',
+                            widget.t('common.no_results'),
                             style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
                           ),
                         ],
@@ -417,7 +422,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
 
                         const levelColors = [Color(0xFF1E88E5), Color(0xFFFF9800), Color(0xFF9C27B0)];
                         const levelIcons = ['\ud83d\udcc1', '\ud83d\udcc2', '\ud83d\udcc4'];
-                        const levelLabels = ['Ana Kategori', 'Alt Kategori', 'Alt-Alt'];
+                        final levelLabels = [widget.t('product.main_category'), widget.t('product.sub_category'), widget.t('product.sub_sub_category_short')];
 
                         final lColor = level < levelColors.length ? levelColors[level] : widget.accentColor;
                         final lIcon = level < levelIcons.length ? levelIcons[level] : '\ud83d\udcc4';

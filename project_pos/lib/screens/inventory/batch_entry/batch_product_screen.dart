@@ -27,11 +27,11 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
   final _currency = NumberFormat.currency(locale: 'tr_TR', symbol: '₺');
 
   static const _tabs = [
-    _Tab('Tümü', null),
-    _Tab('Yeni', RowStatus.newProduct),
-    _Tab('Mevcut', RowStatus.existing),
-    _Tab('Hata', RowStatus.error),
-    _Tab('Kaydedildi', RowStatus.saved),
+    _Tab('all', null),
+    _Tab('new', RowStatus.newProduct),
+    _Tab('existing', RowStatus.existing),
+    _Tab('error', RowStatus.error),
+    _Tab('saved', RowStatus.saved),
   ];
 
   @override
@@ -80,9 +80,10 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
       return;
     }
 
+    final t = i18nOf(ref);
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => _ConfirmDialog(state: state, currency: _currency),
+      builder: (ctx) => _ConfirmDialog(state: state, currency: _currency, t: t),
     );
     if (ok != true || !mounted) return;
 
@@ -118,7 +119,7 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _ResultSheet(result: result, currency: _currency),
+      builder: (_) => _ResultSheet(result: result, currency: _currency, t: i18nOf(ref)),
     );
   }
 
@@ -133,6 +134,7 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
 
   @override
   Widget build(BuildContext context) {
+    final t = i18nOf(ref);
     final state = ref.watch(batchEntryProvider);
     final cfg = ref.watch(sectorConfigProvider);
     final isDesktop = MediaQuery.sizeOf(context).width > 800;
@@ -141,19 +143,19 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
       backgroundColor: const Color(0xFFF0F2F8),
       body: Column(
         children: [
-          _buildTopBar(state, isDesktop),
+          _buildTopBar(state, isDesktop, t),
           const BatchHeaderForm(),
-          _buildSearchBar(cfg),
-          _buildTabBar(state),
-          Expanded(child: _buildBody(state, cfg, isDesktop)),
-          _buildSummaryBar(state),
+          _buildSearchBar(cfg, t),
+          _buildTabBar(state, t),
+          Expanded(child: _buildBody(state, cfg, isDesktop, t)),
+          _buildSummaryBar(state, t),
         ],
       ),
     );
   }
 
   // ── TOP BAR ─────────────────────────────────────────────────────────────────
-  Widget _buildTopBar(BatchEntryState state, bool isDesktop) {
+  Widget _buildTopBar(BatchEntryState state, bool isDesktop, Function(String) t) {
     return Container(
       decoration: const BoxDecoration(
         gradient: AppGradients.primaryGradient,
@@ -173,9 +175,9 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Toplu Ürün Girişi',
-                      style: TextStyle(
+                    Text(
+                      t('batch.bulk_product_entry'),
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
@@ -199,7 +201,7 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
                     icon: Icons.list_alt_rounded),
                 const SizedBox(width: 8),
                 _TopChip(
-                    label: '${state.newItems} yeni',
+                    label: '${state.newItems} ${t('batch.new').toLowerCase()}',
                     icon: Icons.add_circle_outline),
               ],
               const SizedBox(width: 8),
@@ -209,7 +211,7 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
                   onPressed: _confirmClear,
                   icon: const Icon(Icons.delete_sweep_outlined,
                       color: Colors.white),
-                  tooltip: 'Listeyi Temizle',
+                  tooltip: t('batch.clear_list'),
                 ),
             ],
           ),
@@ -219,19 +221,20 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
   }
 
   void _confirmClear() async {
+    final t = i18nOf(ref);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Listeyi Temizle'),
-        content: const Text('Tüm satırlar silinecek. Emin misiniz?'),
+        title: Text(t('batch.clear_list')),
+        content: Text(t('batch.clear_list_confirm')),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('İptal')),
+              child: Text(t('common.cancel'))),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: AppColors.danger),
-            child: const Text('Temizle'),
+            child: Text(t('batch.clear')),
           ),
         ],
       ),
@@ -240,7 +243,7 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
   }
 
   // ── SEARCH / BARCODE BAR ──────────────────────────────────────────────────
-  Widget _buildSearchBar(SectorConfig cfg) {
+  Widget _buildSearchBar(SectorConfig cfg, Function(String) t) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
@@ -279,7 +282,7 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
             icon: Icons.search_rounded,
             color: AppColors.primary,
             onTap: _addByBarcode,
-            tooltip: 'Ara ve Ekle',
+            tooltip: t('batch.search_and_add'),
           ),
           const SizedBox(width: 8),
           // Manual add button
@@ -288,7 +291,7 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
             color: AppColors.success,
             onTap: () =>
                 ref.read(batchEntryProvider.notifier).addManualRow(),
-            tooltip: 'Manuel Satır Ekle',
+            tooltip: t('batch.add_manual_row'),
           ),
         ],
       ),
@@ -296,7 +299,18 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
   }
 
   // ── TAB BAR ──────────────────────────────────────────────────────────────
-  Widget _buildTabBar(BatchEntryState state) {
+  String _tabLabel(String key, Function(String) t) {
+    return switch (key) {
+      'all' => t('batch.all'),
+      'new' => t('batch.new'),
+      'existing' => t('batch.existing'),
+      'error' => t('common.error'),
+      'saved' => t('batch.saved'),
+      _ => key,
+    };
+  }
+
+  Widget _buildTabBar(BatchEntryState state, Function(String) t) {
     int _count(RowStatus? s) {
       if (s == null) return state.rows.length;
       if (s == RowStatus.existing) {
@@ -317,19 +331,19 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
         indicatorWeight: 2.5,
         labelStyle: const TextStyle(
             fontSize: 13, fontWeight: FontWeight.w600),
-        tabs: _tabs.map((t) {
-          final count = _count(t.status);
+        tabs: _tabs.map((tab) {
+          final count = _count(tab.status);
           return Tab(
             child: Row(
               children: [
-                Text(t.label),
+                Text(_tabLabel(tab.label, t)),
                 if (count > 0) ...[
                   const SizedBox(width: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 7, vertical: 2),
                     decoration: BoxDecoration(
-                      color: _tabBadgeColor(t.status)
+                      color: _tabBadgeColor(tab.status)
                           .withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -338,7 +352,7 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: _tabBadgeColor(t.status),
+                        color: _tabBadgeColor(tab.status),
                       ),
                     ),
                   ),
@@ -363,12 +377,12 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
   }
 
   // ── BODY ─────────────────────────────────────────────────────────────────
-  Widget _buildBody(BatchEntryState state, SectorConfig cfg, bool isDesktop) {
+  Widget _buildBody(BatchEntryState state, SectorConfig cfg, bool isDesktop, Function(String) t) {
     return TabBarView(
       controller: _tabController,
-      children: _tabs.map((t) {
-        final rows = _filteredRows(state.rows, t.status);
-        if (rows.isEmpty) return _buildEmptyState(t.status);
+      children: _tabs.map((tab) {
+        final rows = _filteredRows(state.rows, tab.status);
+        if (rows.isEmpty) return _buildEmptyState(tab.status, t);
         return ListView.builder(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
           itemCount: rows.length,
@@ -379,17 +393,17 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
     );
   }
 
-  Widget _buildEmptyState(RowStatus? status) {
+  Widget _buildEmptyState(RowStatus? status, Function(String) t) {
     final (icon, title, sub) = status == null
         ? (
             Icons.inventory_2_outlined,
-            'Henüz ürün eklenmedi',
-            'Barkod okutarak veya manuel satır ekleyerek başlayın'
+            t('batch.no_products_yet'),
+            t('batch.scan_or_add_manual'),
           )
         : (
             Icons.filter_list_off_rounded,
-            'Bu kategoride ürün yok',
-            'Farklı bir sekme seçin'
+            t('batch.no_products_in_category'),
+            t('batch.select_different_tab'),
           );
 
     return Center(
@@ -427,7 +441,7 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
   }
 
   // ── SUMMARY BAR ──────────────────────────────────────────────────────────
-  Widget _buildSummaryBar(BatchEntryState state) {
+  Widget _buildSummaryBar(BatchEntryState state, Function(String) t) {
     final totalQty =
         state.rows.fold(0, (s, r) => s + r.quantity);
     final margin = state.totalSale > 0
@@ -457,23 +471,23 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
                   runSpacing: 6,
                   children: [
                     _Metric(
-                        label: 'Ürün',
+                        label: t('product.product'),
                         value: '${state.totalItems}',
                         color: AppColors.primary),
                     _Metric(
-                        label: 'Adet',
+                        label: t('common.quantity'),
                         value: '$totalQty',
                         color: AppColors.info),
                     _Metric(
-                        label: 'Maliyet',
+                        label: t('batch.cost'),
                         value: _currency.format(state.totalCost),
                         color: AppColors.warning),
                     _Metric(
-                        label: 'Satış',
+                        label: t('batch.sale'),
                         value: _currency.format(state.totalSale),
                         color: AppColors.success),
                     _Metric(
-                        label: 'Kâr %',
+                        label: t('batch.profit_percent'),
                         value: '%${margin.toStringAsFixed(1)}',
                         color: margin >= 20
                             ? AppColors.success
@@ -529,15 +543,15 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
                                     )
                                   ],
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.cloud_upload_rounded,
+                              const Icon(Icons.cloud_upload_rounded,
                                   color: Colors.white, size: 18),
-                              SizedBox(width: 8),
+                              const SizedBox(width: 8),
                               Text(
-                                'Kaydet',
-                                style: TextStyle(
+                                t('common.save'),
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
@@ -641,6 +655,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
 
   @override
   Widget build(BuildContext context) {
+    final t = i18nOf(ref);
     final row = widget.row;
     final margin = row.salePrice > 0
         ? ((row.salePrice - row.purchasePrice) / row.salePrice * 100)
@@ -689,7 +704,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                       children: [
                         Row(
                           children: [
-                            _StatusBadge(status: row.status),
+                            _StatusBadge(status: row.status, t: t),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -697,7 +712,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                                     ? row.productName
                                     : row.barcode.isNotEmpty
                                         ? row.barcode
-                                        : 'Ürün adı giriniz...',
+                                        : t('batch.enter_product_name'),
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
@@ -808,7 +823,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            'Kar %${margin.toStringAsFixed(1)}',
+                            '${t('batch.profit')} %${margin.toStringAsFixed(1)}',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
@@ -852,10 +867,10 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                   // Row 1: Ürün adı + Barkod
                   _FormRow(children: [
                     _Field(
-                      label: '${widget.cfg.labels.productName} Adı *',
+                      label: '${t('product.product_name')} *',
                       ctrl: _nameCtrl,
                       onChanged: (v) => _update(productName: v),
-                      hint: '${widget.cfg.labels.productName} adı girin',
+                      hint: t('batch.enter_product_name'),
                     ),
                     _Field(
                       label: widget.cfg.labels.barcodeLabel,
@@ -868,7 +883,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                   // Row 2: Alış / Satış
                   _FormRow(children: [
                     _Field(
-                      label: 'Alış Fiyatı ₺',
+                      label: '${t('batch.purchase_price')} ₺',
                       ctrl: _purchaseCtrl,
                       onChanged: (v) =>
                           _update(purchasePrice: double.tryParse(v) ?? 0),
@@ -896,8 +911,8 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                         ctrl: _oemCtrl,
                         onChanged: (v) => _update(oemNumber: v),
                         hint: widget.cfg.type == SectorType.technology
-                            ? 'IMEI / Seri No'
-                            : 'Orijinal parça no',
+                            ? t('batch.hint_imei_serial')
+                            : t('batch.hint_original_part_no'),
                       )
                     else
                       const SizedBox.shrink(),
@@ -920,20 +935,20 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                       ctrl: _categoryCtrl,
                       onChanged: (v) => _update(categoryName: v),
                       hint: widget.cfg.type == SectorType.autoParts
-                          ? 'Fren, Motor, Filtre...'
+                          ? t('batch.hint_auto_category')
                           : widget.cfg.type == SectorType.footwear
-                              ? 'Spor, Günlük, Bot...'
-                              : 'Kategori',
+                              ? t('batch.hint_footwear_category')
+                              : t('batch.hint_category'),
                     ),
                     if (widget.cfg.fields.showBrand)
                       _Field(
-                        label: 'Marka' +
+                        label: t('product.brand') +
                             (widget.cfg.fields.brandRequired ? ' *' : ''),
                         ctrl: _brandCtrl,
                         onChanged: (v) => _update(brandName: v),
                         hint: widget.cfg.type == SectorType.autoParts
-                            ? 'Bosch / NGK / Brembo'
-                            : 'Marka adı',
+                            ? t('batch.hint_auto_brand')
+                            : t('batch.hint_brand_name'),
                       )
                     else
                       const SizedBox.shrink(),
@@ -943,7 +958,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                       widget.cfg.fields.showVariantColor ||
                       widget.cfg.fields.showWarranty) ...[
                     const SizedBox(height: 10),
-                    _SectorExtraFields(cfg: widget.cfg, row: widget.row, onUpdate: _update),
+                    _SectorExtraFields(cfg: widget.cfg, row: widget.row, onUpdate: _update, t: t),
                   ],
                   const SizedBox(height: 14),
                   // Actions
@@ -966,7 +981,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                                   size: 14, color: AppColors.success),
                               const SizedBox(width: 6),
                               Text(
-                                'Birim kâr: ${widget.currency.format(row.salePrice - row.purchasePrice)}  •  Toplam: ${widget.currency.format(row.lineProfit)}',
+                                '${t('batch.unit_profit')}: ${widget.currency.format(row.salePrice - row.purchasePrice)}  •  ${t('common.total')}: ${widget.currency.format(row.lineProfit)}',
                                 style: const TextStyle(
                                   fontSize: 11,
                                   color: AppColors.success,
@@ -985,8 +1000,8 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                             .removeRow(row.id),
                         icon: const Icon(Icons.delete_outline_rounded,
                             size: 16, color: AppColors.danger),
-                        label: const Text('Kaldır',
-                            style: TextStyle(color: AppColors.danger)),
+                        label: Text(t('common.remove'),
+                            style: const TextStyle(color: AppColors.danger)),
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 8),
@@ -1166,15 +1181,16 @@ class _Field extends StatelessWidget {
 // ── STATUS BADGE ──────────────────────────────────────────────────────────────
 class _StatusBadge extends StatelessWidget {
   final RowStatus status;
-  const _StatusBadge({required this.status});
+  final Function(String) t;
+  const _StatusBadge({required this.status, required this.t});
 
   @override
   Widget build(BuildContext context) {
     final (label, color, icon) = switch (status) {
-      RowStatus.newProduct => ('YENİ', AppColors.info, Icons.add_circle_outline),
-      RowStatus.existing => ('MEVCUT', AppColors.success, Icons.check_circle_outline),
-      RowStatus.matched => ('EŞLEŞTİ', AppColors.primary, Icons.link_rounded),
-      RowStatus.error => ('HATA', AppColors.danger, Icons.error_outline),
+      RowStatus.newProduct => (t('batch.status_new'), AppColors.info, Icons.add_circle_outline),
+      RowStatus.existing => (t('batch.status_existing'), AppColors.success, Icons.check_circle_outline),
+      RowStatus.matched => (t('batch.status_matched'), AppColors.primary, Icons.link_rounded),
+      RowStatus.error => (t('batch.status_error'), AppColors.danger, Icons.error_outline),
       RowStatus.saving => ('...', AppColors.warning, Icons.hourglass_top_rounded),
       RowStatus.saved => ('✓ OK', AppColors.success, Icons.check_circle),
     };
@@ -1303,49 +1319,50 @@ class _Metric extends StatelessWidget {
 class _ConfirmDialog extends StatelessWidget {
   final BatchEntryState state;
   final NumberFormat currency;
-  const _ConfirmDialog({required this.state, required this.currency});
+  final Function(String) t;
+  const _ConfirmDialog({required this.state, required this.currency, required this.t});
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       shape:
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: const Row(
+      title: Row(
         children: [
-          Icon(Icons.save_alt_rounded, color: AppColors.primary),
-          SizedBox(width: 10),
-          Text('Kaydı Tamamla'),
+          const Icon(Icons.save_alt_rounded, color: AppColors.primary),
+          const SizedBox(width: 10),
+          Text(t('batch.complete_save')),
         ],
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _ConfirmRow('Toplam ürün',
-              '${state.totalItems} kalem'),
-          _ConfirmRow('Yeni ürün', '${state.newItems} adet'),
+          _ConfirmRow(t('batch.total_products'),
+              '${state.totalItems} ${t('batch.items')}'),
+          _ConfirmRow(t('batch.new_products'), '${state.newItems} ${t('common.quantity').toLowerCase()}'),
           _ConfirmRow(
-              'Mevcut ürün', '${state.existingItems} adet stok'),
+              t('batch.existing_products'), '${state.existingItems} ${t('batch.stock_qty')}'),
           const Divider(height: 16),
-          _ConfirmRow('Toplam maliyet',
+          _ConfirmRow(t('batch.total_cost'),
               currency.format(state.totalCost)),
           _ConfirmRow(
-              'Toplam satış', currency.format(state.totalSale),
+              t('batch.total_sale'), currency.format(state.totalSale),
               bold: true),
           if (state.supplierName != null)
-            _ConfirmRow('Tedarikçi', state.supplierName!),
+            _ConfirmRow(t('batch.supplier'), state.supplierName!),
           if (state.warehouseName != null)
-            _ConfirmRow('Depo', state.warehouseName!),
+            _ConfirmRow(t('batch.warehouse'), state.warehouseName!),
         ],
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('İptal'),
+          child: Text(t('common.cancel')),
         ),
         ElevatedButton.icon(
           onPressed: () => Navigator.pop(context, true),
           icon: const Icon(Icons.check_rounded, size: 18),
-          label: const Text('Kaydet'),
+          label: Text(t('common.save')),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
@@ -1389,7 +1406,8 @@ class _ConfirmRow extends StatelessWidget {
 class _ResultSheet extends StatelessWidget {
   final BatchSaveResult result;
   final NumberFormat currency;
-  const _ResultSheet({required this.result, required this.currency});
+  final Function(String) t;
+  const _ResultSheet({required this.result, required this.currency, required this.t});
 
   @override
   Widget build(BuildContext context) {
@@ -1431,7 +1449,7 @@ class _ResultSheet extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            hasErrors ? 'Kısmen Tamamlandı' : 'Başarıyla Kaydedildi!',
+            hasErrors ? t('batch.partially_completed') : t('batch.saved_successfully'),
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -1443,14 +1461,14 @@ class _ResultSheet extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _ResultStat('İşlenen', '${result.totalProcessed}',
+              _ResultStat(t('batch.processed'), '${result.totalProcessed}',
                   AppColors.primary),
-              _ResultStat('Yeni Ürün', '${result.newCreated}',
+              _ResultStat(t('batch.new_product'), '${result.newCreated}',
                   AppColors.success),
-              _ResultStat('Stok Güncellendi',
+              _ResultStat(t('batch.stock_updated'),
                   '${result.stockUpdated}', AppColors.info),
               if (result.errors > 0)
-                _ResultStat('Hata', '${result.errors}',
+                _ResultStat(t('common.error'), '${result.errors}',
                     AppColors.danger),
             ],
           ),
@@ -1501,8 +1519,8 @@ class _ResultSheet extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
               ),
-              child: const Text('Kapat',
-                  style: TextStyle(
+              child: Text(t('common.close'),
+                  style: const TextStyle(
                       fontWeight: FontWeight.bold, fontSize: 15)),
             ),
           ),
@@ -1545,11 +1563,13 @@ class _SectorExtraFields extends StatefulWidget {
     String? oemNumber,
     String? brandName,
   }) onUpdate;
+  final Function(String) t;
 
   const _SectorExtraFields({
     required this.cfg,
     required this.row,
     required this.onUpdate,
+    required this.t,
   });
 
   @override
@@ -1592,20 +1612,20 @@ class _SectorExtraFieldsState extends State<_SectorExtraFields> {
 
     if (widget.cfg.fields.showVariantColor) {
       fields.add(_Field(
-        label: 'Renk',
+        label: widget.t('product.color'),
         ctrl: _colorCtrl,
         onChanged: (_) {},
-        hint: 'Siyah / Beyaz / Kırmızı',
+        hint: widget.t('batch.hint_colors'),
       ));
     }
 
     if (widget.cfg.fields.showWarranty) {
       fields.add(_Field(
-        label: 'Garanti Süresi' +
+        label: widget.t('product.warranty_period') +
             (widget.cfg.fields.warrantyRequired ? ' *' : ''),
         ctrl: _warrantyCtrl,
         onChanged: (_) {},
-        hint: '12 ay / 24 ay',
+        hint: widget.t('batch.hint_warranty'),
       ));
     }
 
@@ -1626,7 +1646,7 @@ class _SectorExtraFieldsState extends State<_SectorExtraFields> {
           Icon(Icons.tune_rounded, size: 13, color: AppColors.primary),
           const SizedBox(width: 6),
           Text(
-            '${widget.cfg.type.displayName} Alanları',
+            '${widget.cfg.type.displayName} ${widget.t('batch.fields')}',
             style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,

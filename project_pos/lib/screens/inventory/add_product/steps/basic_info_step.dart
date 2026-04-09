@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/config/sector_config.dart';
@@ -7,7 +8,7 @@ import '../models/wizard_state.dart';
 import '../widgets/wizard_common_widgets.dart';
 import '../widgets/category_picker.dart';
 
-class BasicInfoStep extends StatelessWidget {
+class BasicInfoStep extends ConsumerWidget {
   final WizardState state;
   final VoidCallback onChanged;
   final bool isMobile;
@@ -27,51 +28,52 @@ class BasicInfoStep extends StatelessWidget {
       };
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
     return Column(
       children: [
-        _buildBasicInfoCard(context),
+        _buildBasicInfoCard(context, t),
         const SizedBox(height: 16),
-        _buildPricingCard(context),
+        _buildPricingCard(context, t),
         const SizedBox(height: 16),
         if (state.isParcaci) ...[
-          _buildAutoPartsCard(context),
+          _buildAutoPartsCard(context, t),
           const SizedBox(height: 16),
         ],
         if (state.isGiyim) ...[
-          _buildClothingCard(context),
+          _buildClothingCard(context, t),
           const SizedBox(height: 16),
         ],
-        _buildTaxCard(context),
+        _buildTaxCard(context, t),
       ],
     );
   }
 
   // ─── Basic Info ───────────────────────────────────────────────────────────
 
-  Widget _buildBasicInfoCard(BuildContext context) {
+  Widget _buildBasicInfoCard(BuildContext context, String Function(String) t) {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _SectionHeader(
             icon: Icons.info_outline_rounded,
-            title: 'Temel Bilgiler',
+            title: t('product.basic_info'),
             subtitle: state.sectorType.displayName,
             color: _accentColor,
           ),
           const SizedBox(height: 16),
           buildFormField(
-            label: 'Urun Adi',
+            label: t('product.product_name'),
             required: true,
             child: TextField(
               controller: state.productNameController,
               decoration: inputDecoration(
                 state.isParcaci
-                    ? 'Orn: On Fren Balatasi Takimi'
+                    ? t('product.hint_auto_part_name')
                     : state.isGiyim
-                        ? 'Orn: Slim Fit Erkek Tisort'
-                        : 'Urun adini girin',
+                        ? t('product.hint_clothing_name')
+                        : t('product.hint_product_name'),
               ),
               onChanged: (_) => onChanged(),
             ),
@@ -85,7 +87,7 @@ class BasicInfoStep extends StatelessWidget {
                   required: true,
                   child: TextField(
                     controller: state.skuController,
-                    decoration: inputDecoration('Stok Kodu').copyWith(
+                    decoration: inputDecoration(t('product.stock_code')).copyWith(
                       suffixIcon: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -99,7 +101,7 @@ class BasicInfoStep extends StatelessWidget {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content:
-                                        const Text('SKU kopyalandi'),
+                                        Text(t('product.sku_copied')),
                                     duration:
                                         const Duration(milliseconds: 1200),
                                     behavior: SnackBarBehavior.floating,
@@ -108,7 +110,7 @@ class BasicInfoStep extends StatelessWidget {
                                 );
                               }
                             },
-                            tooltip: 'Kopyala',
+                            tooltip: t('common.copy'),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(
                                 minWidth: 32, minHeight: 32),
@@ -120,7 +122,7 @@ class BasicInfoStep extends StatelessWidget {
                               state.generateSKU();
                               onChanged();
                             },
-                            tooltip: 'Otomatik uret',
+                            tooltip: t('product.auto_generate'),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(
                                 minWidth: 32, minHeight: 32),
@@ -135,10 +137,10 @@ class BasicInfoStep extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: buildFormField(
-                  label: 'Kategori',
+                  label: t('product.category'),
                   required: true,
                   child:
-                      CategoryPickerButton(state: state, onChanged: onChanged),
+                      CategoryPickerButton(state: state, onChanged: onChanged, t: t),
                 ),
               ),
             ],
@@ -148,7 +150,7 @@ class BasicInfoStep extends StatelessWidget {
             children: [
               Expanded(
                 child: buildFormField(
-                  label: 'Marka',
+                  label: t('product.brand'),
                   child: Autocomplete<String>(
                     initialValue:
                         TextEditingValue(text: state.brandController.text),
@@ -172,7 +174,7 @@ class BasicInfoStep extends StatelessWidget {
                       return TextField(
                         controller: textController,
                         focusNode: focusNode,
-                        decoration: inputDecoration('Marka ara...').copyWith(
+                        decoration: inputDecoration(t('product.search_brand')).copyWith(
                           prefixIcon: const Icon(Icons.search_rounded,
                               color: AppColors.primary, size: 18),
                         ),
@@ -212,10 +214,10 @@ class BasicInfoStep extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: buildFormField(
-                  label: 'Birim',
+                  label: t('product.unit'),
                   child: DropdownButtonFormField<String>(
                     value: state.selectedUnit,
-                    decoration: inputDecoration('Birim'),
+                    decoration: inputDecoration(t('product.unit')),
                     items: state.units.map<DropdownMenuItem<String>>((unit) {
                       return DropdownMenuItem<String>(
                         value: unit['value'],
@@ -233,11 +235,11 @@ class BasicInfoStep extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           buildFormField(
-            label: 'Aciklama',
+            label: t('common.description'),
             child: TextField(
               controller: state.descriptionController,
               maxLines: 2,
-              decoration: inputDecoration('Urun hakkinda kisa bilgi...'),
+              decoration: inputDecoration(t('product.hint_description')),
             ),
           ),
         ],
@@ -247,7 +249,7 @@ class BasicInfoStep extends StatelessWidget {
 
   // ─── Pricing ──────────────────────────────────────────────────────────────
 
-  Widget _buildProfitBadge() {
+  Widget _buildProfitBadge(String Function(String) t) {
     final purchase =
         double.tryParse(state.basePurchasePriceController.text) ?? 0;
     final sale = double.tryParse(state.basePriceController.text) ?? 0;
@@ -283,7 +285,7 @@ class BasicInfoStep extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           Text(
-            'Kar: ${profit >= 0 ? "+" : ""}${profit.toStringAsFixed(2)} TL (${margin.toStringAsFixed(1)}%)',
+            '${t('product.profit')}: ${profit >= 0 ? "+" : ""}${profit.toStringAsFixed(2)} TL (${margin.toStringAsFixed(1)}%)',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -295,11 +297,11 @@ class BasicInfoStep extends StatelessWidget {
     );
   }
 
-  Widget _buildPricingCard(BuildContext context) {
+  Widget _buildPricingCard(BuildContext context, String Function(String) t) {
     final priceFields = [
       Expanded(
         child: buildFormField(
-          label: 'Alis Fiyati',
+          label: t('product.purchase_price'),
           child: TextField(
             controller: state.basePurchasePriceController,
             keyboardType: TextInputType.number,
@@ -315,7 +317,7 @@ class BasicInfoStep extends StatelessWidget {
       SizedBox(width: isMobile ? 0 : 12, height: isMobile ? 12 : 0),
       Expanded(
         child: buildFormField(
-          label: 'Satis Fiyati',
+          label: t('product.sale_price'),
           required: true,
           child: TextField(
             controller: state.basePriceController,
@@ -335,15 +337,15 @@ class BasicInfoStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionHeader(
-              icon: Icons.payments_rounded, title: 'Fiyatlandirma'),
+          _SectionHeader(
+              icon: Icons.payments_rounded, title: t('product.pricing')),
           const SizedBox(height: 16),
           if (isMobile)
             Column(children: priceFields)
           else
             Row(children: priceFields),
           const SizedBox(height: 10),
-          _buildProfitBadge(),
+          _buildProfitBadge(t),
         ],
       ),
     );
@@ -351,7 +353,7 @@ class BasicInfoStep extends StatelessWidget {
 
   // ─── Auto Parts ───────────────────────────────────────────────────────────
 
-  Widget _buildAutoPartsCard(BuildContext context) {
+  Widget _buildAutoPartsCard(BuildContext context, String Function(String) t) {
     return _card(
       accentBorderColor: AppColors.orange,
       child: Column(
@@ -359,15 +361,15 @@ class BasicInfoStep extends StatelessWidget {
         children: [
           _SectionHeader(
             icon: Icons.build_circle_rounded,
-            title: 'Oto Parca Bilgileri',
+            title: t('product.auto_parts_info'),
             color: AppColors.orange,
           ),
           const SizedBox(height: 16),
           buildFormField(
-            label: 'Raf Konumu',
+            label: t('product.shelf_location'),
             child: TextField(
               controller: state.shelfNumberController,
-              decoration: inputDecoration('Orn: A-03-R2').copyWith(
+              decoration: inputDecoration(t('product.hint_shelf')).copyWith(
                 prefixIcon: Icon(Icons.shelves,
                     color: AppColors.orange, size: 18),
               ),
@@ -377,12 +379,14 @@ class BasicInfoStep extends StatelessWidget {
 
           // OEM Numbers
           _buildDynamicList(
-            title: 'OEM Numaralari',
+            title: t('product.oem_numbers'),
             icon: Icons.confirmation_number_rounded,
             accentColor: AppColors.orange,
             items: state.oemNumbers,
             emptyIcon: Icons.confirmation_number_outlined,
-            emptyText: 'Henuz OEM numarasi eklenmedi',
+            emptyText: t('product.no_oem_yet'),
+            addLabel: t('common.add'),
+            addHint: t('product.use_add_button_above'),
             onAdd: () {
               state.oemNumbers
                   .add({'oemNumber': '', 'manufacturer': ''});
@@ -398,7 +402,7 @@ class BasicInfoStep extends StatelessWidget {
                   flex: 3,
                   child: TextField(
                     decoration:
-                        inputDecoration('OEM No (orn: 04465-02220)')
+                        inputDecoration(t('product.hint_oem_no'))
                             .copyWith(isDense: true),
                     style: const TextStyle(fontSize: 13),
                     onChanged: (val) =>
@@ -412,7 +416,7 @@ class BasicInfoStep extends StatelessWidget {
                   flex: 2,
                   child: TextField(
                     decoration:
-                        inputDecoration('Uretici').copyWith(isDense: true),
+                        inputDecoration(t('product.manufacturer')).copyWith(isDense: true),
                     style: const TextStyle(fontSize: 13),
                     onChanged: (val) =>
                         state.oemNumbers[i]['manufacturer'] = val,
@@ -429,12 +433,14 @@ class BasicInfoStep extends StatelessWidget {
 
           // Cross References
           _buildDynamicList(
-            title: 'Capraz Referanslar',
+            title: t('product.cross_references'),
             icon: Icons.compare_arrows_rounded,
             accentColor: AppColors.orange,
             items: state.crossReferences,
             emptyIcon: Icons.compare_arrows_outlined,
-            emptyText: 'Henuz capraz referans eklenmedi',
+            emptyText: t('product.no_cross_ref_yet'),
+            addLabel: t('common.add'),
+            addHint: t('product.use_add_button_above'),
             onAdd: () {
               state.crossReferences.add(
                   {'crossRefNumber': '', 'crossRefBrand': '', 'notes': ''});
@@ -450,7 +456,7 @@ class BasicInfoStep extends StatelessWidget {
                   flex: 3,
                   child: TextField(
                     decoration:
-                        inputDecoration('Referans No (orn: GDB3550)')
+                        inputDecoration(t('product.hint_ref_no'))
                             .copyWith(isDense: true),
                     style: const TextStyle(fontSize: 13),
                     onChanged: (val) =>
@@ -463,7 +469,7 @@ class BasicInfoStep extends StatelessWidget {
                 Expanded(
                   flex: 2,
                   child: TextField(
-                    decoration: inputDecoration('Marka (orn: TRW)')
+                    decoration: inputDecoration(t('product.hint_brand_ref'))
                         .copyWith(isDense: true),
                     style: const TextStyle(fontSize: 13),
                     onChanged: (val) =>
@@ -489,7 +495,9 @@ class BasicInfoStep extends StatelessWidget {
     required Widget Function(int) itemBuilder,
     Color accentColor = AppColors.primary,
     IconData emptyIcon = Icons.inbox_rounded,
-    String emptyText = 'Henuz eklenmedi',
+    String emptyText = '',
+    String addLabel = 'Ekle',
+    String addHint = '',
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -524,7 +532,7 @@ class BasicInfoStep extends StatelessWidget {
             TextButton.icon(
               onPressed: onAdd,
               icon: Icon(Icons.add_rounded, size: 16, color: accentColor),
-              label: Text('Ekle',
+              label: Text(addLabel,
                   style: TextStyle(fontSize: 12, color: accentColor)),
               style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 8)),
@@ -553,7 +561,7 @@ class BasicInfoStep extends StatelessWidget {
                         fontSize: 12,
                         color: AppColors.textMuted.withOpacity(0.7))),
                 const SizedBox(height: 8),
-                Text('Eklemek icin yukardaki "Ekle" butonunu kullanin',
+                Text(addHint,
                     style: TextStyle(
                         fontSize: 11,
                         color: AppColors.textMuted.withOpacity(0.5))),
@@ -614,7 +622,7 @@ class BasicInfoStep extends StatelessWidget {
 
   // ─── Clothing ─────────────────────────────────────────────────────────────
 
-  Widget _buildClothingCard(BuildContext context) {
+  Widget _buildClothingCard(BuildContext context, String Function(String) t) {
     return _card(
       accentBorderColor: AppColors.pink,
       child: Column(
@@ -622,7 +630,7 @@ class BasicInfoStep extends StatelessWidget {
         children: [
           _SectionHeader(
             icon: Icons.checkroom_rounded,
-            title: 'Giyim Bilgileri',
+            title: t('product.clothing_info'),
             color: AppColors.pink,
           ),
           const SizedBox(height: 16),
@@ -630,20 +638,20 @@ class BasicInfoStep extends StatelessWidget {
             children: [
               Expanded(
                 child: buildFormField(
-                  label: 'Kumas / Materyal',
+                  label: t('product.fabric_material'),
                   child: TextField(
                     controller: state.fabricController,
-                    decoration: inputDecoration('Orn: %100 Pamuk'),
+                    decoration: inputDecoration(t('product.hint_fabric')),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: buildFormField(
-                  label: 'Sezon',
+                  label: t('product.season'),
                   child: TextField(
                     controller: state.seasonController,
-                    decoration: inputDecoration('Orn: 2026 Ilkbahar-Yaz'),
+                    decoration: inputDecoration(t('product.hint_season')),
                   ),
                 ),
               ),
@@ -656,25 +664,25 @@ class BasicInfoStep extends StatelessWidget {
 
   // ─── Tax ───────────────────────────────────────────────────────────────────
 
-  Widget _buildTaxCard(BuildContext context) {
+  Widget _buildTaxCard(BuildContext context, String Function(String) t) {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionHeader(
-              icon: Icons.receipt_long_rounded, title: 'Vergi Bilgileri'),
+          _SectionHeader(
+              icon: Icons.receipt_long_rounded, title: t('product.tax_info')),
           const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
                 flex: 2,
                 child: buildFormField(
-                  label: 'KDV Orani',
+                  label: t('product.vat_rate'),
                   child: DropdownButtonFormField<double>(
                     value: state.selectedVatRate,
-                    decoration: inputDecoration('KDV %'),
-                    items: const [
-                      DropdownMenuItem(value: 0.0, child: Text('% 0 -- Muaf')),
+                    decoration: inputDecoration(t('product.vat_percent')),
+                    items: [
+                      DropdownMenuItem(value: 0.0, child: Text('% 0 -- ${t('product.exempt')}')),
                       DropdownMenuItem(value: 1.0, child: Text('% 1')),
                       DropdownMenuItem(value: 8.0, child: Text('% 8')),
                       DropdownMenuItem(value: 10.0, child: Text('% 10')),
@@ -691,24 +699,24 @@ class BasicInfoStep extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: buildFormField(
-                  label: 'OTV %',
+                  label: t('product.special_tax'),
                   child: TextField(
                     controller: state.specialTaxRateController,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
-                    decoration: inputDecoration('Opsiyonel'),
+                    decoration: inputDecoration(t('common.optional')),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: buildFormField(
-                  label: 'Stopaj %',
+                  label: t('product.withholding_tax'),
                   child: TextField(
                     controller: state.withholdingTaxRateController,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
-                    decoration: inputDecoration('Opsiyonel'),
+                    decoration: inputDecoration(t('common.optional')),
                   ),
                 ),
               ),
@@ -719,7 +727,7 @@ class BasicInfoStep extends StatelessWidget {
             children: [
               Expanded(
                   child: _toggleChip(
-                label: 'Fiyat KDV Dahil',
+                label: t('product.price_vat_included'),
                 value: state.vatIncluded,
                 onTap: () {
                   state.vatIncluded = !state.vatIncluded;
@@ -730,7 +738,7 @@ class BasicInfoStep extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                   child: _toggleChip(
-                label: 'Vergiden Muaf',
+                label: t('product.tax_exempt'),
                 value: state.taxExempt,
                 onTap: () {
                   state.taxExempt = !state.taxExempt;

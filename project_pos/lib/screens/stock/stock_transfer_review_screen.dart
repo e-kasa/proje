@@ -54,7 +54,7 @@ class _StockTransferReviewScreenState
       });
     } catch (e) {
       setState(() {
-        _error = 'Veri yuklenemedi';
+        _error = 'data_load_failed';
         _isLoading = false;
       });
     }
@@ -66,11 +66,12 @@ class _StockTransferReviewScreenState
 
   @override
   Widget build(BuildContext context) {
+    final t = i18nOf(ref);
     if (_isLoading) {
       return Scaffold(
         backgroundColor: Colors.grey[100],
         appBar: AppAppBar.standard(
-          title: 'Transfer Talep Inceleme',
+          title: t('stock.transfer_review'),
         ),
         body: const Center(child: CircularProgressIndicator()),
       );
@@ -79,9 +80,9 @@ class _StockTransferReviewScreenState
       return Scaffold(
         backgroundColor: Colors.grey[100],
         appBar: AppAppBar.standard(
-          title: 'Transfer Talep Inceleme',
+          title: t('stock.transfer_review'),
         ),
-        body: Center(child: Text(_error ?? 'Veri yuklenemedi')),
+        body: Center(child: Text(t('stock.data_load_failed'))),
       );
     }
     return Scaffold(
@@ -91,7 +92,7 @@ class _StockTransferReviewScreenState
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: 'Transfer Talep Inceleme',
+        title: t('stock.transfer_review'),
         actions: [
           Center(
             child: Padding(
@@ -135,6 +136,7 @@ class _StockTransferReviewScreenState
   }
 
   Widget _buildTransferInfo() {
+    final t = i18nOf(ref);
     return Container(
       padding: const EdgeInsets.all(16),
       color: Colors.white,
@@ -150,7 +152,7 @@ class _StockTransferReviewScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Transfer ID: ${_response!.transferId}',
+                      '${t('stock.transfer_id')}: ${_response!.transferId}',
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
@@ -158,7 +160,7 @@ class _StockTransferReviewScreenState
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Oluşturan: ${_response!.createdBy}',
+                      '${t('stock.created_by')}: ${_response!.createdBy}',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
@@ -175,6 +177,7 @@ class _StockTransferReviewScreenState
   }
 
   Widget _buildProgressBar() {
+    final t = i18nOf(ref);
     final progress = _decidedCount / _response!.itemCount;
 
     return Container(
@@ -188,7 +191,7 @@ class _StockTransferReviewScreenState
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'İlerleme',
+                t('stock.progress'),
                 style: TextStyle(
                   fontSize: 13,
                   color: Colors.grey[700],
@@ -221,6 +224,7 @@ class _StockTransferReviewScreenState
   }
 
   Widget _buildTransferItemCard(TransferItem item, int index) {
+    final t = i18nOf(ref);
     final hasDecision = item.hasDecision;
 
     Color borderColor = Colors.grey[300]!;
@@ -298,8 +302,8 @@ class _StockTransferReviewScreenState
                       color: Colors.green,
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: const Text(
-                      '✓ Karar Verildi',
+                    child: Text(
+                      '✓ ${t('stock.decided')}',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 11,
@@ -319,7 +323,7 @@ class _StockTransferReviewScreenState
               children: [
                 // Ürün Bilgileri
                 _buildInfoRow('SKU', item.sku ?? '-'),
-                _buildInfoRow('Barkod', item.barcode ?? '-'),
+                _buildInfoRow(t('stock.barcode'), item.barcode ?? '-'),
                 const SizedBox(height: 12),
 
                 // Transfer Detayları
@@ -327,7 +331,7 @@ class _StockTransferReviewScreenState
                   children: [
                     Expanded(
                       child: _buildLocationCard(
-                        'Kaynak',
+                        t('stock.source'),
                         item.sourceLocation,
                         Icons.output,
                         Colors.red,
@@ -343,7 +347,7 @@ class _StockTransferReviewScreenState
                     ),
                     Expanded(
                       child: _buildLocationCard(
-                        'Hedef',
+                        t('stock.target'),
                         item.targetLocation!,
                         Icons.input,
                         Colors.green,
@@ -374,14 +378,14 @@ class _StockTransferReviewScreenState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Talep Edilen',
+                            t('stock.requested'),
                             style: TextStyle(
                               fontSize: 11,
                               color: Colors.grey[700],
                             ),
                           ),
                           Text(
-                            '${item.requestedQuantity} Adet',
+                            '${item.requestedQuantity} ${t('stock.unit_piece')}',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -393,14 +397,14 @@ class _StockTransferReviewScreenState
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            'Mevcut Stok',
+                            t('stock.available_stock'),
                             style: TextStyle(
                               fontSize: 11,
                               color: Colors.grey[700],
                             ),
                           ),
                           Text(
-                            '${item.availableStock} Adet',
+                            '${item.availableStock} ${t('stock.unit_piece')}',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -432,8 +436,8 @@ class _StockTransferReviewScreenState
                         Expanded(
                           child: Text(
                             item.needsPartialTransfer
-                                ? 'Stok yetersiz! Kısmi onay verebilirsiniz.'
-                                : 'Kaynak depoda stok yok!',
+                                ? t('stock.insufficient_stock_partial')
+                                : t('stock.source_no_stock'),
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.orange[900],
@@ -489,6 +493,7 @@ class _StockTransferReviewScreenState
     IconData icon,
     Color color,
   ) {
+    final t = i18nOf(ref);
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
@@ -525,7 +530,7 @@ class _StockTransferReviewScreenState
           ),
           if (location.shelfLocation != null)
             Text(
-              'Raf: ${location.shelfLocation}',
+              '${t('stock.shelf')}: ${location.shelfLocation}',
               style: TextStyle(
                 fontSize: 10,
                 color: Colors.grey[600],
@@ -537,6 +542,7 @@ class _StockTransferReviewScreenState
   }
 
   Widget _buildDecisionArea(TransferItem item) {
+    final t = i18nOf(ref);
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -549,12 +555,11 @@ class _StockTransferReviewScreenState
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (item.isStockSufficient)
-            // Tam onay
             Row(
               children: [
                 Expanded(
                   child: _buildDecisionButton(
-                    'Onayla (${item.requestedQuantity} Adet)',
+                    '${t('stock.approve')} (${item.requestedQuantity} ${t('stock.unit_piece')})',
                     Icons.check_circle,
                     Colors.green,
                     () => _makeDecision(item, TransferAction.APPROVE_FULL),
@@ -563,7 +568,7 @@ class _StockTransferReviewScreenState
                 const SizedBox(width: 8),
                 Expanded(
                   child: _buildDecisionButton(
-                    'Reddet',
+                    t('stock.reject'),
                     Icons.cancel,
                     Colors.red,
                     () => _makeDecision(item, TransferAction.REJECT),
@@ -572,14 +577,13 @@ class _StockTransferReviewScreenState
               ],
             )
           else if (item.needsPartialTransfer)
-            // Kısmi onay seçenekleri
             Column(
               children: [
                 Row(
                   children: [
                     Expanded(
                       child: _buildDecisionButton(
-                        'Kısmi Onayla (${item.availableStock} Adet)',
+                        '${t('stock.partial_approve')} (${item.availableStock} ${t('stock.unit_piece')})',
                         Icons.add_task,
                         Colors.orange,
                         () => _makeDecisionPartial(item),
@@ -592,7 +596,7 @@ class _StockTransferReviewScreenState
                   children: [
                     Expanded(
                       child: _buildDecisionButton(
-                        'Ek Bilgi İste',
+                        t('stock.request_more_info'),
                         Icons.info_outline,
                         Colors.blue,
                         () => _makeDecision(item, TransferAction.REQUEST_MORE_INFO),
@@ -601,7 +605,7 @@ class _StockTransferReviewScreenState
                     const SizedBox(width: 8),
                     Expanded(
                       child: _buildDecisionButton(
-                        'Reddet',
+                        t('stock.reject'),
                         Icons.cancel,
                         Colors.red,
                         () => _makeDecision(item, TransferAction.REJECT),
@@ -612,9 +616,8 @@ class _StockTransferReviewScreenState
               ],
             )
           else
-            // Stok yok
             _buildDecisionButton(
-              'Reddet (Stok Yok)',
+              '${t('stock.reject')} (${t('stock.no_stock')})',
               Icons.cancel,
               Colors.red,
               () => _makeDecision(item, TransferAction.REJECT),
@@ -639,6 +642,7 @@ class _StockTransferReviewScreenState
   }
 
   Widget _buildDecisionSummary(TransferItem item) {
+    final t = i18nOf(ref);
     final decision = item.userDecision!;
     String actionText = '';
     IconData actionIcon = Icons.check;
@@ -646,22 +650,22 @@ class _StockTransferReviewScreenState
 
     switch (decision.action) {
       case TransferAction.APPROVE_FULL:
-        actionText = 'Tam onaylandı (${item.requestedQuantity} adet)';
+        actionText = '${t('stock.fully_approved')} (${item.requestedQuantity} ${t('stock.unit_piece')})';
         actionIcon = Icons.check_circle;
         actionColor = Colors.green;
         break;
       case TransferAction.APPROVE_PARTIAL:
-        actionText = 'Kısmi onaylandı (${decision.approvedQuantity} adet)';
+        actionText = '${t('stock.partially_approved')} (${decision.approvedQuantity} ${t('stock.unit_piece')})';
         actionIcon = Icons.add_task;
         actionColor = Colors.orange;
         break;
       case TransferAction.REJECT:
-        actionText = 'Reddedildi';
+        actionText = t('stock.rejected');
         actionIcon = Icons.cancel;
         actionColor = Colors.red;
         break;
       case TransferAction.REQUEST_MORE_INFO:
-        actionText = 'Ek bilgi istendi';
+        actionText = t('stock.more_info_requested');
         actionIcon = Icons.info_outline;
         actionColor = Colors.blue;
         break;
@@ -695,7 +699,7 @@ class _StockTransferReviewScreenState
                 item.userDecision = null;
               });
             },
-            child: const Text('Değiştir'),
+            child: Text(t('stock.change')),
           ),
         ],
       ),
@@ -723,6 +727,7 @@ class _StockTransferReviewScreenState
   }
 
   Widget _buildApproveButton() {
+    final t = i18nOf(ref);
     final allDecided = _decidedCount == _response!.itemCount;
 
     return Container(
@@ -741,7 +746,7 @@ class _StockTransferReviewScreenState
         children: [
           Expanded(
             child: Text(
-              'Kararlar: $_decidedCount/${_response!.itemCount}',
+              '${t('stock.decisions')}: $_decidedCount/${_response!.itemCount}',
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -752,7 +757,7 @@ class _StockTransferReviewScreenState
           ElevatedButton.icon(
             onPressed: allDecided ? () {} : null,
             icon: const Icon(Icons.check),
-            label: const Text('Onayla'),
+            label: Text(t('stock.approve')),
           ),
         ],
       ),

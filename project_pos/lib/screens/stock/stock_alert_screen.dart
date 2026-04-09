@@ -56,6 +56,7 @@ class _StockAlertScreenState extends ConsumerState<StockAlertScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = i18nOf(ref);
     final criticalList = _filterByLevel('CRITICAL');
     final lowList = _filterByLevel('LOW');
     final outList = _filterByLevel('OUT_OF_STOCK');
@@ -65,15 +66,15 @@ class _StockAlertScreenState extends ConsumerState<StockAlertScreen> {
       child: Scaffold(
         backgroundColor: AppColors.bgLight,
         appBar: AppAppBar.standard(
-          title: 'Stok Uyarilari',
+          title: t('stock.alerts'),
           bottom: TabBar(
             labelColor: AppColors.primary,
             unselectedLabelColor: AppColors.textMuted,
             indicatorColor: AppColors.primary,
             tabs: [
-              Tab(text: 'Kritik (${criticalList.length})'),
-              Tab(text: 'Dusuk (${lowList.length})'),
-              Tab(text: 'Bitmis (${outList.length})'),
+              Tab(text: '${t('stock.critical')} (${criticalList.length})'),
+              Tab(text: '${t('stock.low_stock')} (${lowList.length})'),
+              Tab(text: '${t('stock.out_of_stock')} (${outList.length})'),
             ],
           ),
         ),
@@ -94,7 +95,7 @@ class _StockAlertScreenState extends ConsumerState<StockAlertScreen> {
                         ),
                         const SizedBox(height: 16),
                         AppButton.primary(
-                          text: 'Tekrar Dene',
+                          text: t('stock.retry'),
                           icon: Icons.refresh,
                           onPressed: _loadAlerts,
                         ),
@@ -113,6 +114,7 @@ class _StockAlertScreenState extends ConsumerState<StockAlertScreen> {
   }
 
   Widget _buildAlertList(List<Map<String, dynamic>> items, String level) {
+    final t = i18nOf(ref);
     if (items.isEmpty) {
       return Center(
         child: Column(
@@ -122,7 +124,7 @@ class _StockAlertScreenState extends ConsumerState<StockAlertScreen> {
                 size: 64, color: AppColors.textMuted),
             const SizedBox(height: 16),
             Text(
-              'Bu kategoride uyari yok',
+              t('stock.no_alerts_in_category'),
               style: TextStyle(fontSize: 16, color: AppColors.textMuted),
             ),
           ],
@@ -141,6 +143,7 @@ class _StockAlertScreenState extends ConsumerState<StockAlertScreen> {
   }
 
   Widget _buildAlertCard(Map<String, dynamic> alert, String level) {
+    final t = i18nOf(ref);
     final productName = alert['productName']?.toString() ?? '-';
     final variantSku = alert['variantSku']?.toString() ?? '';
     final currentQty = alert['currentQuantity'] as num? ?? 0;
@@ -247,7 +250,7 @@ class _StockAlertScreenState extends ConsumerState<StockAlertScreen> {
                       ),
                     ),
                     Text(
-                      'adet',
+                      t('stock.unit_piece'),
                       style: TextStyle(fontSize: 11, color: qtyColor),
                     ),
                   ],
@@ -301,7 +304,7 @@ class _StockAlertScreenState extends ConsumerState<StockAlertScreen> {
                 TextButton.icon(
                   onPressed: () => context.push('/purchases/create'),
                   icon: const Icon(Icons.add_shopping_cart, size: 16),
-                  label: const Text('Siparis Olustur'),
+                  label: Text(t('stock.create_order')),
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     padding:

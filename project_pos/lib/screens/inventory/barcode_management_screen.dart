@@ -15,6 +15,7 @@ class BarcodeManagementScreen extends ConsumerStatefulWidget {
 }
 
 class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScreen> {
+  String Function(String) get t => i18nOf(ref);
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _barcodes = [];
   List<Map<String, dynamic>> _filteredBarcodes = [];
@@ -107,7 +108,6 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
   }
 
   void _showAddBarcodeDialog() {
-    final t = i18nOf(ref);
     final barcodeController = TextEditingController();
     String selectedType = 'EAN-13';
 
@@ -115,10 +115,10 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.qr_code_2, color: AppColors.primary),
-              SizedBox(width: 12),
+              const Icon(Icons.qr_code_2, color: AppColors.primary),
+              const SizedBox(width: 12),
               Text(t('inventory.add_barcode')),
             ],
           ),
@@ -199,7 +199,6 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
   }
 
   void _showBarcodeDetails(Map<String, dynamic> barcode) {
-    final t = i18nOf(ref);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -394,7 +393,6 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
 
   @override
   Widget build(BuildContext context) {
-    final t = i18nOf(ref);
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(

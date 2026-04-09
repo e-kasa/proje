@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/core/config/sector_config.dart';
@@ -7,7 +8,7 @@ import '../widgets/wizard_common_widgets.dart';
 import '../widgets/multi_select_chips.dart';
 import '../widgets/bulk_dialogs.dart';
 
-class StockBarcodeStep extends StatelessWidget {
+class StockBarcodeStep extends ConsumerWidget {
   final WizardState state;
   final VoidCallback onChanged;
   final bool isMobile;
@@ -90,7 +91,8 @@ class StockBarcodeStep extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
     final totalStock = state.variants.fold<int>(0, (sum, v) => sum + (v.inventory?.physicalQuantity ?? 0));
     final totalPurchaseValue = state.variants.fold<double>(0, (sum, v) {
       final qty = v.inventory?.physicalQuantity ?? 0;
@@ -105,38 +107,38 @@ class StockBarcodeStep extends StatelessWidget {
     final variantsWithStock = state.variants.where((v) => (v.inventory?.physicalQuantity ?? 0) > 0).length;
 
     final statCards = [
-      {'label': 'Toplam\nStok', 'value': '$totalStock', 'color': AppColors.success, 'icon': Icons.inventory_2},
-      {'label': 'Alis\nDegeri', 'value': '\u20ba${totalPurchaseValue.toStringAsFixed(2)}', 'color': AppColors.danger, 'icon': Icons.shopping_cart},
-      {'label': 'Satis\nDegeri', 'value': '\u20ba${totalSaleValue.toStringAsFixed(2)}', 'color': AppColors.success, 'icon': Icons.point_of_sale},
-      {'label': 'Toplam\nKar', 'value': '\u20ba${totalProfit.toStringAsFixed(2)}', 'color': totalProfit >= 0 ? AppColors.success : AppColors.danger, 'icon': totalProfit >= 0 ? Icons.trending_up : Icons.warning_amber},
-      {'label': 'Kar\nMarji', 'value': '${profitMargin.toStringAsFixed(1)}%', 'color': totalProfit >= 0 ? AppColors.success : AppColors.danger, 'icon': Icons.show_chart},
-      {'label': 'Stoklu\nVaryant', 'value': '$variantsWithStock/${state.variants.length}', 'color': AppColors.warning, 'icon': Icons.label},
+      {'label': '${t('common.total')}\n${t('inventory.stock')}', 'value': '$totalStock', 'color': AppColors.success, 'icon': Icons.inventory_2},
+      {'label': '${t('product.purchase')}\n${t('product.value')}', 'value': '\u20ba${totalPurchaseValue.toStringAsFixed(2)}', 'color': AppColors.danger, 'icon': Icons.shopping_cart},
+      {'label': '${t('product.sale')}\n${t('product.value')}', 'value': '\u20ba${totalSaleValue.toStringAsFixed(2)}', 'color': AppColors.success, 'icon': Icons.point_of_sale},
+      {'label': '${t('common.total')}\n${t('product.profit')}', 'value': '\u20ba${totalProfit.toStringAsFixed(2)}', 'color': totalProfit >= 0 ? AppColors.success : AppColors.danger, 'icon': totalProfit >= 0 ? Icons.trending_up : Icons.warning_amber},
+      {'label': '${t('product.profit')}\n${t('product.margin')}', 'value': '${profitMargin.toStringAsFixed(1)}%', 'color': totalProfit >= 0 ? AppColors.success : AppColors.danger, 'icon': Icons.show_chart},
+      {'label': '${t('product.stocked')}\n${t('product.variant')}', 'value': '$variantsWithStock/${state.variants.length}', 'color': AppColors.warning, 'icon': Icons.label},
     ];
 
     return Column(
       children: [
-        _buildStoreWarehouseSupplier(context),
+        _buildStoreWarehouseSupplier(context, t),
         const SizedBox(height: 16),
-        _buildBulkOperations(context),
+        _buildBulkOperations(context, t),
         const SizedBox(height: 16),
-        _buildVariantsList(context),
+        _buildVariantsList(context, t),
         if (state.isParcaci) ...[
           const SizedBox(height: 16),
-          _buildAutoPartsSection(context),
+          _buildAutoPartsSection(context, t),
         ],
         const SizedBox(height: 16),
-        _buildStatCards(statCards),
+        _buildStatCards(statCards, t),
       ],
     );
   }
 
   // ── Stat cards with icons ──────────────────────────────────────────────────
-  Widget _buildStatCards(List<Map<String, dynamic>> statCards) {
+  Widget _buildStatCards(List<Map<String, dynamic>> statCards, String Function(String) t) {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _header(icon: Icons.analytics, title: 'Stok Ozeti', color: _accentColor),
+          _header(icon: Icons.analytics, title: t('inventory.stock_summary'), color: _accentColor),
           const SizedBox(height: 16),
           GridView.builder(
             shrinkWrap: true,
@@ -193,25 +195,25 @@ class StockBarcodeStep extends StatelessWidget {
   }
 
   // ── Store / Warehouse / Supplier ───────────────────────────────────────────
-  Widget _buildStoreWarehouseSupplier(BuildContext context) {
+  Widget _buildStoreWarehouseSupplier(BuildContext context, String Function(String) t) {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _header(
             icon: Icons.store,
-            title: 'Depo, Magaza ve Tedarikci Bilgileri',
+            title: t('product.warehouse_store_supplier_info'),
             color: AppColors.info,
           ),
           const SizedBox(height: 16),
 
           buildFormField(
-            label: 'Magaza',
+            label: t('product.store'),
             required: true,
             child: MultiSelectChips(
               selectedValues: state.selectedStores,
               allOptions: state.stores,
-              hintText: 'Magaza ekle...',
+              hintText: '${t('product.store')} ${t('common.add').toLowerCase()}...',
               icon: Icons.store,
               onChanged: (vals) { state.selectedStores = vals; onChanged(); },
             ),
@@ -219,12 +221,12 @@ class StockBarcodeStep extends StatelessWidget {
           const SizedBox(height: 12),
 
           buildFormField(
-            label: 'Depo',
+            label: t('product.warehouse'),
             required: true,
             child: MultiSelectChips(
               selectedValues: state.selectedWarehouses,
               allOptions: state.warehouses,
-              hintText: 'Depo ekle...',
+              hintText: '${t('product.warehouse')} ${t('common.add').toLowerCase()}...',
               icon: Icons.warehouse,
               onChanged: (vals) { state.selectedWarehouses = vals; onChanged(); },
             ),
@@ -232,7 +234,7 @@ class StockBarcodeStep extends StatelessWidget {
           const SizedBox(height: 12),
 
           buildFormField(
-            label: 'Tedarikci',
+            label: t('product.supplier'),
             child: Builder(builder: (context) {
               // Duplicate ID'leri temizle ve güvenli items oluştur
               final supplierItems = state.suppliers
@@ -259,7 +261,7 @@ class StockBarcodeStep extends StatelessWidget {
               return DropdownButtonFormField<String>(
                 value: safeValue,
                 isExpanded: true,
-                decoration: inputDecoration('Tedarikci secin').copyWith(
+                decoration: inputDecoration(t('product.select_supplier')).copyWith(
                   prefixIcon: const Icon(Icons.business,
                       color: AppColors.primary, size: 18),
                 ),
@@ -277,7 +279,7 @@ class StockBarcodeStep extends StatelessWidget {
             children: [
               Expanded(
                 child: buildFormField(
-                  label: 'Fatura No',
+                  label: t('product.invoice_no'),
                   child: TextField(
                     controller: state.invoiceNumberController,
                     decoration: inputDecoration('FT-2024-001').copyWith(
@@ -289,7 +291,7 @@ class StockBarcodeStep extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: buildFormField(
-                  label: 'Alis Tarihi',
+                  label: t('product.purchase_date'),
                   child: InkWell(
                     onTap: () async {
                       final picked = await showDatePicker(
@@ -315,7 +317,7 @@ class StockBarcodeStep extends StatelessWidget {
                     child: IgnorePointer(
                       child: TextField(
                         controller: state.purchaseDateController,
-                        decoration: inputDecoration('Tarih secin').copyWith(
+                        decoration: inputDecoration(t('common.select_date')).copyWith(
                           prefixIcon: const Icon(Icons.calendar_today, color: AppColors.primary, size: 18),
                           suffixIcon: state.purchaseDateController.text.isNotEmpty
                               ? IconButton(
@@ -337,26 +339,26 @@ class StockBarcodeStep extends StatelessWidget {
   }
 
   // ── Bulk operations ────────────────────────────────────────────────────────
-  Widget _buildBulkOperations(BuildContext context) {
+  Widget _buildBulkOperations(BuildContext context, String Function(String) t) {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _header(
             icon: Icons.bolt,
-            title: 'Hizli Toplu Islemler',
+            title: t('product.quick_bulk_operations'),
             color: AppColors.warning,
-            subtitle: 'Tum varyantlara ayni degeri ata',
+            subtitle: t('product.apply_same_value_to_all'),
           ),
           const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => showBulkStockDialog(context: context, state: state, onChanged: onChanged),
+                  onPressed: () => showBulkStockDialog(context: context, state: state, onChanged: onChanged, t: t),
                   icon: Icon(Icons.inventory_2, size: isMobile ? 18 : 20, color: AppColors.info),
                   label: Text(
-                    isMobile ? 'Stok' : 'Stok Uygula',
+                    isMobile ? t('inventory.stock') : t('product.apply_stock'),
                     style: TextStyle(fontSize: isMobile ? 11 : 13, color: AppColors.info),
                   ),
                   style: OutlinedButton.styleFrom(
@@ -369,10 +371,10 @@ class StockBarcodeStep extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => showBulkPurchasePriceDialog(context: context, state: state, onChanged: onChanged),
+                  onPressed: () => showBulkPurchasePriceDialog(context: context, state: state, onChanged: onChanged, t: t),
                   icon: Icon(Icons.attach_money, size: isMobile ? 18 : 20, color: AppColors.danger),
                   label: Text(
-                    isMobile ? 'Alis' : 'Alis Fiyati',
+                    isMobile ? t('product.purchase') : t('product.purchase_price'),
                     style: TextStyle(fontSize: isMobile ? 11 : 13, color: AppColors.danger),
                   ),
                   style: OutlinedButton.styleFrom(
@@ -385,10 +387,10 @@ class StockBarcodeStep extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => showBulkSalePriceDialog(context: context, state: state, onChanged: onChanged),
+                  onPressed: () => showBulkSalePriceDialog(context: context, state: state, onChanged: onChanged, t: t),
                   icon: Icon(Icons.sell, size: isMobile ? 18 : 20, color: AppColors.success),
                   label: Text(
-                    isMobile ? 'Satis' : 'Satis Fiyati',
+                    isMobile ? t('product.sale') : t('product.sale_price'),
                     style: TextStyle(fontSize: isMobile ? 11 : 13, color: AppColors.success),
                   ),
                   style: OutlinedButton.styleFrom(
@@ -406,14 +408,14 @@ class StockBarcodeStep extends StatelessWidget {
   }
 
   // ── Variants list ──────────────────────────────────────────────────────────
-  Widget _buildVariantsList(BuildContext context) {
+  Widget _buildVariantsList(BuildContext context, String Function(String) t) {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _header(
             icon: Icons.view_list,
-            title: 'Varyant Stok Bilgileri (${state.variants.length})',
+            title: '${t('product.variant_stock_info')} (${state.variants.length})',
             color: _accentColor,
           ),
           const SizedBox(height: 16),
@@ -562,23 +564,23 @@ class StockBarcodeStep extends StatelessWidget {
   }
 
   // ── Auto parts section (only shown when isParcaci) ─────────────────────────
-  Widget _buildAutoPartsSection(BuildContext context) {
+  Widget _buildAutoPartsSection(BuildContext context, String Function(String) t) {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _header(
             icon: Icons.build_circle,
-            title: 'Oto Parca Bilgileri',
+            title: t('product.auto_parts_info'),
             color: AppColors.orange,
           ),
           const SizedBox(height: 16),
 
           buildFormField(
-            label: 'Raf Konumu',
+            label: t('product.shelf_location'),
             child: TextField(
               controller: state.shelfNumberController,
-              decoration: inputDecoration('Ornek: A-03-R2').copyWith(
+              decoration: inputDecoration(t('product.hint_shelf')).copyWith(
                 prefixIcon: const Icon(Icons.shelves, color: AppColors.primary, size: 18),
               ),
             ),
@@ -589,18 +591,18 @@ class StockBarcodeStep extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('OEM Numaralari', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              Text(t('product.oem_numbers'), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
               TextButton.icon(
                 onPressed: () { state.oemNumbers.add({'oemNumber': '', 'manufacturer': ''}); onChanged(); },
                 icon: const Icon(Icons.add, size: 16),
-                label: const Text('Ekle', style: TextStyle(fontSize: 12)),
+                label: Text(t('common.add'), style: const TextStyle(fontSize: 12)),
               ),
             ],
           ),
           if (state.oemNumbers.isEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: Text('Henuz OEM numarasi eklenmedi', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+              child: Text(t('product.no_oem_yet'), style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
             ),
           ...state.oemNumbers.asMap().entries.map((entry) {
             final i = entry.key;
@@ -611,7 +613,7 @@ class StockBarcodeStep extends StatelessWidget {
                   Expanded(
                     flex: 3,
                     child: TextField(
-                      decoration: inputDecoration('OEM No (ornek: 04465-02220)').copyWith(
+                      decoration: inputDecoration(t('product.hint_oem_no')).copyWith(
                         prefixIcon: const Icon(Icons.confirmation_number, size: 16),
                         isDense: true,
                       ),
@@ -624,7 +626,7 @@ class StockBarcodeStep extends StatelessWidget {
                   Expanded(
                     flex: 2,
                     child: TextField(
-                      decoration: inputDecoration('Uretici').copyWith(isDense: true),
+                      decoration: inputDecoration(t('product.manufacturer')).copyWith(isDense: true),
                       style: const TextStyle(fontSize: 13),
                       onChanged: (val) => state.oemNumbers[i]['manufacturer'] = val,
                       controller: TextEditingController(text: state.oemNumbers[i]['manufacturer']),
@@ -644,18 +646,18 @@ class StockBarcodeStep extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Capraz Referanslar', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              Text(t('product.cross_references'), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
               TextButton.icon(
                 onPressed: () { state.crossReferences.add({'crossRefNumber': '', 'crossRefBrand': '', 'notes': ''}); onChanged(); },
                 icon: const Icon(Icons.add, size: 16),
-                label: const Text('Ekle', style: TextStyle(fontSize: 12)),
+                label: Text(t('common.add'), style: const TextStyle(fontSize: 12)),
               ),
             ],
           ),
           if (state.crossReferences.isEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: Text('Henuz capraz referans eklenmedi', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+              child: Text(t('product.no_cross_ref_yet'), style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
             ),
           ...state.crossReferences.asMap().entries.map((entry) {
             final i = entry.key;
@@ -666,7 +668,7 @@ class StockBarcodeStep extends StatelessWidget {
                   Expanded(
                     flex: 3,
                     child: TextField(
-                      decoration: inputDecoration('Referans No (ornek: GDB3550)').copyWith(
+                      decoration: inputDecoration(t('product.hint_ref_no')).copyWith(
                         prefixIcon: const Icon(Icons.compare_arrows, size: 16),
                         isDense: true,
                       ),
@@ -679,7 +681,7 @@ class StockBarcodeStep extends StatelessWidget {
                   Expanded(
                     flex: 2,
                     child: TextField(
-                      decoration: inputDecoration('Marka (ornek: TRW)').copyWith(isDense: true),
+                      decoration: inputDecoration(t('product.hint_brand_ref')).copyWith(isDense: true),
                       style: const TextStyle(fontSize: 13),
                       onChanged: (val) => state.crossReferences[i]['crossRefBrand'] = val,
                       controller: TextEditingController(text: state.crossReferences[i]['crossRefBrand']),

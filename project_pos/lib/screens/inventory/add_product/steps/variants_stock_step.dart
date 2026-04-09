@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../models/wizard_state.dart';
@@ -7,7 +8,7 @@ import '../widgets/multi_select_chips.dart';
 import '../widgets/variant_dialogs.dart';
 import '../widgets/bulk_dialogs.dart';
 
-class VariantsStockStep extends StatelessWidget {
+class VariantsStockStep extends ConsumerWidget {
   final WizardState state;
   final VoidCallback onChanged;
   final bool isMobile;
@@ -43,35 +44,36 @@ class VariantsStockStep extends StatelessWidget {
   Color _colorForAttrIndex(int index) => _attrColors[index % _attrColors.length];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
     return Column(
       children: [
-        _buildProductTypeCard(context),
+        _buildProductTypeCard(context, t),
         const SizedBox(height: 16),
         if (state.productType == 'variant') ...[
-          _buildAttributesCard(context),
+          _buildAttributesCard(context, t),
           const SizedBox(height: 16),
           if (state.variants.isNotEmpty &&
               state.variants.first.attributes.isNotEmpty) ...[
-            _buildVariantPreview(context),
+            _buildVariantPreview(context, t),
             const SizedBox(height: 16),
           ],
         ],
-        _buildLocationCard(context),
+        _buildLocationCard(context, t),
         const SizedBox(height: 16),
-        _buildStockCard(context),
+        _buildStockCard(context, t),
       ],
     );
   }
 
   // ─── Product Type ─────────────────────────────────────────────────────────
 
-  Widget _buildProductTypeCard(BuildContext context) {
+  Widget _buildProductTypeCard(BuildContext context, String Function(String) t) {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _header(Icons.layers_rounded, 'Urun Tipi'),
+          _header(Icons.layers_rounded, t('product.product_type')),
           const SizedBox(height: 14),
           Row(
             children: [
@@ -79,8 +81,8 @@ class VariantsStockStep extends StatelessWidget {
                 child: _typeOption(
                   context: context,
                   icon: Icons.inventory_2_rounded,
-                  label: 'Basit Urun',
-                  subtitle: _simpleDescription,
+                  label: t('product.simple_product'),
+                  subtitle: _simpleDescription(t),
                   selected: state.productType == 'simple',
                   onTap: () {
                     state.productType = 'simple';
@@ -94,8 +96,8 @@ class VariantsStockStep extends StatelessWidget {
                 child: _typeOption(
                   context: context,
                   icon: Icons.layers_rounded,
-                  label: 'Varyantli',
-                  subtitle: _variantDescription,
+                  label: t('product.variant_product'),
+                  subtitle: _variantDescription(t),
                   selected: state.productType == 'variant',
                   onTap: () {
                     state.productType = 'variant';
@@ -121,7 +123,7 @@ class VariantsStockStep extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Basit urun olarak olusturulacak -- SKU: ${state.variants.isNotEmpty ? state.variants[0].sku : "-"}',
+                      '${t('product.will_be_created_as_simple')} -- SKU: ${state.variants.isNotEmpty ? state.variants[0].sku : "-"}',
                       style: const TextStyle(fontSize: 12),
                     ),
                   ),
@@ -134,18 +136,18 @@ class VariantsStockStep extends StatelessWidget {
     );
   }
 
-  String get _simpleDescription => switch (state.sectorType) {
-    SectorType.autoParts => 'Tek parca, varyant yok',
-    SectorType.footwear => 'Tek model, beden/renk yok',
-    SectorType.technology => 'Tek konfigürasyon',
-    SectorType.general => 'Tek varyant',
+  String _simpleDescription(String Function(String) t) => switch (state.sectorType) {
+    SectorType.autoParts => t('product.simple_desc_auto'),
+    SectorType.footwear => t('product.simple_desc_footwear'),
+    SectorType.technology => t('product.simple_desc_tech'),
+    SectorType.general => t('product.simple_desc_general'),
   };
 
-  String get _variantDescription => switch (state.sectorType) {
-    SectorType.autoParts => 'Marka, arac grubu',
-    SectorType.footwear => 'Renk, beden, numara',
-    SectorType.technology => 'RAM, depolama, renk',
-    SectorType.general => 'Farkli ozellikler',
+  String _variantDescription(String Function(String) t) => switch (state.sectorType) {
+    SectorType.autoParts => t('product.variant_desc_auto'),
+    SectorType.footwear => t('product.variant_desc_footwear'),
+    SectorType.technology => t('product.variant_desc_tech'),
+    SectorType.general => t('product.variant_desc_general'),
   };
 
   Widget _typeOption({
@@ -213,7 +215,7 @@ class VariantsStockStep extends StatelessWidget {
 
   // ─── Attributes ───────────────────────────────────────────────────────────
 
-  Widget _buildAttributesCard(BuildContext context) {
+  Widget _buildAttributesCard(BuildContext context, String Function(String) t) {
     final accent = _accentColor;
     final hasValuesForGenerate = state.attributes
         .any((attr) => attr.values.isNotEmpty);
@@ -224,11 +226,11 @@ class VariantsStockStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _header(Icons.tune_rounded, 'Ozellikler & Varyantlar'),
+          _header(Icons.tune_rounded, t('product.attributes_variants')),
           const SizedBox(height: 14),
 
           // Preset buttons
-          _buildPresetRow(context),
+          _buildPresetRow(context, t),
           const SizedBox(height: 14),
 
           // Attribute list
@@ -246,8 +248,8 @@ class VariantsStockStep extends StatelessWidget {
                   Icon(Icons.widgets_outlined,
                       color: AppColors.textMuted.withOpacity(0.5), size: 40),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Henuz ozellik eklenmedi',
+                  Text(
+                    t('product.no_attributes_yet'),
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -255,8 +257,8 @@ class VariantsStockStep extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Sablon secin veya "Yeni Ozellik" ile ozel ozellik ekleyin',
+                  Text(
+                    t('product.select_template_or_add_attr'),
                     style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                     textAlign: TextAlign.center,
                   ),
@@ -265,7 +267,7 @@ class VariantsStockStep extends StatelessWidget {
             )
           else ...[
             ...state.attributes.asMap().entries.map((entry) {
-              return _buildAttributeRow(context, entry.key, entry.value);
+              return _buildAttributeRow(context, entry.key, entry.value, t);
             }),
             const SizedBox(height: 16),
 
@@ -308,7 +310,7 @@ class VariantsStockStep extends StatelessWidget {
                                   : AppColors.textMuted),
                           const SizedBox(width: 8),
                           Text(
-                            'Varyantlari Olustur',
+                            t('product.generate_variants'),
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
@@ -352,14 +354,14 @@ class VariantsStockStep extends StatelessWidget {
     );
   }
 
-  Widget _buildPresetRow(BuildContext context) {
+  Widget _buildPresetRow(BuildContext context, String Function(String) t) {
     final accent = _accentColor;
     final presetLabels = {
-      'auto_parts': ('Oto Parca', Icons.build_circle_rounded),
-      'clothing': ('Giyim', Icons.checkroom_rounded),
-      'electronics': ('Elektronik', Icons.computer_rounded),
-      'shoes': ('Ayakkabi', Icons.ice_skating_rounded),
-      'custom': ('Ozel', Icons.add_circle_outline_rounded),
+      'auto_parts': (t('product.preset_auto_parts'), Icons.build_circle_rounded),
+      'clothing': (t('product.preset_clothing'), Icons.checkroom_rounded),
+      'electronics': (t('product.preset_electronics'), Icons.computer_rounded),
+      'shoes': (t('product.preset_shoes'), Icons.ice_skating_rounded),
+      'custom': (t('product.preset_custom'), Icons.add_circle_outline_rounded),
     };
 
     final visiblePresets = state.getSectorPresets();
@@ -403,19 +405,19 @@ class VariantsStockStep extends StatelessWidget {
         ActionChip(
           avatar: const Icon(Icons.add_rounded,
               size: 16, color: AppColors.success),
-          label: const Text('Yeni Ozellik',
-              style: TextStyle(fontSize: 12, color: AppColors.success)),
+          label: Text(t('product.new_attribute'),
+              style: const TextStyle(fontSize: 12, color: AppColors.success)),
           backgroundColor: AppColors.success.withOpacity(0.06),
           side: BorderSide(color: AppColors.success.withOpacity(0.3)),
           onPressed: () => showAddAttributeDialog(
-              context: context, state: state, onChanged: onChanged),
+              context: context, state: state, onChanged: onChanged, t: t),
         ),
       ],
     );
   }
 
   Widget _buildAttributeRow(
-      BuildContext context, int index, ProductAttribute attr) {
+      BuildContext context, int index, ProductAttribute attr, String Function(String) t) {
     final attrColor = _colorForAttrIndex(index);
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -447,7 +449,7 @@ class VariantsStockStep extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  '${attr.values.length} deger',
+                  '${attr.values.length} ${t('product.value')}',
                   style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
@@ -499,13 +501,14 @@ class VariantsStockStep extends StatelessWidget {
               }),
               ActionChip(
                 label:
-                    const Text('+ Ekle', style: TextStyle(fontSize: 11)),
+                    Text('+ ${t('common.add')}', style: const TextStyle(fontSize: 11)),
                 onPressed: () => showAddValueDialog(
                     context: context,
                     state: state,
                     attrIndex: index,
                     attrName: attr.name,
-                    onChanged: onChanged),
+                    onChanged: onChanged,
+                    t: t),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 visualDensity: VisualDensity.compact,
                 backgroundColor: AppColors.success.withOpacity(0.06),
@@ -521,7 +524,7 @@ class VariantsStockStep extends StatelessWidget {
 
   // ─── Variant Preview ──────────────────────────────────────────────────────
 
-  Widget _buildVariantPreview(BuildContext context) {
+  Widget _buildVariantPreview(BuildContext context, String Function(String) t) {
     final accent = _accentColor;
     final displayLimit = state.showAllVariants ? state.variants.length : 5;
     final displayed = state.variants.take(displayLimit).toList();
@@ -533,7 +536,7 @@ class VariantsStockStep extends StatelessWidget {
         children: [
           Row(
             children: [
-              _header(Icons.preview_rounded, 'Varyant Onizleme'),
+              _header(Icons.preview_rounded, t('product.variant_preview')),
               const Spacer(),
               Container(
                 padding:
@@ -543,7 +546,7 @@ class VariantsStockStep extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '${state.variants.length} varyant',
+                  '${state.variants.length} ${t('product.variant')}',
                   style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -666,8 +669,8 @@ class VariantsStockStep extends StatelessWidget {
                     color: accent),
                 label: Text(
                   state.showAllVariants
-                      ? 'Daha az goster'
-                      : 'Tumunu goster (+${state.variants.length - 5})',
+                      ? t('common.show_less')
+                      : '${t('common.show_all')} (+${state.variants.length - 5})',
                   style: TextStyle(fontSize: 12, color: accent),
                 ),
               ),
@@ -679,20 +682,20 @@ class VariantsStockStep extends StatelessWidget {
 
   // ─── Location (Store / Warehouse / Supplier) ──────────────────────────────
 
-  Widget _buildLocationCard(BuildContext context) {
+  Widget _buildLocationCard(BuildContext context, String Function(String) t) {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _header(Icons.location_on_rounded, 'Konum & Tedarikci'),
+          _header(Icons.location_on_rounded, t('product.location_supplier')),
           const SizedBox(height: 14),
           buildFormField(
-            label: 'Magaza',
+            label: t('product.store'),
             required: true,
             child: MultiSelectChips(
               selectedValues: state.selectedStores,
               allOptions: state.stores,
-              hintText: 'Magaza ekle...',
+              hintText: '${t('product.store')} ${t('common.add').toLowerCase()}...',
               icon: Icons.store_rounded,
               onChanged: (vals) {
                 state.selectedStores = vals;
@@ -702,12 +705,12 @@ class VariantsStockStep extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           buildFormField(
-            label: 'Depo',
+            label: t('product.warehouse'),
             required: true,
             child: MultiSelectChips(
               selectedValues: state.selectedWarehouses,
               allOptions: state.warehouses,
-              hintText: 'Depo ekle...',
+              hintText: '${t('product.warehouse')} ${t('common.add').toLowerCase()}...',
               icon: Icons.warehouse_rounded,
               onChanged: (vals) {
                 state.selectedWarehouses = vals;
@@ -717,7 +720,7 @@ class VariantsStockStep extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           buildFormField(
-            label: 'Tedarikci',
+            label: t('product.supplier'),
             child: Builder(builder: (context) {
               // Tedarikçiler listesinden güvenli items ve value oluştur
               final supplierItems = state.suppliers
@@ -744,7 +747,7 @@ class VariantsStockStep extends StatelessWidget {
               return DropdownButtonFormField<String>(
                 value: safeValue,
                 isExpanded: true,
-                decoration: inputDecoration('Tedarikci secin').copyWith(
+                decoration: inputDecoration(t('product.select_supplier')).copyWith(
                   prefixIcon: const Icon(Icons.business_rounded,
                       color: AppColors.primary, size: 18),
                 ),
@@ -761,7 +764,7 @@ class VariantsStockStep extends StatelessWidget {
             children: [
               Expanded(
                 child: buildFormField(
-                  label: 'Fatura No',
+                  label: t('product.invoice_no'),
                   child: TextField(
                     controller: state.invoiceNumberController,
                     decoration: inputDecoration('FT-2024-001').copyWith(
@@ -774,7 +777,7 @@ class VariantsStockStep extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: buildFormField(
-                  label: 'Alis Tarihi',
+                  label: t('product.purchase_date'),
                   child: InkWell(
                     onTap: () async {
                       final picked = await showDatePicker(
@@ -798,7 +801,7 @@ class VariantsStockStep extends StatelessWidget {
                       child: TextField(
                         controller: state.purchaseDateController,
                         decoration:
-                            inputDecoration('Tarih secin').copyWith(
+                            inputDecoration(t('common.select_date')).copyWith(
                           prefixIcon: const Icon(Icons.calendar_today_rounded,
                               color: AppColors.primary, size: 18),
                           suffixIcon:
@@ -827,44 +830,44 @@ class VariantsStockStep extends StatelessWidget {
 
   // ─── Stock ────────────────────────────────────────────────────────────────
 
-  Widget _buildStockCard(BuildContext context) {
+  Widget _buildStockCard(BuildContext context, String Function(String) t) {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _header(Icons.inventory_rounded, 'Stok & Barkod'),
+          _header(Icons.inventory_rounded, t('product.stock_barcode')),
           const SizedBox(height: 10),
 
           // Bulk operations row
           if (state.variants.length > 1) ...[
             Row(
               children: [
-                const Text('Toplu Islem:',
+                Text(t('product.bulk_operation'),
                     style: TextStyle(
                         fontSize: 12, color: AppColors.textSecondary)),
                 const SizedBox(width: 8),
                 _bulkButton(
-                  label: 'Stok',
+                  label: t('product.stock'),
                   icon: Icons.inventory_2_rounded,
                   color: AppColors.info,
                   onTap: () => showBulkStockDialog(
-                      context: context, state: state, onChanged: onChanged),
+                      context: context, state: state, onChanged: onChanged, t: t),
                 ),
                 const SizedBox(width: 6),
                 _bulkButton(
-                  label: 'Alis',
+                  label: t('product.purchase_price_short'),
                   icon: Icons.arrow_downward_rounded,
                   color: AppColors.danger,
                   onTap: () => showBulkPurchasePriceDialog(
-                      context: context, state: state, onChanged: onChanged),
+                      context: context, state: state, onChanged: onChanged, t: t),
                 ),
                 const SizedBox(width: 6),
                 _bulkButton(
-                  label: 'Satis',
+                  label: t('product.sale_price_short'),
                   icon: Icons.arrow_upward_rounded,
                   color: AppColors.success,
                   onTap: () => showBulkSalePriceDialog(
-                      context: context, state: state, onChanged: onChanged),
+                      context: context, state: state, onChanged: onChanged, t: t),
                 ),
               ],
             ),
@@ -936,7 +939,7 @@ class VariantsStockStep extends StatelessWidget {
                             initialValue:
                                 variant.purchasePrice.toStringAsFixed(2),
                             keyboardType: TextInputType.number,
-                            decoration: inputDecoration('Alis').copyWith(
+                            decoration: inputDecoration(t('product.purchase_price_short')).copyWith(
                               prefixIcon: const Padding(
                                 padding: EdgeInsets.only(left: 10, right: 4),
                                 child: Text('\u20BA',
@@ -964,7 +967,7 @@ class VariantsStockStep extends StatelessWidget {
                             initialValue:
                                 variant.salePrice.toStringAsFixed(2),
                             keyboardType: TextInputType.number,
-                            decoration: inputDecoration('Satis').copyWith(
+                            decoration: inputDecoration(t('product.sale_price_short')).copyWith(
                               prefixIcon: const Padding(
                                 padding: EdgeInsets.only(left: 10, right: 4),
                                 child: Text('\u20BA',

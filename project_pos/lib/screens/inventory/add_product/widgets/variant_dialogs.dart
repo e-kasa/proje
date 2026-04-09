@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
-import 'package:project_pos/core/utils/i18n_helper.dart';
+
 import '../models/wizard_state.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 
@@ -9,28 +9,29 @@ void showAddAttributeDialog({
   required BuildContext context,
   required WizardState state,
   required VoidCallback onChanged,
+  required String Function(String) t,
 }) {
   final nameController = TextEditingController();
   IconData selectedIcon = Icons.label;
 
   final iconOptions = [
-    {'icon': Icons.palette, 'label': 'Renk'},
-    {'icon': Icons.straighten, 'label': 'Beden/Numara'},
-    {'icon': Icons.memory, 'label': 'RAM'},
-    {'icon': Icons.storage, 'label': 'Depolama'},
-    {'icon': Icons.category, 'label': 'Model'},
-    {'icon': Icons.label, 'label': 'Di\u011fer'},
+    {'icon': Icons.palette, 'label': t('product.attr_color')},
+    {'icon': Icons.straighten, 'label': t('product.attr_size')},
+    {'icon': Icons.memory, 'label': t('product.attr_ram')},
+    {'icon': Icons.storage, 'label': t('product.attr_storage')},
+    {'icon': Icons.category, 'label': t('product.attr_model')},
+    {'icon': Icons.label, 'label': t('product.attr_other')},
   ];
 
   showDialog(
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, setDialogState) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.add_circle, color: AppColors.primary, size: 24),
-            SizedBox(width: 12),
-            Text('Yeni \u00d6zellik Ekle'),
+            const Icon(Icons.add_circle, color: AppColors.primary, size: 24),
+            const SizedBox(width: 12),
+            Text(t('product.add_new_attribute')),
           ],
         ),
         content: Column(
@@ -40,14 +41,14 @@ void showAddAttributeDialog({
             TextField(
               controller: nameController,
               autofocus: true,
-              decoration: const InputDecoration(
-                labelText: '\u00d6zellik Ad\u0131',
-                hintText: '\u00d6rn: Renk, Beden, RAM',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: t('product.attribute_name'),
+                hintText: t('product.attribute_name_hint'),
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
-            const Text('\u0130kon Se\u00e7:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            Text(t('product.select_icon'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -85,9 +86,9 @@ void showAddAttributeDialog({
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('\u0130ptal')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(t('common.cancel'))),
           AppButton.primary(
-            text: 'Ekle',
+            text: t('common.add'),
             onPressed: () {
               if (nameController.text.trim().isNotEmpty) {
                 state.addAttribute(
@@ -112,6 +113,7 @@ void showAddValueDialog({
   required int attrIndex,
   required String attrName,
   required VoidCallback onChanged,
+  required String Function(String) t,
 }) {
   final valueController = TextEditingController();
 
@@ -122,15 +124,15 @@ void showAddValueDialog({
         children: [
           Icon(state.attributes[attrIndex].icon, color: AppColors.primary, size: 20),
           const SizedBox(width: 8),
-          Text('$attrName De\u011feri Ekle'),
+          Text('$attrName ${t('product.add_value')}'),
         ],
       ),
       content: TextField(
         controller: valueController,
         autofocus: true,
         decoration: InputDecoration(
-          labelText: 'De\u011fer',
-          hintText: '\u00d6rn: ${attrName == "Renk" ? "K\u0131rm\u0131z\u0131" : attrName == "Beden" ? "M" : "8GB"}',
+          labelText: t('product.value'),
+          hintText: t('product.value_hint'),
           border: const OutlineInputBorder(),
         ),
         onSubmitted: (val) {
@@ -142,9 +144,9 @@ void showAddValueDialog({
         },
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('\u0130ptal')),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(t('common.cancel'))),
         AppButton.primary(
-          text: 'Ekle',
+          text: t('common.add'),
           onPressed: () {
             if (valueController.text.trim().isNotEmpty) {
               state.addValueToAttribute(attrIndex, valueController.text.trim());

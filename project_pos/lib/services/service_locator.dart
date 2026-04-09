@@ -27,6 +27,7 @@ import 'payment_service.dart';
 import 'registration_service.dart';
 import 'menu_service.dart';
 import 'i18n_service.dart';
+import 'recommendation_service.dart';
 
 // API Client Provider
 final apiClientProvider = Provider<ApiClient>((ref) {
@@ -167,4 +168,9 @@ final menuServiceProvider = Provider<MenuService>((ref) {
 final i18nServiceProvider = Provider<I18nService>((ref) {
   final apiClient = ref.watch(apiClientProvider);
   return I18nService(apiClient);
+});
+
+final recommendationServiceProvider = Provider<RecommendationService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return RecommendationService(apiClient);
 });

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:csv/csv.dart';
 import 'dart:io';
@@ -23,6 +24,7 @@ class EnhancedProductListScreen extends ConsumerStatefulWidget {
 
 class _EnhancedProductListScreenState
     extends ConsumerState<EnhancedProductListScreen> {
+  String Function(String) get t => i18nOf(ref);
   final _searchController = TextEditingController();
   final _currencyFormat = NumberFormat.currency(locale: 'tr_TR', symbol: '₺');
 
@@ -30,20 +32,13 @@ class _EnhancedProductListScreenState
   List<Map<String, dynamic>> _filteredProducts = [];
   final Set<int> _selectedProductIds = {};
 
-  String _selectedCategory = 'Tümü';
-  String _selectedFilter = 'Tümü';
+  String? _selectedCategory;
+  String? _selectedStatus;
   bool _isLoading = true;
   bool _isSelectionMode = false;
-  bool _isOemSearching = false; // OEM/Capraz Referans ile arama modu
+  bool _isOemSearching = false;
 
-  List<String> _categories = ['Tümü'];
-
-  final List<String> _filters = [
-    'Tümü',
-    'Düşük Stok',
-    'Stokta Yok',
-    'Yeni Eklenenler',
-  ];
+  List<String> _categories = [];
 
   @override
   void initState() {
@@ -64,17 +59,15 @@ class _EnhancedProductListScreenState
       final productService = ref.read(productServiceProvider);
       final products = await productService.getProducts();
 
-      // Firma kategorilerini yükle (login olan firmanın sektörüne göre)
       try {
-        final cats = await ref.read(companyCategoryServiceProvider).getMyCategoryList();
+        final cats =
+            await ref.read(companyCategoryServiceProvider).getMyCategoryList();
         final catNames = cats
             .map((c) => c['categoryName']?.toString() ?? '')
             .where((n) => n.isNotEmpty)
             .toList();
         if (mounted) {
-          setState(() {
-            _categories = ['Tümü', ...catNames];
-          });
+          setState(() => _categories = catNames);
         }
       } catch (e) {
         AppLogger.warning('Kategoriler yüklenemedi',
@@ -91,9 +84,7 @@ class _EnhancedProductListScreenState
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: ${e.toString()}')),
-        );
+        AppToast.error(context, t('common.error'));
       }
     }
   }
@@ -112,30 +103,63 @@ class _EnhancedProductListScreenState
     }
 
     // Category filter
-    if (_selectedCategory != 'Tümü') {
+    if (_selectedCategory != null) {
       filtered =
           filtered.where((p) => p['category'] == _selectedCategory).toList();
     }
 
-    // Special filters
-    if (_selectedFilter == 'Düşük Stok') {
-      filtered = filtered
-          .where((p) => (p['stock'] ?? 0) <= (p['lowStockThreshold'] ?? 10))
-          .toList();
-    } else if (_selectedFilter == 'Stokta Yok') {
-      filtered = filtered.where((p) => (p['stock'] ?? 0) == 0).toList();
-    } else if (_selectedFilter == 'Yeni Eklenenler') {
-      filtered = List.from(filtered);
-      filtered.sort((a, b) {
-        final dateA = a['createdAt'] != null ? DateTime.tryParse(a['createdAt'].toString()) : null;
-        final dateB = b['createdAt'] != null ? DateTime.tryParse(b['createdAt'].toString()) : null;
-        if (dateA == null || dateB == null) return 0;
-        return dateB.compareTo(dateA);
-      });
-      filtered = filtered.take(20).toList();
+    // Status filter
+    if (_selectedStatus != null) {
+      filtered =
+          filtered.where((p) => p['status'] == _selectedStatus).toList();
     }
 
     setState(() => _filteredProducts = filtered);
+  }
+
+  String _getStatusLabel(String? status) {
+    switch (status) {
+      case 'DRAFT':
+        return t('product.status_draft');
+      case 'ACTIVE':
+        return t('product.status_active');
+      case 'INACTIVE':
+        return t('product.status_inactive');
+      case 'OUT_OF_STOCK':
+        return t('stock.out_of_stock');
+      default:
+        return status ?? '';
+    }
+  }
+
+  Color _getStatusColor(String? status) {
+    switch (status) {
+      case 'DRAFT':
+        return AppColors.warning;
+      case 'ACTIVE':
+        return AppColors.success;
+      case 'INACTIVE':
+        return AppColors.textMuted;
+      case 'OUT_OF_STOCK':
+        return AppColors.danger;
+      default:
+        return AppColors.textMuted;
+    }
+  }
+
+  BadgeVariant _getStatusBadgeVariant(String? status) {
+    switch (status) {
+      case 'DRAFT':
+        return BadgeVariant.warning;
+      case 'ACTIVE':
+        return BadgeVariant.success;
+      case 'INACTIVE':
+        return BadgeVariant.secondary;
+      case 'OUT_OF_STOCK':
+        return BadgeVariant.danger;
+      default:
+        return BadgeVariant.secondary;
+    }
   }
 
   Future<void> _scanBarcode() async {
@@ -180,13 +204,15 @@ class _EnhancedProductListScreenState
                   'unit': 'pcs',
                   'lowStockThreshold': 10,
                   'isActive': true,
-                  '_oemNumbers': (r['oemNumbers'] as List?)?.join(', ') ?? '',
-                  '_crossRefs': (r['crossReferences'] as List?)?.join(', ') ?? '',
+                  '_oemNumbers':
+                      (r['oemNumbers'] as List?)?.join(', ') ?? '',
+                  '_crossRefs':
+                      (r['crossReferences'] as List?)?.join(', ') ?? '',
                 })
             .toList());
       }
     } catch (e) {
-      // Fallback: filtre uygulama
+      // Fallback
     }
   }
 
@@ -196,30 +222,30 @@ class _EnhancedProductListScreenState
       final products = await productService.getProducts(search: barcode);
       if (mounted) {
         if (products.isNotEmpty) {
-          setState(() {
-            _filteredProducts = products;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${products.length} ürün bulundu')),
-          );
+          setState(() => _filteredProducts = products);
+          AppToast.success(
+              context, '${products.length} ${t('common.result_found')}');
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Ürün bulunamadı')),
-          );
+          AppToast.warning(context, t('common.no_result'));
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: ${e.toString()}')),
-        );
+        AppToast.error(context, t('common.error'));
       }
     }
   }
 
   Future<void> _exportToCSV() async {
     List<List<dynamic>> rows = [
-      ['Ürün Adı', 'SKU', 'Kategori', 'Fiyat', 'Stok', 'Birim']
+      [
+        t('product.name'),
+        'SKU',
+        t('product.category'),
+        t('product.price'),
+        t('stock.stock'),
+        t('product.unit'),
+      ]
     ];
 
     for (var product in _filteredProducts) {
@@ -242,71 +268,44 @@ class _EnhancedProductListScreenState
     await file.writeAsString(csv);
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Excel dosyası kaydedildi: $path')),
-      );
+      AppToast.success(context, t('common.export_success'));
     }
   }
 
   Future<void> _bulkDelete() async {
     if (_selectedProductIds.isEmpty) return;
 
-    final confirm = await showDialog<bool>(
+    final confirmed = await AppConfirmationDialog.showDelete(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(t('inventory.bulk_delete')),
-        content: Text(
-          '${_selectedProductIds.length} ${t('common.are_you_sure')}',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(t('common.cancel')),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-            child: Text(t('common.delete'), style: const TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
+      title: t('inventory.bulk_delete'),
+      message: t('common.are_you_sure'),
+      itemName: '${_selectedProductIds.length} ${t('product.product')}',
     );
 
-    if (confirm == true) {
-      try {
-        final productService = ref.read(productServiceProvider);
-        for (final id in _selectedProductIds) {
-          await productService.deleteProduct(id.toString());
-        }
-        if (mounted) {
-          setState(() {
-            _selectedProductIds.clear();
-            _isSelectionMode = false;
-          });
-          _loadProducts();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Ürünler silindi'),
-              backgroundColor: AppColors.success,
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Hata: ${e.toString()}'),
-              backgroundColor: AppColors.danger,
-            ),
-          );
-        }
+    if (!confirmed) return;
+
+    try {
+      final productService = ref.read(productServiceProvider);
+      for (final id in _selectedProductIds) {
+        await productService.deleteProduct(id.toString());
+      }
+      if (mounted) {
+        setState(() {
+          _selectedProductIds.clear();
+          _isSelectionMode = false;
+        });
+        _loadProducts();
+        AppToast.success(context, t('common.delete_success'));
+      }
+    } catch (e) {
+      if (mounted) {
+        AppToast.error(context, t('common.error'));
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final t = i18nOf(ref);
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
@@ -354,8 +353,8 @@ class _EnhancedProductListScreenState
                     controller: _searchController,
                     decoration: InputDecoration(
                       hintText: _isOemSearching
-                          ? 'OEM numarasi veya capraz referans ara...'
-                          : 'Urun, SKU veya barkod ara...',
+                          ? t('inventory.search_oem_hint')
+                          : t('inventory.search_product_hint'),
                       prefixIcon: const Icon(Icons.search),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
@@ -387,16 +386,18 @@ class _EnhancedProductListScreenState
                         : AppColors.bgLight,
                     borderRadius: AppConstants.borderRadiusMedium,
                     border: Border.all(
-                      color: _isOemSearching ? AppColors.orange : AppColors.border,
+                      color:
+                          _isOemSearching ? AppColors.orange : AppColors.border,
                     ),
                   ),
                   child: IconButton(
                     icon: Icon(
                       Icons.build_circle,
-                      color:
-                          _isOemSearching ? AppColors.orange : AppColors.textMuted,
+                      color: _isOemSearching
+                          ? AppColors.orange
+                          : AppColors.textMuted,
                     ),
-                    tooltip: 'OEM / Capraz Referans Ara',
+                    tooltip: t('inventory.search_oem'),
                     onPressed: () {
                       setState(() {
                         _isOemSearching = !_isOemSearching;
@@ -414,39 +415,114 @@ class _EnhancedProductListScreenState
 
           // Filters
           Container(
-            height: 50,
             color: Colors.white,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
               children: [
-                // Category Chips
-                ..._categories.map((cat) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        label: Text(cat),
-                        selected: _selectedCategory == cat,
-                        onSelected: (selected) {
-                          setState(() => _selectedCategory = cat);
-                          _filterProducts();
-                        },
-                        selectedColor: AppColors.primary.withOpacity(0.2),
+                // Category chips
+                SizedBox(
+                  height: 48,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: FilterChip(
+                          label: Text(t('common.all')),
+                          selected: _selectedCategory == null,
+                          onSelected: (_) {
+                            setState(() => _selectedCategory = null);
+                            _filterProducts();
+                          },
+                          selectedColor: AppColors.primary.withOpacity(0.2),
+                        ),
                       ),
-                    )),
-                const SizedBox(width: 8),
-                // Filter Chips
-                ..._filters.map((filter) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        label: Text(filter),
-                        selected: _selectedFilter == filter,
-                        onSelected: (selected) {
-                          setState(() => _selectedFilter = filter);
-                          _filterProducts();
-                        },
-                        selectedColor: AppColors.warning.withOpacity(0.2),
+                      ..._categories.map((cat) => Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              label: Text(cat),
+                              selected: _selectedCategory == cat,
+                              onSelected: (_) {
+                                setState(() => _selectedCategory = cat);
+                                _filterProducts();
+                              },
+                              selectedColor: AppColors.primary.withOpacity(0.2),
+                            ),
+                          )),
+                    ],
+                  ),
+                ),
+                // Status chips
+                SizedBox(
+                  height: 48,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: FilterChip(
+                          label: Text(t('common.all')),
+                          selected: _selectedStatus == null,
+                          onSelected: (_) {
+                            setState(() => _selectedStatus = null);
+                            _filterProducts();
+                          },
+                          selectedColor: AppColors.warning.withOpacity(0.2),
+                        ),
                       ),
-                    )),
+                      ...['DRAFT', 'ACTIVE', 'INACTIVE', 'OUT_OF_STOCK']
+                          .map((status) => Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: FilterChip(
+                                  label: Text(_getStatusLabel(status)),
+                                  selected: _selectedStatus == status,
+                                  onSelected: (_) {
+                                    setState(() => _selectedStatus = status);
+                                    _filterProducts();
+                                  },
+                                  selectedColor: _getStatusColor(status)
+                                      .withOpacity(0.2),
+                                ),
+                              )),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 4),
+              ],
+            ),
+          ),
+
+          // Result count
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: AppColors.bgLight,
+            child: Row(
+              children: [
+                Text(
+                  '${_filteredProducts.length} ${t('product.product')}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                if (_selectedCategory != null || _selectedStatus != null)
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _selectedCategory = null;
+                        _selectedStatus = null;
+                        _searchController.clear();
+                      });
+                      _filterProducts();
+                    },
+                    child: Text(
+                      t('common.clear_filters'),
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -454,9 +530,18 @@ class _EnhancedProductListScreenState
           // Product List
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const AppSkeletonList(itemCount: 8)
                 : _filteredProducts.isEmpty
-                    ? Center(child: Text(t('common.no_result')))
+                    ? AppEmptyState(
+                        icon: Icons.inventory_2_outlined,
+                        title: t('common.no_result'),
+                        actionText: t('inventory.add_product'),
+                        onAction: () async {
+                          final result =
+                              await showQuickAddProductModal(context);
+                          if (result == true) _loadProducts();
+                        },
+                      )
                     : RefreshIndicator(
                         onRefresh: _loadProducts,
                         child: ListView.builder(
@@ -465,16 +550,15 @@ class _EnhancedProductListScreenState
                           itemBuilder: (context, index) {
                             final product = _filteredProducts[index];
                             final idString = product['id']?.toString();
-                            final id = int.tryParse(idString ?? '') ?? 0;
-                            final isSelected = _selectedProductIds.contains(id);
+                            final id =
+                                int.tryParse(idString ?? '') ?? 0;
+                            final isSelected =
+                                _selectedProductIds.contains(id);
                             final isLowStock = (product['stock'] ?? 0) <=
                                 (product['lowStockThreshold'] ?? 10);
 
                             return _buildProductCard(
-                              product,
-                              isSelected,
-                              isLowStock,
-                            );
+                                product, isSelected, isLowStock);
                           },
                         ),
                       ),
@@ -505,6 +589,8 @@ class _EnhancedProductListScreenState
   ) {
     final idString = product['id']?.toString();
     final id = int.tryParse(idString ?? '') ?? 0;
+    final status = product['status']?.toString();
+    final imageUrl = product['imageUrl']?.toString();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -526,6 +612,8 @@ class _EnhancedProductListScreenState
                 _selectedProductIds.add(id);
               }
             });
+          } else {
+            context.go('/inventory/products/$idString');
           }
         },
         onLongPress: () {
@@ -546,32 +634,83 @@ class _EnhancedProductListScreenState
                     isSelected
                         ? Icons.check_circle
                         : Icons.radio_button_unchecked,
-                    color: isSelected ? AppColors.primary : AppColors.textMuted,
+                    color:
+                        isSelected ? AppColors.primary : AppColors.textMuted,
                   ),
                 ),
+
+              // Product image
+              Container(
+                width: 56,
+                height: 56,
+                margin: const EdgeInsets.only(right: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.bgLight,
+                  borderRadius: AppConstants.borderRadiusSmall,
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: ClipRRect(
+                  borderRadius: AppConstants.borderRadiusSmall,
+                  child: imageUrl != null && imageUrl.isNotEmpty
+                      ? Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Icons.inventory_2_outlined,
+                            color: AppColors.textMuted,
+                            size: 28,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.inventory_2_outlined,
+                          color: AppColors.textMuted,
+                          size: 28,
+                        ),
+                ),
+              ),
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      product['name']?.toString() ?? '',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
+                    // Name + Status badge
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            product['name']?.toString() ?? '',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (status != null && status != 'ACTIVE')
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: AppBadge(
+                              text: _getStatusLabel(status),
+                              variant: _getStatusBadgeVariant(status),
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'SKU: ${product['sku']}${product['category'] != null && product['category'].toString().isNotEmpty ? ' | ${product['category']}' : ''}',
+                      'SKU: ${product['sku'] ?? '-'}${product['category'] != null && product['category'].toString().isNotEmpty ? ' | ${product['category']}' : ''}',
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
                       ),
                     ),
-                    // OEM / Cross Reference bilgisi (OEM arama modunda)
+                    // OEM info
                     if (_isOemSearching &&
-                        (product['_oemNumbers'] ?? '').toString().isNotEmpty) ...[
+                        (product['_oemNumbers'] ?? '')
+                            .toString()
+                            .isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Row(
                         children: [
@@ -591,7 +730,9 @@ class _EnhancedProductListScreenState
                       ),
                     ],
                     if (_isOemSearching &&
-                        (product['_crossRefs'] ?? '').toString().isNotEmpty) ...[
+                        (product['_crossRefs'] ?? '')
+                            .toString()
+                            .isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Row(
                         children: [
@@ -619,16 +760,19 @@ class _EnhancedProductListScreenState
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color:
-                                isLowStock ? AppColors.bgDanger : AppColors.bgSuccess,
+                            color: isLowStock
+                                ? AppColors.bgDanger
+                                : AppColors.bgSuccess,
                             borderRadius: AppConstants.borderRadiusSmall,
                           ),
                           child: Text(
-                            'Stok: ${product['stock'] ?? 0} ${product['unit'] ?? ''}',
+                            '${t('stock.stock')}: ${product['stock'] ?? 0} ${product['unit'] ?? ''}',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: isLowStock ? AppColors.danger : AppColors.success,
+                              color: isLowStock
+                                  ? AppColors.danger
+                                  : AppColors.success,
                             ),
                           ),
                         ),

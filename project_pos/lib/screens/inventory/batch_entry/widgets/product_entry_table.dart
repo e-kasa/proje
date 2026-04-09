@@ -16,26 +16,27 @@ class ProductEntryTable extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
     final state = ref.watch(batchEntryProvider);
     final rows = state.rows;
 
     if (rows.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 48),
+          padding: const EdgeInsets.symmetric(vertical: 48),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.inventory_2_outlined, size: 64, color: AppColors.textMuted),
-              SizedBox(height: 12),
+              const Icon(Icons.inventory_2_outlined, size: 64, color: AppColors.textMuted),
+              const SizedBox(height: 12),
               Text(
-                'Henuz urun eklenmedi',
-                style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+                t('batch.no_products_yet'),
+                style: const TextStyle(fontSize: 16, color: AppColors.textSecondary),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
-                'Barkod tarayin veya manuel ekleyin',
-                style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+                t('batch.scan_or_add_manual'),
+                style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
               ),
             ],
           ),
@@ -44,13 +45,13 @@ class ProductEntryTable extends ConsumerWidget {
     }
 
     final isDesktop = MediaQuery.sizeOf(context).width >= 900;
-    return isDesktop ? _buildDataTable(rows, ref) : _buildCardList(rows, ref);
+    return isDesktop ? _buildDataTable(rows, ref, t) : _buildCardList(rows, ref, t);
   }
 
   // ---------------------------------------------------------------------------
   // DESKTOP DATA TABLE
   // ---------------------------------------------------------------------------
-  Widget _buildDataTable(List<BatchEntryRow> rows, WidgetRef ref) {
+  Widget _buildDataTable(List<BatchEntryRow> rows, WidgetRef ref, Function(String) t) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
@@ -58,18 +59,18 @@ class ProductEntryTable extends ConsumerWidget {
         headingRowHeight: 42,
         dataRowMinHeight: 48,
         dataRowMaxHeight: 56,
-        columns: const [
-          DataColumn(label: Text('#'), numeric: true),
-          DataColumn(label: Text('Durum')),
-          DataColumn(label: Text('Barkod')),
-          DataColumn(label: Text('Urun Adi')),
-          DataColumn(label: Text('OEM No')),
-          DataColumn(label: Text('Alis \u20BA'), numeric: true),
-          DataColumn(label: Text('Satis \u20BA'), numeric: true),
-          DataColumn(label: Text('KDV %'), numeric: true),
-          DataColumn(label: Text('Adet'), numeric: true),
-          DataColumn(label: Text('Toplam \u20BA'), numeric: true),
-          DataColumn(label: Text('Islem')),
+        columns: [
+          const DataColumn(label: Text('#'), numeric: true),
+          DataColumn(label: Text(t('common.status'))),
+          DataColumn(label: Text(t('common.barcode'))),
+          DataColumn(label: Text(t('product.product_name'))),
+          DataColumn(label: Text(t('product.oem_no'))),
+          DataColumn(label: Text('${t('batch.purchase_price')} \u20BA'), numeric: true),
+          DataColumn(label: Text('${t('batch.sale_price')} \u20BA'), numeric: true),
+          DataColumn(label: Text('${t('batch.vat')} %'), numeric: true),
+          DataColumn(label: Text(t('common.quantity')), numeric: true),
+          DataColumn(label: Text('${t('common.total')} \u20BA'), numeric: true),
+          DataColumn(label: Text(t('common.actions'))),
         ],
         rows: List.generate(rows.length, (i) {
           final row = rows[i];
@@ -82,7 +83,7 @@ class ProductEntryTable extends ConsumerWidget {
             }),
             cells: [
               DataCell(Text('${i + 1}')),
-              DataCell(_statusBadge(row)),
+              DataCell(_statusBadge(row, t)),
               DataCell(_editableCell(ref, row, 'barcode', row.barcode,
                   readOnly: row.isExisting, width: 130)),
               DataCell(_editableCell(ref, row, 'productName', row.productName,
@@ -99,7 +100,7 @@ class ProductEntryTable extends ConsumerWidget {
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
-              DataCell(_actionButtons(ref, row)),
+              DataCell(_actionButtons(ref, row, t)),
             ],
           );
         }),
@@ -110,7 +111,7 @@ class ProductEntryTable extends ConsumerWidget {
   // ---------------------------------------------------------------------------
   // MOBILE CARD LIST
   // ---------------------------------------------------------------------------
-  Widget _buildCardList(List<BatchEntryRow> rows, WidgetRef ref) {
+  Widget _buildCardList(List<BatchEntryRow> rows, WidgetRef ref, Function(String) t) {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -133,13 +134,13 @@ class ProductEntryTable extends ConsumerWidget {
           child: ExpansionTile(
             leading: _statusIcon(row),
             title: Text(
-              row.productName.isNotEmpty ? row.productName : 'Yeni Urun',
+              row.productName.isNotEmpty ? row.productName : t('batch.new_product'),
               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             subtitle: Text(
-              'Adet: ${row.quantity} x ${_currencyFormat.format(row.salePrice)}'
+              '${t('common.quantity')}: ${row.quantity} x ${_currencyFormat.format(row.salePrice)}'
               ' = ${_currencyFormat.format(row.lineTotal)}',
               style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
             ),
@@ -153,25 +154,25 @@ class ProductEntryTable extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: Column(
                   children: [
-                    _mobileField(ref, row, 'Barkod', 'barcode', row.barcode,
+                    _mobileField(ref, row, t('common.barcode'), 'barcode', row.barcode,
                         readOnly: row.isExisting),
                     _mobileField(
-                        ref, row, 'Urun Adi', 'productName', row.productName,
+                        ref, row, t('product.product_name'), 'productName', row.productName,
                         readOnly: row.isExisting),
                     _mobileField(
-                        ref, row, 'OEM No', 'oemNumber', row.oemNumber ?? ''),
+                        ref, row, t('product.oem_no'), 'oemNumber', row.oemNumber ?? ''),
                     _mobileNumberField(
-                        ref, row, 'Alis \u20BA', 'purchasePrice', row.purchasePrice),
+                        ref, row, '${t('batch.purchase_price')} \u20BA', 'purchasePrice', row.purchasePrice),
                     _mobileNumberField(
-                        ref, row, 'Satis \u20BA', 'salePrice', row.salePrice),
+                        ref, row, '${t('batch.sale_price')} \u20BA', 'salePrice', row.salePrice),
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Row(
                         children: [
-                          const SizedBox(
+                          SizedBox(
                               width: 80,
-                              child: Text('KDV %',
-                                  style: TextStyle(fontSize: 13))),
+                              child: Text('${t('batch.vat')} %',
+                                  style: const TextStyle(fontSize: 13))),
                           Expanded(child: _vatDropdown(ref, row)),
                         ],
                       ),
@@ -180,10 +181,10 @@ class ProductEntryTable extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Row(
                         children: [
-                          const SizedBox(
+                          SizedBox(
                               width: 80,
                               child:
-                                  Text('Adet', style: TextStyle(fontSize: 13))),
+                                  Text(t('common.quantity'), style: const TextStyle(fontSize: 13))),
                           Expanded(child: _quantityCell(ref, row)),
                         ],
                       ),
@@ -202,17 +203,17 @@ class ProductEntryTable extends ConsumerWidget {
   // HELPER WIDGETS
   // ---------------------------------------------------------------------------
 
-  Widget _statusBadge(BatchEntryRow row) {
+  Widget _statusBadge(BatchEntryRow row, Function(String) t) {
     switch (row.status) {
       case RowStatus.newProduct:
-        return _chip('Yeni', AppColors.orange);
+        return _chip(t('batch.new'), AppColors.orange);
       case RowStatus.existing:
       case RowStatus.matched:
-        return _chip('Mevcut', AppColors.success);
+        return _chip(t('batch.existing'), AppColors.success);
       case RowStatus.error:
         return Tooltip(
-          message: row.errorMessage ?? 'Hata',
-          child: _chip('Hata', AppColors.danger),
+          message: row.errorMessage ?? t('common.error'),
+          child: _chip(t('common.error'), AppColors.danger),
         );
       case RowStatus.saving:
         return const SizedBox(
@@ -221,7 +222,7 @@ class ProductEntryTable extends ConsumerWidget {
           child: CircularProgressIndicator(strokeWidth: 2),
         );
       case RowStatus.saved:
-        return _chip('\u2713 Kaydedildi', AppColors.info);
+        return _chip('\u2713 ${t('batch.saved')}', AppColors.info);
     }
   }
 
@@ -371,14 +372,14 @@ class ProductEntryTable extends ConsumerWidget {
     );
   }
 
-  Widget _actionButtons(WidgetRef ref, BatchEntryRow row) {
+  Widget _actionButtons(WidgetRef ref, BatchEntryRow row, Function(String) t) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         if (row.isNew && !row.isSaved)
           IconButton(
             icon: const Icon(Icons.edit_note, size: 20),
-            tooltip: 'Detaylar',
+            tooltip: t('batch.details'),
             color: AppColors.primary,
             onPressed: () {
               // QuickProductDialog will be opened from parent screen
@@ -389,7 +390,7 @@ class ProductEntryTable extends ConsumerWidget {
           ),
         IconButton(
           icon: const Icon(Icons.delete_outline, size: 20),
-          tooltip: 'Sil',
+          tooltip: t('common.delete'),
           color: AppColors.danger,
           onPressed: () => _confirmRemove(ref, row),
         ),

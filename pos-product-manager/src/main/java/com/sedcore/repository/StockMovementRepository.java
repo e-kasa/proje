@@ -56,4 +56,24 @@ public interface StockMovementRepository extends BaseDaoRepository<StockMovement
     Optional<StockMovement> findFirstByVariantIdAndMovementType(
             @Param("variantId") String variantId,
             @Param("movementType") StockMovementType movementType);
+
+    // Birlikte satılan ürünleri getir (Recommendation için)
+    // Aynı satışta yer alan diğer ürünleri sıklığa göre sırala
+    @Query(value = """
+            SELECT p.id, p.name, p.sku, pv.id as variantId, COUNT(*) as frequency
+            FROM stock_movement sm1
+            JOIN stock_movement sm2 ON sm1.sale_id = sm2.sale_id AND sm1.id != sm2.id
+            JOIN product_variant pv ON sm2.variant_id = pv.id
+            JOIN product p ON pv.product_id = p.id
+            WHERE sm1.variant_id IN :variantIds
+              AND sm1.movement_type = 'OUT'
+              AND sm2.movement_type = 'OUT'
+              AND p.is_deleted = false
+            GROUP BY p.id, p.name, p.sku, pv.id
+            ORDER BY frequency DESC
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<Object[]> findFrequentlyBoughtTogether(
+            @Param("variantIds") List<String> variantIds,
+            @Param("limit") int limit);
 }

@@ -14,6 +14,7 @@ class BrandsScreen extends ConsumerStatefulWidget {
 }
 
 class _BrandsScreenState extends ConsumerState<BrandsScreen> {
+  String Function(String) get t => i18nOf(ref);
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _brands = [];
   List<Map<String, dynamic>> _filteredBrands = [];
@@ -76,7 +77,6 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
   }
 
   void _showAddBrandDialog() {
-    final t = i18nOf(ref);
     final nameController = TextEditingController();
     final codeController = TextEditingController();
     final descriptionController = TextEditingController();
@@ -84,10 +84,10 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.branding_watermark, color: AppColors.primary),
-            SizedBox(width: 12),
+            const Icon(Icons.branding_watermark, color: AppColors.primary),
+            const SizedBox(width: 12),
             Text(t('inventory.new_brand')),
           ],
         ),
@@ -183,7 +183,6 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
   }
 
   void _showEditBrandDialog(Map<String, dynamic> brand) {
-    final t = i18nOf(ref);
     final nameController = TextEditingController(text: brand['name']);
     final codeController = TextEditingController(text: brand['code'] ?? '');
     final descriptionController = TextEditingController(text: brand['description'] ?? '');
@@ -191,10 +190,10 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.edit, color: AppColors.info),
-            SizedBox(width: 12),
+            const Icon(Icons.edit, color: AppColors.info),
+            const SizedBox(width: 12),
             Text(t('inventory.edit_brand')),
           ],
         ),
@@ -290,14 +289,13 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
   }
 
   void _showDeleteDialog(Map<String, dynamic> brand) {
-    final t = i18nOf(ref);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.warning, color: AppColors.danger),
-            SizedBox(width: 12),
+            const Icon(Icons.warning, color: AppColors.danger),
+            const SizedBox(width: 12),
             Text(t('inventory.delete_brand')),
           ],
         ),
@@ -401,7 +399,6 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final t = i18nOf(ref);
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
@@ -676,12 +673,12 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                     }
                   },
                   itemBuilder: (context) => [
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'edit',
                       child: Row(
                         children: [
-                          Icon(Icons.edit, size: 18, color: AppColors.info),
-                          SizedBox(width: 12),
+                          const Icon(Icons.edit, size: 18, color: AppColors.info),
+                          const SizedBox(width: 12),
                           Text(t('common.edit')),
                         ],
                       ),
@@ -700,12 +697,12 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                         ],
                       ),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete, size: 18, color: AppColors.danger),
-                          SizedBox(width: 12),
+                          const Icon(Icons.delete, size: 18, color: AppColors.danger),
+                          const SizedBox(width: 12),
                           Text(t('common.delete')),
                         ],
                       ),

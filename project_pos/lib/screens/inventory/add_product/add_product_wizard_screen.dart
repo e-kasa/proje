@@ -34,10 +34,12 @@ class _AddProductWizardScreenState
   late final WizardState _state;
   int _savedCount = 0;
 
+  String Function(String) get _t => i18nOf(ref);
+
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
 
-  final _stepTitles = const ['Urun Bilgileri', 'Varyant & Stok', 'Onizleme'];
+  List<String> _stepTitles = const ['', '', ''];
   final _stepIcons = const [
     Icons.inventory_2_rounded,
     Icons.layers_rounded,
@@ -105,8 +107,8 @@ class _AddProductWizardScreenState
         _state.productType == 'variant' &&
         _state.variants.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Varyant olusturulmadi, varsayilan varyant kullanilacak'),
+        SnackBar(
+          content: Text(_t('wizard.no_variant_created_default_used')),
           backgroundColor: AppColors.warning,
         ),
       );
@@ -150,6 +152,7 @@ class _AddProductWizardScreenState
     final theme = Theme.of(context);
     final isMobile = MediaQuery.of(context).size.width < 600;
     final sectorConfig = ref.watch(sectorConfigProvider);
+    _stepTitles = [_t('wizard.product_info'), _t('wizard.variant_stock'), _t('wizard.preview')];
 
     return PopScope(
       canPop: false,
@@ -159,22 +162,22 @@ class _AddProductWizardScreenState
           final shouldPop = await showDialog<bool>(
             context: context,
             builder: (ctx) => AlertDialog(
-              title: const Text('Cikmak istediginize emin misiniz?'),
+              title: Text(_t('common.are_you_sure')),
               content: Text(
                 _savedCount > 0
-                    ? '$_savedCount urun kaydedildi. Mevcut formdaki degisiklikler kaybolacak.'
-                    : 'Formdaki degisiklikler kaybolacak.',
+                    ? '$_savedCount ${_t('wizard.products_saved_changes_lost')}'
+                    : _t('wizard.changes_will_be_lost'),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Iptal'),
+                  child: Text(_t('common.cancel')),
                 ),
                 FilledButton(
                   onPressed: () => Navigator.pop(ctx, true),
                   style:
                       FilledButton.styleFrom(backgroundColor: AppColors.danger),
-                  child: const Text('Cik'),
+                  child: Text(_t('wizard.exit')),
                 ),
               ],
             ),
@@ -204,13 +207,13 @@ class _AddProductWizardScreenState
                   children: [
                     Text(
                       _savedCount > 0
-                          ? 'Urun Ekle ($_savedCount kaydedildi)'
-                          : 'Yeni Urun Ekle',
+                          ? '${_t('product.add_product')} ($_savedCount ${_t('wizard.saved')})'
+                          : _t('product.add_new_product'),
                       style: const TextStyle(
                           fontSize: 16, fontWeight: FontWeight.w700),
                     ),
                     Text(
-                      '${_stepTitles[_currentStep]} -- Adim ${_currentStep + 1}/$_totalSteps',
+                      '${_stepTitles[_currentStep]} -- ${_t('wizard.step')} ${_currentStep + 1}/$_totalSteps',
                       style: TextStyle(
                           fontSize: 12,
                           color: theme.colorScheme.onSurfaceVariant),
@@ -425,7 +428,7 @@ class _AddProductWizardScreenState
               OutlinedButton.icon(
                 onPressed: _back,
                 icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                label: Text(isMobile ? 'Geri' : 'Onceki Adim'),
+                label: Text(isMobile ? _t('common.back') : _t('wizard.previous_step')),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.textSecondary,
                   side: BorderSide(
@@ -456,7 +459,7 @@ class _AddProductWizardScreenState
                         size: 14, color: AppColors.success),
                     const SizedBox(width: 4),
                     Text(
-                      '$_savedCount urun',
+                      '$_savedCount ${_t('product.product')}',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -473,7 +476,7 @@ class _AddProductWizardScreenState
               FilledButton.icon(
                 onPressed: _next,
                 icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                label: Text(isMobile ? 'Ileri' : 'Sonraki Adim'),
+                label: Text(isMobile ? _t('common.next') : _t('wizard.next_step')),
                 style: FilledButton.styleFrom(
                   backgroundColor: _accentColor,
                   padding: EdgeInsets.symmetric(
@@ -487,7 +490,7 @@ class _AddProductWizardScreenState
               OutlinedButton.icon(
                 onPressed: _state.isSaving ? null : _saveAndContinue,
                 icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
-                label: Text(isMobile ? 'Yeni' : 'Kaydet & Yeni Ekle'),
+                label: Text(isMobile ? _t('common.new') : _t('wizard.save_and_add_new')),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: _accentColor,
                   side: BorderSide(color: _accentColor),
@@ -517,7 +520,7 @@ class _AddProductWizardScreenState
                               strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.check_circle_rounded, size: 18),
                   label:
-                      Text(_state.isSaving ? 'Kaydediliyor...' : 'Kaydet'),
+                      Text(_state.isSaving ? _t('common.saving') : _t('common.save')),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.success,
                     padding: EdgeInsets.symmetric(

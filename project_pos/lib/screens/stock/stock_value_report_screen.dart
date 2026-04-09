@@ -69,10 +69,11 @@ class _StockValueReportScreenState
 
   @override
   Widget build(BuildContext context) {
+    final t = i18nOf(ref);
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
-        title: 'Stok Deger Raporu',
+        title: t('stock.value_report'),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -91,7 +92,7 @@ class _StockValueReportScreenState
                       ),
                       const SizedBox(height: 16),
                       AppButton.primary(
-                        text: 'Tekrar Dene',
+                        text: t('stock.retry'),
                         icon: Icons.refresh,
                         onPressed: _loadSummary,
                       ),
@@ -111,14 +112,14 @@ class _StockValueReportScreenState
                       Row(
                         children: [
                           Expanded(child: _buildStatCard(
-                            'Toplam SKU',
+                            t('stock.total_sku'),
                             '${_summary?['totalSkuCount'] ?? 0}',
                             Icons.category_outlined,
                             AppColors.info,
                           )),
                           const SizedBox(width: 12),
                           Expanded(child: _buildStatCard(
-                            'Ortalama Deger',
+                            t('stock.average_value'),
                             _formatCurrency(_summary?['averageItemValue']),
                             Icons.analytics_outlined,
                             AppColors.purple,
@@ -128,14 +129,14 @@ class _StockValueReportScreenState
                       const SizedBox(height: 24),
 
                       // Warehouse breakdown header
-                      const Row(
+                      Row(
                         children: [
-                          Icon(Icons.warehouse_outlined,
+                          const Icon(Icons.warehouse_outlined,
                               size: 20, color: AppColors.textSecondary),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Text(
-                            'Depo Bazli Dagilim',
-                            style: TextStyle(
+                            t('stock.warehouse_breakdown'),
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                               color: AppColors.textPrimary,
@@ -154,6 +155,7 @@ class _StockValueReportScreenState
   }
 
   Widget _buildHeroCard() {
+    final t = i18nOf(ref);
     final totalValue = _summary?['totalStockValue'];
 
     return Container(
@@ -196,9 +198,9 @@ class _StockValueReportScreenState
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
-                  'Toplam',
-                  style: TextStyle(
+                child: Text(
+                  t('common.total'),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -208,9 +210,9 @@ class _StockValueReportScreenState
             ],
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Toplam Stok Degeri',
-            style: TextStyle(
+          Text(
+            t('stock.total_stock_value'),
+            style: const TextStyle(
               color: Colors.white70,
               fontSize: 14,
             ),
@@ -285,6 +287,7 @@ class _StockValueReportScreenState
   }
 
   List<Widget> _buildWarehouseCards() {
+    final t = i18nOf(ref);
     final breakdowns = _summary?['warehouseBreakdowns'] as List? ?? [];
     if (breakdowns.isEmpty) {
       return [
@@ -292,7 +295,7 @@ class _StockValueReportScreenState
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 32),
             child: Text(
-              'Depo verisi bulunamadi',
+              t('stock.no_warehouse_data'),
               style: TextStyle(fontSize: 14, color: AppColors.textMuted),
             ),
           ),
@@ -355,7 +358,7 @@ class _StockValueReportScreenState
                       children: [
                         _buildMiniTag('$itemCount SKU', AppColors.info),
                         const SizedBox(width: 6),
-                        _buildMiniTag('$totalQty adet', AppColors.purple),
+                        _buildMiniTag('$totalQty ${t('stock.unit_piece')}', AppColors.purple),
                       ],
                     ),
                   ],

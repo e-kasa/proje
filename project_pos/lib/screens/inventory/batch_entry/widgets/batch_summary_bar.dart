@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 
-class BatchSummaryBar extends StatelessWidget {
+class BatchSummaryBar extends ConsumerWidget {
   final int totalItems;
   final int newItems;
   final int existingItems;
@@ -33,7 +34,8 @@ class BatchSummaryBar extends StatelessWidget {
   static final _fmt = NumberFormat.currency(locale: 'tr_TR', symbol: '\u20BA');
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
     final isDesktop = MediaQuery.sizeOf(context).width >= 700;
 
     return Container(
@@ -50,27 +52,27 @@ class BatchSummaryBar extends StatelessWidget {
       ),
       child: SafeArea(
         top: false,
-        child: isDesktop ? _desktopLayout() : _mobileLayout(),
+        child: isDesktop ? _desktopLayout(t) : _mobileLayout(t),
       ),
     );
   }
 
-  Widget _desktopLayout() {
+  Widget _desktopLayout(Function(String) t) {
     return Row(
       children: [
         // Left: stat chips
-        _statChip('$totalItems', 'Urun', AppColors.primary),
+        _statChip('$totalItems', t('product.product'), AppColors.primary),
         const SizedBox(width: 8),
-        _statChip('$newItems', 'Yeni', AppColors.orange),
+        _statChip('$newItems', t('batch.new'), AppColors.orange),
         const SizedBox(width: 8),
-        _statChip('$existingItems', 'Mevcut', AppColors.success),
+        _statChip('$existingItems', t('batch.existing'), AppColors.success),
         const Spacer(),
         // Center: amounts
-        _amountText('Alis:', totalCost, AppColors.textSecondary),
+        _amountText('${t('batch.purchase')}:', totalCost, AppColors.textSecondary),
         const SizedBox(width: 16),
-        _amountText('Satis:', totalSale, AppColors.textPrimary),
+        _amountText('${t('batch.sale')}:', totalSale, AppColors.textPrimary),
         const SizedBox(width: 16),
-        _amountText('Kar:', totalProfit,
+        _amountText('${t('batch.profit')}:', totalProfit,
             totalProfit >= 0 ? AppColors.success : AppColors.danger),
         const Spacer(),
         // Right: buttons
@@ -79,15 +81,15 @@ class BatchSummaryBar extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.textSecondary,
           ),
-          child: const Text('Temizle'),
+          child: Text(t('batch.clear')),
         ),
         const SizedBox(width: 12),
-        _saveButton(),
+        _saveButton(t),
       ],
     );
   }
 
-  Widget _mobileLayout() {
+  Widget _mobileLayout(Function(String) t) {
     return Row(
       children: [
         Expanded(
@@ -96,14 +98,14 @@ class BatchSummaryBar extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                '$totalItems urun  \u2022  ${_fmt.format(totalSale)}',
+                '$totalItems ${t('product.product').toLowerCase()}  \u2022  ${_fmt.format(totalSale)}',
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
                 ),
               ),
               Text(
-                'Kar: ${_fmt.format(totalProfit)}',
+                '${t('batch.profit')}: ${_fmt.format(totalProfit)}',
                 style: TextStyle(
                   fontSize: 12,
                   color:
@@ -113,14 +115,14 @@ class BatchSummaryBar extends StatelessWidget {
             ],
           ),
         ),
-        _saveButton(),
+        _saveButton(t),
       ],
     );
   }
 
-  Widget _saveButton() {
+  Widget _saveButton(Function(String) t) {
     return AppButton.primary(
-      text: isSubmitting ? 'Kaydediliyor...' : 'Tümünü Kaydet ($totalItems ürün)',
+      text: isSubmitting ? t('common.loading') : '${t('batch.save_all')} ($totalItems ${t('product.product').toLowerCase()})',
       icon: Icons.check,
       onPressed: isValid && !isSubmitting ? onSubmit : null,
     );

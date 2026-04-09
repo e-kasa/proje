@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/core/config/sector_config.dart';
@@ -6,7 +7,7 @@ import '../models/wizard_state.dart';
 import '../widgets/variant_dialogs.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 
-class VariantsStep extends StatelessWidget {
+class VariantsStep extends ConsumerWidget {
   final WizardState state;
   final VoidCallback onChanged;
   final bool isMobile;
@@ -38,27 +39,28 @@ class VariantsStep extends StatelessWidget {
       _attrColors[index % _attrColors.length];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
     return Column(
       children: [
-        _buildProductTypeCard(context),
+        _buildProductTypeCard(context, t),
         if (state.productType == 'simple') ...[
           const SizedBox(height: 16),
-          _buildSimpleConfirmation(),
+          _buildSimpleConfirmation(t),
         ],
         if (state.productType == 'variant') ...[
           const SizedBox(height: 16),
-          _buildPresetSection(context),
+          _buildPresetSection(context, t),
           const SizedBox(height: 16),
-          _buildAttributesSection(context),
+          _buildAttributesSection(context, t),
           if (state.attributes.isNotEmpty) ...[
             const SizedBox(height: 16),
-            _buildGenerateButton(context),
+            _buildGenerateButton(context, t),
           ],
           if (state.variants.isNotEmpty &&
               state.variants.first.attributes.isNotEmpty) ...[
             const SizedBox(height: 16),
-            _buildVariantPreview(context),
+            _buildVariantPreview(context, t),
           ],
         ],
       ],
@@ -67,13 +69,13 @@ class VariantsStep extends StatelessWidget {
 
   // ─── Product Type Selection ─────────────────────────────────────────────
 
-  Widget _buildProductTypeCard(BuildContext context) {
+  Widget _buildProductTypeCard(BuildContext context, String Function(String) t) {
     final accent = _accentColor;
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _header(Icons.layers_rounded, 'Urun Tipi & Varyantlar'),
+          _header(Icons.layers_rounded, t('product.product_type_variants')),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(10),
@@ -87,10 +89,10 @@ class VariantsStep extends StatelessWidget {
                 Icon(Icons.info_outline_rounded,
                     size: 16, color: AppColors.info.withOpacity(0.7)),
                 const SizedBox(width: 8),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Basit: Tek varyant  |  Varyantli: Renk, beden gibi secenekler',
-                    style:
+                    t('product.simple_vs_variant_hint'),
+                    style: const
                         TextStyle(fontSize: 11, color: AppColors.textSecondary),
                   ),
                 ),
@@ -105,9 +107,10 @@ class VariantsStep extends StatelessWidget {
                   context,
                   key: 'simple',
                   icon: Icons.inventory_2_rounded,
-                  title: 'Basit Urun',
-                  subtitle: 'Varyant yok',
+                  title: t('product.simple_product'),
+                  subtitle: t('product.no_variant'),
                   color: AppColors.success,
+                  t: t,
                 ),
               ),
               const SizedBox(width: 12),
@@ -116,9 +119,10 @@ class VariantsStep extends StatelessWidget {
                   context,
                   key: 'variant',
                   icon: Icons.layers_rounded,
-                  title: 'Varyantli Urun',
-                  subtitle: 'Renk, beden vb.',
+                  title: t('product.variant_product'),
+                  subtitle: t('product.color_size_etc'),
                   color: accent,
+                  t: t,
                 ),
               ),
             ],
@@ -135,6 +139,7 @@ class VariantsStep extends StatelessWidget {
     required String title,
     required String subtitle,
     required Color color,
+    required String Function(String) t,
   }) {
     final isSelected = state.productType == key;
     return GestureDetector(
@@ -192,7 +197,7 @@ class VariantsStep extends StatelessWidget {
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                 decoration: BoxDecoration(
                     color: color, borderRadius: BorderRadius.circular(10)),
-                child: const Text('Secili',
+                child: Text(t('common.selected'),
                     style: TextStyle(
                         color: Colors.white,
                         fontSize: 10,
@@ -207,7 +212,7 @@ class VariantsStep extends StatelessWidget {
 
   // ─── Simple Confirmation ────────────────────────────────────────────────
 
-  Widget _buildSimpleConfirmation() {
+  Widget _buildSimpleConfirmation(String Function(String) t) {
     return _card(
       accentBorder: true,
       child: Row(
@@ -227,7 +232,7 @@ class VariantsStep extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Basit Urun Olusturuldu',
+                Text(t('product.simple_product_created'),
                     style:
                         TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                 const SizedBox(height: 2),
@@ -248,7 +253,7 @@ class VariantsStep extends StatelessWidget {
 
   // ─── Preset Section ─────────────────────────────────────────────────────
 
-  Widget _buildPresetSection(BuildContext context) {
+  Widget _buildPresetSection(BuildContext context, String Function(String) t) {
     final accent = _accentColor;
     final presets = state.getSectorPresets();
 
@@ -256,7 +261,7 @@ class VariantsStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _header(Icons.flash_on_rounded, 'Hizli Sablon'),
+          _header(Icons.flash_on_rounded, t('product.quick_template')),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -268,7 +273,7 @@ class VariantsStep extends StatelessWidget {
                 return _buildPresetChip(
                   context,
                   key: presetKey,
-                  label: _presetLabel(presetKey),
+                  label: _presetLabel(presetKey, t),
                   icon: presetIcon,
                   isSelected: isSelected,
                   color: accent,
@@ -277,7 +282,7 @@ class VariantsStep extends StatelessWidget {
               _buildPresetChip(
                 context,
                 key: 'custom',
-                label: 'Ozel',
+                label: t('product.preset_custom'),
                 icon: Icons.tune_rounded,
                 isSelected: state.selectedPreset == 'custom',
                 color: AppColors.textSecondary,
@@ -289,12 +294,12 @@ class VariantsStep extends StatelessWidget {
     );
   }
 
-  String _presetLabel(String key) {
+  String _presetLabel(String key, String Function(String) t) {
     return switch (key) {
-      'clothing' => 'Giyim',
-      'electronics' => 'Elektronik',
-      'shoes' => 'Ayakkabi',
-      'auto_parts' => 'Oto Parca',
+      'clothing' => t('product.preset_clothing'),
+      'electronics' => t('product.preset_electronics'),
+      'shoes' => t('product.preset_shoes'),
+      'auto_parts' => t('product.preset_auto_parts'),
       _ => key,
     };
   }
@@ -365,14 +370,14 @@ class VariantsStep extends StatelessWidget {
 
   // ─── Attributes Section ─────────────────────────────────────────────────
 
-  Widget _buildAttributesSection(BuildContext context) {
+  Widget _buildAttributesSection(BuildContext context, String Function(String) t) {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              _header(Icons.tune_rounded, 'Ozellikler'),
+              _header(Icons.tune_rounded, t('product.attributes')),
               const Spacer(),
               if (state.attributes.isNotEmpty)
                 Container(
@@ -383,7 +388,7 @@ class VariantsStep extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
-                    '${state.attributes.length} ozellik',
+                    '${state.attributes.length} ${t('product.attribute')}',
                     style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
@@ -393,7 +398,7 @@ class VariantsStep extends StatelessWidget {
               const SizedBox(width: 8),
               InkWell(
                 onTap: () => showAddAttributeDialog(
-                    context: context, state: state, onChanged: onChanged),
+                    context: context, state: state, onChanged: onChanged, t: t),
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
                   padding:
@@ -404,14 +409,14 @@ class VariantsStep extends StatelessWidget {
                     border:
                         Border.all(color: AppColors.success.withOpacity(0.3)),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.add_rounded,
+                      const Icon(Icons.add_rounded,
                           size: 14, color: AppColors.success),
-                      SizedBox(width: 4),
-                      Text('Yeni',
-                          style: TextStyle(
+                      const SizedBox(width: 4),
+                      Text(t('common.new_item'),
+                          style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                               color: AppColors.success)),
@@ -443,10 +448,10 @@ class VariantsStep extends StatelessWidget {
                         color: AppColors.warning, size: 18),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Yukaridan sablon secin veya "Yeni" ile ozellik ekleyin',
-                      style: TextStyle(
+                      t('product.select_template_or_add'),
+                      style: const TextStyle(
                           fontSize: 12, color: AppColors.textSecondary),
                     ),
                   ),
@@ -455,7 +460,7 @@ class VariantsStep extends StatelessWidget {
             )
           else
             ...state.attributes.asMap().entries.map((entry) {
-              return _buildAttributeCard(context, entry.key, entry.value);
+              return _buildAttributeCard(context, entry.key, entry.value, t);
             }),
         ],
       ),
@@ -463,7 +468,7 @@ class VariantsStep extends StatelessWidget {
   }
 
   Widget _buildAttributeCard(
-      BuildContext context, int index, ProductAttribute attr) {
+      BuildContext context, int index, ProductAttribute attr, String Function(String) t) {
     final attrColor = _colorForAttrIndex(index);
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -492,7 +497,7 @@ class VariantsStep extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  '${attr.values.length} deger',
+                  '${attr.values.length} ${t('product.value')}',
                   style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
@@ -543,13 +548,14 @@ class VariantsStep extends StatelessWidget {
                 );
               }),
               ActionChip(
-                label: const Text('+ Ekle', style: TextStyle(fontSize: 11)),
+                label: Text('+ ${t('common.add')}', style: const TextStyle(fontSize: 11)),
                 onPressed: () => showAddValueDialog(
                     context: context,
                     state: state,
                     attrIndex: index,
                     attrName: attr.name,
-                    onChanged: onChanged),
+                    onChanged: onChanged,
+                    t: t),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 visualDensity: VisualDensity.compact,
                 backgroundColor: AppColors.success.withOpacity(0.06),
@@ -564,12 +570,12 @@ class VariantsStep extends StatelessWidget {
 
   // ─── Generate Button ────────────────────────────────────────────────────
 
-  Widget _buildGenerateButton(BuildContext context) {
+  Widget _buildGenerateButton(BuildContext context, String Function(String) t) {
     final count = state.calculateTotalVariants();
     return SizedBox(
       width: double.infinity,
       child: AppButton.success(
-        text: 'Varyantlari Olustur ($count)',
+        text: '${t('product.generate_variants')} ($count)',
         icon: Icons.bolt_rounded,
         onPressed: () {
           state.generateVariants(context);
@@ -581,7 +587,7 @@ class VariantsStep extends StatelessWidget {
 
   // ─── Variant Preview ────────────────────────────────────────────────────
 
-  Widget _buildVariantPreview(BuildContext context) {
+  Widget _buildVariantPreview(BuildContext context, String Function(String) t) {
     final accent = _accentColor;
     final displayLimit = state.showAllVariants ? state.variants.length : 5;
     final displayed = state.variants.take(displayLimit).toList();
@@ -593,7 +599,7 @@ class VariantsStep extends StatelessWidget {
         children: [
           Row(
             children: [
-              _header(Icons.preview_rounded, 'Varyant Onizleme'),
+              _header(Icons.preview_rounded, t('product.variant_preview')),
               const Spacer(),
               Container(
                 padding:
@@ -603,7 +609,7 @@ class VariantsStep extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '${state.variants.length} varyant',
+                  '${state.variants.length} ${t('product.variant')}',
                   style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -715,8 +721,8 @@ class VariantsStep extends StatelessWidget {
                     color: accent),
                 label: Text(
                   state.showAllVariants
-                      ? 'Daha az goster'
-                      : 'Tumunu goster (+${state.variants.length - 5})',
+                      ? t('common.show_less')
+                      : '${t('common.show_all')} (+${state.variants.length - 5})',
                   style: TextStyle(fontSize: 12, color: accent),
                 ),
               ),

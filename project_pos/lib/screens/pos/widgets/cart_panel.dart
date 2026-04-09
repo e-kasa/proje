@@ -8,6 +8,7 @@ import '../providers/pos_provider.dart';
 import 'cart_item_row.dart';
 import 'quick_customer_dialog.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'recommendation_panel.dart';
 
 class CartPanel extends ConsumerWidget {
   final VoidCallback onPaymentPressed;
@@ -22,6 +23,19 @@ class CartPanel extends ConsumerWidget {
     final posState = ref.watch(posProvider);
     final notifier = ref.read(posProvider.notifier);
     final t = i18nOf(ref);
+
+    // Sepet değiştiğinde önerileri yükle
+    ref.listen(
+      posProvider.select((state) => state.cartItems.map((i) => i.variantId).toList()),
+      (prev, next) {
+        if (next.isNotEmpty && (prev == null || prev.length != next.length)) {
+          notifier.loadRecommendations();
+        } else if (next.isEmpty) {
+          // Sepet boşsa önerileri temizle
+          ref.read(posProvider.notifier).loadRecommendations();
+        }
+      },
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -44,7 +58,18 @@ class CartPanel extends ConsumerWidget {
           Expanded(
             child: posState.cartItems.isEmpty
                 ? _buildEmptyCart(t)
-                : _buildCartList(posState, notifier),
+                : Column(
+                    children: [
+                      // Ürün Önerileri (Sepet boş değilse göster)
+                      if (posState.recommendations.isNotEmpty || posState.isLoadingRecommendations)
+                        const RecommendationPanel(),
+
+                      // Sepet ürünleri
+                      Expanded(
+                        child: _buildCartList(posState, notifier),
+                      ),
+                    ],
+                  ),
           ),
 
           const Divider(height: 1),

@@ -22,7 +22,7 @@ class _MultiWarehouseStockScreenState
   List<WarehouseStockItem> _products = [];
   bool _isLoading = true;
   String? _error;
-  String _filterType = 'TÜMÜ';
+  String _filterType = 'all';
   String? _expandedProductId;
 
   @override
@@ -53,7 +53,7 @@ class _MultiWarehouseStockScreenState
     } catch (e) {
       setState(() {
         _products = [];
-        _error = 'Veri yuklenemedi';
+        _error = 'data_load_failed';
         _isLoading = false;
       });
     }
@@ -61,17 +61,17 @@ class _MultiWarehouseStockScreenState
 
   List<WarehouseStockItem> get _filteredProducts {
     switch (_filterType) {
-      case 'DÜŞÜK STOK':
+      case 'low':
         return _products
             .where((p) => p.locationStocks.any((loc) => loc.isLowStock))
             .toList();
 
-      case 'KRİTİK':
+      case 'critical':
         return _products
             .where((p) => p.locationStocks.any((loc) => loc.isCriticalStock))
             .toList();
 
-      case 'TÜKENDİ':
+      case 'out':
         return _products
             .where((p) => p.locationStocks.any((loc) => loc.isOutOfStock))
             .toList();
@@ -83,6 +83,7 @@ class _MultiWarehouseStockScreenState
 
   @override
   Widget build(BuildContext context) {
+    final t = i18nOf(ref);
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
@@ -90,7 +91,7 @@ class _MultiWarehouseStockScreenState
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: 'Depo Bazinda Stok',
+        title: t('stock.warehouse_stock'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: AppColors.textPrimary),
@@ -101,7 +102,7 @@ class _MultiWarehouseStockScreenState
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-          ? Center(child: Text(_error!))
+          ? Center(child: Text(t('stock.data_load_failed')))
           : Column(
         children: [
           _buildFilterButtons(),
@@ -121,7 +122,13 @@ class _MultiWarehouseStockScreenState
   }
 
   Widget _buildFilterButtons() {
-    final filters = ['TÜMÜ', 'DÜŞÜK STOK', 'KRİTİK', 'TÜKENDİ'];
+    final t = i18nOf(ref);
+    final filters = {
+      'all': t('common.all'),
+      'low': t('stock.low_stock'),
+      'critical': t('stock.critical'),
+      'out': t('stock.out_of_stock'),
+    };
 
     return Container(
       color: Colors.white,
@@ -129,14 +136,14 @@ class _MultiWarehouseStockScreenState
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-          children: filters.map((filter) {
-            final isSelected = _filterType == filter;
+          children: filters.entries.map((entry) {
+            final isSelected = _filterType == entry.key;
 
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: ChoiceChip(
                 label: Text(
-                  filter,
+                  entry.value,
                   style: TextStyle(
                     fontSize: 12,
                     color: isSelected ? Colors.white : AppColors.textPrimary,
@@ -147,7 +154,7 @@ class _MultiWarehouseStockScreenState
                 selected: isSelected,
                 onSelected: (selected) {
                   setState(() {
-                    _filterType = filter;
+                    _filterType = entry.key;
                   });
                 },
                 selectedColor: AppColors.primary,
@@ -161,6 +168,7 @@ class _MultiWarehouseStockScreenState
   }
 
   Widget _buildStatistics() {
+    final t = i18nOf(ref);
     final totalProducts = _products.length;
 
     final totalStock =
@@ -178,7 +186,7 @@ class _MultiWarehouseStockScreenState
         children: [
           Expanded(
             child: _buildStatCard(
-              'Toplam Ürün',
+              t('stock.total_products'),
               totalProducts.toString(),
               Icons.inventory_2,
               Colors.blue,
@@ -187,7 +195,7 @@ class _MultiWarehouseStockScreenState
           const SizedBox(width: 12),
           Expanded(
             child: _buildStatCard(
-              'Toplam Stok',
+              t('stock.total_stock'),
               totalStock.toString(),
               Icons.warehouse,
               Colors.green,
@@ -196,7 +204,7 @@ class _MultiWarehouseStockScreenState
           const SizedBox(width: 12),
           Expanded(
             child: _buildStatCard(
-              'Düşük Stok',
+              t('stock.low_stock'),
               lowStockCount.toString(),
               Icons.warning,
               Colors.orange,
@@ -289,6 +297,7 @@ class _MultiWarehouseStockScreenState
   }
 
   Widget _buildLocationRow(LocationStock location) {
+    final t = i18nOf(ref);
     Color statusColor = AppColors.success;
     IconData statusIcon = Icons.check_circle;
 
@@ -312,7 +321,7 @@ class _MultiWarehouseStockScreenState
           const SizedBox(width: 10),
           Expanded(child: Text(location.locationName, style: const TextStyle(fontSize: 13, color: AppColors.textPrimary))),
           Text(
-            '${location.quantity} Adet',
+            '${location.quantity} ${t('stock.unit_piece')}',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: statusColor,

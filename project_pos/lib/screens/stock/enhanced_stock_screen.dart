@@ -78,17 +78,19 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
   }
 
   String _getStockLabel(num stock) {
-    if (stock == 0) return 'Tükendi';
-    if (stock <= 5) return 'Kritik';
-    if (stock <= 20) return 'Düşük';
-    return 'İyi';
+    final t = i18nOf(ref);
+    if (stock == 0) return t('stock.out_of_stock');
+    if (stock <= 5) return t('stock.critical');
+    if (stock <= 20) return t('stock.low_stock');
+    return t('stock.good');
   }
 
   void _onQuickSell(Map<String, dynamic> product) {
+    final t = i18nOf(ref);
     context.go('/pos');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${product['name']} satış ekranına eklendi'),
+        content: Text('${product['name']} ${t('stock.added_to_pos')}'),
         backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
       ),
@@ -96,20 +98,21 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
   }
 
   void _onEditProduct(Map<String, dynamic> product) {
+    final t = i18nOf(ref);
     final stockController = TextEditingController(text: '${product['stock'] ?? 0}');
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Stok Düzenle - ${product['name']}'),
+        title: Text('${t('stock.edit_stock')} - ${product['name']}'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: stockController,
-              decoration: const InputDecoration(
-                labelText: 'Yeni Stok Miktarı',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: t('stock.new_stock_quantity'),
+                border: const OutlineInputBorder(),
               ),
               keyboardType: TextInputType.number,
             ),
@@ -118,7 +121,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('İptal'),
+            child: Text(t('common.cancel')),
           ),
           AppButton.primary(
             onPressed: () async {
@@ -138,12 +141,12 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
               if (!mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(success ? 'Stok güncellendi' : 'Güncelleme başarısız'),
+                  content: Text(success ? t('stock.stock_updated') : t('stock.update_failed')),
                   backgroundColor: success ? AppColors.success : AppColors.danger,
                 ),
               );
             },
-            text: 'Kaydet',
+            text: t('common.save'),
           ),
         ],
       ),
@@ -157,6 +160,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
       if (next.route == '/stock') ref.read(stockProvider.notifier).load();
     });
 
+    final t = i18nOf(ref);
     final stockState = ref.watch(stockProvider);
     final filtered = _applyFilters(stockState.products);
 
@@ -173,7 +177,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
                 // Search Bar
                 AppSearchInput(
                   controller: _searchController,
-                  hint: 'Ürün ara...',
+                  hint: '${t('stock.search_product')}...',
                   onChanged: (_) => setState(() {}),
                 ),
 
@@ -184,15 +188,15 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _buildFilterChip('Tümü', 'all', Icons.grid_view),
+                      _buildFilterChip(t('common.all'), 'all', Icons.grid_view),
                       const SizedBox(width: 8),
-                      _buildFilterChip('Kritik', 'critical', Icons.warning_amber, AppColors.danger),
+                      _buildFilterChip(t('stock.critical'), 'critical', Icons.warning_amber, AppColors.danger),
                       const SizedBox(width: 8),
-                      _buildFilterChip('Düşük', 'low', Icons.trending_down, AppColors.warning),
+                      _buildFilterChip(t('stock.low_stock'), 'low', Icons.trending_down, AppColors.warning),
                       const SizedBox(width: 8),
-                      _buildFilterChip('Tükenen', 'out', Icons.close, AppColors.danger),
+                      _buildFilterChip(t('stock.out_of_stock'), 'out', Icons.close, AppColors.danger),
                       const SizedBox(width: 8),
-                      _buildFilterChip('İyi', 'good', Icons.check_circle, AppColors.success),
+                      _buildFilterChip(t('stock.good'), 'good', Icons.check_circle, AppColors.success),
                     ],
                   ),
                 ),
@@ -207,21 +211,21 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
             child: Row(
               children: [
                 _buildStatCard(
-                  'Toplam',
+                  t('common.total'),
                   '${stockState.totalCount}',
                   Colors.blue,
                   Icons.inventory_2,
                 ),
                 const SizedBox(width: 12),
                 _buildStatCard(
-                  'Kritik',
+                  t('stock.critical'),
                   '${stockState.criticalCount}',
                   AppColors.danger,
                   Icons.warning_amber,
                 ),
                 const SizedBox(width: 12),
                 _buildStatCard(
-                  'Düşük',
+                  t('stock.low_stock'),
                   '${stockState.lowCount}',
                   AppColors.warning,
                   Icons.trending_down,
@@ -238,11 +242,11 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildReportLink('Hareket Geçmişi', Icons.history, '/stock/movements', AppColors.info),
+                  _buildReportLink(t('stock.movement_history'), Icons.history, '/stock/movements', AppColors.info),
                   const SizedBox(width: 8),
-                  _buildReportLink('Stok Alarmları', Icons.notifications_active, '/stock/alerts', AppColors.danger),
+                  _buildReportLink(t('stock.alerts'), Icons.notifications_active, '/stock/alerts', AppColors.danger),
                   const SizedBox(width: 8),
-                  _buildReportLink('Değer Raporu', Icons.bar_chart, '/stock/value-report', AppColors.success),
+                  _buildReportLink(t('stock.value_report'), Icons.bar_chart, '/stock/value-report', AppColors.success),
                 ],
               ),
             ),
@@ -257,16 +261,16 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
                 : stockState.error != null
                     ? AppEmptyState(
                         icon: Icons.error_outline,
-                        title: 'Hata Oluştu',
+                        title: t('common.error'),
                         description: stockState.error!,
-                        actionText: 'Tekrar Dene',
+                        actionText: t('stock.retry'),
                         onAction: () => ref.read(stockProvider.notifier).load(),
                       )
                     : filtered.isEmpty
                         ? AppEmptyState(
                             icon: Icons.inventory_2_outlined,
-                            title: 'Ürün Bulunamadı',
-                            description: 'Arama kriterlerine uygun ürün yok',
+                            title: t('stock.no_product_found'),
+                            description: t('stock.no_matching_product'),
                           )
                         : RefreshIndicator(
                             onRefresh: () => ref.read(stockProvider.notifier).load(),
@@ -284,14 +288,14 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Stok sayım özelliği yakında eklenecek'),
+            SnackBar(
+              content: Text(t('stock.count_feature_coming_soon')),
               backgroundColor: AppColors.info,
             ),
           );
         },
         icon: const Icon(Icons.inventory),
-        label: const Text('Stok Sayım'),
+        label: Text(t('stock.stock_count')),
         backgroundColor: AppColors.primary,
       ),
     );
@@ -368,6 +372,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
   }
 
   Widget _buildProductCard(Map<String, dynamic> product) {
+    final t = i18nOf(ref);
     final stock = product['stock'] as num? ?? 0;
     final stockColor = _getStockColor(stock);
     final stockLabel = _getStockLabel(stock);
@@ -391,12 +396,12 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
           ),
           alignment: Alignment.centerLeft,
           padding: const EdgeInsets.only(left: AppConstants.spacing16),
-          child: const Column(
+          child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.shopping_cart, color: Colors.white, size: 32),
-              SizedBox(height: 4),
-              Text('Hızlı Sat', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              const Icon(Icons.shopping_cart, color: Colors.white, size: 32),
+              const SizedBox(height: 4),
+              Text(t('stock.quick_sell'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ],
           ),
         ),
@@ -407,12 +412,12 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
           ),
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.only(right: AppConstants.spacing16),
-          child: const Column(
+          child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.edit, color: Colors.white, size: 32),
-              SizedBox(height: 4),
-              Text('Düzenle', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              const Icon(Icons.edit, color: Colors.white, size: 32),
+              const SizedBox(height: 4),
+              Text(t('common.edit'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ],
           ),
         ),
@@ -454,7 +459,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
                           ),
                           const SizedBox(width: 12),
                           Text(
-                            '${stock.toInt()} adet',
+                            '${stock.toInt()} ${t('stock.unit_piece')}',
                             style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
@@ -466,7 +471,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
                       if (product['barcode'] != null) ...[
                         const SizedBox(height: 6),
                         Text(
-                          'Barkod: ${product['barcode']}',
+                          '${t('stock.barcode')}: ${product['barcode']}',
                           style: const TextStyle(
                             fontSize: 11,
                             color: AppColors.textMuted,

@@ -41,6 +41,7 @@ class StockTransferScreen extends ConsumerStatefulWidget {
 }
 
 class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
+  String Function(String) get t => i18nOf(ref);
   final _searchCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
 
@@ -96,7 +97,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Veriler yüklenemedi: $e'),
+            content: Text('${t('stock.data_load_failed')}: $e'),
             backgroundColor: AppColors.danger,
           ),
         );
@@ -137,7 +138,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppAppBar.standard(
-        title: 'Stok Transfer Oluştur',
+        title: t('stock.create_transfer'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
@@ -150,7 +151,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
               children: [
                 // ── Source location ──
                 _buildSectionTitle(
-                    'Kaynak Konum', Icons.output_rounded, theme),
+                    t('stock.source_location'), Icons.output_rounded, theme),
                 const SizedBox(height: 12),
                 _buildLocationSelector(
                   theme: theme,
@@ -171,14 +172,13 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
                       _validateDestination();
                     });
                   },
-                  label: 'Kaynak',
+                  label: t('stock.source'),
                 ),
 
                 const SizedBox(height: 20),
 
-                // ── Destination location ──
                 _buildSectionTitle(
-                    'Hedef Konum', Icons.input_rounded, theme),
+                    t('stock.target_location'), Icons.input_rounded, theme),
                 const SizedBox(height: 12),
                 _buildLocationSelector(
                   theme: theme,
@@ -193,14 +193,14 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
                   },
                   onLocationChanged: (id) =>
                       setState(() => _destId = id),
-                  label: 'Hedef',
+                  label: t('stock.target'),
                 ),
 
                 const SizedBox(height: 20),
 
                 // ── Product search ──
                 _buildSectionTitle(
-                    'Ürünler', Icons.inventory_2_rounded, theme),
+                    t('stock.products'), Icons.inventory_2_rounded, theme),
                 const SizedBox(height: 12),
                 _buildProductSearch(theme),
 
@@ -223,7 +223,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
                 TextFormField(
                   controller: _notesCtrl,
                   decoration: _inputDeco(
-                      'Transfer Notu (opsiyonel)', Icons.notes_rounded, theme),
+                      t('stock.transfer_note_optional'), Icons.notes_rounded, theme),
                   maxLines: 2,
                 ),
 
@@ -286,7 +286,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
             Row(
               children: [
                 FilterChip(
-                  label: const Text('Depo'),
+                  label: Text(t('stock.warehouse')),
                   selected: locationType == _LocationType.warehouse,
                   onSelected: (_) =>
                       onTypeChanged(_LocationType.warehouse),
@@ -303,7 +303,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
                 ),
                 const SizedBox(width: 8),
                 FilterChip(
-                  label: const Text('Magaza'),
+                  label: Text(t('stock.store')),
                   selected: locationType == _LocationType.store,
                   onSelected: (_) =>
                       onTypeChanged(_LocationType.store),
@@ -325,13 +325,13 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
             DropdownButtonFormField<String>(
               value: selectedId,
               decoration: _inputDeco(
-                '$label Seciniz *',
+                '$label *',
                 locationType == _LocationType.warehouse
                     ? Icons.warehouse_outlined
                     : Icons.store_outlined,
                 theme,
               ),
-              hint: Text('$label seciniz'),
+              hint: Text('${label.toLowerCase()}'),
               isExpanded: true,
               items: locations.map((loc) {
                 final code = _locationCode(loc);
@@ -344,7 +344,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
                 );
               }).toList(),
               onChanged: onLocationChanged,
-              validator: (v) => v == null ? '$label seciniz' : null,
+              validator: (v) => v == null ? label : null,
             ),
           ],
         ),
@@ -367,7 +367,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
           child: TextField(
             controller: _searchCtrl,
             decoration: InputDecoration(
-              hintText: 'Urun adi, SKU veya barkod ile ara...',
+              hintText: '${t('stock.search_product_sku_barcode')}...',
               prefixIcon: const Icon(Icons.search_rounded),
               suffixIcon: _searchLoading
                   ? const Padding(
@@ -464,12 +464,12 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
                   fontSize: 13, fontWeight: FontWeight.w500),
             ),
             subtitle: Text(
-              'SKU: $sku  |  Stok: $stock',
+              'SKU: $sku  |  ${t('stock.stock')}: $stock',
               style: const TextStyle(fontSize: 11),
             ),
             trailing: alreadyAdded
-                ? const Text('Eklendi',
-                    style: TextStyle(
+                ? Text(t('stock.added'),
+                    style: const TextStyle(
                         fontSize: 11, color: AppColors.success))
                 : const Icon(Icons.add_circle_outline,
                     color: AppColors.primary, size: 22),
@@ -516,7 +516,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'SKU: ${item.sku}  |  Kaynak Stok: ${item.sourceStock}',
+                    'SKU: ${item.sku}  |  ${t('stock.source_stock')}: ${item.sourceStock}',
                     style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant),
                   ),
@@ -566,7 +566,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
               icon: const Icon(Icons.remove_circle_outline_rounded,
                   color: AppColors.danger, size: 20),
               onPressed: () => setState(() => _items.removeAt(index)),
-              tooltip: 'Kaldir',
+              tooltip: t('stock.remove'),
             ),
           ],
         ),
@@ -611,7 +611,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
               const Icon(Icons.inventory_outlined, size: 18),
               const SizedBox(width: 8),
               Text(
-                '${_items.length} urun',
+                '${_items.length} ${t('stock.products').toLowerCase()}',
                 style: theme.textTheme.bodyMedium,
               ),
             ],
@@ -619,7 +619,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('Toplam Miktar',
+              Text(t('stock.total_quantity'),
                   style: theme.textTheme.bodySmall),
               Text(
                 _fmt.format(_totalQuantity),
@@ -641,7 +641,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
     return SizedBox(
       height: 52,
       child: AppButton.primary(
-        text: _isSubmitting ? 'Kaydediliyor...' : 'Onayla',
+        text: _isSubmitting ? '${t('common.loading')}...' : t('stock.approve'),
         icon: Icons.check,
         onPressed: _isSubmitting ? null : _submit,
       ),
@@ -718,17 +718,16 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
   }
 
   Future<void> _submit() async {
-    // Validation
     if (_sourceId == null) {
-      _showError('Kaynak konum seciniz');
+      _showError(t('stock.select_source_location'));
       return;
     }
     if (_destId == null) {
-      _showError('Hedef konum seciniz');
+      _showError(t('stock.select_target_location'));
       return;
     }
     if (_items.isEmpty) {
-      _showError('En az 1 urun eklemelisiniz');
+      _showError(t('stock.add_at_least_one_product'));
       return;
     }
 
@@ -759,8 +758,8 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Transfer basariyla olusturuldu'),
+          SnackBar(
+            content: Text(t('stock.transfer_created_success')),
             backgroundColor: AppColors.success,
           ),
         );
@@ -771,7 +770,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Hata: $e'),
+            content: Text('${t('common.error')}: $e'),
             backgroundColor: AppColors.danger,
           ),
         );

@@ -154,23 +154,24 @@ class _StockMovementHistoryScreenState
   }
 
   String _typeLabel(String type) {
+    final t = i18nOf(ref);
     switch (type) {
       case 'PURCHASE_IN':
-        return 'Satin Alma';
+        return t('stock.movement_purchase_in');
       case 'TRANSFER_IN':
-        return 'Transfer Giris';
+        return t('stock.movement_transfer_in');
       case 'ADJUSTMENT_IN':
-        return 'Duzeltme Giris';
+        return t('stock.movement_adjustment_in');
       case 'SALE_RETURN_IN':
-        return 'Satis Iade';
+        return t('stock.movement_sale_return_in');
       case 'SALE_OUT':
-        return 'Satis';
+        return t('stock.movement_sale_out');
       case 'TRANSFER_OUT':
-        return 'Transfer Cikis';
+        return t('stock.movement_transfer_out');
       case 'ADJUSTMENT_OUT':
-        return 'Duzeltme Cikis';
+        return t('stock.movement_adjustment_out');
       case 'PURCHASE_RETURN_OUT':
-        return 'Alis Iade';
+        return t('stock.movement_purchase_return_out');
       default:
         return type;
     }
@@ -182,16 +183,17 @@ class _StockMovementHistoryScreenState
 
   @override
   Widget build(BuildContext context) {
+    final t = i18nOf(ref);
     final filtered = _filteredMovements;
 
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(
-        title: 'Stok Hareket Gecmisi',
+        title: t('stock.movement_history'),
         actions: [
           IconButton(
             icon: const Icon(Icons.date_range),
-            tooltip: 'Tarih Sec',
+            tooltip: t('stock.select_date'),
             onPressed: _pickDateRange,
           ),
         ],
@@ -207,7 +209,7 @@ class _StockMovementHistoryScreenState
                 TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Urun adi veya SKU ara...',
+                    hintText: '${t('stock.search_product_sku')}...',
                     prefixIcon: const Icon(Icons.search),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
@@ -274,11 +276,11 @@ class _StockMovementHistoryScreenState
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildFilterChip('Tumu', 'all', null),
+                  _buildFilterChip(t('common.all'), 'all', null),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Giris', 'in', AppColors.success),
+                  _buildFilterChip(t('stock.incoming'), 'in', AppColors.success),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Cikis', 'out', AppColors.danger),
+                  _buildFilterChip(t('stock.outgoing'), 'out', AppColors.danger),
                 ],
               ),
             ),
@@ -305,7 +307,7 @@ class _StockMovementHistoryScreenState
                             ),
                             const SizedBox(height: 16),
                             AppButton.primary(
-                        text: 'Tekrar Dene',
+                        text: t('stock.retry'),
                         icon: Icons.refresh,
                         onPressed: _loadMovements,
                       ),
@@ -321,7 +323,7 @@ class _StockMovementHistoryScreenState
                                     size: 64, color: AppColors.textMuted),
                                 const SizedBox(height: 16),
                                 Text(
-                                  'Hareket bulunamadi',
+                                  t('stock.no_movements_found'),
                                   style: TextStyle(
                                       fontSize: 16,
                                       color: AppColors.textMuted),

@@ -55,6 +55,7 @@ class _BarcodeSearchInputState extends ConsumerState<BarcodeSearchInput> {
 
   @override
   Widget build(BuildContext context) {
+    final t = i18nOf(ref);
     final isWide = MediaQuery.sizeOf(context).width >= 600;
     final notifier = ref.read(batchEntryProvider.notifier);
 
@@ -63,7 +64,7 @@ class _BarcodeSearchInputState extends ConsumerState<BarcodeSearchInput> {
       focusNode: _focusNode,
       autofocus: true,
       decoration: InputDecoration(
-        hintText: 'Barkod tarayin veya urun adi/kodu yazin...',
+        hintText: t('batch.barcode_search_hint'),
         prefixIcon: const Icon(Icons.qr_code_scanner, color: AppColors.primary),
         suffixIcon: Row(
           mainAxisSize: MainAxisSize.min,
@@ -80,13 +81,13 @@ class _BarcodeSearchInputState extends ConsumerState<BarcodeSearchInput> {
             else ...[
               IconButton(
                 icon: const Icon(Icons.camera_alt_outlined),
-                tooltip: 'Kamera ile tara',
+                tooltip: t('batch.scan_with_camera'),
                 onPressed: _openScanner,
               ),
               if (_controller.text.isNotEmpty)
                 IconButton(
                   icon: const Icon(Icons.clear),
-                  tooltip: 'Temizle',
+                  tooltip: t('batch.clear'),
                   onPressed: () {
                     _controller.clear();
                     _focusNode.requestFocus();
@@ -106,7 +107,7 @@ class _BarcodeSearchInputState extends ConsumerState<BarcodeSearchInput> {
     final manualButton = OutlinedButton.icon(
       onPressed: () => notifier.addManualRow(),
       icon: const Icon(Icons.add),
-      label: const Text('Manuel Ekle'),
+      label: Text(t('batch.add_manual')),
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.primary,
         side: const BorderSide(color: AppColors.primary),

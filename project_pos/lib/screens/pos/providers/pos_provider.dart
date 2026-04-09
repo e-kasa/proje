@@ -134,6 +134,13 @@ class PosState {
   /// Ürünlerin inventories'inden çıkarılan benzersiz mağaza listesi
   final List<String> availableStoreIds;
 
+  /// ─── RECOMMENDATION SYSTEM ───
+  /// Önerilecek ürünler (Hybrid: Frequently Bought Together + Similar Products)
+  final List<Map<String, dynamic>> recommendations;
+
+  /// Önerileri yükleniyor mu?
+  final bool isLoadingRecommendations;
+
   const PosState({
     this.cartItems = const [],
     this.selectedCustomer,
@@ -156,6 +163,8 @@ class PosState {
     this.crossLocationAlert,
     this.activeStoreId,
     this.availableStoreIds = const [],
+    this.recommendations = const [],
+    this.isLoadingRecommendations = false,
   });
 
   int get totalItems => cartItems.fold(0, (s, i) => s + i.quantity);
@@ -232,6 +241,8 @@ class PosState {
     String? activeStoreId,
     bool clearActiveStoreId = false,
     List<String>? availableStoreIds,
+    List<Map<String, dynamic>>? recommendations,
+    bool? isLoadingRecommendations,
   }) {
     return PosState(
       cartItems: cartItems ?? this.cartItems,
@@ -257,6 +268,8 @@ class PosState {
           : (crossLocationAlert ?? this.crossLocationAlert),
       activeStoreId: clearActiveStoreId ? null : (activeStoreId ?? this.activeStoreId),
       availableStoreIds: availableStoreIds ?? this.availableStoreIds,
+      recommendations: recommendations ?? this.recommendations,
+      isLoadingRecommendations: isLoadingRecommendations ?? this.isLoadingRecommendations,
     );
   }
 }
@@ -692,6 +705,43 @@ class PosNotifier extends StateNotifier<PosState> {
       activeStoreId: storeId,
       products: normalizedProducts,
     );
+  }
+
+  // ─── Recommendation System Methods ──────────────────────────────
+  /// Sepetteki ürünlere göre akıllı öneriler yükle
+  /// (Frequently Bought Together + Similar Products)
+  Future<void> loadRecommendations() async {
+    if (state.cartItems.isEmpty) {
+      state = state.copyWith(recommendations: [], isLoadingRecommendations: false);
+      return;
+    }
+
+    state = state.copyWith(isLoadingRecommendations: true);
+    try {
+      final variantIds = state.cartItems
+          .map((item) => item.variantId)
+          .toList();
+
+      // Sepette olan ürünleri exclude list'e ekle (önerilerde gösterilmesin)
+      final excludeIds = state.cartItems
+          .map((item) => item.productId)
+          .toList();
+
+      final recommendations = await _ref.read(recommendationServiceProvider)
+          .getHybridRecommendations(
+            productIds: variantIds,
+            limit: 6,
+            excludeIds: excludeIds,
+          );
+
+      state = state.copyWith(
+        recommendations: recommendations,
+        isLoadingRecommendations: false,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoadingRecommendations: false);
+      // Önerileri yükleyemediyse hata gösterme, sessiz başarısızlık
+    }
   }
 
   // ─── Parked Orders Methods ─────────────────────────────────────

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'wizard_common_widgets.dart';
 
 /// Multi-select chip widget with dropdown for adding new selections.
 /// Supports sector-aware theming via optional [accentColor].
-class MultiSelectChips extends StatelessWidget {
+class MultiSelectChips extends ConsumerWidget {
   final List<String> selectedValues;
   final List<Map<String, dynamic>> allOptions;
   final String hintText;
@@ -27,7 +28,8 @@ class MultiSelectChips extends StatelessWidget {
       allOptions.isNotEmpty && selectedValues.length >= allOptions.length;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
     final unselected =
         allOptions.where((o) => !selectedValues.contains(o['value'])).toList();
 
@@ -65,7 +67,7 @@ class MultiSelectChips extends StatelessWidget {
 
           // -- All-selected success badge --
           if (_allSelected)
-            _buildAllSelectedBadge()
+            _buildAllSelectedBadge(t)
           // -- Dropdown for remaining options --
           else if (unselected.isNotEmpty)
             DropdownButtonFormField<String>(
@@ -87,7 +89,7 @@ class MultiSelectChips extends StatelessWidget {
             )
           // -- Empty state with dashed border --
           else if (selectedValues.isEmpty)
-            _buildEmptyState(),
+            _buildEmptyState(t),
         ],
       ),
     );
@@ -163,7 +165,7 @@ class MultiSelectChips extends StatelessWidget {
   }
 
   /// Badge shown when every option has been selected.
-  Widget _buildAllSelectedBadge() {
+  Widget _buildAllSelectedBadge(String Function(String) t) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -198,7 +200,7 @@ class MultiSelectChips extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            'Tum secenekler secildi (${selectedValues.length})',
+            '${t('common.all_options_selected')} (${selectedValues.length})',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -212,7 +214,7 @@ class MultiSelectChips extends StatelessWidget {
   }
 
   /// Empty state with dashed border and centered content.
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(String Function(String) t) {
     return CustomPaint(
       painter: _DashedBorderPainter(
         color: AppColors.border,
@@ -243,7 +245,7 @@ class MultiSelectChips extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Henuz secenek yuklenmedi',
+              t('common.no_options_loaded'),
               style: TextStyle(
                 color: AppColors.textMuted,
                 fontSize: 13,

@@ -14,6 +14,7 @@ class UnitsScreen extends ConsumerStatefulWidget {
 }
 
 class _UnitsScreenState extends ConsumerState<UnitsScreen> {
+  String Function(String) get t => i18nOf(ref);
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _units = [];
   List<Map<String, dynamic>> _filteredUnits = [];
@@ -74,7 +75,6 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
   }
 
   void _showAddUnitDialog() {
-    final t = i18nOf(ref);
     final nameController = TextEditingController();
     final codeController = TextEditingController();
     String selectedType = 'Sayılabilir';
@@ -83,10 +83,10 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.straighten, color: AppColors.primary),
-              SizedBox(width: 12),
+              const Icon(Icons.straighten, color: AppColors.primary),
+              const SizedBox(width: 12),
               Text(t('inventory.new_unit')),
             ],
           ),
@@ -164,7 +164,6 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
   }
 
   void _showEditUnitDialog(Map<String, dynamic> unit) {
-    final t = i18nOf(ref);
     final nameController = TextEditingController(text: unit['name']);
     final codeController = TextEditingController(text: unit['code']);
     String selectedType = unit['type'];
@@ -173,10 +172,10 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.edit, color: AppColors.info),
-              SizedBox(width: 12),
+              const Icon(Icons.edit, color: AppColors.info),
+              const SizedBox(width: 12),
               Text(t('inventory.edit_unit')),
             ],
           ),
@@ -252,14 +251,13 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
   }
 
   void _showDeleteDialog(Map<String, dynamic> unit) {
-    final t = i18nOf(ref);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.warning, color: AppColors.danger),
-            SizedBox(width: 12),
+            const Icon(Icons.warning, color: AppColors.danger),
+            const SizedBox(width: 12),
             Text(t('inventory.delete_unit')),
           ],
         ),
@@ -321,7 +319,6 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final t = i18nOf(ref);
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(

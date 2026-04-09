@@ -23,7 +23,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
   StockCountResponse? _response;
   bool _isLoading = true;
   String? _error;
-  String _filterType = 'TÜMÜ';
+  String _filterType = 'all';
 
   @override
   void initState() {
@@ -51,7 +51,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
       });
     } catch (e) {
       setState(() {
-        _error = 'Veri yuklenemedi';
+        _error = 'data_load_failed';
         _isLoading = false;
       });
     }
@@ -63,13 +63,13 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
 
   List<CountedProduct> get _filteredProducts {
     switch (_filterType) {
-      case 'FARK OLAN':
+      case 'has_diff':
         return _response!.products.where((p) => p.hasDifference).toList();
-      case 'FAZLA':
+      case 'overage':
         return _response!.products.where((p) => p.isOverage).toList();
-      case 'EKSİK':
+      case 'shortage':
         return _response!.products.where((p) => p.isShortage).toList();
-      case 'FARK YOK':
+      case 'no_diff':
         return _response!.products.where((p) => !p.hasDifference).toList();
       default:
         return _response!.products;
@@ -78,6 +78,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
 
   @override
   Widget build(BuildContext context) {
+    final t = i18nOf(ref);
     if (_isLoading) {
       return Scaffold(
         backgroundColor: Colors.grey[100],
@@ -87,7 +88,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
     if (_error != null || _response == null) {
       return Scaffold(
         backgroundColor: Colors.grey[100],
-        body: Center(child: Text(_error ?? 'Veri yuklenemedi')),
+        body: Center(child: Text(t('stock.data_load_failed'))),
       );
     }
     return Scaffold(
@@ -97,7 +98,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: 'Stok Sayim Inceleme',
+        title: t('stock.count_review'),
         actions: [
           Center(
             child: Padding(
@@ -144,6 +145,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
   }
 
   Widget _buildCountInfo() {
+    final t = i18nOf(ref);
     return Container(
       padding: const EdgeInsets.all(16),
       color: Colors.white,
@@ -156,7 +158,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Sayım ID: ${_response!.countId}',
+                  '${t('stock.count_id')}: ${_response!.countId}',
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -164,7 +166,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Sayan: ${_response!.countedBy}',
+                  '${t('stock.counted_by')}: ${_response!.countedBy}',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[600],
@@ -179,7 +181,14 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
   }
 
   Widget _buildFilterButtons() {
-    final filters = ['TÜMÜ', 'FARK OLAN', 'FAZLA', 'EKSİK', 'FARK YOK'];
+    final t = i18nOf(ref);
+    final filters = {
+      'all': t('common.all'),
+      'has_diff': t('stock.has_difference'),
+      'overage': t('stock.overage'),
+      'shortage': t('stock.shortage'),
+      'no_diff': t('stock.no_difference'),
+    };
 
     return Container(
       color: Colors.white,
@@ -187,13 +196,13 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-          children: filters.map((filter) {
-            final isSelected = _filterType == filter;
+          children: filters.entries.map((entry) {
+            final isSelected = _filterType == entry.key;
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: ChoiceChip(
                 label: Text(
-                  filter,
+                  entry.value,
                   style: TextStyle(
                     fontSize: 12,
                     color: isSelected ? Colors.white : Colors.black87,
@@ -204,7 +213,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                 selected: isSelected,
                 onSelected: (selected) {
                   setState(() {
-                    _filterType = filter;
+                    _filterType = entry.key;
                   });
                 },
                 selectedColor: Colors.blue[700],
@@ -220,6 +229,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
   }
 
   Widget _buildProgressBar() {
+    final t = i18nOf(ref);
     final progress = _decidedCount / _response!.productCount;
 
     return Container(
@@ -233,7 +243,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'İnceleme İlerlemesi',
+                t('stock.review_progress'),
                 style: TextStyle(
                   fontSize: 13,
                   color: Colors.grey[700],
@@ -266,29 +276,30 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
   }
 
   Widget _buildProductCard(CountedProduct product, int index) {
+    final t = i18nOf(ref);
     final hasDecision = product.hasDecision;
 
     Color borderColor = Colors.grey[300]!;
     Color headerColor = Colors.grey[50]!;
-    String statusLabel = 'FARK YOK';
+    String statusLabel = t('stock.no_difference');
 
     if (hasDecision) {
       borderColor = Colors.green[400]!;
       headerColor = Colors.green[50]!;
-      statusLabel = 'KARAR VERİLDİ';
+      statusLabel = t('stock.decided');
     } else if (product.hasDifference) {
       if (product.differenceLevel == DifferenceLevel.HIGH) {
         borderColor = Colors.red[400]!;
         headerColor = Colors.red[50]!;
-        statusLabel = 'YÜKSEK FARK';
+        statusLabel = t('stock.high_difference');
       } else if (product.differenceLevel == DifferenceLevel.MEDIUM) {
         borderColor = Colors.orange[400]!;
         headerColor = Colors.orange[50]!;
-        statusLabel = 'ORTA FARK';
+        statusLabel = t('stock.medium_difference');
       } else {
         borderColor = Colors.yellow[700]!;
         headerColor = Colors.yellow[50]!;
-        statusLabel = 'DÜŞÜK FARK';
+        statusLabel = t('stock.low_difference');
       }
     }
 
@@ -385,14 +396,14 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                             ),
                           ),
                           Text(
-                            'Barkod: ${product.barcode ?? '-'}',
+                            '${t('stock.barcode')}: ${product.barcode ?? '-'}',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey[600],
                             ),
                           ),
                           Text(
-                            'Lokasyon: ${product.locationName}',
+                            '${t('stock.location')}: ${product.locationName}',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey[600],
@@ -410,7 +421,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                   children: [
                     Expanded(
                       child: _buildStockBox(
-                        'Sistem Stoğu',
+                        t('stock.system_stock'),
                         product.systemStock,
                         Icons.computer,
                         Colors.blue,
@@ -427,7 +438,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                     ),
                     Expanded(
                       child: _buildStockBox(
-                        'Sayılan Stok',
+                        t('stock.counted_stock'),
                         product.countedStock,
                         Icons.fact_check,
                         Colors.green,
@@ -473,7 +484,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Fark: ${product.difference >= 0 ? '+' : ''}${product.difference} Adet',
+                        '${t('stock.difference')}: ${product.difference >= 0 ? '+' : ''}${product.difference} ${t('stock.unit_piece')}',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -502,6 +513,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
   }
 
   Widget _buildStockBox(String label, int value, IconData icon, Color color) {
+    final t = i18nOf(ref);
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -528,7 +540,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
           ),
           const SizedBox(height: 6),
           Text(
-            '$value Adet',
+            '$value ${t('stock.unit_piece')}',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -541,6 +553,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
   }
 
   Widget _buildDecisionArea(CountedProduct product) {
+    final t = i18nOf(ref);
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -552,14 +565,13 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
       child: Column(
         children: [
           if (product.hasDifference)
-            // Fark varsa seçenekler
             Column(
               children: [
                 Row(
                   children: [
                     Expanded(
                       child: _buildDecisionButton(
-                        'Sayımı Kabul Et',
+                        t('stock.accept_count'),
                         Icons.check_circle,
                         Colors.green,
                         () => _makeDecision(product, CountAction.ACCEPT_COUNT),
@@ -572,7 +584,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                   children: [
                     Expanded(
                       child: _buildDecisionButton(
-                        'Tekrar Say',
+                        t('stock.recount'),
                         Icons.replay,
                         Colors.orange,
                         () => _makeDecision(product, CountAction.RECOUNT),
@@ -581,7 +593,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                     const SizedBox(width: 8),
                     Expanded(
                       child: _buildDecisionButton(
-                        'Yok Say',
+                        t('stock.ignore'),
                         Icons.close,
                         Colors.grey,
                         () => _makeDecision(product, CountAction.IGNORE),
@@ -592,9 +604,8 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
               ],
             )
           else
-            // Fark yoksa tek buton
             _buildDecisionButton(
-              'Onayla',
+              t('stock.approve'),
               Icons.check,
               Colors.green,
               () => _makeDecision(product, CountAction.ACCEPT_COUNT),
@@ -619,6 +630,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
   }
 
   Widget _buildDecisionSummary(CountedProduct product) {
+    final t = i18nOf(ref);
     final decision = product.userDecision!;
     String actionText = '';
     IconData actionIcon = Icons.check;
@@ -626,22 +638,22 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
 
     switch (decision.action) {
       case CountAction.ACCEPT_COUNT:
-        actionText = 'Sayım kabul edildi, sistem güncellenecek';
+        actionText = t('stock.count_accepted');
         actionIcon = Icons.check_circle;
         actionColor = Colors.green;
         break;
       case CountAction.RECOUNT:
-        actionText = 'Tekrar sayım yapılacak';
+        actionText = t('stock.recount_scheduled');
         actionIcon = Icons.replay;
         actionColor = Colors.orange;
         break;
       case CountAction.MANUAL_ADJUST:
-        actionText = 'Manuel düzeltme yapılacak';
+        actionText = t('stock.manual_adjust_scheduled');
         actionIcon = Icons.edit;
         actionColor = Colors.blue;
         break;
       case CountAction.IGNORE:
-        actionText = 'Fark yok sayıldı';
+        actionText = t('stock.difference_ignored');
         actionIcon = Icons.close;
         actionColor = Colors.grey;
         break;
@@ -675,7 +687,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                 product.userDecision = null;
               });
             },
-            child: const Text('Değiştir'),
+            child: Text(t('stock.change')),
           ),
         ],
       ),
@@ -689,6 +701,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
   }
 
   Widget _buildSaveButton() {
+    final t = i18nOf(ref);
     final allDecided = _decidedCount == _response!.productCount;
 
     return Container(
@@ -707,7 +720,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
         children: [
           Expanded(
             child: Text(
-              'Kararlar: $_decidedCount/${_response!.productCount}',
+              '${t('stock.decisions')}: $_decidedCount/${_response!.productCount}',
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -718,7 +731,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
           ElevatedButton.icon(
             onPressed: allDecided ? () {} : null,
             icon: const Icon(Icons.check),
-            label: const Text('Kaydet'),
+            label: Text(t('common.save')),
           ),
         ],
       ),

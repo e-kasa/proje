@@ -72,6 +72,7 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
 
   @override
   Widget build(BuildContext context) {
+    final t = i18nOf(ref);
     final state = ref.watch(batchEntryProvider);
     final isCollapsed = state.headerCollapsed;
     final dateFmt = DateFormat('dd.MM.yyyy');
@@ -121,10 +122,10 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: isCollapsed
-                        ? _buildCollapsedSummary(state, dateFmt)
-                        : const Text(
-                            'Fatura & Teslimat Bilgileri',
-                            style: TextStyle(
+                        ? _buildCollapsedSummary(state, dateFmt, t)
+                        : Text(
+                            t('batch.invoice_delivery_info'),
+                            style: const TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 14,
                               color: AppColors.textPrimary,
@@ -142,14 +143,14 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
                         color: AppColors.success.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.check_circle_outline,
+                          const Icon(Icons.check_circle_outline,
                               size: 12, color: AppColors.success),
-                          SizedBox(width: 4),
-                          Text('Hazır',
-                              style: TextStyle(
+                          const SizedBox(width: 4),
+                          Text(t('batch.ready'),
+                              style: const TextStyle(
                                 fontSize: 11,
                                 color: AppColors.success,
                                 fontWeight: FontWeight.w600,
@@ -165,14 +166,14 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
                         color: AppColors.warning.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.info_outline,
+                          const Icon(Icons.info_outline,
                               size: 12, color: AppColors.warning),
-                          SizedBox(width: 4),
-                          Text('Eksik',
-                              style: TextStyle(
+                          const SizedBox(width: 4),
+                          Text(t('batch.incomplete'),
+                              style: const TextStyle(
                                 fontSize: 11,
                                 color: AppColors.warning,
                                 fontWeight: FontWeight.w600,
@@ -204,7 +205,7 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
                           color: AppColors.primary),
                     ),
                   )
-                : _buildForm(state, dateFmt),
+                : _buildForm(state, dateFmt, t),
             crossFadeState: isCollapsed
                 ? CrossFadeState.showFirst
                 : CrossFadeState.showSecond,
@@ -216,11 +217,11 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
   }
 
   Widget _buildCollapsedSummary(
-      BatchEntryState state, DateFormat dateFmt) {
+      BatchEntryState state, DateFormat dateFmt, Function(String) t) {
     final parts = <String>[];
     if (state.supplierName != null) parts.add(state.supplierName!);
     if (state.invoiceNumber != null)
-      parts.add('Fatura: ${state.invoiceNumber}');
+      parts.add('${t('batch.invoice')}: ${state.invoiceNumber}');
     if (state.warehouseName != null) parts.add(state.warehouseName!);
     parts.add(dateFmt.format(state.purchaseDate));
 
@@ -231,7 +232,7 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
     );
   }
 
-  Widget _buildForm(BatchEntryState state, DateFormat dateFmt) {
+  Widget _buildForm(BatchEntryState state, DateFormat dateFmt, Function(String) t) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       child: Column(
@@ -241,7 +242,7 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
 
           // Supplier
           _DropdownField<String>(
-            label: 'Tedarikçi *',
+            label: '${t('batch.supplier')} *',
             icon: Icons.local_shipping_outlined,
             value: state.supplierId,
             items: _suppliers.map((s) {
@@ -270,7 +271,7 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
             children: [
               Expanded(
                 child: _TextField(
-                  label: 'Fatura No',
+                  label: t('batch.invoice_no'),
                   icon: Icons.receipt_outlined,
                   ctrl: _invoiceCtrl,
                   hint: 'FTR-2025-001',
@@ -282,7 +283,7 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
               const SizedBox(width: 10),
               Expanded(
                 child: _TextField(
-                  label: 'İrsaliye No',
+                  label: t('batch.delivery_note_no'),
                   icon: Icons.description_outlined,
                   ctrl: _deliveryCtrl,
                   hint: 'IRS-2025-001',
@@ -321,8 +322,8 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text('Tarih',
-                                  style: TextStyle(
+                              Text(t('batch.date'),
+                                  style: const TextStyle(
                                       fontSize: 10,
                                       color: AppColors.textMuted,
                                       fontWeight: FontWeight.w500)),
@@ -347,7 +348,7 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
               // Warehouse
               Expanded(
                 child: _DropdownField<String>(
-                  label: 'Depo *',
+                  label: '${t('batch.warehouse')} *',
                   icon: Icons.warehouse_outlined,
                   value: state.warehouseId,
                   items: _warehouses.map((w) {
@@ -374,7 +375,7 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
               // Store
               Expanded(
                 child: _DropdownField<String>(
-                  label: 'Mağaza *',
+                  label: '${t('batch.store')} *',
                   icon: Icons.store_outlined,
                   value: state.storeId,
                   items: _stores.map((s) {

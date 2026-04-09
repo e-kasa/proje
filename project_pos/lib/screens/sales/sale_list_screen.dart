@@ -501,6 +501,20 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
     final itemCount = (s['items'] as List?)?.length ?? s['itemCount'];
     final hasReturn = s['hasReturn'] == true;
 
+    // Satılan ürün/varyant adları
+    final items = s['items'] as List?;
+    final itemNames = items != null
+        ? items
+            .take(3)
+            .map((i) =>
+                (i as Map<String, dynamic>)['variantName']?.toString() ??
+                (i)['productName']?.toString() ??
+                '')
+            .where((n) => n.isNotEmpty)
+            .toList()
+        : <String>[];
+    final moreCount = (items?.length ?? 0) - 3;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 0,
@@ -558,7 +572,11 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          customerName ?? t('sales.retail_sale'),
+                          itemNames.isNotEmpty
+                              ? itemNames.join(', ') + (moreCount > 0 ? ' +$moreCount' : '')
+                              : customerName ?? 'Perakende Satış',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w600,
                             decoration: cancelled
@@ -566,6 +584,16 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                                 : null,
                           ),
                         ),
+                        if (customerName != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            customerName,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 2),
                         Text(
                           '#$saleNo  •  $dateDisplay',

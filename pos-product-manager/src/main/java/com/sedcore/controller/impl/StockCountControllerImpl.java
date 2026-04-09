@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
  * ve fark varsa ADJUSTMENT_IN / ADJUSTMENT_OUT hareketi yazar.
  */
 @RestController
-@RequestMapping("api/v1/stock-counts")
+@RequestMapping("/product/api/v1/stock-counts")
 @RequiredArgsConstructor
 @Slf4j
 public class StockCountControllerImpl {

@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("api/v1/sales")
+@RequestMapping("/product/api/v1/sales")
 @RequiredArgsConstructor
 @Slf4j
 public class SaleControllerImpl {
@@ -221,9 +221,4 @@ public class SaleControllerImpl {
             }
         }
         m.put("items",     items);
-        m.put("itemCount", items.size());
-        // hasReturn: entity flag'i önce, yoksa movement'lardan hesaplanan
-        m.put("hasReturn", Boolean.TRUE.equals(s.getHasReturn()) || hasReturn);
-        return m;
-    }
-}
+        m.

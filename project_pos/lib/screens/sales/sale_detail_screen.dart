@@ -289,7 +289,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
     final t = i18nOf(ref);
     final saleNo =
         _sale['saleNumber']?.toString() ?? _sale['id']?.toString() ?? '-';
-    final customerName = _sale['customerName']?.toString() ??
+    final customerName = _sale['name']?.toString() ??
         _sale['customer']?.toString();
     final dateStr = _sale['createdAt']?.toString() ??
         _sale['saleDate']?.toString() ??

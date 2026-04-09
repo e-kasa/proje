@@ -1,5 +1,6 @@
 package com.sedcore.controller.impl;
 
+import com.sedcore.context.CompanyContext;
 import com.sedcore.entity.ProductVariant;
 import com.sedcore.entity.StockMovement;
 import com.sedcore.enums.StockMovementType;
@@ -41,11 +42,12 @@ public class StockMovementControllerImpl {
             @RequestParam(required = false) String movementType
     ) {
         try {
+            final String companyCode = CompanyContext.get();
             List<StockMovement> movements;
             if (variantId != null && storeId != null) {
-                movements = stockMovementRepository.findByVariantIdAndStoreId(variantId, storeId);
+                movements = stockMovementRepository.findByVariantIdAndStoreId(variantId, storeId, companyCode);
             } else if (variantId != null) {
-                movements = stockMovementRepository.findByVariantId(variantId);
+                movements = stockMovementRepository.findByVariantId(variantId, companyCode);
             } else {
                 movements = (List<StockMovement>)stockMovementService.findAll();
             }

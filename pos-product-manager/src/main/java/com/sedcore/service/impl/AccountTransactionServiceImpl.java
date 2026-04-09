@@ -7,6 +7,9 @@ import com.sedcore.repository.AccountTransactionRepository;
 import com.sedcore.service.AccountTransactionService;
 import com.towpen.base.security.BaseDbServiceImp;
 import lombok.extern.slf4j.Slf4j;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 import org.springframework.beans.PropertyValues;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -134,7 +137,7 @@ public class AccountTransactionServiceImpl
                 .orElseThrow(() -> new RuntimeException("Cari hareket bulunamadi: " + id));
 
         if (Boolean.TRUE.equals(tx.getIsCancelled())) {
-            throw new RuntimeException("Bu hareket zaten iptal edilmis: " + id);
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
 
         tx.setIsCancelled(true);

@@ -14,6 +14,9 @@ import com.sedcore.service.CategoryService;
 import com.sedcore.service.CategoryVariantService;
 import com.towpen.base.security.BaseDbServiceImp;
 import lombok.extern.slf4j.Slf4j;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,7 +57,7 @@ public class CategoryServiceImpl extends BaseDbServiceImp<CategoryRepository, Ca
 
         // Slug benzersizliğini kontrol et
         if (dao.existsBySlug(slug)) {
-            throw new RuntimeException("Bu slug zaten kullanılıyor: " + slug);
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
 
         // Level ve path hesapla
@@ -129,7 +132,7 @@ public class CategoryServiceImpl extends BaseDbServiceImp<CategoryRepository, Ca
         // Slug güncelleme kontrolü
         if (StringUtils.hasText(dtoCategoryUI.getSlug()) && !dtoCategoryUI.getSlug().equals(category.getSlug())) {
             if (dao.existsBySlugAndIdNot(dtoCategoryUI.getSlug(), id)) {
-                throw new RuntimeException("Bu slug zaten kullanılıyor: " + dtoCategoryUI.getSlug());
+                throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
             }
             category.setSlug(dtoCategoryUI.getSlug());
         }
@@ -189,7 +192,7 @@ public class CategoryServiceImpl extends BaseDbServiceImp<CategoryRepository, Ca
         );
 
         if (!children.isEmpty()) {
-            throw new RuntimeException("Alt kategorileri olan bir kategori silinemez. Önce alt kategorileri silin.");
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
 
         // Soft delete
@@ -399,7 +402,7 @@ public class CategoryServiceImpl extends BaseDbServiceImp<CategoryRepository, Ca
     @Override
     public String generateSlug(String name) {
         if (!StringUtils.hasText(name)) {
-            throw new RuntimeException("Kategori adı boş olamaz");
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
 
         // Türkçe karakterleri dönüştür
@@ -477,7 +480,7 @@ public class CategoryServiceImpl extends BaseDbServiceImp<CategoryRepository, Ca
 
             // Döngüsel referans kontrolü
             if (isDescendant(newParent, category.getId())) {
-                throw new RuntimeException("Bir kategori kendi alt kategorisi yapılamaz");
+                throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
             }
 
             newLevel = newParent.getLevel() + 1;

@@ -176,7 +176,7 @@ public class SaleServiceIntegrated
         Sale sale = findById(saleId)
                 .orElseThrow(() -> new RuntimeException("Satis bulunamadi: " + saleId));
         if (Boolean.TRUE.equals(sale.getIsCancelled())) {
-            throw new RuntimeException("Bu satis zaten iptal edilmis: " + sale.getSaleNumber());
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
 
         // 2. Her SALE_OUT için SALE_CANCEL_IN oluştur (stok geri al)
@@ -280,7 +280,7 @@ public class SaleServiceIntegrated
         Sale sale = findById(saleId)
                 .orElseThrow(() -> new RuntimeException("Satis bulunamadi: " + saleId));
         if (Boolean.TRUE.equals(sale.getIsCancelled())) {
-            throw new RuntimeException("Iptal edilmis satis iade edilemez: " + saleId);
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
 
         // Orijinal tüm hareketleri tek seferde çek
@@ -496,7 +496,7 @@ public class SaleServiceIntegrated
         } else {
             List<InventoryView> inventories = inventoryRepository.findByVariantId(variantId);
             if (inventories.isEmpty()) {
-                throw new RuntimeException("Stok bulunamadi - Variant: " + variantId);
+                throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
             }
             available = inventories.stream()
                     .mapToInt(inv -> inv.getPhysicalQuantity() != null

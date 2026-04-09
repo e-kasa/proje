@@ -5,6 +5,9 @@ import com.sedcore.repository.ProductCategoryRepository;
 import com.sedcore.service.ProductCategoryService;
 import com.towpen.base.security.BaseDbServiceImp;
 import lombok.extern.slf4j.Slf4j;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +29,7 @@ public class ProductCategoryServiceImpl extends BaseDbServiceImp<ProductCategory
         // Zaten varsa hata ver
         if (dao.existsByProductIdAndCategoryId(
                 productId, categoryId)) {
-            throw new RuntimeException("Bu ürün zaten bu kategoride mevcut");
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
 
         // Eğer primary ise, diğer primary'leri kaldır
@@ -66,7 +69,7 @@ public class ProductCategoryServiceImpl extends BaseDbServiceImp<ProductCategory
                                     productId, categoryId);
                         },
                         () -> {
-                            throw new RuntimeException("Ürün-kategori ilişkisi bulunamadı");
+                            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
                         }
                 );
     }
@@ -91,7 +94,7 @@ public class ProductCategoryServiceImpl extends BaseDbServiceImp<ProductCategory
                                     productId, newPrimaryCategoryId);
                         },
                         () -> {
-                            throw new RuntimeException("Ürün bu kategoride değil");
+                            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
                         }
                 );
     }
@@ -134,7 +137,7 @@ public class ProductCategoryServiceImpl extends BaseDbServiceImp<ProductCategory
                                     productId, categoryId, featured);
                         },
                         () -> {
-                            throw new RuntimeException("Ürün-kategori ilişkisi bulunamadı");
+                            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
                         }
                 );
     }
@@ -155,7 +158,7 @@ public class ProductCategoryServiceImpl extends BaseDbServiceImp<ProductCategory
                                     productId, categoryId, displayOrder);
                         },
                         () -> {
-                            throw new RuntimeException("Ürün-kategori ilişkisi bulunamadı");
+                            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
                         }
                 );
     }
@@ -176,7 +179,7 @@ public class ProductCategoryServiceImpl extends BaseDbServiceImp<ProductCategory
                                     productId, categoryId, isActive);
                         },
                         () -> {
-                            throw new RuntimeException("Ürün-kategori ilişkisi bulunamadı");
+                            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
                         }
                 );
     }

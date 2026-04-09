@@ -10,6 +10,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 
 import java.util.HashMap;
 import java.util.List;
@@ -44,7 +47,7 @@ public class StockTransferControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Transfer listesi hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Transfer listesi alinamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -56,7 +59,7 @@ public class StockTransferControllerImpl {
                     .orElseThrow(() -> new RuntimeException("Transfer bulunamadi: " + id));
             return ResponseEntity.ok(ApiResponse.success(toMap(transfer)));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -71,7 +74,7 @@ public class StockTransferControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(toMap(transfer)));
         } catch (Exception e) {
             log.error("Transfer hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Transfer yapilamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 

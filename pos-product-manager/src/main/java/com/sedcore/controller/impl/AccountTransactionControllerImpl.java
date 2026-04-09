@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 
 import java.util.List;
 import java.util.Map;
@@ -38,7 +41,7 @@ public class AccountTransactionControllerImpl implements AccountTransactionContr
             return ResponseEntity.ok(ApiResponse.success(accountTransactionService.getTransaction(id)));
         } catch (Exception e) {
             log.error("Cari hareket getirme hatasi: id={}, {}", id, e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -77,7 +80,7 @@ public class AccountTransactionControllerImpl implements AccountTransactionContr
                     ApiResponse.error("supplierId, customerId veya purchaseId parametresi gerekli"));
         } catch (Exception e) {
             log.error("Cari hareket listesi hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 

@@ -15,6 +15,9 @@ import com.towpen.base.security.ISessionInstanceService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -111,7 +114,7 @@ public class CompanyCategoryServiceImpl extends BaseDbServiceImp<CompanyCategory
         // Zaten var mı kontrol et
         dao.findByCompanyCodeAndCategoryId(companyCode, request.getCategoryId())
                 .ifPresent(existing -> {
-                    throw new RuntimeException("Bu kategori zaten tanımlı: " + request.getCategoryId());
+                    throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
                 });
 
         // Kategori global havuzda var mı?

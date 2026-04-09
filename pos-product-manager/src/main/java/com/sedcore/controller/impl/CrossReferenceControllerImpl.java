@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 
 import java.util.List;
 
@@ -27,7 +30,7 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
             return ResponseEntity.ok(ApiResponse.success("Capraz referanslar getirildi", crossReferenceService.getByVariantId(variantId)));
         } catch (Exception e) {
             log.error("Capraz referanslar getirilirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Capraz referanslar getirilemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -39,7 +42,7 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
             return ResponseEntity.ok(ApiResponse.success("Capraz referans eklendi", response));
         } catch (Exception e) {
             log.error("Capraz referans eklenirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Capraz referans eklenemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -52,7 +55,7 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
             return ResponseEntity.ok(ApiResponse.success("Capraz referanslar toplu eklendi", responses));
         } catch (Exception e) {
             log.error("Capraz referanslar toplu eklenirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Toplu ekleme basarisiz: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -64,7 +67,7 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
             return ResponseEntity.ok(ApiResponse.success("Capraz referans silindi", null));
         } catch (Exception e) {
             log.error("Capraz referans silinirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Capraz referans silinemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -75,7 +78,7 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
             return ResponseEntity.ok(ApiResponse.success("Arama sonuclari", crossReferenceService.searchByCrossRefNumber(q)));
         } catch (Exception e) {
             log.error("Capraz referans aranirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Arama yapilamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 }

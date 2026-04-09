@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 
 import java.util.List;
 
@@ -28,7 +31,7 @@ public class BrandControllerImpl implements BrandController {
             return ResponseEntity.ok(ApiResponse.success("Markalar getirildi", brandService.getActiveBrands()));
         } catch (Exception e) {
             log.error("Markalar getirilirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Markalar getirilemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -40,7 +43,7 @@ public class BrandControllerImpl implements BrandController {
             return ResponseEntity.ok(ApiResponse.success("Tüm markalar getirildi", brandService.getAllBrands()));
         } catch (Exception e) {
             log.error("Tüm markalar getirilirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Markalar getirilemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -53,7 +56,7 @@ public class BrandControllerImpl implements BrandController {
             return ResponseEntity.ok(ApiResponse.success("Marka oluşturuldu", response));
         } catch (Exception e) {
             log.error("Marka oluşturulurken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Marka oluşturulamadı: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -66,7 +69,7 @@ public class BrandControllerImpl implements BrandController {
             return ResponseEntity.ok(ApiResponse.success("Marka güncellendi", response));
         } catch (Exception e) {
             log.error("Marka güncellenirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Marka güncellenemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -79,7 +82,7 @@ public class BrandControllerImpl implements BrandController {
             return ResponseEntity.ok(ApiResponse.success("Marka silindi", null));
         } catch (Exception e) {
             log.error("Marka silinirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Marka silinemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -92,7 +95,7 @@ public class BrandControllerImpl implements BrandController {
             return ResponseEntity.ok(ApiResponse.success("Marka durumu değiştirildi", response));
         } catch (Exception e) {
             log.error("Marka durumu değiştirilirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Durum değiştirilemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 }

@@ -14,6 +14,9 @@ import com.sedcore.service.*;
 import com.sedcore.service.StockMovementService;
 import com.towpen.base.security.BaseDbServiceImp;
 import lombok.extern.slf4j.Slf4j;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -144,7 +147,7 @@ public class PurchaseServiceImpl
                 .orElseThrow(() -> new RuntimeException("Satin alma bulunamadi: " + id));
 
         if (Boolean.TRUE.equals(purchase.getIsCancelled())) {
-            throw new RuntimeException("Satin alma zaten iptal edilmis: " + id);
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
 
         // 2. PURCHASE_RETURN_OUT hareketleri (mevcut PURCHASE_IN satırları için)
@@ -223,7 +226,7 @@ public class PurchaseServiceImpl
                 .orElseThrow(() -> new RuntimeException("Satin alma bulunamadi: " + id));
 
         if (Boolean.TRUE.equals(purchase.getIsCancelled())) {
-            throw new RuntimeException("Iptal edilmis satin alma guncellenemez: " + id);
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
 
         // Belge bilgilerini güncelle
@@ -264,7 +267,7 @@ public class PurchaseServiceImpl
                 .orElseThrow(() -> new RuntimeException("Satin alma bulunamadi: " + purchaseId));
 
         if (Boolean.TRUE.equals(purchase.getIsCancelled())) {
-            throw new RuntimeException("Iptal edilmis satin alma iade edilemez: " + purchaseId);
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
 
         Supplier supplier = supplierService.findById(purchase.getSupplier().getId())

@@ -7,6 +7,9 @@ import com.sedcore.repository.CategoryAttributeRepository;
 import com.sedcore.service.CategoryAttributeService;
 import com.towpen.base.security.BaseDbServiceImp;
 import lombok.extern.slf4j.Slf4j;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -30,7 +33,7 @@ public class CategoryAttributeServiceImpl extends BaseDbServiceImp<CategoryAttri
         // Aynı key varsa hata ver
         if (dao.existsByCategoryIdAndAttributeKey(
                 categoryId, attributeKey)) {
-            throw new RuntimeException("Bu özellik anahtarı zaten kullanılıyor: " + attributeKey);
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
 
         CategoryAttribute attribute = CategoryAttribute.builder()

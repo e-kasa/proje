@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 
 import java.util.List;
 
@@ -28,7 +31,7 @@ public class UnitControllerImpl implements UnitController {
             return ResponseEntity.ok(ApiResponse.success("Birimler getirildi", unitService.getActiveUnits()));
         } catch (Exception e) {
             log.error("Birimler getirilirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Birimler getirilemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -40,7 +43,7 @@ public class UnitControllerImpl implements UnitController {
             return ResponseEntity.ok(ApiResponse.success("Tüm birimler getirildi", unitService.getAllUnits()));
         } catch (Exception e) {
             log.error("Tüm birimler getirilirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Birimler getirilemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -53,7 +56,7 @@ public class UnitControllerImpl implements UnitController {
             return ResponseEntity.ok(ApiResponse.success("Birim oluşturuldu", response));
         } catch (Exception e) {
             log.error("Birim oluşturulurken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Birim oluşturulamadı: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -66,7 +69,7 @@ public class UnitControllerImpl implements UnitController {
             return ResponseEntity.ok(ApiResponse.success("Birim güncellendi", response));
         } catch (Exception e) {
             log.error("Birim güncellenirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Birim güncellenemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -79,7 +82,7 @@ public class UnitControllerImpl implements UnitController {
             return ResponseEntity.ok(ApiResponse.success("Birim silindi", null));
         } catch (Exception e) {
             log.error("Birim silinirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Birim silinemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -92,7 +95,7 @@ public class UnitControllerImpl implements UnitController {
             return ResponseEntity.ok(ApiResponse.success("Birim durumu değiştirildi", response));
         } catch (Exception e) {
             log.error("Birim durumu değiştirilirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Durum değiştirilemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 }

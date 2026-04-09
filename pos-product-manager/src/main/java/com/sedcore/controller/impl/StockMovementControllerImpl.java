@@ -123,10 +123,10 @@ public class StockMovementControllerImpl {
                 variant.getSku(), movement.getMovementType(), movement.getQuantity());
             return ResponseEntity.ok(ApiResponse.success(toMap(movement)));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Geçersiz hareket tipi: " + dto.getMovementType()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         } catch (Exception e) {
             log.error("Stok hareketi oluşturma hatası: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Hareket oluşturulamadı: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -143,7 +143,7 @@ public class StockMovementControllerImpl {
                 .filter(m -> m.getMovementType().name().endsWith("_OUT")).count());
             return ResponseEntity.ok(ApiResponse.success(s));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 

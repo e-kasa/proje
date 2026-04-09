@@ -11,6 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,7 +37,7 @@ public class SalesReportControllerImpl {
                     salesReportService.getSalesSummary(startDate, endDate, groupBy)));
         } catch (Exception e) {
             log.error("Satis ozeti hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Satis ozeti alinamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -49,7 +52,7 @@ public class SalesReportControllerImpl {
                     salesReportService.getProductSalesAnalysis(startDate, endDate, limit)));
         } catch (Exception e) {
             log.error("Urun satis analizi hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Urun satis analizi alinamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -64,7 +67,7 @@ public class SalesReportControllerImpl {
                     salesReportService.getCustomerSalesAnalysis(startDate, endDate, limit)));
         } catch (Exception e) {
             log.error("Musteri satis analizi hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Musteri satis analizi alinamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -78,7 +81,7 @@ public class SalesReportControllerImpl {
                     salesReportService.getProfitOverview(startDate, endDate)));
         } catch (Exception e) {
             log.error("Kar/zarar ozeti hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Kar/zarar ozeti alinamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 }

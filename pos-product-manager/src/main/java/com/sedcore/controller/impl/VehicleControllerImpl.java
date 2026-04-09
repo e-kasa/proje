@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 
 import java.util.List;
 
@@ -27,7 +30,7 @@ public class VehicleControllerImpl implements VehicleController {
             return ResponseEntity.ok(ApiResponse.success("Araclar getirildi", vehicleService.getActiveVehicles()));
         } catch (Exception e) {
             log.error("Araclar getirilirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Araclar getirilemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -38,7 +41,7 @@ public class VehicleControllerImpl implements VehicleController {
             return ResponseEntity.ok(ApiResponse.success("Tum araclar getirildi", vehicleService.getAllVehicles()));
         } catch (Exception e) {
             log.error("Tum araclar getirilirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Araclar getirilemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -50,7 +53,7 @@ public class VehicleControllerImpl implements VehicleController {
             return ResponseEntity.ok(ApiResponse.success("Arac olusturuldu", response));
         } catch (Exception e) {
             log.error("Arac olusturulurken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Arac olusturulamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -62,7 +65,7 @@ public class VehicleControllerImpl implements VehicleController {
             return ResponseEntity.ok(ApiResponse.success("Arac guncellendi", response));
         } catch (Exception e) {
             log.error("Arac guncellenirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Arac guncellenemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -74,7 +77,7 @@ public class VehicleControllerImpl implements VehicleController {
             return ResponseEntity.ok(ApiResponse.success("Arac silindi", null));
         } catch (Exception e) {
             log.error("Arac silinirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Arac silinemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -85,7 +88,7 @@ public class VehicleControllerImpl implements VehicleController {
             return ResponseEntity.ok(ApiResponse.success("Markalar getirildi", vehicleService.getDistinctMakes()));
         } catch (Exception e) {
             log.error("Markalar getirilirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Markalar getirilemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -96,7 +99,7 @@ public class VehicleControllerImpl implements VehicleController {
             return ResponseEntity.ok(ApiResponse.success("Modeller getirildi", vehicleService.getModelsByMake(make)));
         } catch (Exception e) {
             log.error("Modeller getirilirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Modeller getirilemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -110,7 +113,7 @@ public class VehicleControllerImpl implements VehicleController {
             return ResponseEntity.ok(ApiResponse.success("Arama sonuclari", vehicleService.searchVehicles(make, model, year)));
         } catch (Exception e) {
             log.error("Arac aranirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Arama yapilamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 }

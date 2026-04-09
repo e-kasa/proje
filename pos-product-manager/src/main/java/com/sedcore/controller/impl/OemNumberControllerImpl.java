@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 
 import java.util.List;
 
@@ -27,7 +30,7 @@ public class OemNumberControllerImpl implements OemNumberController {
             return ResponseEntity.ok(ApiResponse.success("OEM numaralari getirildi", oemNumberService.getByVariantId(variantId)));
         } catch (Exception e) {
             log.error("OEM numaralari getirilirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("OEM numaralari getirilemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -39,7 +42,7 @@ public class OemNumberControllerImpl implements OemNumberController {
             return ResponseEntity.ok(ApiResponse.success("OEM numarasi eklendi", response));
         } catch (Exception e) {
             log.error("OEM numarasi eklenirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("OEM numarasi eklenemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -52,7 +55,7 @@ public class OemNumberControllerImpl implements OemNumberController {
             return ResponseEntity.ok(ApiResponse.success("OEM numaralari toplu eklendi", responses));
         } catch (Exception e) {
             log.error("OEM numaralari toplu eklenirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Toplu ekleme basarisiz: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -64,7 +67,7 @@ public class OemNumberControllerImpl implements OemNumberController {
             return ResponseEntity.ok(ApiResponse.success("OEM numarasi silindi", null));
         } catch (Exception e) {
             log.error("OEM numarasi silinirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("OEM numarasi silinemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -75,7 +78,7 @@ public class OemNumberControllerImpl implements OemNumberController {
             return ResponseEntity.ok(ApiResponse.success("Arama sonuclari", oemNumberService.searchByOemNumber(q)));
         } catch (Exception e) {
             log.error("OEM aranirken hata: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Arama yapilamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 }

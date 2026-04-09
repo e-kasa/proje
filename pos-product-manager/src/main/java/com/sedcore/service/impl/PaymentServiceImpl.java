@@ -8,6 +8,9 @@ import com.sedcore.repository.PaymentRepository;
 import com.sedcore.service.*;
 import com.towpen.base.security.BaseDbServiceImp;
 import lombok.extern.slf4j.Slf4j;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -229,7 +232,7 @@ public class PaymentServiceImpl
                 .orElseThrow(() -> new RuntimeException("Odeme bulunamadi: " + id));
 
         if (Boolean.TRUE.equals(payment.getIsCancelled())) {
-            throw new RuntimeException("Bu odeme zaten iptal edilmis: " + id);
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
 
         // Cari hesap ters kaydı — ilgili Account servisleri üzerinden
@@ -263,10 +266,10 @@ public class PaymentServiceImpl
                 .orElseThrow(() -> new RuntimeException("Odeme bulunamadi: " + id));
 
         if (Boolean.TRUE.equals(payment.getIsCancelled())) {
-            throw new RuntimeException("Iptal edilmis odeme onaylanamaz: " + id);
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
         if (Boolean.TRUE.equals(payment.getIsVerified())) {
-            throw new RuntimeException("Bu odeme zaten onaylanmis: " + id);
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
 
         payment.verify(verifiedBy != null ? verifiedBy : "Sistem");
@@ -307,10 +310,10 @@ public class PaymentServiceImpl
 
     private void validate(PaymentRequest request) {
         if (request.getCustomerId() == null && request.getSupplierId() == null) {
-            throw new RuntimeException("customerId veya supplierId zorunludur");
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
         if (request.getCustomerId() != null && request.getSupplierId() != null) {
-            throw new RuntimeException("customerId ve supplierId ayni anda doldurulamaz");
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 }

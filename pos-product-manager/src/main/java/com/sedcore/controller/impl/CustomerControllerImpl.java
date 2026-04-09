@@ -13,6 +13,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 import jakarta.validation.Valid;
 
 import java.math.BigDecimal;
@@ -50,7 +53,7 @@ public class CustomerControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(filtered));
         } catch (Exception e) {
             log.error("Müşteri listesi hatası: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Müşteri listesi alınamadı: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -62,7 +65,7 @@ public class CustomerControllerImpl {
                 .orElseThrow(() -> new RuntimeException("Müşteri bulunamadı: " + id));
             return ResponseEntity.ok(ApiResponse.success(toMap(customer)));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -84,7 +87,7 @@ public class CustomerControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(toMap(customer)));
         } catch (Exception e) {
             log.error("Müşteri oluşturma hatası: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Müşteri oluşturulamadı: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -110,7 +113,7 @@ public class CustomerControllerImpl {
             customer = customerRepository.save(customer);
             return ResponseEntity.ok(ApiResponse.success(toMap(customer)));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Güncelleme hatası: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -125,7 +128,7 @@ public class CustomerControllerImpl {
             customerRepository.save(customer);
             return ResponseEntity.ok(ApiResponse.success(null));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -140,7 +143,7 @@ public class CustomerControllerImpl {
             customer = customerRepository.save(customer);
             return ResponseEntity.ok(ApiResponse.success(toMap(customer)));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -156,7 +159,7 @@ public class CustomerControllerImpl {
             stats.put("corporateCustomers", all.stream().filter(c -> c.getCustomerType() != null && c.getCustomerType().name().equals("CORPORATE")).count());
             return ResponseEntity.ok(ApiResponse.success(stats));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -170,7 +173,7 @@ public class CustomerControllerImpl {
         try {
             return ResponseEntity.ok(ApiResponse.success(customerService.getCustomerAccount(id)));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -180,7 +183,7 @@ public class CustomerControllerImpl {
         try {
             return ResponseEntity.ok(ApiResponse.success(customerService.getCustomerTransactions(id)));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -193,7 +196,7 @@ public class CustomerControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(customerService.recordPayment(id, dto)));
         } catch (Exception e) {
             log.error("Tahsilat kaydi hatasi: customerId={}, {}", id, e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Tahsilat kaydedilemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -205,11 +208,11 @@ public class CustomerControllerImpl {
         try {
             BigDecimal newLimit = body.get("creditLimit");
             if (newLimit == null) {
-                return ResponseEntity.badRequest().body(ApiResponse.error("creditLimit alani zorunlu"));
+                throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
             }
             return ResponseEntity.ok(ApiResponse.success(customerService.updateCreditLimit(id, newLimit)));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Kredi limiti guncellenemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 

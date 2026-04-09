@@ -10,6 +10,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 
 import java.util.List;
 import java.util.Map;
@@ -55,7 +58,7 @@ public class PaymentControllerImpl implements PaymentController {
         try {
             return ResponseEntity.ok(ApiResponse.success(paymentService.getPayment(id)));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -90,7 +93,7 @@ public class PaymentControllerImpl implements PaymentController {
                     ApiResponse.error("customerId, supplierId, saleId veya purchaseId parametresi gerekli"));
         } catch (Exception e) {
             log.error("Odeme listesi hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 

@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 
 import java.util.HashMap;
 import java.util.List;
@@ -52,7 +55,7 @@ public class StockCountControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Stok sayim hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Sayim islemi basarisiz: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 

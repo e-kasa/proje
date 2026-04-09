@@ -11,6 +11,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -47,7 +50,7 @@ public class PurchaseControllerImpl {
         try {
             return ResponseEntity.ok(ApiResponse.success(purchaseService.getPurchase(id)));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -108,7 +111,7 @@ public class PurchaseControllerImpl {
             log.info("Satin alma iptal edildi: id={}", id);
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -136,7 +139,7 @@ public class PurchaseControllerImpl {
 
             return ResponseEntity.ok(ApiResponse.success(s));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 }

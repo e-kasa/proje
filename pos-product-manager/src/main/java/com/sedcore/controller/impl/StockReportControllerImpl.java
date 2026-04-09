@@ -10,6 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,7 +32,7 @@ public class StockReportControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(stockReportService.getStockValueSummary()));
         } catch (Exception e) {
             log.error("Stok deger ozeti hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Stok deger ozeti alinamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -42,7 +45,7 @@ public class StockReportControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(stockReportService.getMovementSummary(startDate, endDate)));
         } catch (Exception e) {
             log.error("Stok hareket ozeti hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Stok hareket ozeti alinamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -53,7 +56,7 @@ public class StockReportControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(stockReportService.getCriticalAlerts()));
         } catch (Exception e) {
             log.error("Kritik stok alarmlari hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Kritik stok alarmlari alinamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -65,7 +68,7 @@ public class StockReportControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(stockReportService.getWarehouseBreakdown(warehouseId)));
         } catch (Exception e) {
             log.error("Depo stok detayi hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Depo stok detayi alinamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 }

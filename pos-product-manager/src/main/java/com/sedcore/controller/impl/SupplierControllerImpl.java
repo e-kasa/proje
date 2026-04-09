@@ -14,6 +14,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -62,7 +65,7 @@ public class SupplierControllerImpl {
         try {
             return ResponseEntity.ok(ApiResponse.success(supplierService.getSupplier(id)));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -100,7 +103,7 @@ public class SupplierControllerImpl {
             supplierService.deleteSupplier(id);
             return ResponseEntity.ok(ApiResponse.success(null));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -110,7 +113,7 @@ public class SupplierControllerImpl {
         try {
             return ResponseEntity.ok(ApiResponse.success(supplierService.toggleStatus(id)));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -133,7 +136,7 @@ public class SupplierControllerImpl {
                     .count());
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -143,7 +146,7 @@ public class SupplierControllerImpl {
         try {
             return ResponseEntity.ok(ApiResponse.success(supplierService.getSupplierAccount(id)));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -153,7 +156,7 @@ public class SupplierControllerImpl {
         try {
             return ResponseEntity.ok(ApiResponse.success(supplierService.getSupplierTransactions(id)));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -166,7 +169,7 @@ public class SupplierControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(supplierService.recordPayment(id, dto)));
         } catch (Exception e) {
             log.error("Odeme kaydi hatasi: supplierId={}, {}", id, e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Odeme kaydedilemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -178,11 +181,11 @@ public class SupplierControllerImpl {
         try {
             BigDecimal newLimit = body.get("creditLimit");
             if (newLimit == null) {
-                return ResponseEntity.badRequest().body(ApiResponse.error("creditLimit alani zorunlu"));
+                throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
             }
             return ResponseEntity.ok(ApiResponse.success(supplierService.updateCreditLimit(id, newLimit)));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Kredi limiti guncellenemedi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 }

@@ -9,6 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -88,7 +91,7 @@ public class AccountStatementControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(entry));
         } catch (Exception e) {
             log.error("Hesap ekstresi hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Hesap ekstresi alinamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -135,7 +138,7 @@ public class AccountStatementControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Vadesi gecmis islemler hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Vadesi gecmis islemler alinamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 
@@ -180,7 +183,7 @@ public class AccountStatementControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(summary));
         } catch (Exception e) {
             log.error("Hesap ozeti hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Hesap ozeti alinamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999)));
         }
     }
 }

@@ -9,6 +9,9 @@ import com.sedcore.service.CategoryVariantService;
 import com.towpen.base.security.BaseDbServiceImp;
 
 import lombok.extern.slf4j.Slf4j;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -43,7 +46,7 @@ public class CategoryVariantServiceImpl extends BaseDbServiceImp<CategoryVariant
         // Aynı key varsa hata ver
         if (dao.existsByCategoryIdAndVariantKey(
                 categoryId, variantKey)) {
-            throw new RuntimeException("Bu varyant anahtarı zaten kullanılıyor: " + variantKey);
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
 
         Optional<com.sedcore.entity.Category> category = Optional.ofNullable(categoryService.findById(categoryId).orElseThrow(

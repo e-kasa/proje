@@ -8,7 +8,13 @@ import com.sedcore.repository.ProductCategoryAttributeRepository;
 import com.sedcore.service.ProductCategoryAttributeService;
 import com.towpen.base.security.BaseDbServiceImp;
 import lombok.RequiredArgsConstructor;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 import lombok.extern.slf4j.Slf4j;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -220,7 +226,7 @@ public class ProductCategoryAttributeServiceImpl
         try {
             return Double.parseDouble(value.toString());
         } catch (NumberFormatException e) {
-            throw new RuntimeException("Geçersiz sayı formatı: " + value);
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 

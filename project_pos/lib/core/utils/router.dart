@@ -60,12 +60,10 @@ import '../../screens/purchases/purchase_list_screen.dart';
 import '../../screens/purchases/add_purchase_screen.dart';
 import '../../screens/purchases/purchase_detail_screen.dart';
 import '../../screens/suppliers/supplier_account_detail_screen.dart';
-import '../../screens/suppliers/supplier_detail_screen.dart';
 import '../../screens/vehicles/vehicle_list_screen.dart';
 import '../../screens/part_search/part_search_screen.dart';
 import '../../screens/vehicles/vehicle_compatibility_screen.dart';
 import '../../screens/customers/customer_account_detail_screen.dart';
-import '../../screens/customers/customer_detail_screen.dart';
 import '../../screens/accounts/account_summary_dashboard_screen.dart';
 import '../../screens/accounts/account_statement_screen.dart';
 import '../../screens/accounts/overdue_tracking_screen.dart';
@@ -280,13 +278,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             },
           ),
           GoRoute(
-            path: '/customers/detail/:id',
-            builder: (context, state) {
-              final id = state.pathParameters['id']!;
-              return CustomerDetailScreen(customerId: id);
-            },
-          ),
-          GoRoute(
             path: '/customers/add',
             builder: (context, state) => const AddCustomerScreen(),
           ),
@@ -317,13 +308,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) {
               final purchaseId = state.pathParameters['purchaseId']!;
               return PurchaseReturnScreen(purchaseId: purchaseId);
-            },
-          ),
-          GoRoute(
-            path: '/suppliers/detail/:id',
-            builder: (context, state) {
-              final id = state.pathParameters['id']!;
-              return SupplierDetailScreen(supplierId: id);
             },
           ),
           GoRoute(

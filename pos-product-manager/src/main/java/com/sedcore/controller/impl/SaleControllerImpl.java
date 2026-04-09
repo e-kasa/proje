@@ -14,6 +14,7 @@ import com.sedcore.service.impl.SaleServiceIntegrated;
 import com.towpen.base.enums.model.TMessageType;
 import com.towpen.base.exceptions.TOpenException;
 import com.towpen.base.restservice.model.TOpenMessage;
+import com.sedcore.util.ExceptionMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

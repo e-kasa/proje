@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import com.towpen.base.enums.model.TMessageType;
 import com.towpen.base.exceptions.TOpenException;
 import com.towpen.base.restservice.model.TOpenMessage;
+import com.sedcore.util.ExceptionMapper;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -40,8 +41,7 @@ public class PurchaseControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Satin alma listesi hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.mapAndLog(e, "listPurchases");
         }
     }
 
@@ -53,8 +53,7 @@ public class PurchaseControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Satin alma getirme hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006));
+            throw ExceptionMapper.notFound("Purchase[" + id + "]");
         }
     }
 
@@ -70,8 +69,7 @@ public class PurchaseControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Satin alma hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.mapAndLog(e, "createPurchase");
         }
     }
 
@@ -87,8 +85,7 @@ public class PurchaseControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Satin alma guncelleme hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.mapAndLog(e, "updatePurchase(" + id + ")");
         }
     }
 
@@ -105,8 +102,7 @@ public class PurchaseControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Satin alma iadesi hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.mapAndLog(e, "createPurchaseReturn(" + id + ")");
         }
     }
 
@@ -120,8 +116,7 @@ public class PurchaseControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Satin alma iptal hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.mapAndLog(e, "cancelPurchase(" + id + ")");
         }
     }
 
@@ -151,8 +146,7 @@ public class PurchaseControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Satin alma istatistikleri hatasi: {}", e.getMessage());
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.mapAndLog(e, "getPurchaseStats");
         }
     }
 }

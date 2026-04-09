@@ -69,7 +69,7 @@ public class CustomerControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw ExceptionMapper.mapAndLog(e, "getCustomer(" + id + ")");
         }
     }
 

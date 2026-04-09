@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import com.towpen.base.enums.model.TMessageType;
 import com.towpen.base.exceptions.TOpenException;
 import com.towpen.base.restservice.model.TOpenMessage;
+import com.sedcore.util.ExceptionMapper;
 
 import java.math.BigDecimal;
 import java.util.HashMap;

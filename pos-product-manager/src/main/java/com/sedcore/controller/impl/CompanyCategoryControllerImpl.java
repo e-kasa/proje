@@ -11,18 +11,22 @@ import org.springframework.web.bind.annotation.GetMapping;
 import com.towpen.base.enums.model.TMessageType;
 import com.towpen.base.exceptions.TOpenException;
 import com.towpen.base.restservice.model.TOpenMessage;
+import com.sedcore.util.ExceptionMapper;
 import org.springframework.web.bind.annotation.PutMapping;
 import com.towpen.base.enums.model.TMessageType;
 import com.towpen.base.exceptions.TOpenException;
 import com.towpen.base.restservice.model.TOpenMessage;
+import com.sedcore.util.ExceptionMapper;
 import org.springframework.web.bind.annotation.RequestMapping;
 import com.towpen.base.enums.model.TMessageType;
 import com.towpen.base.exceptions.TOpenException;
 import com.towpen.base.restservice.model.TOpenMessage;
+import com.sedcore.util.ExceptionMapper;
 import org.springframework.web.bind.annotation.RestController;
 import com.towpen.base.enums.model.TMessageType;
 import com.towpen.base.exceptions.TOpenException;
 import com.towpen.base.restservice.model.TOpenMessage;
+import com.sedcore.util.ExceptionMapper;
 
 import java.util.List;
 

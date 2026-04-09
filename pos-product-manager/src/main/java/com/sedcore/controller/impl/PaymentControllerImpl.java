@@ -155,6 +155,4 @@ public class PaymentControllerImpl implements PaymentController {
         } catch (Exception e) {
             log.error("Odeme onay hatasi: id={}, {}", id, e);
             throw ExceptionMapper.map(e);
-        }
-    }
-}
+      

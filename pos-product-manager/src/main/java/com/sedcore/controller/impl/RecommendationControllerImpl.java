@@ -323,6 +323,3 @@ public class RecommendationControllerImpl implements RecommendationController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error(e));
         }
-    }
-}
-  

@@ -73,6 +73,4 @@ public class StockCountControllerImpl {
             map.put("variantId", m.getVariant().getId());
             map.put("variantSku", m.getVariant().getSku());
         }
-        return map;
-    }
-}
+        return m

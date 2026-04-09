@@ -70,6 +70,4 @@ public class StockReportControllerImpl {
         } catch (Exception e) {
             log.error("Depo stok detayi hatasi: {}", e);
             throw ExceptionMapper.map(e);
-        }
-    }
-}
+      

@@ -80,6 +80,4 @@ public class OemNumberControllerImpl implements OemNumberController {
         } catch (Exception e) {
             log.error("OEM aranirken hata: {}", e);
             throw ExceptionMapper.map(e);
-        }
-    }
-}
+      

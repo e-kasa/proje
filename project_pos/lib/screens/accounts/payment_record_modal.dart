@@ -124,9 +124,7 @@ class PaymentRecordModal {
               icon: Icons.check,
               onPressed: () {
                 if (amountCtrl.text.isEmpty) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                    const SnackBar(content: Text('Tutar gerekli')),
-                  );
+                  AppToast.warning(ctx, 'Tutar gerekli');
                   return;
                 }
                 Navigator.pop(ctx, {
@@ -290,3 +288,4 @@ class _AccountSelectContentState extends State<_AccountSelectContent> with Singl
     );
   }
 }
+                                                                                         

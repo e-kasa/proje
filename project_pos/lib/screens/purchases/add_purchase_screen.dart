@@ -690,24 +690,14 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
 
     if (_items.isEmpty) {
       setState(() => _itemsError = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('En az 1 ürün kalemi eklenmelidir'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      AppToast.warning(context, 'En az 1 ürün kalemi eklenmelidir');
       return;
     }
 
     // Fiyat kontrolü
     final zeroPrice = _items.any((i) => i.unitPrice <= 0);
     if (zeroPrice) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tüm kalemlerin birim fiyatı girilmelidir'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      AppToast.warning(context, 'Tüm kalemlerin birim fiyatı girilmelidir');
       return;
     }
 
@@ -717,12 +707,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
       await ref.read(purchaseServiceProvider).createPurchase(_buildRequest());
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Satın alma başarıyla kaydedildi'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppToast.success(context, 'Satın alma başarıyla kaydedildi');
         context.pop();
       }
     } catch (e) {
@@ -733,9 +718,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
       if (_isCreditLimitError(e) && _selectedSupplierId != null) {
         _showCreditLimitPrompt();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: $e'), backgroundColor: Colors.red),
-        );
+        AppToast.error(context, 'Hata: $e');
       }
     }
   }
@@ -845,11 +828,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
                       } catch (e) {
                         setDialogState(() => saving = false);
                         if (ctx.mounted) {
-                          ScaffoldMessenger.of(ctx).showSnackBar(
-                            SnackBar(
-                                content: Text('Güncelleme hatası: $e'),
-                                backgroundColor: Colors.red),
-                          );
+                          AppToast.error(ctx, 'Güncelleme hatası: $e');
                         }
                       }
                     },
@@ -868,16 +847,10 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
     );
 
     if (updated == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Kredi limiti güncellendi, satın alma tekrar deneniyor...'),
-          backgroundColor: Colors.blue,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      AppToast.success(context, 'Kredi limiti güncellendi, satın alma tekrar deneniyor...');
       // Kısa bir gecikme ile kullanıcıya bilgi göster, sonra otomatik tekrar dene
       await Future.delayed(const Duration(milliseconds: 500));
       _submit();
     }
   }
-}
+}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  

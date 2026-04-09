@@ -42,9 +42,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Araclar yuklenirken hata: $e'), backgroundColor: AppColors.danger),
-        );
+        AppToast.error(context, 'Araclar yuklenirken hata: $e');
       }
     }
   }
@@ -226,19 +224,12 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
                     await ref.read(vehicleServiceProvider).createVehicle(data);
                   }
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(isEdit ? 'Arac guncellendi' : '$make $model eklendi'),
-                        backgroundColor: AppColors.success,
-                      ),
-                    );
+                    AppToast.success(context, isEdit ? 'Arac guncellendi' : '$make $model eklendi');
                   }
                   _loadVehicles();
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Hata: $e'), backgroundColor: AppColors.danger),
-                    );
+                    AppToast.error(context, 'Hata: $e');
                   }
                 }
               },
@@ -275,16 +266,12 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
               try {
                 await ref.read(vehicleServiceProvider).deleteVehicle(vehicle['id']);
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Arac silindi'), backgroundColor: AppColors.success),
-                  );
+                  AppToast.success(context, 'Arac silindi');
                 }
                 _loadVehicles();
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Hata: $e'), backgroundColor: AppColors.danger),
-                  );
+                  AppToast.error(context, 'Hata: $e');
                 }
               }
             },
@@ -490,3 +477,4 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
     );
   }
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         

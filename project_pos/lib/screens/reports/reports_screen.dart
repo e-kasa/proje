@@ -174,9 +174,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
           ],
         ),
         actions: [
-          TextButton(
+          AppButton.outline(
+            text: 'İptal',
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('İptal'),
           ),
         ],
       ),
@@ -194,20 +194,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
         endDate: _endDate,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Rapor dışa aktarıldı'),
-          backgroundColor: AppColors.success,
-        ),
-      );
+      AppToast.success(context, 'Rapor dışa aktarıldı');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Dışa aktarma hatası: $e'),
-          backgroundColor: AppColors.danger,
-        ),
-      );
+      AppToast.error(context, 'Dışa aktarma hatası: $e');
     } finally {
       if (mounted) setState(() => _isExporting = false);
     }
@@ -581,3 +571,4 @@ class _ReportLink {
   final String route;
   const _ReportLink(this.label, this.icon, this.color, this.route);
 }
+                                                                                                                                                                                                                                                                         

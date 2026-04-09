@@ -56,12 +56,7 @@ class _ProductSalesAnalysisScreenState
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Veri yuklenemedi'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
+        AppToast.error(context, 'Veri yuklenemedi');
       }
     }
   }
@@ -250,11 +245,10 @@ class _ProductSalesAnalysisScreenState
       profitMargin = ((avgPrice - cost) / avgPrice) * 100;
     }
 
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 10),
-      child: Container(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: AppCard(
+        child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
           border: rank <= 3
@@ -338,6 +332,7 @@ class _ProductSalesAnalysisScreenState
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -374,13 +369,10 @@ class _ProductSalesAnalysisScreenState
             'Süre:',
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
-          ElevatedButton.icon(
+          AppButton.outline(
+            text: '${_dateFormat.format(_startDate)} - ${_dateFormat.format(_endDate)}',
             onPressed: _pickDateRange,
-            icon: const Icon(Icons.date_range, size: 18),
-            label: Text(
-              '${_dateFormat.format(_startDate)} - ${_dateFormat.format(_endDate)}',
-              style: const TextStyle(fontSize: 12),
-            ),
+            icon: Icons.date_range,
           ),
         ],
       ),
@@ -409,4 +401,4 @@ class _ProductSalesAnalysisScreenState
       ],
     );
   }
-}
+}                                                                                                                                                                                                                                                                                                                            

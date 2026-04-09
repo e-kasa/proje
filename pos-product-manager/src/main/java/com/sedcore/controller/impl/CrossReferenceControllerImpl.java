@@ -28,8 +28,13 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
     @GetMapping("/variant/{variantId}")
     public ResponseEntity<ApiResponse<List<CrossReferenceResponse>>> getByVariantId(@PathVariable String variantId) {
         try {
+            return ResponseEntity.ok(ApiResponse.success(null));
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Capraz referanslar getirilirken hata: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -39,8 +44,12 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
     public ResponseEntity<ApiResponse<CrossReferenceResponse>> createCrossReference(@RequestBody CrossReferenceRequest request) {
         try {
             CrossReferenceResponse response = crossReferenceService.createCrossReference(request);
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Capraz referans eklenirken hata: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -51,8 +60,12 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
             @PathVariable String variantId, @RequestBody List<CrossReferenceRequest> requests) {
         try {
             List<CrossReferenceResponse> responses = crossReferenceService.bulkCreate(variantId, requests);
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Capraz referanslar toplu eklenirken hata: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -62,8 +75,12 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
     public ResponseEntity<ApiResponse<Void>> deleteCrossReference(@PathVariable String id) {
         try {
             crossReferenceService.deleteCrossReference(id);
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Capraz referans silinirken hata: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -72,8 +89,13 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<List<CrossReferenceResponse>>> searchByCrossRefNumber(@RequestParam String q) {
         try {
+            return ResponseEntity.ok(ApiResponse.success(null));
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Capraz referans aranirken hata: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }

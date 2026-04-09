@@ -136,11 +136,12 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
             ),
           ),
           actions: [
-            TextButton(
+            AppButton.outline(
+              text: t('common.cancel'),
               onPressed: () => Navigator.pop(ctx),
-              child: Text(t('common.cancel')),
             ),
-            FilledButton(
+            AppButton.primary(
+              text: isEdit ? t('common.update') : t('common.create'),
               onPressed: () async {
                 final name = nameController.text.trim();
                 final email = emailController.text.trim();
@@ -179,7 +180,6 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                   AppToast.error(context, 'Islem basarisiz: $e');
                 }
               },
-              child: Text(isEdit ? t('common.update') : t('common.create')),
             ),
           ],
         ),
@@ -263,18 +263,9 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _users.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.people_outline, size: 64, color: AppColors.textMuted),
-                            const SizedBox(height: 16),
-                            Text(
-                              i18nOf(ref)('settings.no_users'),
-                              style: TextStyle(fontSize: 16, color: AppColors.textMuted),
-                            ),
-                          ],
-                        ),
+                    ? AppEmptyState.noData(
+                        title: i18nOf(ref)('settings.no_users'),
+                        description: '',
                       )
                     : RefreshIndicator(
                         onRefresh: _loadData,
@@ -297,11 +288,8 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     final isActive = user['isActive'] == true || user['active'] == true;
     final firstLetter = name.isNotEmpty ? name[0].toUpperCase() : '?';
 
-    return Card(
+    return AppCard(
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surface,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -397,3 +385,4 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     return AppColors.info;
   }
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          

@@ -664,11 +664,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           decoration: InputDecoration(labelText: label),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('İptal'),
-          ),
           AppButton.outline(
+            text: 'İptal',
+            onPressed: () => Navigator.pop(context),
+          ),
+          AppButton.primary(
             text: 'Kaydet',
             onPressed: () {
               Navigator.pop(context);
@@ -712,11 +712,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('İptal'),
-          ),
           AppButton.outline(
+            text: 'İptal',
+            onPressed: () => Navigator.pop(context),
+          ),
+          AppButton.primary(
             text: 'Kaydet',
             onPressed: () {
               Navigator.pop(context);
@@ -728,3 +728,4 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     );
   }
 }
+            

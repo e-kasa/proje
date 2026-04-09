@@ -323,3 +323,4 @@ public class RecommendationControllerImpl implements RecommendationController {
             log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }}
+}

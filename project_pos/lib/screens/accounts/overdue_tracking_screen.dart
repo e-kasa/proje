@@ -140,47 +140,19 @@ class _OverdueTrackingScreenState extends ConsumerState<OverdueTrackingScreen>
       return const Center(child: CircularProgressIndicator());
     }
     if (error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: AppColors.danger),
-            const SizedBox(height: 12),
-            Text('Veri yuklenirken hata olustu',
-                style: TextStyle(color: AppColors.textSecondary)),
-            const SizedBox(height: 8),
-            Text(error,
-                style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
-            const SizedBox(height: 16),
-            AppButton.primary(
-                        text: 'Tekrar Dene',
-                        icon: Icons.refresh,
-                        onPressed: onRefresh,
-                      ),
-          ],
-        ),
+      return AppEmptyState.error(
+        title: 'Veri yuklenirken hata olustu',
+        description: error,
+        actionText: 'Tekrar Dene',
+        onAction: onRefresh,
       );
     }
     if (items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.check_circle_outline,
-                size: 56, color: AppColors.success),
-            const SizedBox(height: 12),
-            Text(
-              isCustomer
-                  ? 'Vadesi gecmis musteri hesabi yok'
-                  : 'Vadesi gecmis tedarikci hesabi yok',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
+      return AppEmptyState.noData(
+        title: isCustomer
+            ? 'Vadesi gecmis musteri hesabi yok'
+            : 'Vadesi gecmis tedarikci hesabi yok',
+        description: 'Tum hesaplar guncel durumda',
       );
     }
     return RefreshIndicator(
@@ -317,3 +289,4 @@ class _OverdueTrackingScreenState extends ConsumerState<OverdueTrackingScreen>
     return '$formatted TL';
   }
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          

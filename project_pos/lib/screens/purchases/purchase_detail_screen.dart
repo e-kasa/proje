@@ -111,23 +111,13 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
           _isEditing = false;
           _isSaving = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Satın alma güncellendi'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppToast.success(context, 'Satın alma güncellendi');
         _load();
       }
     } catch (e) {
       setState(() => _isSaving = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Güncelleme hatası: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppToast.error(context, 'Güncelleme hatası: $e');
       }
     }
   }
@@ -247,32 +237,11 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
   // ─── Error Display ────────────────────────────────────────────────────────
 
   Widget _buildError() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
-            const SizedBox(height: 16),
-            const Text(
-              'Veri yüklenirken hata oluştu',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _error ?? 'Bilinmeyen hata',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 24),
-            AppButton.primary(
-              text: 'Tekrar Dene',
-              onPressed: _load,
-            ),
-          ],
-        ),
-      ),
+    return AppEmptyState.error(
+      title: 'Veri yüklenirken hata oluştu',
+      description: _error ?? 'Bilinmeyen hata',
+      actionText: 'Tekrar Dene',
+      onAction: _load,
     );
   }
 
@@ -654,28 +623,9 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
         ),
         const SizedBox(height: 12),
         if (_items.isEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color:
-                  theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-              ),
-            ),
-            child: Column(
-              children: [
-                Icon(Icons.inbox_outlined,
-                    size: 40, color: Colors.grey[400]),
-                const SizedBox(height: 8),
-                Text(
-                  'Kalem bilgisi bulunamadı',
-                  style: TextStyle(color: Colors.grey[500]),
-                ),
-              ],
-            ),
+          AppEmptyState.noData(
+            title: 'Kalem bilgisi bulunamadı',
+            description: 'Bu satın almada ürün kalemi bulunmuyor',
           )
         else
           ..._items.asMap().entries.map((entry) {
@@ -867,4 +817,4 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
       ),
     );
   }
-}
+}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          

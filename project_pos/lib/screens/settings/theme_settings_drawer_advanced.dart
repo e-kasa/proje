@@ -505,20 +505,16 @@ class _ThemeSettingsDrawerAdvancedState
             ),
           ),
           actions: <Widget>[
-            TextButton(
+            AppButton.outline(
+              text: 'İptal',
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('İptal'),
             ),
-            ElevatedButton(
+            AppButton.primary(
+              text: 'Seç',
               onPressed: () {
                 onColorChanged(selectedColor);
                 Navigator.of(context).pop();
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Seç'),
             ),
           ],
         );
@@ -594,31 +590,21 @@ class _ThemeSettingsDrawerAdvancedState
       child: Row(
         children: [
           Expanded(
-            child: OutlinedButton.icon(
+            child: AppButton.outline(
+              text: 'Sıfırla',
+              icon: Icons.refresh,
               onPressed: () {
                 notifier.reset();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('✅ Varsayılana sıfırlandı')),
-                );
+                AppToast.success(context, 'Varsayılana sıfırlandı');
               },
-              icon: const Icon(Icons.refresh),
-              label: const Text('Sıfırla'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: ElevatedButton.icon(
+            child: AppButton.primary(
+              text: 'Tamam',
+              icon: Icons.check,
               onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.check),
-              label: const Text('Tamam'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-              ),
             ),
           ),
         ],
@@ -835,3 +821,4 @@ class _ThemeSettingsDrawerAdvancedState
     return Icons.settings;
   }
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               

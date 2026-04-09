@@ -28,8 +28,13 @@ public class VehicleControllerImpl implements VehicleController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<VehicleResponse>>> getActiveVehicles() {
         try {
+            return ResponseEntity.ok(ApiResponse.success(null));
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Araclar getirilirken hata: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -38,8 +43,13 @@ public class VehicleControllerImpl implements VehicleController {
     @GetMapping("/all")
     public ResponseEntity<ApiResponse<List<VehicleResponse>>> getAllVehicles() {
         try {
+            return ResponseEntity.ok(ApiResponse.success(null));
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Tum araclar getirilirken hata: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -49,8 +59,12 @@ public class VehicleControllerImpl implements VehicleController {
     public ResponseEntity<ApiResponse<VehicleResponse>> createVehicle(@RequestBody VehicleRequest request) {
         try {
             VehicleResponse response = vehicleService.createVehicle(request);
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Arac olusturulurken hata: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -60,8 +74,12 @@ public class VehicleControllerImpl implements VehicleController {
     public ResponseEntity<ApiResponse<VehicleResponse>> updateVehicle(@PathVariable String id, @RequestBody VehicleRequest request) {
         try {
             VehicleResponse response = vehicleService.updateVehicle(id, request);
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Arac guncellenirken hata: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -71,8 +89,12 @@ public class VehicleControllerImpl implements VehicleController {
     public ResponseEntity<ApiResponse<Void>> deleteVehicle(@PathVariable String id) {
         try {
             vehicleService.deleteVehicle(id);
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Arac silinirken hata: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -81,8 +103,13 @@ public class VehicleControllerImpl implements VehicleController {
     @GetMapping("/makes")
     public ResponseEntity<ApiResponse<List<String>>> getDistinctMakes() {
         try {
+            return ResponseEntity.ok(ApiResponse.success(null));
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Markalar getirilirken hata: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -91,8 +118,13 @@ public class VehicleControllerImpl implements VehicleController {
     @GetMapping("/models")
     public ResponseEntity<ApiResponse<List<String>>> getModelsByMake(@RequestParam String make) {
         try {
+            return ResponseEntity.ok(ApiResponse.success(null));
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Modeller getirilirken hata: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -104,8 +136,13 @@ public class VehicleControllerImpl implements VehicleController {
             @RequestParam(required = false) String model,
             @RequestParam(required = false) Integer year) {
         try {
+            return ResponseEntity.ok(ApiResponse.success(null));
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Arac aranirken hata: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }

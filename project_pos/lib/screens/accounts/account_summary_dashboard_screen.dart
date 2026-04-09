@@ -70,24 +70,11 @@ class _AccountSummaryDashboardScreenState
   }
 
   Widget _buildError() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: AppColors.danger),
-          const SizedBox(height: 12),
-          Text('Veri yuklenirken hata olustu',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
-          const SizedBox(height: 8),
-          Text(_error ?? '', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
-          const SizedBox(height: 16),
-          AppButton.primary(
-                        text: 'Tekrar Dene',
-                        icon: Icons.refresh,
-                        onPressed: _loadData,
-                      ),
-        ],
-      ),
+    return AppEmptyState.error(
+      title: 'Veri yuklenirken hata olustu',
+      description: _error ?? '',
+      actionText: 'Tekrar Dene',
+      onAction: _loadData,
     );
   }
 
@@ -316,33 +303,18 @@ class _AccountSummaryDashboardScreenState
               ),
             ),
             if (_overdueList.length > 5)
-              TextButton(
+              AppButton.outline(
+                text: 'Tumunu Gor',
                 onPressed: () => context.push('/accounts/overdue'),
-                child: const Text('Tumunu Gor'),
+                size: ButtonSize.small,
               ),
           ],
         ),
         const SizedBox(height: 8),
         if (top5.isEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              children: [
-                Icon(Icons.check_circle_outline,
-                    size: 40, color: AppColors.success),
-                const SizedBox(height: 8),
-                Text(
-                  'Vadesi gecmis hesap bulunmuyor',
-                  style: TextStyle(color: AppColors.textMuted),
-                ),
-              ],
-            ),
+          AppEmptyState.noData(
+            title: 'Vadesi gecmis hesap bulunmuyor',
+            description: 'Tum hesaplar guncel durumda',
           )
         else
           ...top5.map((item) => _overdueCard(item)),
@@ -452,3 +424,4 @@ class _AccountSummaryDashboardScreenState
     return '$formatted TL';
   }
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     

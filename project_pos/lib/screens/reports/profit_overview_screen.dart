@@ -65,12 +65,7 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Veri yuklenemedi'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
+        AppToast.error(context, 'Veri yuklenemedi');
       }
     }
   }
@@ -117,7 +112,7 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _data == null
-          ? const Center(child: Text('Veri bulunamadi'))
+          ? AppEmptyState.noData(description: 'Veri bulunamadi')
           : RefreshIndicator(
         onRefresh: _loadData,
         child: _buildContent(),
@@ -296,4 +291,4 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
       ),
     );
   }
-}
+}                                                                                                                                       

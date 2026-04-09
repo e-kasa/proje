@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
-import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 
 class CompanySettingsScreen extends ConsumerStatefulWidget {
@@ -294,29 +293,23 @@ class _CompanySettingsScreenState extends ConsumerState<CompanySettingsScreen> {
     required IconData icon,
     required List<Widget> children,
   }) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surface,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: AppColors.primary, size: 22),
-                const SizedBox(width: 10),
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            ...children,
-          ],
-        ),
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: AppColors.primary, size: 22),
+              const SizedBox(width: 10),
+              Text(
+                title,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          ...children,
+        ],
       ),
     );
   }
@@ -344,3 +337,4 @@ class _CompanySettingsScreenState extends ConsumerState<CompanySettingsScreen> {
     );
   }
 }
+                                                                                                                                                                                                                                                                                                         

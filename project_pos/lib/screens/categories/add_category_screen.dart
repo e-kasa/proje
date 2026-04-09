@@ -128,24 +128,14 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(editId != null
-                ? '✅ Kategori güncellendi'
-                : '✅ Kategori oluşturuldu'),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        AppToast.success(context, editId != null
+            ? 'Kategori güncellendi'
+            : 'Kategori oluşturuldu');
         Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Hata: $e'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
+        AppToast.error(context, 'Hata: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -451,3 +441,4 @@ class _CategoryIcon {
   final String label;
   const _CategoryIcon(this.name, this.icon, this.label);
 }
+                                                                                                                                                                                                                                                                                                     

@@ -28,21 +28,7 @@ class SectorSettingsScreen extends ConsumerWidget {
     }
 
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(children: [
-            const Icon(Icons.check_circle_outline,
-                color: Colors.white, size: 18),
-            const SizedBox(width: 8),
-            Text('Sektör "${type.displayName}" olarak ayarlandı'),
-          ]),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: const EdgeInsets.all(12),
-        ),
-      );
+      AppToast.success(context, 'Sektör "${type.displayName}" olarak ayarlandı');
     }
   }
 
@@ -283,3 +269,4 @@ class _SectorCard extends StatelessWidget {
     );
   }
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            

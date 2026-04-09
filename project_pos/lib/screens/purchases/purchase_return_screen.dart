@@ -588,42 +588,13 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: _canSubmit ? _submit : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.orange,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor:
-                      theme.colorScheme.outlineVariant.withOpacity(0.3),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 2,
-                ),
-                icon: _isSubmitting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : const Icon(Icons.assignment_return, size: 20),
-                label: Text(
-                  _isSubmitting
-                      ? 'Kaydediliyor...'
-                      : 'İadeyi Onayla',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
+            AppButton.danger(
+              text: _isSubmitting ? 'Kaydediliyor...' : 'İadeyi Onayla',
+              icon: Icons.assignment_return,
+              onPressed: _canSubmit ? _submit : null,
+              isLoading: _isSubmitting,
+              fullWidth: true,
+              size: ButtonSize.large,
             ),
           ],
         ),
@@ -634,31 +605,18 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
   // ─── Submit ────────────────────────────────────────────────────────────────
 
   Future<void> _submit() async {
-    final confirm = await showDialog<bool>(
+    final confirm = await AppConfirmationDialog.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('İadeyi Onayla'),
-        content: Text(
-          '${_selectedItems.length} kalem, toplam ${_fmt.format(_totalReturnAmount)} tutarında '
+      title: 'İadeyi Onayla',
+      message: '${_selectedItems.length} kalem, toplam ${_fmt.format(_totalReturnAmount)} tutarında '
           'iade işlemi yapılacak.\n\nStok otomatik olarak güncellenecektir.\n\nDevam etmek istiyor musunuz?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Vazgeç'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.orange,
-            ),
-            child: const Text('Onayla'),
-          ),
-        ],
-      ),
+      confirmText: 'Onayla',
+      confirmColor: AppColors.orange,
+      icon: Icons.assignment_return,
+      iconColor: AppColors.orange,
     );
 
-    if (confirm != true) return;
+    if (!confirm) return;
 
     setState(() => _isSubmitting = true);
 
@@ -692,12 +650,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
           .createPurchaseReturn(widget.purchaseId, payload);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Satın alma iadesi başarıyla oluşturuldu'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppToast.success(context, 'Satın alma iadesi başarıyla oluşturuldu');
         context.pop(true);
       }
     } catch (e) {
@@ -705,12 +658,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
           tag: 'PurchaseReturn', error: e);
       setState(() => _isSubmitting = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('İade hatası: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppToast.error(context, 'İade hatası: $e');
       }
     }
   }
@@ -718,21 +666,11 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
   // ─── Error ─────────────────────────────────────────────────────────────────
 
   Widget _buildError() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
-          const SizedBox(height: 12),
-          Text(_error ?? 'Hata', textAlign: TextAlign.center),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: _load,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Tekrar Dene'),
-          ),
-        ],
-      ),
+    return AppEmptyState.error(
+      title: 'Veri yüklenirken hata oluştu',
+      description: _error ?? 'Hata',
+      actionText: 'Tekrar Dene',
+      onAction: _load,
     );
   }
 }
@@ -750,3 +688,4 @@ class _ReturnItem {
     required this.maxQuantity,
   });
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     

@@ -74,8 +74,12 @@ public class StockMovementControllerImpl {
                 .filter(m -> movementType == null || movementType.equals(m.getMovementType().name()))
                 .map(this::toMap)
                 .collect(Collectors.toList());
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Stok hareketi listesi hatası: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -91,8 +95,14 @@ public class StockMovementControllerImpl {
 
             throw e;
 
+        } catch (TOpenException e) {
+
+
+            throw e;
+
+
         } catch (Exception e) {
-            log.error("Stok hareketi getirme hatası: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -124,8 +134,12 @@ public class StockMovementControllerImpl {
                 variant.getSku(), movement.getMovementType(), movement.getQuantity());
             return ResponseEntity.ok(ApiResponse.success(toMap(movement)));
         } catch (IllegalArgumentException e) {
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Stok hareketi oluşturma hatası: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -141,8 +155,12 @@ public class StockMovementControllerImpl {
                 .filter(m -> m.getMovementType().name().endsWith("_IN")).count());
             s.put("outMovements", all.stream()
                 .filter(m -> m.getMovementType().name().endsWith("_OUT")).count());
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Exception occurred", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -195,5 +213,5 @@ public class StockMovementControllerImpl {
         @NotNull
         private Integer quantity;
     }
-}
+
                                                 }

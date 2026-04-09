@@ -87,18 +87,11 @@ class PurchaseListNotifier extends StateNotifier<PurchaseListState> {
       await _service.cancelPurchase(id);
       await load();
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Satın alma iptal edildi'),
-            backgroundColor: Colors.orange,
-          ),
-        );
+        AppToast.warning(context, 'Satın alma iptal edildi');
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('İptal hatası: $e'), backgroundColor: Colors.red),
-        );
+        AppToast.error(context, 'İptal hatası: $e');
       }
     }
   }
@@ -257,26 +250,17 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
             ? dateFmt.format(DateTime.tryParse(p['purchaseDate'].toString()) ?? DateTime.now())
             : '-';
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 10),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: AppConstants.borderRadiusMedium,
-            side: BorderSide(
-              color: cancelled
-                  ? Colors.red.withOpacity(0.3)
-                  : theme.colorScheme.outlineVariant.withOpacity(0.5),
-            ),
-          ),
-          child: InkWell(
-            borderRadius: AppConstants.borderRadiusMedium,
-            onTap: () async {
-              await context.push('/purchases/detail/${p['id']}');
-              if (mounted) ref.read(purchaseListProvider.notifier).load();
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: AppCard(
+          borderColor: cancelled
+              ? Colors.red.withOpacity(0.3)
+              : null,
+          onTap: () async {
+            await context.push('/purchases/detail/${p['id']}');
+            if (mounted) ref.read(purchaseListProvider.notifier).load();
+          },
+          child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
@@ -369,9 +353,8 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
                     ),
                   ],
                 ],
-              ),
-            ),
           ),
+        ),
         );
       },
     );
@@ -396,62 +379,30 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
   }
 
   Widget _buildError(String error) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
-          const SizedBox(height: 12),
-          Text(error, textAlign: TextAlign.center),
-          const SizedBox(height: 16),
-          AppButton.primary(
-                        text: 'Tekrar Dene',
-                        icon: Icons.refresh,
-                        onPressed: () => ref.read(purchaseListProvider.notifier).load(),
-                      ),
-        ],
-      ),
+    return AppEmptyState.error(
+      title: 'Veri yüklenirken hata oluştu',
+      description: error,
+      actionText: 'Tekrar Dene',
+      onAction: () => ref.read(purchaseListProvider.notifier).load(),
     );
   }
 
   Widget _buildEmpty() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          Text(
-            'Satın alma kaydı bulunamadı',
-            style: TextStyle(color: Colors.grey[500], fontSize: 16),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '"Yeni Alım" butonuna tıklayarak başlayın',
-            style: TextStyle(color: Colors.grey[400], fontSize: 13),
-          ),
-        ],
-      ),
+    return AppEmptyState.noData(
+      title: 'Satın alma kaydı bulunamadı',
+      description: '"Yeni Alım" butonuna tıklayarak başlayın',
     );
   }
 
   Future<void> _confirmCancel(String id) async {
-    final confirm = await showDialog<bool>(
+    final confirm = await AppConfirmationDialog.showDelete(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Satın Almayı İptal Et'),
-        content: const Text('Bu satın almayı iptal etmek istediğinize emin misiniz?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Vazgeç')),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('İptal Et', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+      title: 'Satın Almayı İptal Et',
+      message: 'Bu satın almayı iptal etmek istediğinize emin misiniz?',
     );
-    if (confirm == true && mounted) {
+    if (confirm && mounted) {
       await ref.read(purchaseListProvider.notifier).cancel(id, context);
     }
   }
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  

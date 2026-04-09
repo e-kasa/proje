@@ -133,35 +133,14 @@ class _CustomerSalesAnalysisScreenState
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.error_outline,
-                                color: AppColors.danger, size: 48),
-                            const SizedBox(height: 12),
-                            Text(_error!,
-                                style:
-                                    const TextStyle(color: AppColors.danger)),
-                            const SizedBox(height: 12),
-                            AppButton.primary(
-                        text: 'Tekrar Dene',
-                        onPressed: _loadData,
-                      ),
-                          ],
-                        ),
+                    ? AppEmptyState.error(
+                        description: _error!,
+                        onAction: _loadData,
                       )
                     : _customers.isEmpty
-                        ? const Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.people,
-                                    size: 48, color: AppColors.textMuted),
-                                SizedBox(height: 12),
-                                Text('Musteri verisi bulunamadi'),
-                              ],
-                            ),
+                        ? AppEmptyState.noData(
+                            title: 'Musteri Bulunamadi',
+                            description: 'Musteri verisi bulunamadi',
                           )
                         : RefreshIndicator(
                             onRefresh: _loadData,
@@ -345,3 +324,4 @@ class _CustomerSalesAnalysisScreenState
     );
   }
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       

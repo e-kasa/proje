@@ -594,40 +594,12 @@ class _SaleReturnScreenState extends ConsumerState<SaleReturnScreen> {
             ),
             const SizedBox(height: 12),
             // Gönder
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: _canSubmit ? _submit : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.warning,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor:
-                      theme.colorScheme.outlineVariant.withOpacity(0.3),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 2,
-                ),
-                icon: _isSubmitting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : const Icon(Icons.assignment_return, size: 20),
-                label: Text(
-                  _isSubmitting ? 'Kaydediliyor...' : 'İadeyi Onayla',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
+            AppButton.primary(
+              text: _isSubmitting ? 'Kaydediliyor...' : 'İadeyi Onayla',
+              icon: Icons.assignment_return,
+              onPressed: _canSubmit ? _submit : null,
+              isLoading: _isSubmitting,
+              fullWidth: true,
             ),
           ],
         ),
@@ -700,24 +672,14 @@ class _SaleReturnScreenState extends ConsumerState<SaleReturnScreen> {
           .createSaleReturn(widget.saleId, payload);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Satış iadesi başarıyla oluşturuldu'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppToast.success(context, 'Satış iadesi başarıyla oluşturuldu');
         context.pop(true); // true = iade tamamlandı
       }
     } catch (e) {
       AppLogger.error('Satış iadesi hatası', tag: 'SaleReturn', error: e);
       setState(() => _isSubmitting = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('İade hatası: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppToast.error(context, 'İade hatası: $e');
       }
     }
   }
@@ -733,10 +695,10 @@ class _SaleReturnScreenState extends ConsumerState<SaleReturnScreen> {
           const SizedBox(height: 12),
           Text(_error ?? 'Hata', textAlign: TextAlign.center),
           const SizedBox(height: 16),
-          ElevatedButton.icon(
+          AppButton.primary(
+            text: 'Tekrar Dene',
+            icon: Icons.refresh,
             onPressed: _load,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Tekrar Dene'),
           ),
         ],
       ),
@@ -757,3 +719,4 @@ class _ReturnItem {
     required this.maxQuantity,
   });
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       

@@ -67,8 +67,12 @@ public class SaleControllerImpl {
                 .filter(s -> isCancelled == null || isCancelled.equals(s.getIsCancelled()))
                 .map(this::toMap)
                 .collect(Collectors.toList());
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Satış listesi hatası: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -84,8 +88,14 @@ public class SaleControllerImpl {
 
             throw e;
 
+        } catch (TOpenException e) {
+
+
+            throw e;
+
+
         } catch (Exception e) {
-            log.error("Satış getirme hatası: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -101,8 +111,14 @@ public class SaleControllerImpl {
 
             throw e;
 
+        } catch (TOpenException e) {
+
+
+            throw e;
+
+
         } catch (Exception e) {
-            log.error("Satış numarasına göre getirme hatası: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -123,8 +139,14 @@ public class SaleControllerImpl {
 
             throw e;
 
+        } catch (TOpenException e) {
+
+
+            throw e;
+
+
         } catch (Exception e) {
-            log.error("Satış oluşturma hatası: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -148,8 +170,14 @@ public class SaleControllerImpl {
 
             throw e;
 
+        } catch (TOpenException e) {
+
+
+            throw e;
+
+
         } catch (Exception e) {
-            log.error("Satis iadesi hatasi: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -169,8 +197,14 @@ public class SaleControllerImpl {
 
             throw e;
 
+        } catch (TOpenException e) {
+
+
+            throw e;
+
+
         } catch (Exception e) {
-            log.error("Satış iptal hatası: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -192,8 +226,12 @@ public class SaleControllerImpl {
                 .filter(sale -> !Boolean.TRUE.equals(sale.getIsCancelled()))
                 .map(Sale::getTotalAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("İstatistik alma hatası: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -271,5 +309,5 @@ public class SaleControllerImpl {
         m.put("items",     items);
         m.put("hasReturn", hasReturn);
         return m;
-    }
+
 }                                                                                              }

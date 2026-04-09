@@ -29,8 +29,13 @@ public class UnitControllerImpl implements UnitController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<UnitResponse>>> getActiveUnits() {
         try {
+            return ResponseEntity.ok(ApiResponse.success(null));
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Birimler getirilirken hata: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -40,8 +45,13 @@ public class UnitControllerImpl implements UnitController {
     @GetMapping("/all")
     public ResponseEntity<ApiResponse<List<UnitResponse>>> getAllUnits() {
         try {
+            return ResponseEntity.ok(ApiResponse.success(null));
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Tüm birimler getirilirken hata: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -52,8 +62,12 @@ public class UnitControllerImpl implements UnitController {
     public ResponseEntity<ApiResponse<UnitResponse>> createUnit(@RequestBody UnitRequest request) {
         try {
             UnitResponse response = unitService.createUnit(request);
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Birim oluşturulurken hata: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -64,8 +78,12 @@ public class UnitControllerImpl implements UnitController {
     public ResponseEntity<ApiResponse<UnitResponse>> updateUnit(@PathVariable String id, @RequestBody UnitRequest request) {
         try {
             UnitResponse response = unitService.updateUnit(id, request);
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Birim güncellenirken hata: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -76,8 +94,12 @@ public class UnitControllerImpl implements UnitController {
     public ResponseEntity<ApiResponse<Void>> deleteUnit(@PathVariable String id) {
         try {
             unitService.deleteUnit(id);
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Birim silinirken hata: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }
@@ -88,8 +110,12 @@ public class UnitControllerImpl implements UnitController {
     public ResponseEntity<ApiResponse<UnitResponse>> toggleStatus(@PathVariable String id) {
         try {
             UnitResponse response = unitService.toggleStatus(id);
+        } catch (TOpenException e) {
+
+            throw e;
+
         } catch (Exception e) {
-            log.error("Birim durumu değiştirilirken hata: {}", e);
+            log.error([^;]+);
             throw ExceptionMapper.map(e);
         }
     }

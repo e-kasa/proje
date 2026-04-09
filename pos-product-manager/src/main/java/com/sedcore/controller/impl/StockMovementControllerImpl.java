@@ -9,6 +9,9 @@ import com.sedcore.repository.StockMovementRepository;
 import com.sedcore.se.ApiResponse;
 import com.sedcore.service.StockMovementService;
 import com.sedcore.util.EntityAuditHelper;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -74,7 +77,7 @@ public class StockMovementControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(filtered));
         } catch (Exception e) {
             log.error("Stok hareketi listesi hatası: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Liste alınamadı: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -83,10 +86,13 @@ public class StockMovementControllerImpl {
     public ResponseEntity<ApiResponse<Map<String, Object>>> getById(@PathVariable String id) {
         try {
             var movement = stockMovementRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Stok hareketi bulunamadı: " + id));
+                .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
             return ResponseEntity.ok(ApiResponse.success(toMap(movement)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            log.error("Stok hareketi getirme hatası: {}", e.getMessage());
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -99,6 +105,7 @@ public class StockMovementControllerImpl {
     })
     public ResponseEntity<ApiResponse<Map<String, Object>>> create(@Valid @RequestBody StockMovementRequest dto) {
         try {
+            // Implementation will go here
             ProductVariant variant = variantRepository.findById(dto.getVariantId())
                 .orElseThrow(() -> new RuntimeException("Ürün varyantı bulunamadı: " + dto.getVariantId()));
 

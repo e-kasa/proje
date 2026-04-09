@@ -1,5 +1,8 @@
 package com.sedcore.exception;
 
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -36,6 +39,55 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 @Slf4j
 public class AppExceptionHandler {
+
+    // ====================================================================
+    // 0. TOPEN EXCEPTION HANDLER (TOpenException)
+    // ====================================================================
+
+    /** TOpenException - Core'dan gelen standart exception handler → 400 */
+    @ExceptionHandler(TOpenException.class)
+    public ResponseEntity<ApiErrorResponse> handleTOpenException(
+            TOpenException ex, HttpServletRequest request) {
+
+        if (ex.getMessages() == null || ex.getMessages().isEmpty()) {
+            log.error("[500] TOpenException without messages");
+            return build(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR",
+                    "Sunucuda beklenmedik bir hata oluştu.", request);
+        }
+
+        // İlk message'ı al
+        TOpenMessage firstMessage = ex.getMessages().get(0);
+        String messageCode = firstMessage.getMessageCode();
+
+        // Message kodu bazında HTTP status belirle
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        String errorCode = messageCode;
+
+        // Özel durumlar
+        if ("1006".equals(messageCode) || "1008".equals(messageCode)) {
+            status = HttpStatus.NOT_FOUND; // NOT_EXISTS
+            errorCode = "NOT_FOUND";
+        } else if ("1004".equals(messageCode)) {
+            status = HttpStatus.CONFLICT; // ALREADY_EXISTS
+            errorCode = "CONFLICT";
+        } else if ("1011".equals(messageCode) || "1012".equals(messageCode)) {
+            status = HttpStatus.UNAUTHORIZED; // LOGIN_ERRORS, NOT_AUTHORIZED
+            errorCode = "UNAUTHORIZED";
+        } else if ("1062".equals(messageCode) || "1064".equals(messageCode)) {
+            status = HttpStatus.FORBIDDEN; // COMPANY_ERRORS
+            errorCode = "FORBIDDEN";
+        } else if ("9999".equals(messageCode)) {
+            status = HttpStatus.INTERNAL_SERVER_ERROR; // UNEXPECTED_ERROR
+            errorCode = "INTERNAL_ERROR";
+        }
+
+        log.warn("[{}] TOpenException - Code: {}, Message: {}",
+                status.value(), messageCode, firstMessage);
+
+        return build(status, errorCode,
+                String.format("Hata [%s]: %s", messageCode, firstMessage.getMessageCode()),
+                request);
+    }
 
     // ====================================================================
     // 1. ÖZEL İŞ KURALI HATALARI

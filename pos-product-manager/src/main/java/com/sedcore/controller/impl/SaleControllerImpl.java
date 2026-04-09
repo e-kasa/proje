@@ -11,6 +11,9 @@ import com.sedcore.repository.SaleRepository;
 import com.sedcore.se.ApiResponse;
 import com.sedcore.service.SaleService;
 import com.sedcore.service.impl.SaleServiceIntegrated;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -68,7 +71,7 @@ public class SaleControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(filtered));
         } catch (Exception e) {
             log.error("Satış listesi hatası: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Satış listesi alınamadı: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -77,10 +80,13 @@ public class SaleControllerImpl {
     public ResponseEntity<ApiResponse<Map<String, Object>>> getById(@PathVariable String id) {
         try {
             var sale = saleRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Satış bulunamadı: " + id));
+                .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
             return ResponseEntity.ok(ApiResponse.success(toMap(sale)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            log.error("Satış getirme hatası: {}", e.getMessage());
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -89,10 +95,13 @@ public class SaleControllerImpl {
     public ResponseEntity<ApiResponse<Map<String, Object>>> getByNumber(@PathVariable String saleNumber) {
         try {
             var sale = saleRepository.findBySaleNumber(saleNumber)
-                .orElseThrow(() -> new RuntimeException("Satış bulunamadı: " + saleNumber));
+                .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
             return ResponseEntity.ok(ApiResponse.success(toMap(sale)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            log.error("Satış numarasına göre getirme hatası: {}", e.getMessage());
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -108,9 +117,11 @@ public class SaleControllerImpl {
             Sale sale = saleService.createSale(request);
             log.info("Satış oluşturuldu: {}", sale.getSaleNumber());
             return ResponseEntity.ok(ApiResponse.success(toMap(sale)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Satış oluşturma hatası: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Satış oluşturulamadı: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -129,10 +140,11 @@ public class SaleControllerImpl {
             SaleReturnResponse response = saleService.createSaleReturn(id, request);
             log.info("Satis iadesi olusturuldu: saleId={}, tutar={}", id, response.getTotalReturnAmount());
             return ResponseEntity.ok(ApiResponse.success(response));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Satis iadesi hatasi: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Iade olusturulamadi: " + e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -147,9 +159,11 @@ public class SaleControllerImpl {
             Sale sale = saleService.cancelSale(id, reason);
             log.info("Satış iptal edildi: {}", sale.getSaleNumber());
             return ResponseEntity.ok(ApiResponse.success(toMap(sale)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Satış iptal hatası: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 
@@ -172,7 +186,8 @@ public class SaleControllerImpl {
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
             return ResponseEntity.ok(ApiResponse.success(s));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            log.error("İstatistik alma hatası: {}", e.getMessage());
+            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
     }
 

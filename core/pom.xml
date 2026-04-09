@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.2.4</version> <!-- örnek sürüm -->
+		<version>3.5.7</version> <!-- Updated from 3.2.4 -->
 		<relativePath/> <!-- veya hiç yazma -->
 	</parent>
 	<groupId>com.towpen</groupId>

@@ -11,6 +11,12 @@ import com.sedcore.repository.SaleRepository;
 import com.sedcore.se.ApiResponse;
 import com.sedcore.service.SaleService;
 import com.sedcore.service.impl.SaleServiceIntegrated;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +34,8 @@ import java.util.stream.Collectors;
 @RequestMapping("/product/api/v1/sales")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Sales", description = "Sales management endpoints")
+@SecurityRequirement(name = "Bearer Authentication")
 public class SaleControllerImpl {
 
     private final SaleService saleRepository;
@@ -35,8 +43,15 @@ public class SaleControllerImpl {
 
     // GET /product/api/v1/sales
     @GetMapping
+    @Operation(summary = "List sales", description = "Retrieves list of sales with optional filters")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Sales list retrieved"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> list(
+            @Parameter(description = "Customer ID filter")
             @RequestParam(required = false) String customerId,
+            @Parameter(description = "Filter by cancelled status")
             @RequestParam(required = false) Boolean isCancelled
     ) {
         try {
@@ -83,6 +98,11 @@ public class SaleControllerImpl {
 
     // POST /product/api/v1/sales
     @PostMapping
+    @Operation(summary = "Create sale", description = "Creates a new sale with line items")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Sale created"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request")
+    })
     public ResponseEntity<ApiResponse<Map<String, Object>>> create(@Valid @RequestBody SaleRequest request) {
         try {
             Sale sale = saleService.createSale(request);
@@ -96,7 +116,13 @@ public class SaleControllerImpl {
 
     // POST /product/api/v1/sales/{id}/returns
     @PostMapping("/{id}/returns")
+    @Operation(summary = "Create sale return", description = "Processes a partial or full return for a sale")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Return processed"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid return amount")
+    })
     public ResponseEntity<ApiResponse<SaleReturnResponse>> createReturn(
+            @Parameter(description = "Sale ID")
             @PathVariable String id,
             @RequestBody SaleReturnRequest request) {
         try {

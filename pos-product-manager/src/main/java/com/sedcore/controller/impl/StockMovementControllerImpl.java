@@ -9,6 +9,12 @@ import com.sedcore.repository.StockMovementRepository;
 import com.sedcore.se.ApiResponse;
 import com.sedcore.service.StockMovementService;
 import com.sedcore.util.EntityAuditHelper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -24,9 +30,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("api/v1/stock-movements")
+@RequestMapping("/product/api/v1/stock-movements")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Stock Movements", description = "Stock movement tracking endpoints")
+@SecurityRequirement(name = "Bearer Authentication")
 public class StockMovementControllerImpl {
 
     private final StockMovementRepository stockMovementRepository;
@@ -36,9 +44,17 @@ public class StockMovementControllerImpl {
 
     // GET /product/api/v1/stock-movements
     @GetMapping
+    @Operation(summary = "List stock movements", description = "Retrieves stock movements with filters")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Movements retrieved"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> list(
+            @Parameter(description = "Product variant ID")
             @RequestParam(required = false) String variantId,
+            @Parameter(description = "Store ID filter")
             @RequestParam(required = false) String storeId,
+            @Parameter(description = "Movement type filter (SALE_OUT, PURCHASE_IN, etc.)")
             @RequestParam(required = false) String movementType
     ) {
         try {
@@ -76,6 +92,11 @@ public class StockMovementControllerImpl {
 
     // POST /product/api/v1/stock-movements  (manual adjustment)
     @PostMapping
+    @Operation(summary = "Create stock movement", description = "Records a manual stock movement (adjustment, transfer, etc.)")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Movement created"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid movement data")
+    })
     public ResponseEntity<ApiResponse<Map<String, Object>>> create(@Valid @RequestBody StockMovementRequest dto) {
         try {
             ProductVariant variant = variantRepository.findById(dto.getVariantId())

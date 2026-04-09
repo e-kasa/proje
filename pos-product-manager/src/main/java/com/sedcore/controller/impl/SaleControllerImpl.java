@@ -1,31 +1,29 @@
 package com.sedcore.controller.impl;
 
+import com.sedcore.entity.ProductVariant;
 import com.sedcore.entity.Sale;
 import com.sedcore.entity.StockMovement;
-import com.sedcore.entity.ProductVariant;
 import com.sedcore.enums.StockMovementType;
 import com.sedcore.model.SaleRequest;
 import com.sedcore.model.SaleReturnRequest;
 import com.sedcore.model.SaleReturnResponse;
-import com.sedcore.repository.SaleRepository;
 import com.sedcore.se.ApiResponse;
 import com.sedcore.service.SaleService;
 import com.sedcore.service.impl.SaleServiceIntegrated;
+import com.sedcore.util.ExceptionMapper;
 import com.towpen.base.enums.model.TMessageType;
 import com.towpen.base.exceptions.TOpenException;
 import com.towpen.base.restservice.model.TOpenMessage;
-import com.sedcore.util.ExceptionMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import jakarta.validation.Valid;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -266,4 +264,4 @@ public class SaleControllerImpl {
         m.put("hasReturn", hasReturn);
         return m;
     }
-}
+}                                                                                                          

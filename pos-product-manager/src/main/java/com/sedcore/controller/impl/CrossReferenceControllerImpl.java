@@ -4,7 +4,7 @@ import com.sedcore.controller.CrossReferenceController;
 import com.sedcore.model.CrossReferenceRequest;
 import com.sedcore.model.CrossReferenceResponse;
 import com.sedcore.service.CrossReferenceService;
-import com.towpen.base.exceptions.ApiResponse;
+import com.sedcore.se.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

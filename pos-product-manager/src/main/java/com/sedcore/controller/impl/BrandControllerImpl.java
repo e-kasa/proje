@@ -4,7 +4,7 @@ import com.sedcore.controller.BrandController;
 import com.sedcore.model.BrandRequest;
 import com.sedcore.model.BrandResponse;
 import com.sedcore.service.BrandService;
-import com.towpen.base.exceptions.ApiResponse;
+import com.sedcore.se.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 import com.towpen.base.enums.model.TMessageType;
 import com.towpen.base.exceptions.TOpenException;
 import com.towpen.base.restservice.model.TOpenMessage;
-import com.sedcore.util.ExceptionMapper;
 
 import java.util.List;
 

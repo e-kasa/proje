@@ -3,7 +3,7 @@ package com.sedcore.controller.impl;
 import com.sedcore.controller.PartSearchController;
 import com.sedcore.model.PartSearchResponse;
 import com.sedcore.service.PartSearchService;
-import com.towpen.base.exceptions.ApiResponse;
+import com.sedcore.se.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

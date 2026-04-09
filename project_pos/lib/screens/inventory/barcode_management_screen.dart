@@ -67,12 +67,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Veri yuklenemedi'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
+        AppToast.error(context, 'Veri yuklenemedi');
       }
     }
   }
@@ -176,12 +171,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
               onPressed: () {
                 if (barcodeController.text.trim().isNotEmpty) {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('✅ Barkod eklendi'),
-                      backgroundColor: AppColors.success,
-                    ),
-                  );
+                  AppToast.success(context, 'Barkod eklendi');
                   _loadBarcodes();
                 }
               },
@@ -555,34 +545,10 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.qr_code_2_outlined,
-            size: 80,
-            color: AppColors.textMuted.withOpacity(0.5),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            t('inventory.no_barcodes'),
-            style: TextStyle(
-              fontSize: 16,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Yeni barkod eklemek veya taramak için butonu kullanın',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textMuted,
-            ),
-          ),
-        ],
-      ),
+    return AppEmptyState.noData(
+      icon: Icons.qr_code_2_outlined,
+      title: t('inventory.no_barcodes'),
+      description: 'Yeni barkod eklemek veya taramak için butonu kullanın',
     );
   }
 
@@ -773,3 +739,4 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
     );
   }
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           

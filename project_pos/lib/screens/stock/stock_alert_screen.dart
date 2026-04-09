@@ -301,19 +301,11 @@ class _StockAlertScreenState extends ConsumerState<StockAlertScreen> {
                   ),
                 ),
                 const Spacer(),
-                TextButton.icon(
+                AppButton.outline(
                   onPressed: () => context.push('/purchases/create'),
-                  icon: const Icon(Icons.add_shopping_cart, size: 16),
-                  label: Text(t('stock.create_order')),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    textStyle: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  icon: Icons.add_shopping_cart,
+                  text: t('stock.create_order'),
+                  size: ButtonSize.small,
                 ),
               ],
             ),
@@ -323,3 +315,4 @@ class _StockAlertScreenState extends ConsumerState<StockAlertScreen> {
     );
   }
 }
+                                                                                                                                                                                                                                                                                                                                                                                         

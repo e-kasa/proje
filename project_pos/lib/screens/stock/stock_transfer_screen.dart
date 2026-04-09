@@ -95,12 +95,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${t('stock.data_load_failed')}: $e'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
+        AppToast.error(context, '${t('stock.data_load_failed')}: $e');
       }
     }
   }
@@ -270,13 +265,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
     required ValueChanged<String?> onLocationChanged,
     required String label,
   }) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(
-            color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-      ),
+    return AppCard(
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -491,15 +480,9 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
 
   Widget _buildItemCard(
       int index, _TransferItem item, ThemeData theme) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(
-            color:
-                theme.colorScheme.outlineVariant.withOpacity(0.5)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: AppCard(
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(
@@ -570,6 +553,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -757,33 +741,19 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
       await ref.read(stockServiceProvider).createTransfer(data);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(t('stock.transfer_created_success')),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        AppToast.success(context, t('stock.transfer_created_success'));
         context.go('/stock/transfer-review');
       }
     } catch (e) {
       setState(() => _isSubmitting = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${t('common.error')}: $e'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
+        AppToast.error(context, '${t('common.error')}: $e');
       }
     }
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.warning,
-      ),
-    );
+    AppToast.warning(context, message);
   }
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                

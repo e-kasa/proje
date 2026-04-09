@@ -51,12 +51,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Markalar yüklenirken hata oluştu: $e'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
+        AppToast.error(context, 'Markalar yüklenirken hata oluştu: $e');
       }
     }
   }
@@ -150,22 +145,12 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                     'isActive': true,
                   });
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('$name markası eklendi'),
-                        backgroundColor: AppColors.success,
-                      ),
-                    );
+                    AppToast.success(context, '$name markası eklendi');
                   }
                   _loadBrands();
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Marka eklenirken hata oluştu: $e'),
-                        backgroundColor: AppColors.danger,
-                      ),
-                    );
+                    AppToast.error(context, 'Marka eklenirken hata oluştu: $e');
                   }
                 }
               }
@@ -256,22 +241,12 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                     },
                   );
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Marka güncellendi'),
-                        backgroundColor: AppColors.success,
-                      ),
-                    );
+                    AppToast.success(context, 'Marka güncellendi');
                   }
                   _loadBrands();
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Marka güncellenirken hata oluştu: $e'),
-                        backgroundColor: AppColors.danger,
-                      ),
-                    );
+                    AppToast.error(context, 'Marka güncellenirken hata oluştu: $e');
                   }
                 }
               }
@@ -288,111 +263,44 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
     );
   }
 
-  void _showDeleteDialog(Map<String, dynamic> brand) {
-    showDialog(
+  void _showDeleteDialog(Map<String, dynamic> brand) async {
+    final confirmed = await AppConfirmationDialog.showDelete(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.warning, color: AppColors.danger),
-            const SizedBox(width: 12),
-            Text(t('inventory.delete_brand')),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('${brand['name']} markasını silmek istediğinizden emin misiniz?'),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.warning.withOpacity(0.1),
-                borderRadius: AppConstants.borderRadiusSmall,
-                border: Border.all(color: AppColors.warning.withOpacity(0.3)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.info_outline, color: AppColors.warning, size: 20),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Bu işlem geri alınamaz',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(t('common.cancel')),
-          ),
-          ElevatedButton.icon(
-            onPressed: () async {
-              Navigator.pop(context);
-              try {
-                await ref.read(brandServiceProvider).deleteBrand(brand['id']);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('${brand['name']} silindi'),
-                      backgroundColor: AppColors.danger,
-                    ),
-                  );
-                }
-                _loadBrands();
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Marka silinirken hata oluştu: $e'),
-                      backgroundColor: AppColors.danger,
-                    ),
-                  );
-                }
-              }
-            },
-            icon: const Icon(Icons.delete),
-            label: Text(t('common.delete')),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ],
-      ),
+      title: t('inventory.delete_brand'),
+      message: '${brand['name']} markasını silmek istediğinizden emin misiniz?',
+      itemName: brand['name'] ?? '',
     );
+
+    if (!confirmed) return;
+
+    try {
+      await ref.read(brandServiceProvider).deleteBrand(brand['id']);
+      if (mounted) {
+        AppToast.success(context, '${brand['name']} silindi');
+      }
+      _loadBrands();
+    } catch (e) {
+      if (mounted) {
+        AppToast.error(context, 'Marka silinirken hata oluştu: $e');
+      }
+    }
   }
 
   Future<void> _toggleStatus(Map<String, dynamic> brand) async {
     try {
       await ref.read(brandServiceProvider).toggleStatus(brand['id']);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              brand['active']
-                  ? '${brand['name']} pasife alındı'
-                  : '${brand['name']} aktife alındı',
-            ),
-            backgroundColor: AppColors.success,
-          ),
+        AppToast.success(
+          context,
+          brand['active']
+              ? '${brand['name']} pasife alındı'
+              : '${brand['name']} aktife alındı',
         );
       }
       _loadBrands();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Durum değiştirilirken hata oluştu: $e'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
+        AppToast.error(context, 'Durum değiştirilirken hata oluştu: $e');
       }
     }
   }
@@ -528,34 +436,10 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.branding_watermark_outlined,
-            size: 80,
-            color: AppColors.textMuted.withOpacity(0.5),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            t('inventory.no_brands'),
-            style: TextStyle(
-              fontSize: 16,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            t('inventory.add_brand_hint'),
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textMuted,
-            ),
-          ),
-        ],
-      ),
+    return AppEmptyState.noData(
+      icon: Icons.branding_watermark_outlined,
+      title: t('inventory.no_brands'),
+      description: t('inventory.add_brand_hint'),
     );
   }
 
@@ -717,3 +601,4 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
     );
   }
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  

@@ -4,7 +4,7 @@ import com.sedcore.controller.OemNumberController;
 import com.sedcore.model.OemNumberRequest;
 import com.sedcore.model.OemNumberResponse;
 import com.sedcore.service.OemNumberService;
-import com.towpen.base.exceptions.ApiResponse;
+import com.sedcore.se.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

@@ -54,7 +54,9 @@ public class SupplierControllerImpl {
                 .collect(Collectors.toList());
             return ResponseEntity.ok(ApiResponse.success(filtered));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Tedarikci listesi hatasi: {}", e);
             throw ExceptionMapper.map(e);
@@ -67,7 +69,9 @@ public class SupplierControllerImpl {
         try {
             return ResponseEntity.ok(ApiResponse.success(supplierService.getSupplier(id)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
@@ -82,7 +86,9 @@ public class SupplierControllerImpl {
             log.info("Tedarikci olusturuldu: {}", saved.getName());
             return ResponseEntity.ok(ApiResponse.success(supplierService.getSupplier(saved.getId())));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Tedarikci olusturma hatasi: {}", e);
             throw ExceptionMapper.map(e);
@@ -97,7 +103,9 @@ public class SupplierControllerImpl {
         try {
             return ResponseEntity.ok(ApiResponse.success(supplierService.updateSupplier(id, dto)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
@@ -111,7 +119,9 @@ public class SupplierControllerImpl {
             supplierService.deleteSupplier(id);
             return ResponseEntity.ok(ApiResponse.success(null));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
@@ -124,7 +134,9 @@ public class SupplierControllerImpl {
         try {
             return ResponseEntity.ok(ApiResponse.success(supplierService.toggleStatus(id)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
@@ -150,7 +162,9 @@ public class SupplierControllerImpl {
                     .count());
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
@@ -163,7 +177,9 @@ public class SupplierControllerImpl {
         try {
             return ResponseEntity.ok(ApiResponse.success(supplierService.getSupplierAccount(id)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
@@ -176,7 +192,9 @@ public class SupplierControllerImpl {
         try {
             return ResponseEntity.ok(ApiResponse.success(supplierService.getSupplierTransactions(id)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
@@ -191,7 +209,9 @@ public class SupplierControllerImpl {
         try {
             return ResponseEntity.ok(ApiResponse.success(supplierService.recordPayment(id, dto)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Odeme kaydi hatasi: supplierId={}, {}", id, e);
             throw ExceptionMapper.map(e);
@@ -210,7 +230,9 @@ public class SupplierControllerImpl {
             }
             return ResponseEntity.ok(ApiResponse.success(supplierService.updateCreditLimit(id, newLimit)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);

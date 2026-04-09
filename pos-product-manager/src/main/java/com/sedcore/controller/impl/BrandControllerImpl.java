@@ -30,7 +30,9 @@ public class BrandControllerImpl implements BrandController {
         try {
             return ResponseEntity.ok(ApiResponse.success("Markalar getirildi", brandService.getActiveBrands()));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Markalar getirilirken hata", e);
             throw new TOpenException(new TOpenMessage(TMessageType.BRAND_LIST_ERROR_1300));
@@ -44,7 +46,9 @@ public class BrandControllerImpl implements BrandController {
         try {
             return ResponseEntity.ok(ApiResponse.success("Tüm markalar getirildi", brandService.getAllBrands()));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Tüm markalar getirilirken hata", e);
             throw new TOpenException(new TOpenMessage(TMessageType.BRAND_LIST_ERROR_1300));
@@ -59,7 +63,9 @@ public class BrandControllerImpl implements BrandController {
             BrandResponse response = brandService.createBrand(request);
             return ResponseEntity.ok(ApiResponse.success("Marka oluşturuldu", response));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Marka oluşturulurken hata", e);
             throw new TOpenException(new TOpenMessage(TMessageType.BRAND_CREATE_ERROR_1301));
@@ -74,7 +80,9 @@ public class BrandControllerImpl implements BrandController {
             BrandResponse response = brandService.updateBrand(id, request);
             return ResponseEntity.ok(ApiResponse.success("Marka güncellendi", response));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Marka güncellenirken hata", e);
             throw new TOpenException(new TOpenMessage(TMessageType.BRAND_UPDATE_ERROR_1302));
@@ -89,7 +97,9 @@ public class BrandControllerImpl implements BrandController {
             brandService.deleteBrand(id);
             return ResponseEntity.ok(ApiResponse.success("Marka silindi", null));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Marka silinirken hata", e);
             throw new TOpenException(new TOpenMessage(TMessageType.BRAND_DELETE_ERROR_1303));
@@ -104,7 +114,9 @@ public class BrandControllerImpl implements BrandController {
             BrandResponse response = brandService.toggleStatus(id);
             return ResponseEntity.ok(ApiResponse.success("Marka durumu değiştirildi", response));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Marka durumu değiştirilirken hata", e);
             throw new TOpenException(new TOpenMessage(TMessageType.BRAND_UPDATE_ERROR_1302));

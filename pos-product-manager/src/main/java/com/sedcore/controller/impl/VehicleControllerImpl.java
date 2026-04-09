@@ -28,7 +28,6 @@ public class VehicleControllerImpl implements VehicleController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<VehicleResponse>>> getActiveVehicles() {
         try {
-            return ResponseEntity.ok(ApiResponse.success("Araclar getirildi", vehicleService.getActiveVehicles()));
         } catch (Exception e) {
             log.error("Araclar getirilirken hata: {}", e);
             throw ExceptionMapper.map(e);
@@ -39,7 +38,6 @@ public class VehicleControllerImpl implements VehicleController {
     @GetMapping("/all")
     public ResponseEntity<ApiResponse<List<VehicleResponse>>> getAllVehicles() {
         try {
-            return ResponseEntity.ok(ApiResponse.success("Tum araclar getirildi", vehicleService.getAllVehicles()));
         } catch (Exception e) {
             log.error("Tum araclar getirilirken hata: {}", e);
             throw ExceptionMapper.map(e);
@@ -51,7 +49,6 @@ public class VehicleControllerImpl implements VehicleController {
     public ResponseEntity<ApiResponse<VehicleResponse>> createVehicle(@RequestBody VehicleRequest request) {
         try {
             VehicleResponse response = vehicleService.createVehicle(request);
-            return ResponseEntity.ok(ApiResponse.success("Arac olusturuldu", response));
         } catch (Exception e) {
             log.error("Arac olusturulurken hata: {}", e);
             throw ExceptionMapper.map(e);
@@ -63,7 +60,6 @@ public class VehicleControllerImpl implements VehicleController {
     public ResponseEntity<ApiResponse<VehicleResponse>> updateVehicle(@PathVariable String id, @RequestBody VehicleRequest request) {
         try {
             VehicleResponse response = vehicleService.updateVehicle(id, request);
-            return ResponseEntity.ok(ApiResponse.success("Arac guncellendi", response));
         } catch (Exception e) {
             log.error("Arac guncellenirken hata: {}", e);
             throw ExceptionMapper.map(e);
@@ -75,7 +71,6 @@ public class VehicleControllerImpl implements VehicleController {
     public ResponseEntity<ApiResponse<Void>> deleteVehicle(@PathVariable String id) {
         try {
             vehicleService.deleteVehicle(id);
-            return ResponseEntity.ok(ApiResponse.success("Arac silindi", null));
         } catch (Exception e) {
             log.error("Arac silinirken hata: {}", e);
             throw ExceptionMapper.map(e);
@@ -86,7 +81,6 @@ public class VehicleControllerImpl implements VehicleController {
     @GetMapping("/makes")
     public ResponseEntity<ApiResponse<List<String>>> getDistinctMakes() {
         try {
-            return ResponseEntity.ok(ApiResponse.success("Markalar getirildi", vehicleService.getDistinctMakes()));
         } catch (Exception e) {
             log.error("Markalar getirilirken hata: {}", e);
             throw ExceptionMapper.map(e);
@@ -97,7 +91,6 @@ public class VehicleControllerImpl implements VehicleController {
     @GetMapping("/models")
     public ResponseEntity<ApiResponse<List<String>>> getModelsByMake(@RequestParam String make) {
         try {
-            return ResponseEntity.ok(ApiResponse.success("Modeller getirildi", vehicleService.getModelsByMake(make)));
         } catch (Exception e) {
             log.error("Modeller getirilirken hata: {}", e);
             throw ExceptionMapper.map(e);
@@ -111,7 +104,6 @@ public class VehicleControllerImpl implements VehicleController {
             @RequestParam(required = false) String model,
             @RequestParam(required = false) Integer year) {
         try {
-            return ResponseEntity.ok(ApiResponse.success("Arama sonuclari", vehicleService.searchVehicles(make, model, year)));
         } catch (Exception e) {
             log.error("Arac aranirken hata: {}", e);
             throw ExceptionMapper.map(e);

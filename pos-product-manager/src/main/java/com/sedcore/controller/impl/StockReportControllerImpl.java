@@ -30,7 +30,6 @@ public class StockReportControllerImpl {
     @GetMapping("/value-summary")
     public ResponseEntity<ApiResponse<StockValueSummary>> getValueSummary() {
         try {
-            return ResponseEntity.ok(ApiResponse.success(stockReportService.getStockValueSummary()));
         } catch (Exception e) {
             log.error("Stok deger ozeti hatasi: {}", e);
             throw ExceptionMapper.map(e);
@@ -43,7 +42,6 @@ public class StockReportControllerImpl {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
         try {
-            return ResponseEntity.ok(ApiResponse.success(stockReportService.getMovementSummary(startDate, endDate)));
         } catch (Exception e) {
             log.error("Stok hareket ozeti hatasi: {}", e);
             throw ExceptionMapper.map(e);
@@ -54,7 +52,6 @@ public class StockReportControllerImpl {
     @GetMapping("/critical-alerts")
     public ResponseEntity<ApiResponse<List<CriticalStockAlert>>> getCriticalAlerts() {
         try {
-            return ResponseEntity.ok(ApiResponse.success(stockReportService.getCriticalAlerts()));
         } catch (Exception e) {
             log.error("Kritik stok alarmlari hatasi: {}", e);
             throw ExceptionMapper.map(e);
@@ -66,7 +63,6 @@ public class StockReportControllerImpl {
     public ResponseEntity<ApiResponse<StockValueSummary>> getWarehouseBreakdown(
             @RequestParam String warehouseId) {
         try {
-            return ResponseEntity.ok(ApiResponse.success(stockReportService.getWarehouseBreakdown(warehouseId)));
         } catch (Exception e) {
             log.error("Depo stok detayi hatasi: {}", e);
             throw ExceptionMapper.map(e);

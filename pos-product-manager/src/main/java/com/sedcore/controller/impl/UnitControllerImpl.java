@@ -29,7 +29,6 @@ public class UnitControllerImpl implements UnitController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<UnitResponse>>> getActiveUnits() {
         try {
-            return ResponseEntity.ok(ApiResponse.success("Birimler getirildi", unitService.getActiveUnits()));
         } catch (Exception e) {
             log.error("Birimler getirilirken hata: {}", e);
             throw ExceptionMapper.map(e);
@@ -41,7 +40,6 @@ public class UnitControllerImpl implements UnitController {
     @GetMapping("/all")
     public ResponseEntity<ApiResponse<List<UnitResponse>>> getAllUnits() {
         try {
-            return ResponseEntity.ok(ApiResponse.success("Tüm birimler getirildi", unitService.getAllUnits()));
         } catch (Exception e) {
             log.error("Tüm birimler getirilirken hata: {}", e);
             throw ExceptionMapper.map(e);
@@ -54,7 +52,6 @@ public class UnitControllerImpl implements UnitController {
     public ResponseEntity<ApiResponse<UnitResponse>> createUnit(@RequestBody UnitRequest request) {
         try {
             UnitResponse response = unitService.createUnit(request);
-            return ResponseEntity.ok(ApiResponse.success("Birim oluşturuldu", response));
         } catch (Exception e) {
             log.error("Birim oluşturulurken hata: {}", e);
             throw ExceptionMapper.map(e);
@@ -67,7 +64,6 @@ public class UnitControllerImpl implements UnitController {
     public ResponseEntity<ApiResponse<UnitResponse>> updateUnit(@PathVariable String id, @RequestBody UnitRequest request) {
         try {
             UnitResponse response = unitService.updateUnit(id, request);
-            return ResponseEntity.ok(ApiResponse.success("Birim güncellendi", response));
         } catch (Exception e) {
             log.error("Birim güncellenirken hata: {}", e);
             throw ExceptionMapper.map(e);
@@ -80,7 +76,6 @@ public class UnitControllerImpl implements UnitController {
     public ResponseEntity<ApiResponse<Void>> deleteUnit(@PathVariable String id) {
         try {
             unitService.deleteUnit(id);
-            return ResponseEntity.ok(ApiResponse.success("Birim silindi", null));
         } catch (Exception e) {
             log.error("Birim silinirken hata: {}", e);
             throw ExceptionMapper.map(e);
@@ -93,7 +88,6 @@ public class UnitControllerImpl implements UnitController {
     public ResponseEntity<ApiResponse<UnitResponse>> toggleStatus(@PathVariable String id) {
         try {
             UnitResponse response = unitService.toggleStatus(id);
-            return ResponseEntity.ok(ApiResponse.success("Birim durumu değiştirildi", response));
         } catch (Exception e) {
             log.error("Birim durumu değiştirilirken hata: {}", e);
             throw ExceptionMapper.map(e);

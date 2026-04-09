@@ -46,7 +46,9 @@ public class PaymentControllerImpl implements PaymentController {
         try {
             return ResponseEntity.ok(ApiResponse.success(paymentService.createPayment(request)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Odeme olusturma hatasi: {}", e);
             throw ExceptionMapper.map(e);
@@ -60,7 +62,9 @@ public class PaymentControllerImpl implements PaymentController {
         try {
             return ResponseEntity.ok(ApiResponse.success(paymentService.getPayment(id)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
@@ -96,7 +100,9 @@ public class PaymentControllerImpl implements PaymentController {
             }
             throw new TOpenException(new TOpenMessage(TMessageType.PAYMENT_LIST_ERROR_2100));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Odeme listesi hatasi: {}", e);
             throw ExceptionMapper.map(e);
@@ -134,7 +140,9 @@ public class PaymentControllerImpl implements PaymentController {
             String reason = body != null ? body.get("reason") : null;
             return ResponseEntity.ok(ApiResponse.success(paymentService.cancelPayment(id, reason)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Odeme iptal hatasi: id={}, {}", id, e);
             throw ExceptionMapper.map(e);
@@ -151,7 +159,9 @@ public class PaymentControllerImpl implements PaymentController {
             String verifiedBy = body != null ? body.get("verifiedBy") : null;
             return ResponseEntity.ok(ApiResponse.success(paymentService.verifyPayment(id, verifiedBy)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Odeme onay hatasi: id={}, {}", id, e);
             throw ExceptionMapper.map(e);

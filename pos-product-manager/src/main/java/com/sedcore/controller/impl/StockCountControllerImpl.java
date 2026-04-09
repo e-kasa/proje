@@ -55,7 +55,9 @@ public class StockCountControllerImpl {
                     request.getStoreId(), request.getWarehouseId(), adjustments.size());
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Stok sayim hatasi: {}", e);
             throw ExceptionMapper.map(e);

@@ -80,11 +80,11 @@ public class RecommendationControllerImpl implements RecommendationController {
             return ResponseEntity.ok(
                     ApiResponse.success("Önerilecek ürünler başarıyla getirildi", recommendations)
             );
-
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Hybrid öneriler getirme hatası", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -110,11 +110,11 @@ public class RecommendationControllerImpl implements RecommendationController {
             return ResponseEntity.ok(
                     ApiResponse.success("Sıkça satılan ürünler getirildi", recommendations)
             );
-
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Frequently bought together hatası", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -141,11 +141,11 @@ public class RecommendationControllerImpl implements RecommendationController {
             return ResponseEntity.ok(
                     ApiResponse.success("Benzer ürünler getirildi", recommendations)
             );
-
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Benzer ürünler getirme hatası", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -163,11 +163,11 @@ public class RecommendationControllerImpl implements RecommendationController {
 
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.success("İlişki başarıyla oluşturuldu", relationship));
-
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("İlişki oluşturma hatası", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -185,11 +185,11 @@ public class RecommendationControllerImpl implements RecommendationController {
             return ResponseEntity.ok(
                     ApiResponse.success("İlişki başarıyla güncellendi", relationship)
             );
-
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("İlişki güncelleme hatası", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -207,11 +207,11 @@ public class RecommendationControllerImpl implements RecommendationController {
             return ResponseEntity.ok(
                     ApiResponse.success("İlişki başarıyla silindi", null)
             );
-
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("İlişki silme hatası", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -242,11 +242,11 @@ public class RecommendationControllerImpl implements RecommendationController {
             return ResponseEntity.ok(
                     ApiResponse.success("İlişkiler başarıyla getirildi", relationships)
             );
-
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("İlişkiler getirme hatası", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -266,11 +266,11 @@ public class RecommendationControllerImpl implements RecommendationController {
                             "Toplu import tamamlandı | İçe aktarılan: " + imported.size(),
                             imported
                     ));
-
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Toplu import hatası", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -292,11 +292,11 @@ public class RecommendationControllerImpl implements RecommendationController {
             return ResponseEntity.ok(
                     ApiResponse.success("Cache başarıyla temizlendi", null)
             );
-
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Cache temizleme hatası", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -317,9 +317,9 @@ public class RecommendationControllerImpl implements RecommendationController {
             return ResponseEntity.ok(
                     ApiResponse.success("İstatistikler getirildi", stats)
             );
-
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("İstatistik getirme hatası", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }

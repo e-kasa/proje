@@ -46,12 +46,11 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
             List<DtoCategory> categories = companyCategoryService.getMyCategories();
             return ResponseEntity.ok(
                     ApiResponse.success("Firma kategorileri getirildi", categories)
-            );
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Firma kategorileri getirilirken hata: {}", e);
-            return ResponseEntity.badRequest().body(
-                    ApiResponse.error("Firma kategorileri getirilemedi: " + e)
-            );
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -63,12 +62,11 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
             List<CompanyCategoryResponse> list = companyCategoryService.getMyCategoryList();
             return ResponseEntity.ok(
                     ApiResponse.success("Kategori listesi getirildi", list)
-            );
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Kategori listesi getirilirken hata: {}", e);
-            return ResponseEntity.badRequest().body(
-                    ApiResponse.error("Kategori listesi getirilemedi: " + e)
-            );
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -80,12 +78,11 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
             List<DtoCategory> categories = companyCategoryService.getAllCategoriesWithSelection();
             return ResponseEntity.ok(
                     ApiResponse.success("Global kategoriler getirildi", categories)
-            );
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Global kategoriler getirilirken hata: {}", e);
-            return ResponseEntity.badRequest().body(
-                    ApiResponse.error("Global kategoriler getirilemedi: " + e)
-            );
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -97,12 +94,11 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
             CompanyCategoryResponse response = companyCategoryService.addCategory(request);
             return ResponseEntity.ok(
                     ApiResponse.success("Kategori firmaya eklendi", response)
-            );
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Kategori eklenirken hata: {}", e);
-            return ResponseEntity.badRequest().body(
-                    ApiResponse.error("Kategori eklenemedi: " + e)
-            );
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -113,12 +109,11 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
             companyCategoryService.removeCategory(categoryId);
             return ResponseEntity.ok(
                     ApiResponse.success("Kategori firmadan kaldırıldı", null)
-            );
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Kategori kaldırılırken hata: {}", e);
-            return ResponseEntity.badRequest().body(
-                    ApiResponse.error("Kategori kaldırılamadı: " + e)
-            );
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -133,12 +128,11 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
                             result.size() + " kategori seçimi kaydedildi",
                             result
                     )
-            );
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Toplu kategori güncellenirken hata: {}", e);
-            return ResponseEntity.badRequest().body(
-                    ApiResponse.error("Kategori seçimi kaydedilemedi: " + e)
-            );
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 }

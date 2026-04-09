@@ -38,11 +38,11 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
             return ResponseEntity.ok(ApiResponse.success(
                     "Ürün kategoriye eklendi",
                     toResponse(result)
-            ));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Ürün kategoriye eklenirken hata: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -51,11 +51,11 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
             String productId, String categoryId) {
         try {
             productCategoryService.removeCategoryFromProduct(productId, categoryId);
-            return ResponseEntity.ok(ApiResponse.success("Ürün kategoriden çıkarıldı",null));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Ürün kategoriden çıkarılırken hata: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -64,11 +64,11 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
             String productId, String newPrimaryCategoryId) {
         try {
             productCategoryService.changePrimaryCategory(productId, newPrimaryCategoryId);
-            return ResponseEntity.ok(ApiResponse.success( "Ana kategori değiştirildi",null));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Ana kategori değiştirilirken hata: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -80,11 +80,11 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
             List<ProductCategoryResponse> response = categories.stream()
                     .map(this::toResponse)
                     .collect(Collectors.toList());
-            return ResponseEntity.ok(ApiResponse.success( "Kategoriler getirildi",response));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Kategoriler getirilirken hata: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -96,11 +96,11 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
             return ResponseEntity.ok(ApiResponse.success(
                     "Ana kategori getirildi",
                     toResponse(primary)
-            ));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Ana kategori getirilirken hata: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -112,11 +112,11 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
             List<ProductCategoryResponse> response = products.stream()
                     .map(this::toResponse)
                     .collect(Collectors.toList());
-            return ResponseEntity.ok(ApiResponse.success( "Ürünler getirildi",response));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Ürünler getirilirken hata: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -129,11 +129,11 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
             List<ProductCategoryResponse> response = featured.stream()
                     .map(this::toResponse)
                     .collect(Collectors.toList());
-            return ResponseEntity.ok(ApiResponse.success( "Öne çıkan ürünler getirildi",response));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Öne çıkan ürünler getirilirken hata: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -142,11 +142,11 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
             String productId, String categoryId, Boolean featured) {
         try {
             productCategoryService.featureProductInCategory(productId, categoryId, featured);
-            return ResponseEntity.ok(ApiResponse.success( "Öne çıkarma durumu güncellendi",null));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Öne çıkarma güncellenirken hata: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -155,11 +155,11 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
             String productId, String categoryId, Integer displayOrder) {
         try {
             productCategoryService.updateDisplayOrder(productId, categoryId, displayOrder);
-            return ResponseEntity.ok(ApiResponse.success( "Görüntüleme sırası güncellendi",null));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Görüntüleme sırası güncellenirken hata: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 

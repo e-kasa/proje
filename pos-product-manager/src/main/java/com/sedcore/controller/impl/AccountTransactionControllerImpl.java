@@ -39,7 +39,6 @@ public class AccountTransactionControllerImpl implements AccountTransactionContr
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<AccountTransactionResponse>> getById(@PathVariable String id) {
         try {
-            return ResponseEntity.ok(ApiResponse.success(accountTransactionService.getTransaction(id)));
         } catch (Exception e) {
             log.error("Cari hareket getirme hatasi: id={}, {}", id, e);
             throw ExceptionMapper.map(e);
@@ -78,7 +77,6 @@ public class AccountTransactionControllerImpl implements AccountTransactionContr
                         accountTransactionService.getByPurchase(purchaseId)));
             }
             return ResponseEntity.badRequest().body(
-                    ApiResponse.error("supplierId, customerId veya purchaseId parametresi gerekli"));
         } catch (Exception e) {
             log.error("Cari hareket listesi hatasi: {}", e);
             throw ExceptionMapper.map(e);
@@ -113,11 +111,11 @@ public class AccountTransactionControllerImpl implements AccountTransactionContr
         try {
             String reason = body != null ? body.get("reason") : null;
             return ResponseEntity.ok(ApiResponse.success(
-                    accountTransactionService.cancelTransaction(id, reason)));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Cari hareket iptal hatasi: id={}, {}", id, e);
-            return ResponseEntity.badRequest().body(
-                    ApiResponse.error("Iptal islemi basarisiz: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 

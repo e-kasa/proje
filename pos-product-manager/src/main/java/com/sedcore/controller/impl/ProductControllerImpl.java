@@ -48,7 +48,9 @@ public class ProductControllerImpl implements ProductController {
                     .status(HttpStatus.CREATED)
                     .body(ApiResponse.success("Ürün başarıyla oluşturuldu", response));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Ürün oluşturma hatası: ", e);
             throw ExceptionMapper.map(e);
@@ -69,7 +71,9 @@ public class ProductControllerImpl implements ProductController {
             ProductResponse response = productService.updateProduct(id, request);
             return ResponseEntity.ok(ApiResponse.success("Ürün başarıyla güncellendi", response));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Ürün güncelleme hatası: id={}", id, e);
             throw ExceptionMapper.map(e);
@@ -86,7 +90,9 @@ public class ProductControllerImpl implements ProductController {
             ProductResponse response = productService.getProduct(id);
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Ürün getirme hatası: id={}", id, e);
             throw new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006));
@@ -112,7 +118,9 @@ public class ProductControllerImpl implements ProductController {
             Page<ProductResponse> response = productService.listProducts(pageable);
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Ürün listeleme hatası: ", e);
             throw ExceptionMapper.map(e);
@@ -134,7 +142,9 @@ public class ProductControllerImpl implements ProductController {
             Page<ProductResponse> response = productService.searchProducts(keyword, pageable);
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Ürün arama hatası: ", e);
             throw ExceptionMapper.map(e);
@@ -161,7 +171,9 @@ public class ProductControllerImpl implements ProductController {
             }
             return ResponseEntity.ok(ApiResponse.success("Ürün durumu güncellendi", null));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Ürün durum değiştirme hatası: id={}", id, e);
             throw ExceptionMapper.map(e);
@@ -179,7 +191,9 @@ public class ProductControllerImpl implements ProductController {
             productService.deleteProduct(id);
             return ResponseEntity.ok(ApiResponse.success("Ürün başarıyla silindi", null));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Ürün silme hatası: id={}", id, e);
             throw ExceptionMapper.map(e);

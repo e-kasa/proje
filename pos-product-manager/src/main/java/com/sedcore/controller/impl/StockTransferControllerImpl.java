@@ -47,7 +47,9 @@ public class StockTransferControllerImpl {
             var result = transfers.stream().map(this::toMap).collect(Collectors.toList());
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Transfer listesi hatasi: {}", e);
             throw ExceptionMapper.map(e);
@@ -62,7 +64,9 @@ public class StockTransferControllerImpl {
                     .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
             return ResponseEntity.ok(ApiResponse.success(toMap(transfer)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);
@@ -79,7 +83,9 @@ public class StockTransferControllerImpl {
                     transfer.getId(), transfer.getFromWarehouseId(), transfer.getToWarehouseId());
             return ResponseEntity.ok(ApiResponse.success(toMap(transfer)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Transfer hatasi: {}", e);
             throw ExceptionMapper.map(e);

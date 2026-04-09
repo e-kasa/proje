@@ -40,7 +40,9 @@ public class CategoryControllerImpl implements CategoryController {
             DtoCategory category = categoryService.createCategory(dtoCategoryUI);
             return ResponseEntity.ok(ApiResponse.success("Kategori başarıyla oluşturuldu",category));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Kategori oluşturma hatası: {}", e);
             throw ExceptionMapper.map(e);
@@ -57,7 +59,9 @@ public class CategoryControllerImpl implements CategoryController {
             DtoCategory category = categoryService.updateCategory(id, dtoCategoryUI);
             return ResponseEntity.ok(ApiResponse.success("Kategori başarıyla güncellendi",category));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Kategori güncelleme hatası: {}", e);
             throw ExceptionMapper.map(e);
@@ -72,7 +76,9 @@ public class CategoryControllerImpl implements CategoryController {
             categoryService.deleteCategory(id);
             return ResponseEntity.ok(ApiResponse.success( "Kategori başarıyla silindi",null));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Kategori silme hatası: {}", e);
             throw ExceptionMapper.map(e);
@@ -87,7 +93,9 @@ public class CategoryControllerImpl implements CategoryController {
             DtoCategory category = categoryService.getCategoryById(id);
             return ResponseEntity.ok(ApiResponse.success( "Kategori başarıyla getirildi",category));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Kategori getirme hatası: {}", e);
             throw ExceptionMapper.map(e);
@@ -103,7 +111,9 @@ public class CategoryControllerImpl implements CategoryController {
             return ResponseEntity.ok(ApiResponse.success(
                     categories.size() + " kategori başarıyla getirildi",categories));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Kategoriler listeleme hatası: {}", e);
             throw ExceptionMapper.map(e);
@@ -122,11 +132,11 @@ public class CategoryControllerImpl implements CategoryController {
         } catch (IllegalArgumentException e) {
             log.error("Geçersiz durum parametresi: {}", status);
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Geçersiz durum parametresi: " + status));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Kategoriler listeleme hatası: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Kategoriler listelenirken hata oluştu: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -137,11 +147,11 @@ public class CategoryControllerImpl implements CategoryController {
             log.info("Ana kategoriler listeleme isteği alındı");
             List<DtoCategory> categories = categoryService.getRootCategories();
             return ResponseEntity.ok(ApiResponse.success(
-                    categories.size() + " ana kategori başarıyla getirildi", categories));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Ana kategoriler listeleme hatası: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Ana kategoriler listelenirken hata oluştu: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -152,11 +162,11 @@ public class CategoryControllerImpl implements CategoryController {
             log.info("Alt kategoriler listeleme isteği alındı: {}", parentId);
             List<DtoCategory> categories = categoryService.getChildCategories(parentId);
             return ResponseEntity.ok(ApiResponse.success(
-                    categories.size() + " alt kategori başarıyla getirildi",categories));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Alt kategoriler listeleme hatası: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Alt kategoriler listelenirken hata oluştu: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -166,11 +176,11 @@ public class CategoryControllerImpl implements CategoryController {
         try {
             log.info("Kategori ağacı listeleme isteği alındı");
             List<DtoCategory> tree = categoryService.getCategoryTree();
-            return ResponseEntity.ok(ApiResponse.success("Kategori ağacı başarıyla getirildi",tree));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Kategori ağacı listeleme hatası: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Kategori ağacı listelenirken hata oluştu: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -180,11 +190,11 @@ public class CategoryControllerImpl implements CategoryController {
         try {
             log.info("Kategori yolu getirme isteği alındı: {}", categoryId);
             String path = categoryService.getCategoryPath(categoryId);
-            return ResponseEntity.ok(ApiResponse.success( "Kategori yolu başarıyla getirildi",path));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Kategori yolu getirme hatası: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Kategori yolu getirilirken hata oluştu: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -194,11 +204,11 @@ public class CategoryControllerImpl implements CategoryController {
         try {
             log.info("Slug oluşturma isteği alındı: {}", name);
             String slug = categoryService.generateSlug(name);
-            return ResponseEntity.ok(ApiResponse.success(slug, "Slug başarıyla oluşturuldu"));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Slug oluşturma hatası: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Slug oluşturulurken hata oluştu: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -210,11 +220,11 @@ public class CategoryControllerImpl implements CategoryController {
         try {
             log.info("Sıralama güncelleme isteği alındı: {} -> {}", categoryId, newOrder);
             categoryService.updateSortOrder(categoryId, newOrder);
-            return ResponseEntity.ok(ApiResponse.success("Sıralama başarıyla güncellendi",null));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Sıralama güncelleme hatası: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Sıralama güncellenirken hata oluştu: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -231,11 +241,11 @@ public class CategoryControllerImpl implements CategoryController {
             DtoCategory category = categoryService.getCategoryWithRelations(
                     categoryId, includeChildren, includeVariants, includeAttributes
             );
-            return ResponseEntity.ok(ApiResponse.success("Kategori ilişkileriyle başarıyla getirildi", category));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Kategori ilişkileriyle getirme hatası: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Kategori getirilirken hata oluştu: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -245,11 +255,11 @@ public class CategoryControllerImpl implements CategoryController {
         try {
             log.info("Kategori ağacı ilişkilerle listeleme isteği alındı");
             List<DtoCategory> tree = categoryService.getCategoryTreeWithRelations();
-            return ResponseEntity.ok(ApiResponse.success("Kategori ağacı ilişkileriyle başarıyla getirildi", tree));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Kategori ağacı ilişkilerle listeleme hatası: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Kategori ağacı listelenirken hata oluştu: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -261,7 +271,6 @@ public class CategoryControllerImpl implements CategoryController {
         try {
             log.info("Category children ile getirme isteği: {}, Recursive={}", categoryId, recursive);
             DtoCategory category = categoryService.getCategoryWithChildren(categoryId, recursive);
-            
         } catch (Exception e) {
           
         }
@@ -273,11 +282,11 @@ public class CategoryControllerImpl implements CategoryController {
         
         try {
             CategoryVariant categoryVariant = categoryVariantService.addVariantToCategory(categoryId, variantKey, variantName, variantType);
-           return ResponseEntity.ok(ApiResponse.success("Kategori alt kategorileriyle başarıyla getirildi", categoryVariant));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-              log.error("Kategoriye varyanat ekleme hatası: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Kategoriye varyanat ekleme hatası: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 

@@ -32,7 +32,6 @@ public class PartSearchControllerImpl implements PartSearchController {
             @RequestParam(required = false) Integer year) {
         try {
             List<PartSearchResponse> results = partSearchService.searchParts(q, make, model, year);
-            return ResponseEntity.ok(ApiResponse.success(results.size() + " sonuc bulundu", results));
         } catch (Exception e) {
             log.error("Parca aranirken hata: {}", e);
             throw ExceptionMapper.map(e);

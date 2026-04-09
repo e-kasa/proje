@@ -67,7 +67,6 @@ public class SaleControllerImpl {
                 .filter(s -> isCancelled == null || isCancelled.equals(s.getIsCancelled()))
                 .map(this::toMap)
                 .collect(Collectors.toList());
-            return ResponseEntity.ok(ApiResponse.success(filtered));
         } catch (Exception e) {
             log.error("Satış listesi hatası: {}", e);
             throw ExceptionMapper.map(e);
@@ -82,7 +81,9 @@ public class SaleControllerImpl {
                 .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
             return ResponseEntity.ok(ApiResponse.success(toMap(sale)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Satış getirme hatası: {}", e);
             throw ExceptionMapper.map(e);
@@ -97,7 +98,9 @@ public class SaleControllerImpl {
                 .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
             return ResponseEntity.ok(ApiResponse.success(toMap(sale)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Satış numarasına göre getirme hatası: {}", e);
             throw ExceptionMapper.map(e);
@@ -117,7 +120,9 @@ public class SaleControllerImpl {
             log.info("Satış oluşturuldu: {}", sale.getSaleNumber());
             return ResponseEntity.ok(ApiResponse.success(toMap(sale)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Satış oluşturma hatası: {}", e);
             throw ExceptionMapper.map(e);
@@ -140,7 +145,9 @@ public class SaleControllerImpl {
             log.info("Satis iadesi olusturuldu: saleId={}, tutar={}", id, response.getTotalReturnAmount());
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Satis iadesi hatasi: {}", e);
             throw ExceptionMapper.map(e);
@@ -159,7 +166,9 @@ public class SaleControllerImpl {
             log.info("Satış iptal edildi: {}", sale.getSaleNumber());
             return ResponseEntity.ok(ApiResponse.success(toMap(sale)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Satış iptal hatası: {}", e);
             throw ExceptionMapper.map(e);
@@ -183,7 +192,6 @@ public class SaleControllerImpl {
                 .filter(sale -> !Boolean.TRUE.equals(sale.getIsCancelled()))
                 .map(Sale::getTotalAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
-            return ResponseEntity.ok(ApiResponse.success(s));
         } catch (Exception e) {
             log.error("İstatistik alma hatası: {}", e);
             throw ExceptionMapper.map(e);

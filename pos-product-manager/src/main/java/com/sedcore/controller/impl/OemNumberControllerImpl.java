@@ -28,7 +28,6 @@ public class OemNumberControllerImpl implements OemNumberController {
     @GetMapping("/variant/{variantId}")
     public ResponseEntity<ApiResponse<List<OemNumberResponse>>> getByVariantId(@PathVariable String variantId) {
         try {
-            return ResponseEntity.ok(ApiResponse.success("OEM numaralari getirildi", oemNumberService.getByVariantId(variantId)));
         } catch (Exception e) {
             log.error("OEM numaralari getirilirken hata: {}", e);
             throw ExceptionMapper.map(e);
@@ -40,7 +39,6 @@ public class OemNumberControllerImpl implements OemNumberController {
     public ResponseEntity<ApiResponse<OemNumberResponse>> createOemNumber(@RequestBody OemNumberRequest request) {
         try {
             OemNumberResponse response = oemNumberService.createOemNumber(request);
-            return ResponseEntity.ok(ApiResponse.success("OEM numarasi eklendi", response));
         } catch (Exception e) {
             log.error("OEM numarasi eklenirken hata: {}", e);
             throw ExceptionMapper.map(e);
@@ -53,7 +51,6 @@ public class OemNumberControllerImpl implements OemNumberController {
             @PathVariable String variantId, @RequestBody List<OemNumberRequest> requests) {
         try {
             List<OemNumberResponse> responses = oemNumberService.bulkCreate(variantId, requests);
-            return ResponseEntity.ok(ApiResponse.success("OEM numaralari toplu eklendi", responses));
         } catch (Exception e) {
             log.error("OEM numaralari toplu eklenirken hata: {}", e);
             throw ExceptionMapper.map(e);
@@ -65,7 +62,6 @@ public class OemNumberControllerImpl implements OemNumberController {
     public ResponseEntity<ApiResponse<Void>> deleteOemNumber(@PathVariable String id) {
         try {
             oemNumberService.deleteOemNumber(id);
-            return ResponseEntity.ok(ApiResponse.success("OEM numarasi silindi", null));
         } catch (Exception e) {
             log.error("OEM numarasi silinirken hata: {}", e);
             throw ExceptionMapper.map(e);
@@ -76,7 +72,6 @@ public class OemNumberControllerImpl implements OemNumberController {
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<List<OemNumberResponse>>> searchByOemNumber(@RequestParam String q) {
         try {
-            return ResponseEntity.ok(ApiResponse.success("Arama sonuclari", oemNumberService.searchByOemNumber(q)));
         } catch (Exception e) {
             log.error("OEM aranirken hata: {}", e);
             throw ExceptionMapper.map(e);

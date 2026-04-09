@@ -53,7 +53,9 @@ public class CustomerControllerImpl {
                 .collect(Collectors.toList());
             return ResponseEntity.ok(ApiResponse.success(filtered));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Müşteri listesi hatası: {}", e);
             throw new TOpenException(new TOpenMessage(TMessageType.CUSTOMER_LIST_ERROR_1400));
@@ -68,7 +70,9 @@ public class CustomerControllerImpl {
                 .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
             return ResponseEntity.ok(ApiResponse.success(toMap(customer)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.mapAndLog(e, "getCustomer(" + id + ")");
@@ -92,7 +96,9 @@ public class CustomerControllerImpl {
             log.info("Müşteri oluşturuldu: {}", customer.getName());
             return ResponseEntity.ok(ApiResponse.success(toMap(customer)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Müşteri oluşturma hatası: {}", e);
             throw new TOpenException(new TOpenMessage(TMessageType.CUSTOMER_CREATE_ERROR_1401));
@@ -121,7 +127,9 @@ public class CustomerControllerImpl {
             customer = customerRepository.save(customer);
             return ResponseEntity.ok(ApiResponse.success(toMap(customer)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw new TOpenException(new TOpenMessage(TMessageType.CUSTOMER_CREATE_ERROR_1401));
@@ -139,7 +147,9 @@ public class CustomerControllerImpl {
             customerRepository.save(customer);
             return ResponseEntity.ok(ApiResponse.success(null));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw new TOpenException(new TOpenMessage(TMessageType.CUSTOMER_UPDATE_ERROR_1402));
@@ -157,7 +167,9 @@ public class CustomerControllerImpl {
             customer = customerRepository.save(customer);
             return ResponseEntity.ok(ApiResponse.success(toMap(customer)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw new TOpenException(new TOpenMessage(TMessageType.CUSTOMER_DELETE_ERROR_1403));
@@ -174,7 +186,6 @@ public class CustomerControllerImpl {
             stats.put("activeCustomers", all.stream().filter(c -> Boolean.TRUE.equals(c.getIsActive())).count());
             stats.put("inactiveCustomers", all.stream().filter(c -> !Boolean.TRUE.equals(c.getIsActive())).count());
             stats.put("corporateCustomers", all.stream().filter(c -> c.getCustomerType() != null && c.getCustomerType().name().equals("CORPORATE")).count());
-            return ResponseEntity.ok(ApiResponse.success(stats));
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw new TOpenException(new TOpenMessage(TMessageType.CUSTOMER_UPDATE_ERROR_1402));
@@ -191,7 +202,9 @@ public class CustomerControllerImpl {
         try {
             return ResponseEntity.ok(ApiResponse.success(customerService.getCustomerAccount(id)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw new TOpenException(new TOpenMessage(TMessageType.CUSTOMER_LIST_ERROR_1400));
@@ -204,7 +217,9 @@ public class CustomerControllerImpl {
         try {
             return ResponseEntity.ok(ApiResponse.success(customerService.getCustomerTransactions(id)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw new TOpenException(new TOpenMessage(TMessageType.CUSTOMER_GET_ERROR_1404));
@@ -219,7 +234,9 @@ public class CustomerControllerImpl {
         try {
             return ResponseEntity.ok(ApiResponse.success(customerService.recordPayment(id, dto)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Tahsilat kaydi hatasi: customerId={}, {}", id, e);
             throw new TOpenException(new TOpenMessage(TMessageType.CUSTOMER_GET_ERROR_1404));
@@ -238,7 +255,9 @@ public class CustomerControllerImpl {
             }
             return ResponseEntity.ok(ApiResponse.success(customerService.updateCreditLimit(id, newLimit)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);

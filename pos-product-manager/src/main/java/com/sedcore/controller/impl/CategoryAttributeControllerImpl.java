@@ -39,11 +39,11 @@ public class CategoryAttributeControllerImpl implements CategoryAttributeControl
             return ResponseEntity.ok(ApiResponse.success(
                     "Özellik oluşturuldu",
                     toResponse(result)
-            ));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Özellik oluşturulurken hata: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -71,11 +71,11 @@ public class CategoryAttributeControllerImpl implements CategoryAttributeControl
             return ResponseEntity.ok(ApiResponse.success(
                     "Özellik güncellendi",
                     toResponse(result)
-            ));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Özellik güncellenirken hata: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -83,11 +83,11 @@ public class CategoryAttributeControllerImpl implements CategoryAttributeControl
     public ResponseEntity<ApiResponse<Void>> deleteAttribute(String id) {
         try {
             categoryAttributeService.deleteCategoryAttribute(id);
-            return ResponseEntity.ok(ApiResponse.success("Özellik silindi",null ));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Özellik silinirken hata: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -100,11 +100,11 @@ public class CategoryAttributeControllerImpl implements CategoryAttributeControl
             List<CategoryAttributeResponse> response = attributes.stream()
                     .map(this::toResponse)
                     .collect(Collectors.toList());
-            return ResponseEntity.ok(ApiResponse.success("Özellikler getirildi",response));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Özellikler getirilirken hata: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -117,11 +117,11 @@ public class CategoryAttributeControllerImpl implements CategoryAttributeControl
             List<CategoryAttributeResponse> response = attributes.stream()
                     .map(this::toResponse)
                     .collect(Collectors.toList());
-            return ResponseEntity.ok(ApiResponse.success( "Zorunlu özellikler getirildi",response));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Zorunlu özellikler getirilirken hata: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -135,11 +135,11 @@ public class CategoryAttributeControllerImpl implements CategoryAttributeControl
                     .map(this::toResponse)
                     .collect(Collectors.toList());
             return ResponseEntity.ok(ApiResponse.success(
-                    "Filtrelenebilir özellikler getirildi",response));
+        } catch (TOpenException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Filtrelenebilir özellikler getirilirken hata: {}", e, e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Hata: " + e));
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
         }
     }
 

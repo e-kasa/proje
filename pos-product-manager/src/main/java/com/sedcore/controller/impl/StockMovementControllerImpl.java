@@ -74,7 +74,6 @@ public class StockMovementControllerImpl {
                 .filter(m -> movementType == null || movementType.equals(m.getMovementType().name()))
                 .map(this::toMap)
                 .collect(Collectors.toList());
-            return ResponseEntity.ok(ApiResponse.success(filtered));
         } catch (Exception e) {
             log.error("Stok hareketi listesi hatası: {}", e);
             throw ExceptionMapper.map(e);
@@ -89,7 +88,9 @@ public class StockMovementControllerImpl {
                 .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
             return ResponseEntity.ok(ApiResponse.success(toMap(movement)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Stok hareketi getirme hatası: {}", e);
             throw ExceptionMapper.map(e);
@@ -123,7 +124,6 @@ public class StockMovementControllerImpl {
                 variant.getSku(), movement.getMovementType(), movement.getQuantity());
             return ResponseEntity.ok(ApiResponse.success(toMap(movement)));
         } catch (IllegalArgumentException e) {
-            throw ExceptionMapper.map(e);
         } catch (Exception e) {
             log.error("Stok hareketi oluşturma hatası: {}", e);
             throw ExceptionMapper.map(e);
@@ -141,7 +141,6 @@ public class StockMovementControllerImpl {
                 .filter(m -> m.getMovementType().name().endsWith("_IN")).count());
             s.put("outMovements", all.stream()
                 .filter(m -> m.getMovementType().name().endsWith("_OUT")).count());
-            return ResponseEntity.ok(ApiResponse.success(s));
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);

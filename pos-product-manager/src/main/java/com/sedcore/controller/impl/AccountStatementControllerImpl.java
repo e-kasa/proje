@@ -89,7 +89,6 @@ public class AccountStatementControllerImpl {
                     .transactions(lines)
                     .build();
 
-            return ResponseEntity.ok(ApiResponse.success(entry));
         } catch (Exception e) {
             log.error("Hesap ekstresi hatasi: {}", e);
             throw ExceptionMapper.map(e);
@@ -136,7 +135,6 @@ public class AccountStatementControllerImpl {
                     })
                     .collect(Collectors.toList());
 
-            return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Vadesi gecmis islemler hatasi: {}", e);
             throw ExceptionMapper.map(e);
@@ -181,7 +179,6 @@ public class AccountStatementControllerImpl {
             summary.put("overdueTransactionCount", overdueCount);
             summary.put("totalTransactionCount", (long) active.size());
 
-            return ResponseEntity.ok(ApiResponse.success(summary));
         } catch (Exception e) {
             log.error("Hesap ozeti hatasi: {}", e);
             throw ExceptionMapper.map(e);

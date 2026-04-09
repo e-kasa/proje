@@ -39,7 +39,9 @@ public class PurchaseControllerImpl {
             return ResponseEntity.ok(ApiResponse.success(
                     purchaseService.listPurchases(supplierId, isCancelled)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.mapAndLog(e, "listPurchases");
@@ -52,7 +54,9 @@ public class PurchaseControllerImpl {
         try {
             return ResponseEntity.ok(ApiResponse.success(purchaseService.getPurchase(id)));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.notFound("Purchase[" + id + "]");
@@ -69,7 +73,9 @@ public class PurchaseControllerImpl {
                     response.getInvoiceNumber(), response.getSupplierName());
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.mapAndLog(e, "createPurchase");
@@ -86,7 +92,9 @@ public class PurchaseControllerImpl {
             log.info("Satin alma guncellendi: id={}", id);
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.mapAndLog(e, "updatePurchase(" + id + ")");
@@ -104,7 +112,9 @@ public class PurchaseControllerImpl {
                     id, response.getTotalReturnAmount());
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.mapAndLog(e, "createPurchaseReturn(" + id + ")");
@@ -119,7 +129,9 @@ public class PurchaseControllerImpl {
             log.info("Satin alma iptal edildi: id={}", id);
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.mapAndLog(e, "cancelPurchase(" + id + ")");
@@ -150,7 +162,9 @@ public class PurchaseControllerImpl {
 
             return ResponseEntity.ok(ApiResponse.success(s));
         } catch (TOpenException e) {
+
             throw e;
+
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.mapAndLog(e, "getPurchaseStats");

@@ -4,7 +4,7 @@ import com.sedcore.controller.VehicleController;
 import com.sedcore.model.VehicleRequest;
 import com.sedcore.model.VehicleResponse;
 import com.sedcore.service.VehicleService;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

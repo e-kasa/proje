@@ -276,4 +276,3 @@ class _AddIncomeScreenState extends ConsumerState<AddIncomeScreen> {
     );
   }
 }
-                                                                                                           

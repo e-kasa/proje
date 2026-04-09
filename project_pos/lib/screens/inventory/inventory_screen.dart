@@ -148,4 +148,9 @@ class InventoryScreen extends ConsumerWidget {
                 ],
               ),
             ],
- 
+          ),
+        ),
+      ),
+    );
+  }
+}

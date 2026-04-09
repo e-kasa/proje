@@ -3,7 +3,7 @@ package com.sedcore.controller.impl;
 import com.sedcore.controller.AccountTransactionController;
 import com.sedcore.enums.TransactionType;
 import com.sedcore.model.AccountTransactionResponse;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import com.sedcore.service.AccountTransactionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

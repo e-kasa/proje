@@ -7,7 +7,7 @@ import com.sedcore.enums.ProductStatus;
 import com.sedcore.model.CategoryVariantResponse;
 import com.sedcore.model.DtoCategory;
 import com.sedcore.model.DtoCategoryUI;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import com.sedcore.service.CategoryService;
 import com.sedcore.service.CategoryVariantService;
 

@@ -3,7 +3,7 @@ package com.sedcore.controller.impl;
 import com.sedcore.model.reports.CriticalStockAlert;
 import com.sedcore.model.reports.StockMovementSummary;
 import com.sedcore.model.reports.StockValueSummary;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import com.sedcore.service.StockReportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

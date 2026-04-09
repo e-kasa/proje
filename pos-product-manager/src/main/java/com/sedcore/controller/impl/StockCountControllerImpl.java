@@ -2,7 +2,7 @@ package com.sedcore.controller.impl;
 
 import com.sedcore.entity.StockMovement;
 import com.sedcore.model.StockCountRequest;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import com.sedcore.service.impl.StockCountServiceIntegrated;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

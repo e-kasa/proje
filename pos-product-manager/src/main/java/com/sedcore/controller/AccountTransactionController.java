@@ -2,7 +2,8 @@ package com.sedcore.controller;
 
 import com.sedcore.enums.TransactionType;
 import com.sedcore.model.AccountTransactionResponse;
-import com.sedcore.se.ApiResponse;
+
+import com.towpen.base.exceptions.ApiResponse;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;

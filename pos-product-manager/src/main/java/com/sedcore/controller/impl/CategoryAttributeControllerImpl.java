@@ -4,7 +4,7 @@ import com.sedcore.controller.CategoryAttributeController;
 import com.sedcore.entity.CategoryAttribute;
 import com.sedcore.model.CategoryAttributeRequest;
 import com.sedcore.model.CategoryAttributeResponse;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import com.sedcore.service.CategoryAttributeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

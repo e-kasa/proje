@@ -428,4 +428,4 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
       ),
     );
   }
-}                                                                                                                         
+}

@@ -6,7 +6,7 @@ import com.sedcore.entity.StockMovement;
 import com.sedcore.enums.StockMovementType;
 import com.sedcore.repository.ProductVariantRepository;
 import com.sedcore.repository.StockMovementRepository;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import com.sedcore.service.StockMovementService;
 import com.sedcore.util.EntityAuditHelper;
 import com.towpen.base.enums.model.TMessageType;

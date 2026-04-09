@@ -7,7 +7,7 @@ import com.sedcore.enums.StockMovementType;
 import com.sedcore.model.SaleRequest;
 import com.sedcore.model.SaleReturnRequest;
 import com.sedcore.model.SaleReturnResponse;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import com.sedcore.service.SaleService;
 import com.sedcore.service.impl.SaleServiceIntegrated;
 import com.sedcore.util.ExceptionMapper;

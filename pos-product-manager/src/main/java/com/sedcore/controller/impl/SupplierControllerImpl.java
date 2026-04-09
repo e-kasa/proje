@@ -6,7 +6,7 @@ import com.sedcore.model.SupplierAccountResponse;
 import com.sedcore.model.SupplierDto;
 import com.sedcore.model.SupplierPaymentDto;
 import com.sedcore.model.SupplierResponse;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import com.sedcore.service.SupplierService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

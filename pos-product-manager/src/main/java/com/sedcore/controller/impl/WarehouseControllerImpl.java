@@ -1,7 +1,7 @@
 package com.sedcore.controller.impl;
 
 import com.sedcore.entity.Warehouse;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import com.sedcore.service.WarehouseService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

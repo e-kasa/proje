@@ -4,7 +4,7 @@ import com.sedcore.model.reports.CustomerSalesAnalysis;
 import com.sedcore.model.reports.ProductSalesAnalysis;
 import com.sedcore.model.reports.ProfitOverview;
 import com.sedcore.model.reports.SalesSummary;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import com.sedcore.service.SalesReportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

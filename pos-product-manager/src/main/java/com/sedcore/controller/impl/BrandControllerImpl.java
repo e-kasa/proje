@@ -4,7 +4,7 @@ import com.sedcore.controller.BrandController;
 import com.sedcore.model.BrandRequest;
 import com.sedcore.model.BrandResponse;
 import com.sedcore.service.BrandService;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

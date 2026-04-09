@@ -6,7 +6,7 @@ import com.sedcore.model.CustomerAccountResponse;
 import com.sedcore.model.CustomerDto;
 import com.sedcore.model.CustomerPaymentDto;
 import com.sedcore.repository.CustomerRepository;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import com.sedcore.service.CustomerService;
 import com.sedcore.util.EntityAuditHelper;
 import lombok.RequiredArgsConstructor;

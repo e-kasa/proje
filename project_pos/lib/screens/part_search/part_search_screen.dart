@@ -481,4 +481,3 @@ class _PartSearchScreenState extends ConsumerState<PartSearchScreen> {
     );
   }
 }
-                                                          

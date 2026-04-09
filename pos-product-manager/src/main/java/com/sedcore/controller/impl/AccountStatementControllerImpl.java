@@ -3,7 +3,7 @@ package com.sedcore.controller.impl;
 import com.sedcore.entity.AccountTransaction;
 import com.sedcore.model.reports.AccountStatementEntry;
 import com.sedcore.repository.AccountTransactionRepository;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;

@@ -327,3 +327,10 @@ class _MultiWarehouseStockScreenState
               fontWeight: FontWeight.bold,
               color: statusColor,
               fontSize: 13,
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}

@@ -1,8 +1,9 @@
 package com.sedcore.controller.impl;
 
 import com.sedcore.model.stats.*;
-import com.sedcore.se.ApiResponse;
-import com.sedcore.service.StatsService;
+import com.towpen.base.exceptions.ApiResponse;
+
+ import com.sedcore.service.StatsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

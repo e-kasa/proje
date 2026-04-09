@@ -2,7 +2,7 @@ package com.sedcore.controller;
 
 import com.sedcore.model.CategoryAttributeRequest;
 import com.sedcore.model.CategoryAttributeResponse;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

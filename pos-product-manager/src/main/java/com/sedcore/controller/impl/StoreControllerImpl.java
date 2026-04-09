@@ -1,8 +1,8 @@
 package com.sedcore.controller.impl;
 
 import com.sedcore.entity.Store;
-import com.sedcore.se.ApiResponse;
 import com.sedcore.service.StoreService;
+import com.towpen.base.exceptions.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

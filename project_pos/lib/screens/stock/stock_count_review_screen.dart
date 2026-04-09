@@ -734,4 +734,8 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
             icon: Icons.check,
             text: t('common.save'),
           ),
-        
+        ],
+      ),
+    );
+  }
+}

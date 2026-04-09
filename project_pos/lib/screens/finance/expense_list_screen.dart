@@ -476,4 +476,3 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
     );
   }
 }
-                                          

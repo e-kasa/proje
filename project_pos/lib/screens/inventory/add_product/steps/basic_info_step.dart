@@ -44,6 +44,10 @@ class BasicInfoStep extends ConsumerWidget {
           _buildClothingCard(context, t),
           const SizedBox(height: 16),
         ],
+        if (state.isTechnology) ...[
+          _buildTechnologyCard(context, t),
+          const SizedBox(height: 16),
+        ],
         _buildTaxCard(context, t),
       ],
     );
@@ -656,6 +660,65 @@ class BasicInfoStep extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Technology ────────────────────────────────────────────────────────────
+
+  Widget _buildTechnologyCard(BuildContext context, String Function(String) t) {
+    return _card(
+      accentBorderColor: AppColors.info,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionHeader(
+            icon: Icons.devices_rounded,
+            title: t('product.tech_info'),
+            color: AppColors.info,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: buildFormField(
+                  label: t('product.serial_number'),
+                  child: TextField(
+                    controller: state.serialNumberController,
+                    decoration: inputDecoration(t('product.hint_serial_no')).copyWith(
+                      prefixIcon: const Icon(Icons.qr_code_rounded,
+                          color: AppColors.info, size: 18),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: buildFormField(
+                  label: 'IMEI',
+                  child: TextField(
+                    controller: state.imeiController,
+                    decoration: inputDecoration(t('product.hint_imei')).copyWith(
+                      prefixIcon: const Icon(Icons.phone_android_rounded,
+                          color: AppColors.info, size: 18),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          buildFormField(
+            label: t('product.warranty_period'),
+            child: TextField(
+              controller: state.warrantyController,
+              decoration: inputDecoration(t('product.hint_warranty')).copyWith(
+                prefixIcon: const Icon(Icons.verified_user_outlined,
+                    color: AppColors.success, size: 18),
+              ),
+            ),
           ),
         ],
       ),

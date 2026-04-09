@@ -55,13 +55,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
   final _currFmt = NumberFormat.currency(locale: 'tr_TR', symbol: '₺');
 
   // Dynamic tabs
-  late List<_TabDef> _tabs;
+  List<_TabDef> _tabs = [];
 
   @override
   void initState() {
     super.initState();
-    _buildTabs();
-    _tabController = TabController(length: _tabs.length, vsync: this);
+
+    _tabController = TabController(length: _tabs.isEmpty ? 1 : _tabs.length, vsync: this);
+
     _tabController.addListener(() {
       final tab = _tabs[_tabController.index];
       if (tab.type == _TabType.history &&
@@ -70,11 +71,17 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
         _loadMovements();
       }
     });
+
     _loadProduct();
   }
 
   void _buildTabs() {
     final cfg = ref.read(sectorConfigProvider);
+
+    if (_tabs.isEmpty) {
+      _buildTabs();
+      _tabController = TabController(length: _tabs.length, vsync: this);
+    }
     _tabs = [
       _TabDef(_TabType.general, t('common.general_info'), Icons.info_outlined),
     ];

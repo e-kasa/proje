@@ -66,6 +66,9 @@ class WizardState extends ChangeNotifier {
   /// Giyim/tekstil sektörü mü?
   bool get isGiyim => sectorType == SectorType.footwear;
 
+  /// Teknoloji sektörü mü?
+  bool get isTechnology => sectorType == SectorType.technology;
+
   // Step 1: Basic Info
   final productNameController = TextEditingController();
   final skuController = TextEditingController();
@@ -86,6 +89,11 @@ class WizardState extends ChangeNotifier {
   // Giyim-specific
   final fabricController = TextEditingController();
   final seasonController = TextEditingController();
+
+  // Teknoloji-specific
+  final warrantyController = TextEditingController();
+  final imeiController = TextEditingController();
+  final serialNumberController = TextEditingController();
 
   // Step 2: Variants
   String productType = 'simple';
@@ -474,6 +482,9 @@ class WizardState extends ChangeNotifier {
     bulkSalePriceController.clear();
     fabricController.clear();
     seasonController.clear();
+    warrantyController.clear();
+    imeiController.clear();
+    serialNumberController.clear();
 
     variants.clear();
     oemNumbers.clear();

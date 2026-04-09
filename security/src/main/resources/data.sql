@@ -1662,5 +1662,11 @@ VALUES
     ('bnd-cm003-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'common.current', 'Güncel', 'Current'),
     ('bnd-cm004-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'common.user', 'Kullanıcı', 'User'),
     ('bnd-cm005-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'common.note', 'Not', 'Note'),
-    ('bnd-vl001-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'validation.invalid', 'Geçersiz değer', 'Invalid value')
+    ('bnd-vl001-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'validation.invalid', 'Geçersiz değer', 'Invalid value'),
+    ('bnd-pt001-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.tech_info', 'Teknoloji Bilgileri', 'Technology Info'),
+    ('bnd-pt002-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.serial_number', 'Seri Numarası', 'Serial Number'),
+    ('bnd-pt003-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.hint_serial_no', 'Seri numarasını girin', 'Enter serial number'),
+    ('bnd-pt004-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.hint_imei', 'IMEI numarasını girin', 'Enter IMEI number'),
+    ('bnd-pt005-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.warranty_period', 'Garanti Süresi', 'Warranty Period'),
+    ('bnd-pt006-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.hint_warranty', 'Örn: 24 ay', 'E.g. 24 months')
 ON CONFLICT DO NOTHING;

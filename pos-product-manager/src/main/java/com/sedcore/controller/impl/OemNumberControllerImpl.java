@@ -41,6 +41,7 @@ public class OemNumberControllerImpl implements OemNumberController {
     public ResponseEntity<ApiResponse<OemNumberResponse>> createOemNumber(@RequestBody OemNumberRequest request) {
         try {
             OemNumberResponse response = oemNumberService.createOemNumber(request);
+            return ResponseEntity.ok(ApiResponse.success(response));
         } catch (TOpenException e) {
 
             throw e;
@@ -56,6 +57,7 @@ public class OemNumberControllerImpl implements OemNumberController {
             @PathVariable String variantId, @RequestBody List<OemNumberRequest> requests) {
         try {
             List<OemNumberResponse> responses = oemNumberService.bulkCreate(variantId, requests);
+            return ResponseEntity.ok(ApiResponse.success(responses));
         } catch (TOpenException e) {
 
             throw e;
@@ -70,6 +72,7 @@ public class OemNumberControllerImpl implements OemNumberController {
     public ResponseEntity<ApiResponse<Void>> deleteOemNumber(@PathVariable String id) {
         try {
             oemNumberService.deleteOemNumber(id);
+            return ResponseEntity.ok(ApiResponse.success(null));
         } catch (TOpenException e) {
 
             throw e;

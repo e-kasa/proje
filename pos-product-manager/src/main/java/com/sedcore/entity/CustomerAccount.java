@@ -94,4 +94,7 @@ public class CustomerAccount extends TOpenSimpleCompanyEntity {
         this.availableCreditLimit = calculateAvailableCreditLimit();
         this.isCreditLimitExceeded = checkCreditLimitExceeded();
     }
+
+    @Version
+    private Long version;
 }

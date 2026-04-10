@@ -39,7 +39,7 @@ public class AccountTransactionControllerImpl implements AccountTransactionContr
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<AccountTransactionResponse>> getById(@PathVariable String id) {
         try {
-            return ResponseEntity.ok(ApiResponse.success(accountTransactionService.getById(id)));
+            return ResponseEntity.ok(ApiResponse.success(accountTransactionService.getTransaction(id)));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -79,7 +79,7 @@ public class AccountTransactionControllerImpl implements AccountTransactionContr
                 return ResponseEntity.ok(ApiResponse.success(
                         accountTransactionService.getByPurchase(purchaseId)));
             }
-            throw new TOpenException(new TOpenMessage(TMessageType.ACCOUNT_TRANSACTION_LIST_ERROR_2200));
+            throw new TOpenException(new TOpenMessage(TMessageType.FIELD_IS_REQUIRED_1001));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -116,6 +116,7 @@ public class AccountTransactionControllerImpl implements AccountTransactionContr
         try {
             String reason = body != null ? body.get("reason") : null;
             return ResponseEntity.ok(ApiResponse.success(
+                    accountTransactionService.cancelTransaction(id, reason)));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {

@@ -34,7 +34,8 @@ public class SalesReportControllerImpl {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
             @RequestParam(defaultValue = "day") String groupBy) {
         try {
-            return ResponseEntity.ok(ApiResponse.success(
+            SalesSummary summary = salesReportService.getSalesSummary(startDate, endDate, groupBy);
+            return ResponseEntity.ok(ApiResponse.success(summary));
         } catch (Exception e) {
             log.error("Satis ozeti hatasi: {}", e);
             throw ExceptionMapper.map(e);
@@ -48,7 +49,8 @@ public class SalesReportControllerImpl {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
             @RequestParam(defaultValue = "20") int limit) {
         try {
-            return ResponseEntity.ok(ApiResponse.success(
+            List<ProductSalesAnalysis> analysis = salesReportService.getProductSalesAnalysis(startDate, endDate, limit);
+            return ResponseEntity.ok(ApiResponse.success(analysis));
         } catch (Exception e) {
             log.error("Urun satis analizi hatasi: {}", e);
             throw ExceptionMapper.map(e);
@@ -62,7 +64,8 @@ public class SalesReportControllerImpl {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
             @RequestParam(defaultValue = "20") int limit) {
         try {
-            return ResponseEntity.ok(ApiResponse.success(
+            List<CustomerSalesAnalysis> analysis = salesReportService.getCustomerSalesAnalysis(startDate, endDate, limit);
+            return ResponseEntity.ok(ApiResponse.success(analysis));
         } catch (Exception e) {
             log.error("Musteri satis analizi hatasi: {}", e);
             throw ExceptionMapper.map(e);
@@ -75,10 +78,11 @@ public class SalesReportControllerImpl {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
         try {
-            return ResponseEntity.ok(ApiResponse.success(
+            ProfitOverview overview = salesReportService.getProfitOverview(startDate, endDate);
+            return ResponseEntity.ok(ApiResponse.success(overview));
         } catch (Exception e) {
             log.error("Kar/zarar ozeti hatasi: {}", e);
             throw ExceptionMapper.map(e);
-      }
-}
+        }
+    }
 }

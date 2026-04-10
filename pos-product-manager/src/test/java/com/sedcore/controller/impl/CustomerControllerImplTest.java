@@ -3,7 +3,7 @@ package com.sedcore.controller.impl;
 import com.sedcore.entity.Customer;
 import com.sedcore.model.CustomerDto;
 import com.sedcore.service.CustomerService;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -40,7 +40,7 @@ class CustomerControllerImplTest {
         List<Customer> mockCustomers = Arrays.asList(
             new Customer(), new Customer()
         );
-        when(customerService.getAllCustomers()).thenReturn(mockCustomers);
+        when(customerService.getAllCustomers()).thenReturn(mockCustomers));
 
         // Act
         ResponseEntity<ApiResponse<List<Map<String, Object>>>> response = controller.list();

@@ -5,7 +5,7 @@ import com.sedcore.entity.ProductRelationship;
 import com.sedcore.enums.ProductRelationType;
 import com.sedcore.model.ProductRelationshipRequest;
 import com.sedcore.model.RecommendationResponse;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import com.sedcore.service.ProductRelationshipService;
 import com.sedcore.service.RecommendationService;
 import lombok.RequiredArgsConstructor;

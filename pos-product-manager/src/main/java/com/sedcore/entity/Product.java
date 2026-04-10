@@ -58,4 +58,7 @@ public class Product extends TOpenSimpleCompanyEntity {
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
     private List<ProductVariant> variants;
+
+    @Version
+    private Long version;
 }

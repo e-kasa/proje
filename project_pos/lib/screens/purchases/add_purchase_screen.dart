@@ -14,15 +14,13 @@ class _PurchaseItem {
   String variantId;
   String variantSku;
   String variantName;
-  int quantity;
-  double unitPrice;
+  int quantity = 1;
+  double unitPrice = 0.0;
 
   _PurchaseItem({
     required this.variantId,
     required this.variantSku,
     required this.variantName,
-    this.quantity = 1,
-    this.unitPrice = 0,
   });
 
   double get lineTotal => quantity * unitPrice;

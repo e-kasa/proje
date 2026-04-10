@@ -409,6 +409,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
     final amountCtrl = TextEditingController();
     final descCtrl = TextEditingController();
     String selectedType = 'CASH';
+    bool saving = false;
 
     showDialog(
       context: context,
@@ -454,14 +455,11 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
             ),
             StatefulBuilder(
               builder: (ctx2, setSaving) {
-                bool saving = false;
                 return ElevatedButton(
                   style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.success,
                       foregroundColor: Colors.white),
-                  onPressed: saving
-                      ? null
-                      : () async {
+                  onPressed: () async {
                           final amount = double.tryParse(
                               amountCtrl.text.trim().replaceAll(',', '.'));
                           if (amount == null || amount <= 0) return;
@@ -508,12 +506,12 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
     final limitCtrl = TextEditingController(
       text: (_accountData?['creditLimit'] as num?)?.toStringAsFixed(2) ?? '',
     );
+    bool saving = false;
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDs) {
-          bool saving = false;
           return AlertDialog(
             title: const Text('Kredi Limiti Düzenle'),
             content: TextField(
@@ -535,9 +533,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
                 style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.info,
                     foregroundColor: Colors.white),
-                onPressed: saving
-                    ? null
-                    : () async {
+                onPressed: () async {
                         final limit = double.tryParse(
                             limitCtrl.text.trim().replaceAll(',', '.'));
                         if (limit == null || limit < 0) return;

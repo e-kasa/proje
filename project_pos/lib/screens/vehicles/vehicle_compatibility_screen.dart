@@ -32,7 +32,7 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
   Future<void> _loadCompatibilities() async {
     setState(() => _isLoading = true);
     try {
-      final response = await ref.read(vehicleServiceProvider).getActiveVehicles();
+      await ref.read(vehicleServiceProvider).getActiveVehicles();
       // Uyumluluk listesi icin ozel endpoint kullaniyoruz
       // vehicleCompatibility service uzerinden
       final compatibilities = await _fetchCompatibilities();

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../core/api/api_client.dart';
 
 class StockReportService {
@@ -37,7 +38,8 @@ class StockReportService {
       final resp = await _apiClient.get('$_base/critical-alerts');
       return List<Map<String, dynamic>>.from(resp.data['data'] ?? []);
     } catch (e) {
-      return [];
+      debugPrint('getCriticalAlerts hata: $e');
+      rethrow;
     }
   }
 

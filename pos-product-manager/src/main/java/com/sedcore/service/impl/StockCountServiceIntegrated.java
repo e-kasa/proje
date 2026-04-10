@@ -1,12 +1,16 @@
 package com.sedcore.service.impl;
 
+import com.sedcore.context.CompanyContext;
 import com.sedcore.entity.*;
 import com.sedcore.enums.StockMovementType;
 import com.sedcore.model.StockCountItemRequest;
 import com.sedcore.model.StockCountRequest;
 import com.sedcore.repository.*;
+import com.towpen.base.db.model.TOpenSimpleCompanyEntity;
+import com.towpen.base.security.ISessionInstanceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +39,7 @@ public class StockCountServiceIntegrated {
     private final StockMovementRepository stockMovementRepository;
     private final ProductVariantRepository variantRepository;
     private final InventoryRepository inventoryRepository;
+    @Autowired private ISessionInstanceService sessionInstanceService;
 
     /**
      * Stok sayım işlemini gerçekleştirir.
@@ -79,7 +84,7 @@ public class StockCountServiceIntegrated {
                     .quantity(adjustQty)
                     .build();
 
-            adjustments.add(stockMovementRepository.save(adjustment));
+            adjustments.add(prepareAndSave(stockMovementRepository, adjustment));
 
             log.info("Duzeltme hareketi - Variant: {}, Tip: {}, Miktar: {} (Sistem: {}, Sayim: {})",
                     variant.getSku(), type, adjustQty, systemStock, physicalCount);
@@ -98,5 +103,26 @@ public class StockCountServiceIntegrated {
                 .findByVariantIdAndStoreIdAndWarehouseId(variantId, storeId, warehouseId)
                 .map(iv -> iv.getPhysicalQuantity() != null ? iv.getPhysicalQuantity() : 0)
                 .orElse(0);
+    }
+
+    /**
+     * Herhangi bir entity için audit alanları + companyCode set ederek kaydeder.
+     */
+    private <E extends TOpenSimpleCompanyEntity> E prepareAndSave(
+            org.springframework.data.repository.CrudRepository<E, String> repo, E entity) {
+        String companyCode = CompanyContext.get();
+        if (companyCode == null || companyCode.isBlank()) companyCode = "SYSTEM";
+        if (entity.getCompanyCode() == null || entity.getCompanyCode().isBlank()) {
+            entity.setCompanyCode(companyCode);
+        }
+        if (entity.getCreateTime() == null) {
+            entity.setCreateTime(java.util.Calendar.getInstance().getTime());
+        }
+        if (entity.getCreateUser() == null || entity.getCreateUser().isBlank()) {
+            String userCode = null;
+            try { userCode = sessionInstanceService.getUserCode(); } catch (Exception ignored) {}
+            entity.setCreateUser(userCode != null && !userCode.isBlank() ? userCode : "SYSTEM");
+        }
+        return repo.save(entity);
     }
 }

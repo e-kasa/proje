@@ -1,5 +1,7 @@
 package com.sedcore.model;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,6 +24,8 @@ public class PurchaseReturnItemRequest {
     private String productName;
     private String variantSku;
 
+    @NotNull(message = "Miktar zorunludur")
+    @Min(value = 1, message = "Miktar en az 1 olmalıdır")
     private Integer quantity;
     private BigDecimal unitPrice;
     private String reason;

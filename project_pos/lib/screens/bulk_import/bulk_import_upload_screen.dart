@@ -25,7 +25,6 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
   bool _uploadSuccess = false;
   double _uploadProgress = 0.0;
   String _currentStep = '';
-  String? _importId;
   String? _fileName;
   String? _errorMessage;
   bool _isDragging = false;
@@ -147,7 +146,6 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
       final importId = await service.uploadFile(file, sector: _selectedSector);
 
       setState(() {
-        _importId = importId;
         _uploadProgress = 0.45;
         _currentStep = 'Backend analiz ediyor...';
       });
@@ -196,7 +194,6 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
       _uploadProgress = 0.0;
       _currentStep = '';
       _fileName = null;
-      _importId = null;
       _errorMessage = null;
     });
   }

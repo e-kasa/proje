@@ -28,13 +28,14 @@ public class VehicleControllerImpl implements VehicleController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<VehicleResponse>>> getActiveVehicles() {
         try {
-            return ResponseEntity.ok(ApiResponse.success(null));
+            List<VehicleResponse> vehicles = vehicleService.getActiveVehicles();
+            return ResponseEntity.ok(ApiResponse.success(vehicles));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -43,13 +44,14 @@ public class VehicleControllerImpl implements VehicleController {
     @GetMapping("/all")
     public ResponseEntity<ApiResponse<List<VehicleResponse>>> getAllVehicles() {
         try {
-            return ResponseEntity.ok(ApiResponse.success(null));
+            List<VehicleResponse> vehicles = vehicleService.getAllVehicles();
+            return ResponseEntity.ok(ApiResponse.success(vehicles));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -59,12 +61,13 @@ public class VehicleControllerImpl implements VehicleController {
     public ResponseEntity<ApiResponse<VehicleResponse>> createVehicle(@RequestBody VehicleRequest request) {
         try {
             VehicleResponse response = vehicleService.createVehicle(request);
+            return ResponseEntity.ok(ApiResponse.success(response));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -74,12 +77,13 @@ public class VehicleControllerImpl implements VehicleController {
     public ResponseEntity<ApiResponse<VehicleResponse>> updateVehicle(@PathVariable String id, @RequestBody VehicleRequest request) {
         try {
             VehicleResponse response = vehicleService.updateVehicle(id, request);
+            return ResponseEntity.ok(ApiResponse.success(response));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -89,12 +93,13 @@ public class VehicleControllerImpl implements VehicleController {
     public ResponseEntity<ApiResponse<Void>> deleteVehicle(@PathVariable String id) {
         try {
             vehicleService.deleteVehicle(id);
+            return ResponseEntity.ok(ApiResponse.success(null));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -103,13 +108,14 @@ public class VehicleControllerImpl implements VehicleController {
     @GetMapping("/makes")
     public ResponseEntity<ApiResponse<List<String>>> getDistinctMakes() {
         try {
-            return ResponseEntity.ok(ApiResponse.success(null));
+            List<String> makes = vehicleService.getDistinctMakes();
+            return ResponseEntity.ok(ApiResponse.success(makes));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -118,13 +124,14 @@ public class VehicleControllerImpl implements VehicleController {
     @GetMapping("/models")
     public ResponseEntity<ApiResponse<List<String>>> getModelsByMake(@RequestParam String make) {
         try {
-            return ResponseEntity.ok(ApiResponse.success(null));
+            List<String> models = vehicleService.getModelsByMake(make);
+            return ResponseEntity.ok(ApiResponse.success(models));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -136,13 +143,14 @@ public class VehicleControllerImpl implements VehicleController {
             @RequestParam(required = false) String model,
             @RequestParam(required = false) Integer year) {
         try {
-            return ResponseEntity.ok(ApiResponse.success(null));
+            List<VehicleResponse> vehicles = vehicleService.searchVehicles(make, model, year);
+            return ResponseEntity.ok(ApiResponse.success(vehicles));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }

@@ -8,20 +8,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import com.towpen.base.enums.model.TMessageType;
-import com.towpen.base.exceptions.TOpenException;
-import com.towpen.base.restservice.model.TOpenMessage;
-import com.sedcore.util.ExceptionMapper;
 import org.springframework.web.bind.annotation.PutMapping;
-import com.towpen.base.enums.model.TMessageType;
-import com.towpen.base.exceptions.TOpenException;
-import com.towpen.base.restservice.model.TOpenMessage;
-import com.sedcore.util.ExceptionMapper;
 import org.springframework.web.bind.annotation.RequestMapping;
-import com.towpen.base.enums.model.TMessageType;
-import com.towpen.base.exceptions.TOpenException;
-import com.towpen.base.restservice.model.TOpenMessage;
-import com.sedcore.util.ExceptionMapper;
 import org.springframework.web.bind.annotation.RestController;
 import com.towpen.base.enums.model.TMessageType;
 import com.towpen.base.exceptions.TOpenException;
@@ -45,7 +33,7 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
         try {
             List<DtoCategory> categories = companyCategoryService.getMyCategories();
             return ResponseEntity.ok(
-                    ApiResponse.success("Firma kategorileri getirildi", categories)
+                    ApiResponse.success("Firma kategorileri getirildi", categories));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -61,7 +49,7 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
         try {
             List<CompanyCategoryResponse> list = companyCategoryService.getMyCategoryList();
             return ResponseEntity.ok(
-                    ApiResponse.success("Kategori listesi getirildi", list)
+                    ApiResponse.success("Kategori listesi getirildi", list));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -77,7 +65,7 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
         try {
             List<DtoCategory> categories = companyCategoryService.getAllCategoriesWithSelection();
             return ResponseEntity.ok(
-                    ApiResponse.success("Global kategoriler getirildi", categories)
+                    ApiResponse.success("Global kategoriler getirildi", categories));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -93,7 +81,7 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
         try {
             CompanyCategoryResponse response = companyCategoryService.addCategory(request);
             return ResponseEntity.ok(
-                    ApiResponse.success("Kategori firmaya eklendi", response)
+                    ApiResponse.success("Kategori firmaya eklendi", response));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -108,7 +96,7 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
         try {
             companyCategoryService.removeCategory(categoryId);
             return ResponseEntity.ok(
-                    ApiResponse.success("Kategori firmadan kaldırıldı", null)
+                    ApiResponse.success("Kategori firmadan kaldırıldı", null));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -127,7 +115,7 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
                     ApiResponse.success(
                             result.size() + " kategori seçimi kaydedildi",
                             result
-                    )
+                    ));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {

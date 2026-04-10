@@ -4,7 +4,7 @@ import com.sedcore.model.PurchaseRequest;
 import com.sedcore.model.PurchaseResponse;
 import com.sedcore.model.PurchaseReturnRequest;
 import com.sedcore.model.PurchaseReturnResponse;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import com.sedcore.service.PurchaseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/product/api/v1/purchases")
+@RequestMapping("/api/v1/purchases")
 @RequiredArgsConstructor
 @Slf4j
 public class PurchaseControllerImpl {

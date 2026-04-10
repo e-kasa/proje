@@ -4,7 +4,7 @@ import com.sedcore.controller.ProductCategoryController;
 import com.sedcore.entity.ProductCategory;
 import com.sedcore.model.ProductCategoryRequest;
 import com.sedcore.model.ProductCategoryResponse;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import com.sedcore.service.ProductCategoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +37,7 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
             );
             return ResponseEntity.ok(ApiResponse.success(
                     "Ürün kategoriye eklendi",
-                    toResponse(result)
+                    toResponse(result)));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -51,6 +51,7 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
             String productId, String categoryId) {
         try {
             productCategoryService.removeCategoryFromProduct(productId, categoryId);
+            return ResponseEntity.ok(ApiResponse.success("Kategori üründen kaldırıldı", null));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -64,6 +65,7 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
             String productId, String newPrimaryCategoryId) {
         try {
             productCategoryService.changePrimaryCategory(productId, newPrimaryCategoryId);
+            return ResponseEntity.ok(ApiResponse.success("Ana kategori değiştirildi", null));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -80,6 +82,7 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
             List<ProductCategoryResponse> response = categories.stream()
                     .map(this::toResponse)
                     .collect(Collectors.toList());
+            return ResponseEntity.ok(ApiResponse.success("Ürün kategorileri getirildi", response));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -95,7 +98,7 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
             ProductCategory primary = productCategoryService.getPrimaryCategory(productId);
             return ResponseEntity.ok(ApiResponse.success(
                     "Ana kategori getirildi",
-                    toResponse(primary)
+                    toResponse(primary)));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -112,6 +115,7 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
             List<ProductCategoryResponse> response = products.stream()
                     .map(this::toResponse)
                     .collect(Collectors.toList());
+            return ResponseEntity.ok(ApiResponse.success("Kategori ürünleri getirildi", response));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -129,6 +133,7 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
             List<ProductCategoryResponse> response = featured.stream()
                     .map(this::toResponse)
                     .collect(Collectors.toList());
+            return ResponseEntity.ok(ApiResponse.success("Öne çıkan ürünler getirildi", response));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -142,6 +147,7 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
             String productId, String categoryId, Boolean featured) {
         try {
             productCategoryService.featureProductInCategory(productId, categoryId, featured);
+            return ResponseEntity.ok(ApiResponse.success("Ürün öne çıkarma güncellendi", null));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -155,6 +161,7 @@ public class ProductCategoryControllerImpl implements ProductCategoryController 
             String productId, String categoryId, Integer displayOrder) {
         try {
             productCategoryService.updateDisplayOrder(productId, categoryId, displayOrder);
+            return ResponseEntity.ok(ApiResponse.success("Görüntüleme sırası güncellendi", null));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {

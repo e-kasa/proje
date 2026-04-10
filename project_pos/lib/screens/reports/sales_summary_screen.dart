@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 
@@ -363,7 +362,6 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
 
   Widget _buildPeriodCard(Map<String, dynamic> item) {
     final period = item['period']?.toString() ?? '-';
-    final salesCount = (item['salesCount'] ?? 0).toString();
     final revenue = (item['revenue'] ?? 0).toDouble();
     final trend = item['trend']?.toString();
 

@@ -29,13 +29,14 @@ public class UnitControllerImpl implements UnitController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<UnitResponse>>> getActiveUnits() {
         try {
-            return ResponseEntity.ok(ApiResponse.success(null));
+            List<UnitResponse> units = unitService.getActiveUnits();
+            return ResponseEntity.ok(ApiResponse.success(units));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -45,13 +46,14 @@ public class UnitControllerImpl implements UnitController {
     @GetMapping("/all")
     public ResponseEntity<ApiResponse<List<UnitResponse>>> getAllUnits() {
         try {
-            return ResponseEntity.ok(ApiResponse.success(null));
+            List<UnitResponse> units = unitService.getAllUnits();
+            return ResponseEntity.ok(ApiResponse.success(units));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -62,12 +64,13 @@ public class UnitControllerImpl implements UnitController {
     public ResponseEntity<ApiResponse<UnitResponse>> createUnit(@RequestBody UnitRequest request) {
         try {
             UnitResponse response = unitService.createUnit(request);
+            return ResponseEntity.ok(ApiResponse.success(response));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -78,12 +81,13 @@ public class UnitControllerImpl implements UnitController {
     public ResponseEntity<ApiResponse<UnitResponse>> updateUnit(@PathVariable String id, @RequestBody UnitRequest request) {
         try {
             UnitResponse response = unitService.updateUnit(id, request);
+            return ResponseEntity.ok(ApiResponse.success(response));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -94,12 +98,13 @@ public class UnitControllerImpl implements UnitController {
     public ResponseEntity<ApiResponse<Void>> deleteUnit(@PathVariable String id) {
         try {
             unitService.deleteUnit(id);
+            return ResponseEntity.ok(ApiResponse.success(null));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -110,12 +115,13 @@ public class UnitControllerImpl implements UnitController {
     public ResponseEntity<ApiResponse<UnitResponse>> toggleStatus(@PathVariable String id) {
         try {
             UnitResponse response = unitService.toggleStatus(id);
+            return ResponseEntity.ok(ApiResponse.success(response));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }

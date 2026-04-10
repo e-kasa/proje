@@ -323,8 +323,6 @@ class _PartSearchScreenState extends ConsumerState<PartSearchScreen> {
     final oemNumbers = (result['oemNumbers'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     final crossRefs = (result['crossReferences'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     final vehicles = (result['compatibleVehicles'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-    final barcodes = (result['barcodes'] as List?)?.cast<String>() ?? [];
-
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(

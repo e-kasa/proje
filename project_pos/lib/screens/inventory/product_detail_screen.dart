@@ -43,6 +43,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
   bool _vehicleCompatLoading = false;
   List<Map<String, dynamic>> _movements = [];
   bool _movementsLoading = false;
+  String? _movementsError;
 
   final _dateTimeFmt = DateFormat('dd.MM.yyyy HH:mm');
   final _currFmt = NumberFormat.currency(locale: 'tr_TR', symbol: '₺');
@@ -79,7 +80,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
       _tabController!.addListener(() {
         if (!_tabController!.indexIsChanging) {
           final tab = _tabs[_tabController!.index];
-          if (tab.type == _TabType.history && _movements.isEmpty && !_movementsLoading) {
+          if (tab.type == _TabType.history && !_movementsLoading) {
             _loadMovements();
           }
         }
@@ -134,7 +135,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
       setState(() => _vehicleCompatLoading = true);
       try {
         final apiClient = ref.read(apiClientProvider);
-        final response = await apiClient.get('product/api/v1/vehicle-compatibility/variant/$variantId');
+        final response = await apiClient.get('product/api/vehicle-compatibility/variant/$variantId');
         final data = response.data['data'];
         if (data is List) {
           setState(() { _vehicleCompats = data.cast<Map<String, dynamic>>(); _vehicleCompatLoading = false; });
@@ -145,12 +146,18 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
 
   Future<void> _loadMovements() async {
     final variantId = _firstVariantId;
-    if (variantId == null) return;
-    setState(() => _movementsLoading = true);
+    if (variantId == null) {
+      setState(() { _movementsError = 'Varyant ID bulunamadı'; _movementsLoading = false; });
+      return;
+    }
+    setState(() { _movementsLoading = true; _movementsError = null; });
     try {
       final movements = await ref.read(stockServiceProvider).getVariantMovements(variantId);
       setState(() { _movements = movements; _movementsLoading = false; });
-    } catch (_) { setState(() => _movementsLoading = false); }
+    } catch (e) {
+      debugPrint('_loadMovements hata: $e');
+      setState(() { _movementsError = e.toString(); _movementsLoading = false; });
+    }
   }
 
   String? get _firstVariantId {
@@ -447,6 +454,17 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
   Widget _buildHistoryTab() {
     if (_movementsLoading) return const Center(child: CircularProgressIndicator());
 
+    if (_movementsError != null) {
+      return Center(
+        child: AppEmptyState.error(
+          title: t('common.error'),
+          description: _movementsError!,
+          actionText: t('common.retry'),
+          onAction: _loadMovements,
+        ),
+      );
+    }
+
     return Column(
       children: [
         Padding(
@@ -456,23 +474,35 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
               _quickActionBtn(icon: Icons.tune, label: t('stock.adjust'), color: AppColors.primary, onTap: _showStockAdjustDialog),
               const SizedBox(width: 10),
               _quickActionBtn(icon: Icons.swap_horiz, label: t('stock.transfer'), color: Colors.indigo, onTap: () => context.push('/stock/transfer')),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.refresh, size: 20),
+                tooltip: t('common.refresh'),
+                onPressed: _loadMovements,
+              ),
             ],
           ),
         ),
         _movements.isEmpty
-          ? Expanded(child: AppEmptyState.noData(title: t('stock.no_movements')))
+          ? Expanded(
+              child: AppEmptyState.noData(
+                title: t('stock.no_movements'),
+                actionText: t('common.refresh'),
+                onAction: _loadMovements,
+              ),
+            )
           : Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: _movements.length,
                 itemBuilder: (context, index) {
                   final m = _movements[index];
-                  final cfg = _movementConfig(m['movementType'] ?? '');
+                  final cfg = _movementConfig(m['movementType']?.toString() ?? '');
                   return AppCard(
                     child: ListTile(
                       leading: CircleAvatar(backgroundColor: (cfg['color'] as Color).withOpacity(0.1), child: Icon(cfg['icon'] as IconData, color: cfg['color'] as Color, size: 20)),
                       title: Text(cfg['label'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      subtitle: Text(m['createTime'] != null ? _dateTimeFmt.format(DateTime.parse(m['createTime'])) : ''),
+                      subtitle: Text(m['createTime'] != null ? _dateTimeFmt.format(DateTime.parse(m['createTime'].toString())) : ''),
                       trailing: Text('${cfg['isIn'] ? '+' : '-'}${m['quantity']}', style: TextStyle(fontWeight: FontWeight.bold, color: cfg['isIn'] ? Colors.green : Colors.red, fontSize: 15)),
                     ),
                   );
@@ -566,11 +596,16 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
 
   Map<String, dynamic> _movementConfig(String type) {
     switch (type) {
-      case 'PURCHASE_IN': return {'label': t('stock.purchase_in'), 'icon': Icons.add_shopping_cart, 'color': Colors.green, 'isIn': true};
-      case 'SALE_OUT': return {'label': t('sales.sale'), 'icon': Icons.point_of_sale, 'color': Colors.red, 'isIn': false};
-      case 'TRANSFER_IN': return {'label': 'Transfer Giriş', 'icon': Icons.arrow_downward, 'color': Colors.indigo, 'isIn': true};
-      case 'TRANSFER_OUT': return {'label': 'Transfer Çıkış', 'icon': Icons.arrow_upward, 'color': Colors.indigo, 'isIn': false};
-      default: return {'label': type, 'icon': Icons.swap_vert, 'color': AppColors.textMuted, 'isIn': true};
+      case 'PURCHASE_IN':        return {'label': t('stock.purchase_in'), 'icon': Icons.add_shopping_cart, 'color': Colors.green, 'isIn': true};
+      case 'PURCHASE_RETURN_OUT': return {'label': 'Satın Alma İade', 'icon': Icons.assignment_return, 'color': Colors.orange, 'isIn': false};
+      case 'SALE_OUT':           return {'label': t('sales.sale'), 'icon': Icons.point_of_sale, 'color': Colors.red, 'isIn': false};
+      case 'SALE_RETURN_IN':     return {'label': 'Satış İade', 'icon': Icons.assignment_returned, 'color': Colors.teal, 'isIn': true};
+      case 'SALE_CANCEL_IN':     return {'label': 'Satış İptal', 'icon': Icons.cancel_outlined, 'color': Colors.deepOrange, 'isIn': true};
+      case 'TRANSFER_IN':       return {'label': 'Transfer Giriş', 'icon': Icons.arrow_downward, 'color': Colors.indigo, 'isIn': true};
+      case 'TRANSFER_OUT':      return {'label': 'Transfer Çıkış', 'icon': Icons.arrow_upward, 'color': Colors.indigo, 'isIn': false};
+      case 'ADJUSTMENT_IN':     return {'label': 'Sayım Fazlası', 'icon': Icons.add_circle_outline, 'color': Colors.blue, 'isIn': true};
+      case 'ADJUSTMENT_OUT':    return {'label': 'Sayım Eksiği', 'icon': Icons.remove_circle_outline, 'color': Colors.blueGrey, 'isIn': false};
+      default:                  return {'label': type, 'icon': Icons.swap_vert, 'color': AppColors.textMuted, 'isIn': true};
     }
   }
 }

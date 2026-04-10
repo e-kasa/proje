@@ -27,7 +27,7 @@ class PaymentService {
       return List<Map<String, dynamic>>.from(response.data['data'] ?? []);
     } catch (e) {
       AppLogger.error('Odemeler yuklenemedi', tag: 'PaymentService', error: e);
-      return [];
+      rethrow;
     }
   }
 
@@ -51,7 +51,7 @@ class PaymentService {
       return response.data['data'] as Map<String, dynamic>;
     } catch (e) {
       AppLogger.error('Nakit akisi yuklenemedi', tag: 'PaymentService', error: e);
-      return {};
+      rethrow;
     }
   }
 }

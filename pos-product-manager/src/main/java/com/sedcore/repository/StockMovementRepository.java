@@ -18,18 +18,16 @@ public interface StockMovementRepository extends BaseDaoRepository<StockMovement
     // Purchase ilişkisi üzerinden (purchase.id navigasyonu)
     List<StockMovement> findByPurchaseId(String purchaseId);
 
-    // Variant + Store kombine filtre (company scoped)
-    @Query("SELECT sm FROM StockMovement sm WHERE sm.variant.id = :variantId AND sm.storeId = :storeId AND sm.companyCode = :companyCode ORDER BY sm.createTime DESC")
+    // Variant + Store kombine filtre (company scoped) — JOIN FETCH ile LAZY ilişkiler yüklenir
+    @Query("SELECT sm FROM StockMovement sm JOIN FETCH sm.variant v LEFT JOIN FETCH v.product LEFT JOIN FETCH sm.sale LEFT JOIN FETCH sm.purchase LEFT JOIN FETCH sm.transfer WHERE v.id = :variantId AND sm.storeId = :storeId AND sm.companyCode = :companyCode ORDER BY sm.createTime DESC")
     List<StockMovement> findByVariantIdAndStoreId(@Param("variantId") String variantId, @Param("storeId") String storeId, @Param("companyCode") String companyCode);
 
-    // Variant hareketleri (variant.id navigasyonu — company scoped olmalı)
-    // createTime base entity'de (TOpenSimpleCompanyEntity) tanımlı
-    // NOTE: Custom @Query Hibernate @Filter'ı bypass edebilir, company_code explicitly eklendi
-    @Query("SELECT sm FROM StockMovement sm WHERE sm.variant.id = :variantId AND sm.companyCode = :companyCode ORDER BY sm.createTime DESC")
+    // Variant hareketleri — JOIN FETCH ile controller'da LazyInitializationException önlenir
+    @Query("SELECT sm FROM StockMovement sm JOIN FETCH sm.variant v LEFT JOIN FETCH v.product LEFT JOIN FETCH sm.sale LEFT JOIN FETCH sm.purchase LEFT JOIN FETCH sm.transfer WHERE v.id = :variantId AND sm.companyCode = :companyCode ORDER BY sm.createTime DESC")
     List<StockMovement> findByVariantId(@Param("variantId") String variantId, @Param("companyCode") String companyCode);
 
     // Eski imza (deprecated - backward compatibility için)
-    @Query("SELECT sm FROM StockMovement sm WHERE sm.variant.id = :variantId ORDER BY sm.createTime DESC")
+    @Query("SELECT sm FROM StockMovement sm JOIN FETCH sm.variant v LEFT JOIN FETCH v.product LEFT JOIN FETCH sm.sale LEFT JOIN FETCH sm.purchase LEFT JOIN FETCH sm.transfer WHERE v.id = :variantId ORDER BY sm.createTime DESC")
     List<StockMovement> findByVariantIdWithoutCompanyFilter(@Param("variantId") String variantId);
 
     // Satış hareketleri (sale.id navigasyonu - company scoped)
@@ -71,8 +69,8 @@ public interface StockMovementRepository extends BaseDaoRepository<StockMovement
     // Company scoping explicit olarak uygulanır
     @Query(value = """
             SELECT p.id, p.name, p.sku, pv.id as variantId, COUNT(*) as frequency
-            FROM stock_movement sm1
-            JOIN stock_movement sm2 ON sm1.sale_id = sm2.sale_id AND sm1.id != sm2.id
+            FROM stock_movements sm1
+            JOIN stock_movements sm2 ON sm1.sale_id = sm2.sale_id AND sm1.id != sm2.id
             JOIN product_variant pv ON sm2.variant_id = pv.id
             JOIN product p ON pv.product_id = p.id
             WHERE sm1.variant_id IN (:variantIds)

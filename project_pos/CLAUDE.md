@@ -4,6 +4,8 @@
 
 Çok platformlu (Android, iOS, Web, Desktop) Flutter POS (Satış Noktası) uygulaması. Yedek parça, genel perakende, teknoloji ve ayakkabı/tekstil sektörlerine uyarlanabilir yapıda. Backend API'ye Dio ile bağlanır, JWT kimlik doğrulama kullanır.
 
+**Backend projesi:** `../pos-product-manager/` (aynı parent dizinde, kendi CLAUDE.md'si var)
+
 ## Teknoloji Stack
 
 - **Framework:** Flutter (Dart SDK ^3.11.1)
@@ -28,6 +30,7 @@ lib/
 │   │   └── app_constants.dart     # UI sabitleri (spacing, radius, padding getter'ları)
 │   ├── utils/
 │   │   ├── router.dart            # GoRouter tanımı, routerProvider
+│   │   ├── i18n_helper.dart       # i18nOf(ref), i18nMsgOf(ref)
 │   │   └── app_logger.dart        # Loglama
 │   ├── widgets/                   # Tasarım sistemi bileşenleri
 │   │   ├── app_app_bar.dart       # AppAppBar (standard, primary, gradient factory)
@@ -39,46 +42,307 @@ lib/
 │   └── layouts/
 │       └── responsive_layout.dart # ShellRoute layout (drawer + bottom nav)
 ├── models/                        # Veri modelleri
-│   ├── user_model.dart            # User (id, username, displayName, sectorType)
-│   ├── auth_state.dart            # AuthState
-│   ├── bulk_import_models.dart    # Toplu import modelleri
-│   └── ...
 ├── providers/                     # Riverpod provider'lar
 │   ├── auth_provider.dart         # authProvider (StateNotifierProvider<AuthNotifier, AuthState>)
 │   └── sector_provider.dart       # sectorConfigProvider, sectorTypeProvider
-├── services/                      # Backend API servisleri (27 dosya)
-│   ├── service_locator.dart       # Tüm service provider tanımları
-│   ├── sales_service.dart         # Satış CRUD + printReceipt
-│   ├── product_service.dart       # Ürün CRUD + arama
-│   ├── payment_service.dart       # Ödeme işlemleri
-│   └── ...
+├── services/                      # Backend API servisleri
+│   └── service_locator.dart       # Tüm service provider tanımları
 ├── screens/                       # Ekranlar (feature-based organizasyon)
 │   ├── pos/                       # POS satış ekranı
 │   │   ├── pos_screen.dart        # Ana POS (KeyboardListener, kısayollar)
-│   │   ├── providers/pos_provider.dart  # CartItem, PosState, PosNotifier, ParkedOrder
-│   │   └── widgets/               # PaymentPanel, CartPanel, ReceiptPreviewDialog vb.
-│   ├── inventory/                 # Envanter yönetimi
-│   │   ├── product_detail_screen.dart   # Ürün ayrıntı (4 tab: Genel, OEM, ÇaprazRef, Araç)
-│   │   └── add_product/           # Ürün ekleme wizard
-│   │       ├── models/wizard_state.dart # WizardState (ChangeNotifier, sektör-duyarlı)
-│   │       └── steps/             # BasicInfo, Variants, StockBarcode, Preview vb.
-│   ├── bulk_import/               # Toplu ürün import
+│   │   ├── providers/pos_provider.dart  # CartItem, PosState, PosNotifier
+│   │   └── widgets/               # PaymentPanel, CartPanel, RecommendationPanel vb.
+│   ├── inventory/                 # Envanter (ürün detay: 6 tab — Genel, OEM, ÇaprazRef, Araç, Geçmiş, İlişkiler)
 │   ├── finance/                   # Finans (gider, gelir, ödeme, nakit akış)
 │   ├── reports/                   # Raporlar
 │   ├── sales/                     # Satış listesi, detay, iade
 │   ├── purchases/                 # Alım listesi, detay, iade
-│   ├── suppliers/                 # Tedarikçi yönetimi
-│   ├── customers/                 # Müşteri yönetimi
 │   ├── stock/                     # Stok yönetimi (transfer, sayım, hareket, alarm)
-│   └── settings/                  # Ayarlar (şirket, sektör, kullanıcı yönetimi)
-└── widgets/                       # Ek widget'lar (variant, vehicle)
+│   └── settings/                  # Ayarlar
+└── widgets/                       # Ek widget'lar
 ```
 
-## Kritik Mimari Kurallar
+---
 
-### Sektör Konfig Sistemi
+## KOD YAZIM STİLİ (Yeni oturumda ilk oku!)
 
-Uygulama 4 sektörü destekler. UI etiketleri, görünür alanlar ve davranışlar sektöre göre değişir:
+### 1. Ekran Yapısı Şablonu
+
+```dart
+class MyScreen extends ConsumerStatefulWidget {
+  const MyScreen({super.key});
+  @override
+  ConsumerState<MyScreen> createState() => _MyScreenState();
+}
+
+class _MyScreenState extends ConsumerState<MyScreen> {
+  String Function(String) get t => i18nOf(ref);  // i18n her ekranda böyle alınır
+
+  bool _isLoading = true;
+  String? _error;
+  List<Map<String, dynamic>> _items = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() { _isLoading = true; _error = null; });
+    try {
+      final data = await ref.read(myServiceProvider).getData();
+      setState(() { _items = data; _isLoading = false; });
+    } catch (e) {
+      setState(() { _error = e.toString(); _isLoading = false; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.bgLight,                    // ← HER ekranda
+      appBar: AppAppBar.standard(title: t('screen.title')),  // ← String, Text() DEĞİL
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? AppEmptyState.error(title: t('common.error'), description: _error!)
+              : _items.isEmpty
+                  ? AppEmptyState.noData(title: t('common.no_data'))
+                  : _buildContent(),
+    );
+  }
+}
+```
+
+### 2. State Management (StateNotifier)
+
+```dart
+// İmmutable state class — copyWith + clear* flagları
+class MyState {
+  final List<Item> items;
+  final bool isLoading;
+  final String? error;
+  const MyState({this.items = const [], this.isLoading = false, this.error});
+
+  MyState copyWith({List<Item>? items, bool? isLoading, String? error, bool clearError = false}) {
+    return MyState(
+      items: items ?? this.items,
+      isLoading: isLoading ?? this.isLoading,
+      error: clearError ? null : (error ?? this.error),
+    );
+  }
+}
+
+// Notifier — _ref ile diğer provider'lara erişir
+class MyNotifier extends StateNotifier<MyState> {
+  MyNotifier(this._ref) : super(const MyState());
+  final Ref _ref;
+
+  Future<void> load() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final items = await _ref.read(myServiceProvider).getItems();
+      state = state.copyWith(items: items, isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+}
+
+// Provider tanımı
+final myProvider = StateNotifierProvider.autoDispose<MyNotifier, MyState>(
+  (ref) => MyNotifier(ref),
+);
+```
+
+### 3. Servis (API Çağrıları)
+
+```dart
+class MyService {
+  final ApiClient _apiClient;
+  MyService(this._apiClient);
+
+  Future<List<Map<String, dynamic>>> getItems() async {
+    try {
+      final response = await _apiClient.get('product/api/v1/items');
+      return List<Map<String, dynamic>>.from(response.data['data'] ?? []);
+    } catch (e) {
+      debugPrint('getItems hata: $e');
+      rethrow;  // ← HER ZAMAN rethrow, caller handle eder
+    }
+  }
+
+  Future<void> create(Map<String, dynamic> data) async {
+    try {
+      await _apiClient.post('product/api/v1/items', data: data);
+    } catch (e) {
+      debugPrint('create hata: $e');
+      rethrow;
+    }
+  }
+}
+
+// Provider (service_locator.dart'ta)
+final myServiceProvider = Provider<MyService>((ref) {
+  return MyService(ref.watch(apiClientProvider));
+});
+```
+
+### 4. Form Kaydetme Akışı
+
+```dart
+Future<void> _save() async {
+  if (!_formKey.currentState!.validate()) return;
+  setState(() => _isLoading = true);
+  try {
+    await ref.read(myServiceProvider).create({
+      'name': _nameCtrl.text.trim(),
+      'phone': _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
+    });
+    if (mounted) {
+      AppToast.success(context, t('common.saved'));
+      Navigator.pop(context, true);  // true = veri değişti, önceki ekran yenilesin
+    }
+  } catch (e) {
+    if (mounted) AppToast.error(context, '$e');
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
+  }
+}
+```
+
+### 5. Dialog Açma
+
+```dart
+// Basit onay dialogu
+final confirmed = await AppConfirmationDialog.showDelete(
+  context: context, title: 'Sil', message: 'Emin misiniz?',
+);
+if (!confirmed) return;
+
+// Özel dialog
+showDialog(
+  context: context,
+  builder: (ctx) => AlertDialog(
+    title: const Text('Başlık'),
+    content: Column(mainAxisSize: MainAxisSize.min, children: [...]),
+    actions: [
+      TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('İptal')),
+      ElevatedButton(onPressed: () { /* ... */ Navigator.pop(ctx); }, child: const Text('Tamam')),
+    ],
+  ),
+);
+```
+
+### 6. Liste Kartı
+
+```dart
+ListView.separated(
+  padding: const EdgeInsets.all(16),
+  itemCount: items.length,
+  separatorBuilder: (_, __) => const SizedBox(height: 12),
+  itemBuilder: (context, index) {
+    final item = items[index];
+    return AppCard(
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: AppColors.primary.withOpacity(0.1),
+          child: Icon(Icons.xxx, color: AppColors.primary),
+        ),
+        title: Text(item['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(item['description'] ?? ''),
+        trailing: Text('₺${item['price']}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+      ),
+    );
+  },
+)
+```
+
+---
+
+## Tasarım Sistemi Kuralları
+
+### Widget API'leri (Kesin Kullanım)
+
+```dart
+// ✅ DOĞRU                           // ❌ YANLIŞ
+AppAppBar.standard(title: 'Başlık')   // AppAppBar(title: Text('Başlık'))
+AppAppBar.primary(title: 'Başlık')    // AppBar(title: ...)
+AppButton.primary(text: 'Kaydet')     // AppButton.text(...)
+AppButton.outline(text: 'İptal')      // AppButton(label: ...)
+AppButton.danger(text: 'Sil')         // ElevatedButton(...)  — basit butonlar hariç
+AppEmptyState.noData(description: '') // AppEmptyState(message: '')
+AppEmptyState.error(description: '')  // AppEmptyState(onRetry: ...)
+AppConstants.borderRadiusMedium       // BorderRadius.circular(AppConstants.borderRadiusMedium)
+CircularProgressIndicator()           // AppLoadingIndicator()
+ButtonSize.small                      // size: 18
+```
+
+### Renkler — HER ZAMAN `AppColors.xxx`
+
+```dart
+AppColors.primary        // Ana renk (#667eea)
+AppColors.success        // Başarı (#10b981)
+AppColors.danger         // Tehlike (#ef4444)
+AppColors.warning        // Uyarı (#f59e0b)
+AppColors.info           // Bilgi
+AppColors.textPrimary    // Ana metin (#111827)
+AppColors.textSecondary  // İkincil metin
+AppColors.textMuted      // Soluk metin (#9ca3af)
+AppColors.bgLight        // Scaffold arka plan (#f9fafb)
+AppColors.bgSuccess      // Yeşil arka plan
+AppColors.bgDanger       // Kırmızı arka plan
+// ❌ Colors.blue, Colors.grey KULLANMA (Colors.white hariç)
+```
+
+### Spacing — `AppConstants.spacing*`
+
+```dart
+const SizedBox(height: AppConstants.spacing16)     // Elemanlar arası
+const SizedBox(height: AppConstants.spacing24)     // Bölümler arası
+AppConstants.paddingSmall      // EdgeInsets.all(8)
+AppConstants.paddingMedium     // EdgeInsets.all(16)
+AppConstants.pagePadding       // EdgeInsets.all(16)
+AppConstants.borderRadiusSmall  // BorderRadius(8)  ← NESNE, double DEĞİL
+AppConstants.borderRadiusMedium // BorderRadius(12) ← NESNE, double DEĞİL
+```
+
+### Metin Stilleri
+
+```dart
+// Font boyutları: 11 (muted), 12 (small), 13 (form), 14 (body), 16 (subtitle), 18+ (header)
+Text('Başlık', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))
+Text('Normal', style: TextStyle(fontSize: 14, color: AppColors.textPrimary))
+Text('Açıklama', style: TextStyle(fontSize: 12, color: AppColors.textMuted))
+// ❌ Theme.of(context).textTheme KULLANMA — inline TextStyle + AppColors
+```
+
+### i18n
+
+```dart
+final t = i18nOf(ref);       // Widget içinde
+t('pos.title')               // → "POS Satış"
+t('common.save')             // → "Kaydet"
+t('common.error')            // → "Hata"
+// Namespace'ler: common, pos, sales, stock, finance, inventory, product, settings
+```
+
+### Import Kuralları
+
+```dart
+// Derin klasörlerden (screens/pos/widgets/ gibi) → paket import:
+import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/services/service_locator.dart';
+
+// Aynı feature içinde → göreceli import OK:
+import '../providers/pos_provider.dart';
+```
+
+---
+
+## Sektör Konfig Sistemi
 
 | Sektör | Enum | Özel Alanlar |
 |--------|------|-------------|
@@ -88,144 +352,65 @@ Uygulama 4 sektörü destekler. UI etiketleri, görünür alanlar ve davranışl
 | Ayakkabı/Tekstil | `SectorType.footwear` | Beden/numara, renk, kumaş, sezon |
 
 ```dart
-// Sektör config'e erişim
 final cfg = ref.watch(sectorConfigProvider);
 Text(cfg.labels.productName);  // "Parça" / "Ürün" / "Cihaz" / "Model"
-if (cfg.fields.showOem) { ... }
+if (cfg.fields.showOem) { /* OEM widget'ı göster */ }
 ```
 
-### Tasarım Sistemi Widget'ları
-
-Tüm ekranlarda merkezi widget'lar kullanılır. Parametreleri:
-
-```dart
-// AppAppBar - title String olmalı, Text() widget'ı DEĞİL
-AppAppBar.standard(title: 'Başlık', actions: [...], elevation: 0)
-AppAppBar.primary(title: 'Başlık')
-AppAppBar.gradient(title: 'Başlık')
-// ❌ backgroundColor, flexibleSpace, foregroundColor, leadingOnPressed YOK
-
-// AppButton
-AppButton.primary(text: 'Kaydet', onPressed: () {}, icon: Icons.save)
-AppButton.success(text: 'Onayla', onPressed: () {})
-AppButton.danger(text: 'Sil', onPressed: () {})
-AppButton.outline(text: 'İptal', onPressed: () {})
-// ❌ AppButton.text() YOK, .outline() kullan
-// ❌ label, style, margin, color parametreleri YOK
-
-// AppEmptyState
-AppEmptyState.noData(title: '...', description: '...', actionText: '...', onAction: () {})
-AppEmptyState.error(title: '...', description: '...', actionText: '...', onAction: () {})
-// ❌ message → description kullan
-// ❌ actionLabel → actionText kullan
-// ❌ onRetry → onAction kullan
-```
-
-### AppConstants (lib/core/theme/app_constants.dart)
-
-```dart
-// Spacing: spacing4, spacing8, spacing12, spacing16, spacing20, spacing24, spacing32, spacing48
-// Radius double: radiusSmall (8), radiusMedium (12), radiusLarge (16)
-// BorderRadius getter: borderRadiusSmall, borderRadiusMedium, borderRadiusLarge
-// ⚠️ borderRadiusMedium bir BorderRadius nesnesidir, double DEĞİL!
-// ❌ BorderRadius.circular(AppConstants.borderRadiusMedium) YANLIŞ
-// ✅ AppConstants.borderRadiusMedium DOĞRU
-
-// Padding: paddingSmall, paddingMedium, paddingLarge, pagePadding, cardPadding
-// ❌ pagePaddingValue, paddingAllMedium, paddingSymmetricSmall YOK
-```
-
-### State Management Pattern
-
-```dart
-// Provider tanımı (service_locator.dart'ta)
-final salesServiceProvider = Provider<SalesService>((ref) {
-  final apiClient = ref.watch(apiClientProvider);
-  return SalesService(apiClient);
-});
-
-// Auth provider
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) { ... });
-
-// Router provider
-final routerProvider = Provider<GoRouter>((ref) { ... });
-// ❌ appRouterProvider DEĞİL, routerProvider kullan
-
-// User model
-User(id: '', username: '', displayName: '', email: '', selectedCompanyCode: '');
-// ❌ fullName DEĞİL → displayName
-// ❌ role parametresi YOK
-```
-
-### Import Kuralları
-
-```dart
-// Derinlikte gömülü dosyalar (screens/pos/widgets/, screens/bulk_import/modals/ vb.)
-// için göreceli import YERİNE paket importu kullan:
-import 'package:project_pos/core/widgets/widgets.dart';
-import 'package:project_pos/core/theme/app_colors.dart';
-import 'package:project_pos/services/service_locator.dart';
-
-// Aynı feature klasöründe göreceli import kullanılabilir:
-import '../providers/pos_provider.dart';  // pos/widgets/ → pos/providers/
-```
-
-## POS Ekranı Özellikleri
+## POS Ekranı
 
 - **Klavye Kısayolları:** F1/Ctrl+P: Ödeme, F5: Yenile, ESC: Arama temizle, Ctrl+Delete: Sepet sıfırla
 - **Varyant Seçimi:** Birden fazla varyantı olan ürünlerde seçim dialogu açılır
 - **Stok Kontrolü:** Sepetteki miktar stok miktarını aşamaz
-- **Park Edilmiş Siparişler:** Sepet park edilebilir, badge ile gösterilir, geri yüklenebilir
-- **Hızlı Müşteri:** POS'tan yeni müşteri oluşturulabilir
-- **Fiş Yazdırma:** Satış sonrası fiş önizleme ve backend'e yazdırma komutu
+- **Öneri Paneli:** 5 tip badge — CROSS_REFERENCE (kırmızı), SIMILAR (mor), ALTERNATIVE (turuncu), COMPLEMENTARY (turkuaz), FREQUENTLY (yeşil)
 
 ## API Yapısı
 
-- **Base URL:** `AppConstants.baseUrl` ile konfigüre edilir
-- **Auth:** JWT Bearer token, otomatik refresh
-- **Company Header:** `X-Company-Code` her istekte gönderilir
-- **Ürün endpoint:** `product/api/v1/products`
-- **Satış endpoint:** `product/api/v1/sales`
-- **OEM endpoint:** `product/api/oem-numbers/variant/{variantId}`
-- **Araç uyumu:** `product/api/vehicle-compatibility/variant/{variantId}`
+```
+Base: AppConstants.baseUrl
+Auth: JWT Bearer token + otomatik refresh
+Header: X-Company-Code (her istekte)
 
-## Sık Yapılan Hatalar ve Çözümleri
+Ürünler:      product/api/v1/products
+Satış:        product/api/v1/sales
+Stok hareket: product/api/v1/stock-movements?variantId=...
+Öneriler:     product/api/v1/recommendations/hybrid?productIds=...&variantIds=...
+OEM:          product/api/oem-numbers/variant/{variantId}
+Çapraz Ref:   product/api/cross-reference/variant/{variantId}
+Araç uyumu:   product/api/v1/vehicle-compatibility/variant/{variantId}
+```
+
+## Sık Yapılan Hatalar
 
 | Hata | Çözüm |
 |------|-------|
 | `AppAppBar(title: Text('...'))` | `title` String olmalı: `AppAppBar.standard(title: '...')` |
-| `AppButton.text(...)` | `.text()` yok, `AppButton.outline(...)` kullan |
+| `AppButton.text(...)` | `.text()` yok → `AppButton.outline(...)` |
 | `AppEmptyState(message: '...')` | `description:` kullan |
-| `BorderRadius.circular(AppConstants.borderRadiusMedium)` | Direkt `AppConstants.borderRadiusMedium` kullan |
+| `BorderRadius.circular(AppConstants.borderRadiusMedium)` | Direkt `AppConstants.borderRadiusMedium` |
 | `ref.watch(appRouterProvider)` | `routerProvider` kullan |
 | `User(fullName: '...')` | `displayName` kullan |
 | `AppLoadingIndicator()` | `CircularProgressIndicator()` kullan |
-| `size: 18` (AppButton) | `size: ButtonSize.small` kullan |
-| `import '../../core/widgets/widgets.dart'` (derin klasörden) | `import 'package:project_pos/core/widgets/widgets.dart'` kullan |
+| `import '../../core/widgets/...'` (derin klasör) | `import 'package:project_pos/core/widgets/...'` |
+| `Colors.blue` direkt kullanım | `AppColors.info` veya uygun AppColors |
+| `catch (_) {}` sessiz hata yutma | `catch (e) { debugPrint('$e'); }` en azından logla |
 
 ## Build ve Test
 
 ```bash
-# Analiz
-flutter analyze
-
-# Build (Android)
-flutter build apk
-
-# Build (Web)
-flutter build web
-
-# Test
-flutter test
+flutter analyze                              # 0 error, 0 warning hedefi
+flutter build apk / web                      # Build
+flutter test                                 # Test
+cd ../pos-product-manager && mvn compile     # Backend derleme
 ```
 
-## Planlanan Mimari İyileştirme: Section-Based Product Details
+## Backend Hakkında (Kısa Referans)
 
-Mevcut sabit 4 tab yapısı yerine, sektöre göre dinamik section/tab üretimi planlanmaktadır. Detaylar `Sektor_Urun_Ayrintilari_Tasarim_Plani.docx` dokümanındadır.
+Detaylar: `../pos-product-manager/CLAUDE.md`
 
-Ana fikir:
-- `DetailSectionType` enum: Her bölüm tipi (generalInfo, pricing, oemNumbers, imeiSerial, warranty, sizeColor vb.)
-- `SectorDetailSection` model: type, title, icon, isTab, collapsible, sortOrder, fields
-- `SectorConfig.detailSections`: Her sektör kendi bölüm listesini tanımlar
-- Section Widget Registry: `DetailSectionType → Widget` mapping
-- Yeni sektör = sadece yeni config, widget kodu değişmez
+- **Controller:** try { ApiResponse.success(data) } catch(TOpenException) { throw } catch(Exception) { ExceptionMapper.map(e) }
+- **Company scoping:** `CompanyContext.get()` her sorguda
+- **TMessageType:** Final enum, genişletilemez. Sadece: `FIELD_IS_REQUIRED_1001`, `NOT_EXISTS_IN_THE_RECORDS_1006`, `ENTERED_DATA_IS_NOT_IN_FORMAT_1046`
+- **Stok tipleri:** PURCHASE_IN, SALE_OUT, SALE_RETURN_IN, SALE_CANCEL_IN, PURCHASE_RETURN_OUT, TRANSFER_IN/OUT, ADJUSTMENT_IN/OUT
+- **Öneri kaynakları:** frequentlyBought + similar/alternative/complementary + crossReference
+- **Seed data:** SEDCORE (7 oto varyant) + SEDCORE1 (15 elbise varyant) + 28 cross_references + 9 tip stok hareketi

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../core/api/api_client.dart';
 
 class SalesReportService {
@@ -43,7 +44,8 @@ class SalesReportService {
       );
       return List<Map<String, dynamic>>.from(resp.data['data'] ?? []);
     } catch (e) {
-      return [];
+      debugPrint('getProductSalesAnalysis hata: $e');
+      rethrow;
     }
   }
 
@@ -63,7 +65,8 @@ class SalesReportService {
       );
       return List<Map<String, dynamic>>.from(resp.data['data'] ?? []);
     } catch (e) {
-      return [];
+      debugPrint('getCustomerSalesAnalysis hata: $e');
+      rethrow;
     }
   }
 

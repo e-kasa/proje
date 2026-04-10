@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/product/api/v1/stock-transfers")
+@RequestMapping("/api/v1/stock-transfers")
 @RequiredArgsConstructor
 @Slf4j
 public class StockTransferControllerImpl {

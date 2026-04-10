@@ -275,6 +275,19 @@ public class PurchaseServiceImpl
                         "Tedarikci bulunamadi: " + purchase.getSupplier().getId()));
 
         // 2. Stok hareketleri (PURCHASE_RETURN_OUT)
+        // Orijinal alımın PURCHASE_IN hareketinden storeId/warehouseId al
+        String originalStoreId = null;
+        String originalWarehouseId = null;
+        if (purchase.getMovements() != null) {
+            for (StockMovement m : purchase.getMovements()) {
+                if (m.getMovementType() == StockMovementType.PURCHASE_IN) {
+                    originalStoreId = m.getStoreId();
+                    originalWarehouseId = m.getWarehouseId();
+                    break;
+                }
+            }
+        }
+
         BigDecimal totalReturnAmount = BigDecimal.ZERO;
         List<PurchaseReturnResponse.ReturnItemResponse> responseItems = new ArrayList<>();
 
@@ -289,8 +302,8 @@ public class PurchaseServiceImpl
 
             StockMovement movement = StockMovement.builder()
                     .variant(variant)
-                    .storeId(null)
-                    .warehouseId(null)
+                    .storeId(originalStoreId)
+                    .warehouseId(originalWarehouseId)
                     .movementType(StockMovementType.PURCHASE_RETURN_OUT)
                     .quantity(qty)
                     .unitPrice(unitPrice)

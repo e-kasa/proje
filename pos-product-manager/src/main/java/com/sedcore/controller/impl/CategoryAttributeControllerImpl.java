@@ -38,7 +38,7 @@ public class CategoryAttributeControllerImpl implements CategoryAttributeControl
             );
             return ResponseEntity.ok(ApiResponse.success(
                     "Özellik oluşturuldu",
-                    toResponse(result)
+                    toResponse(result)));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -57,20 +57,12 @@ public class CategoryAttributeControllerImpl implements CategoryAttributeControl
                     .attributeType(request.getAttributeType())
                     .isRequired(request.getIsRequired())
                     .isFilterable(request.getIsFilterable())
-                  //  .isSearchable(request.getIsSearchable())
-                   // .isComparable(request.getIsComparable())
-                   // .displayOrder(request.getDisplayOrder())
-                  //  .unit(request.getUnit())
-                   // .options(request.getOptions())
-                   // .validationRegex(request.getValidationRegex())
-                   // .minValue(request.getMinValue())
-                   // .maxValue(request.getMaxValue())
                     .build();
 
             CategoryAttribute result = categoryAttributeService.updateCategoryAttribute(id, updates);
             return ResponseEntity.ok(ApiResponse.success(
                     "Özellik güncellendi",
-                    toResponse(result)
+                    toResponse(result)));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -83,6 +75,7 @@ public class CategoryAttributeControllerImpl implements CategoryAttributeControl
     public ResponseEntity<ApiResponse<Void>> deleteAttribute(String id) {
         try {
             categoryAttributeService.deleteCategoryAttribute(id);
+            return ResponseEntity.ok(ApiResponse.success("Özellik silindi", null));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -100,6 +93,7 @@ public class CategoryAttributeControllerImpl implements CategoryAttributeControl
             List<CategoryAttributeResponse> response = attributes.stream()
                     .map(this::toResponse)
                     .collect(Collectors.toList());
+            return ResponseEntity.ok(ApiResponse.success("Kategori özellikleri getirildi", response));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -117,6 +111,7 @@ public class CategoryAttributeControllerImpl implements CategoryAttributeControl
             List<CategoryAttributeResponse> response = attributes.stream()
                     .map(this::toResponse)
                     .collect(Collectors.toList());
+            return ResponseEntity.ok(ApiResponse.success("Zorunlu özellikler getirildi", response));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -134,7 +129,7 @@ public class CategoryAttributeControllerImpl implements CategoryAttributeControl
             List<CategoryAttributeResponse> response = attributes.stream()
                     .map(this::toResponse)
                     .collect(Collectors.toList());
-            return ResponseEntity.ok(ApiResponse.success(
+            return ResponseEntity.ok(ApiResponse.success("Filtrelenebilir özellikler getirildi", response));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {

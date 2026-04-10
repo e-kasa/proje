@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 
@@ -125,12 +124,6 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
     final totalCost = (_data!['totalCost'] ?? 0).toDouble();
     final profit = (_data!['profit'] ?? 0).toDouble();
     final profitMargin = (_data!['profitMargin'] ?? 0).toDouble();
-
-    final monthlyBreakdown =
-    List<Map<String, dynamic>>.from(_data!['monthlyBreakdown'] ?? []);
-
-    final categoryBreakdown =
-    List<Map<String, dynamic>>.from(_data!['categoryBreakdown'] ?? []);
 
     final isPositive = profit >= 0;
 

@@ -8,6 +8,7 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -24,5 +25,8 @@ public class StockTransfer extends TOpenSimpleCompanyEntity {
 
     @OneToMany(mappedBy = "transfer", cascade = CascadeType.ALL)
     private List<StockMovement> movements;
+
+    @Version
+    private Long version;
 
 }

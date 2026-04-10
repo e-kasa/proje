@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../core/api/api_client.dart';
 
 /// Category Service - handles all category-related API calls
@@ -29,7 +30,8 @@ class CategoryService {
       if (data is List) return data.cast<Map<String, dynamic>>();
       return [];
     } catch (e) {
-      return [];
+      debugPrint('getCategories hata: $e');
+      rethrow;
     }
   }
 
@@ -42,7 +44,8 @@ class CategoryService {
       if (data is List) return data.cast<Map<String, dynamic>>();
       return [];
     } catch (e) {
-      return [];
+      debugPrint('getCategoryTree hata: $e');
+      rethrow;
     }
   }
 
@@ -54,7 +57,8 @@ class CategoryService {
       if (data is List) return data.cast<Map<String, dynamic>>();
       return [];
     } catch (e) {
-      return [];
+      debugPrint('getCategoriesByStatus hata: $e');
+      rethrow;
     }
   }
 
@@ -66,7 +70,8 @@ class CategoryService {
       if (data is List) return data.cast<Map<String, dynamic>>();
       return [];
     } catch (e) {
-      return [];
+      debugPrint('getRootCategories hata: $e');
+      rethrow;
     }
   }
 
@@ -78,7 +83,8 @@ class CategoryService {
       if (data is List) return data.cast<Map<String, dynamic>>();
       return [];
     } catch (e) {
-      return [];
+      debugPrint('getChildCategories hata: $e');
+      rethrow;
     }
   }
 
@@ -89,7 +95,8 @@ class CategoryService {
       final data = response.data['data'];
       return data is Map<String, dynamic> ? data : null;
     } catch (e) {
-      return null;
+      debugPrint('getCategoryById hata: $e');
+      rethrow;
     }
   }
 
@@ -141,7 +148,8 @@ class CategoryService {
           await _apiClient.get('$_base/generate-slug', queryParameters: {'name': name});
       return response.data['data'] as String? ?? '';
     } catch (e) {
-      return '';
+      debugPrint('generateSlug hata: $e');
+      rethrow;
     }
   }
 }

@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
-@RequestMapping("/product/api/v1/reports/stock")
+@RequestMapping("/api/v1/reports/stock")
 @RequiredArgsConstructor
 @Slf4j
 public class StockReportControllerImpl {
@@ -30,13 +30,14 @@ public class StockReportControllerImpl {
     @GetMapping("/value-summary")
     public ResponseEntity<ApiResponse<StockValueSummary>> getValueSummary() {
         try {
-            return ResponseEntity.ok(ApiResponse.success(null));
+            StockValueSummary summary = stockReportService.getStockValueSummary();
+            return ResponseEntity.ok(ApiResponse.success(summary));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -47,13 +48,14 @@ public class StockReportControllerImpl {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
         try {
-            return ResponseEntity.ok(ApiResponse.success(null));
+            StockMovementSummary summary = stockReportService.getMovementSummary(startDate, endDate);
+            return ResponseEntity.ok(ApiResponse.success(summary));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -62,13 +64,14 @@ public class StockReportControllerImpl {
     @GetMapping("/critical-alerts")
     public ResponseEntity<ApiResponse<List<CriticalStockAlert>>> getCriticalAlerts() {
         try {
-            return ResponseEntity.ok(ApiResponse.success(null));
+            List<CriticalStockAlert> alerts = stockReportService.getCriticalAlerts();
+            return ResponseEntity.ok(ApiResponse.success(alerts));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -78,13 +81,14 @@ public class StockReportControllerImpl {
     public ResponseEntity<ApiResponse<StockValueSummary>> getWarehouseBreakdown(
             @RequestParam String warehouseId) {
         try {
-            return ResponseEntity.ok(ApiResponse.success(null));
+            StockValueSummary summary = stockReportService.getWarehouseBreakdown(warehouseId);
+            return ResponseEntity.ok(ApiResponse.success(summary));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
       }
 }

@@ -3,7 +3,7 @@ package com.sedcore.controller.impl;
 import com.sedcore.controller.PaymentController;
 import com.sedcore.model.PaymentRequest;
 import com.sedcore.model.PaymentResponse;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import com.sedcore.service.PaymentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import com.towpen.base.enums.model.TMessageType;
 import com.towpen.base.exceptions.TOpenException;
 import com.towpen.base.restservice.model.TOpenMessage;
+import com.sedcore.util.ExceptionMapper;
 import com.sedcore.util.ExceptionMapper;
 
 import java.util.List;
@@ -98,11 +99,9 @@ public class PaymentControllerImpl implements PaymentController {
             if (purchaseId != null) {
                 return ResponseEntity.ok(ApiResponse.success(paymentService.getByPurchase(purchaseId)));
             }
-            throw new TOpenException(new TOpenMessage(TMessageType.PAYMENT_LIST_ERROR_2100));
+            throw new TOpenException(new TOpenMessage(TMessageType.FIELD_IS_REQUIRED_1001));
         } catch (TOpenException e) {
-
             throw e;
-
         } catch (Exception e) {
             log.error("Odeme listesi hatasi: {}", e);
             throw ExceptionMapper.map(e);

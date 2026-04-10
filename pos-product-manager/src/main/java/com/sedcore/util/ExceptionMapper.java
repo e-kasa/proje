@@ -77,7 +77,7 @@ public class ExceptionMapper {
 
         // STOK HATALARI
         if (message.contains("insufficient") || message.contains("yetersiz stok")) {
-            return TMessageType.VALIDATION_ERROR_1201; // Custom: 1300 alt grubu
+            return TMessageType.ENTERED_DATA_IS_NOT_IN_FORMAT_1046; // Custom: 1300 alt grubu
         }
 
         if (message.contains("warehouse") || message.contains("depo")) {
@@ -103,7 +103,7 @@ public class ExceptionMapper {
         }
 
         if (message.contains("amount") || message.contains("tutarı")) {
-            return TMessageType.CAN_NOT_BE_NULL_1204;
+            return TMessageType.FIELD_IS_REQUIRED_1001;
         }
 
         // YETKİ HATALARI
@@ -112,12 +112,12 @@ public class ExceptionMapper {
         }
 
         if (message.contains("cannot change") || message.contains("değiştiremez")) {
-            return TMessageType.FIELD_CANNOT_BE_CHANGED_1200;
+            return TMessageType.SAME_AS_DB_CAN_NOT_UPDATE_1050;
         }
 
         // GENEL HATA PATTERNS
         if (message.contains("no result") || message.contains("sonuç bulunamadı")) {
-            return TMessageType.NO_RESULT_FOUND_9998;
+            return TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006;
         }
 
         // DEFAULT: Beklenmeyen hata
@@ -162,7 +162,7 @@ public class ExceptionMapper {
      */
     public static TOpenException validationError(String field, String reason) {
         log.warn("Validation error - Field: {}, Reason: {}", field, reason);
-        return new TOpenException(new TOpenMessage(TMessageType.VALIDATION_ERROR_1201));
+        return new TOpenException(new TOpenMessage(TMessageType.ENTERED_DATA_IS_NOT_IN_FORMAT_1046));
     }
 
     /**
@@ -179,6 +179,6 @@ public class ExceptionMapper {
     public static TOpenException insufficientInventory(String productId, int available, int requested) {
         log.warn("Insufficient inventory - Product: {}, Available: {}, Requested: {}",
                 productId, available, requested);
-        return new TOpenException(new TOpenMessage(TMessageType.VALIDATION_ERROR_1201));
+        return new TOpenException(new TOpenMessage(TMessageType.ENTERED_DATA_IS_NOT_IN_FORMAT_1046));
     }
 }

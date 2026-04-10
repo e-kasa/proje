@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../core/api/api_client.dart';
 
 /// Supplier Service - handles all supplier-related API calls
@@ -56,7 +57,8 @@ class SupplierService {
     try {
       await _apiClient.delete('product/api/v1/suppliers/$id');
     } catch (e) {
-      // Silently fail in development
+      debugPrint('deleteSupplier hata: $e');
+      rethrow;
     }
   }
 
@@ -108,7 +110,8 @@ class SupplierService {
       final data = response.data['data'];
       return data is Map<String, dynamic> ? data : null;
     } catch (e) {
-      return null;
+      debugPrint('getSupplierAccount hata: $e');
+      rethrow;
     }
   }
 
@@ -119,7 +122,8 @@ class SupplierService {
       if (data is List) return data.cast<Map<String, dynamic>>();
       return [];
     } catch (e) {
-      return [];
+      debugPrint('getSupplierTransactions hata: $e');
+      rethrow;
     }
   }
 
@@ -144,5 +148,12 @@ class SupplierService {
     }
   }
 
-  Future<void> recordSupplierPayment(String supplierId, Map<String, dynamic> result) async {}
+  Future<void> recordSupplierPayment(String supplierId, Map<String, dynamic> data) async {
+    try {
+      await _apiClient.post('$_base/$supplierId/payments', data: data);
+    } catch (e) {
+      debugPrint('recordSupplierPayment hata: $e');
+      rethrow;
+    }
+  }
 }

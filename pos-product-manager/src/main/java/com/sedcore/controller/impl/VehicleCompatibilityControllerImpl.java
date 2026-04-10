@@ -28,13 +28,14 @@ public class VehicleCompatibilityControllerImpl implements VehicleCompatibilityC
     @GetMapping("/variant/{variantId}")
     public ResponseEntity<ApiResponse<List<VehicleCompatibilityResponse>>> getByVariantId(@PathVariable String variantId) {
         try {
-            return ResponseEntity.ok(ApiResponse.success(null));
+            List<VehicleCompatibilityResponse> responses = vehicleCompatibilityService.getByVariantId(variantId);
+            return ResponseEntity.ok(ApiResponse.success(responses));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -43,13 +44,14 @@ public class VehicleCompatibilityControllerImpl implements VehicleCompatibilityC
     @GetMapping("/vehicle/{vehicleId}")
     public ResponseEntity<ApiResponse<List<VehicleCompatibilityResponse>>> getByVehicleId(@PathVariable String vehicleId) {
         try {
-            return ResponseEntity.ok(ApiResponse.success(null));
+            List<VehicleCompatibilityResponse> responses = vehicleCompatibilityService.getByVehicleId(vehicleId);
+            return ResponseEntity.ok(ApiResponse.success(responses));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -59,12 +61,13 @@ public class VehicleCompatibilityControllerImpl implements VehicleCompatibilityC
     public ResponseEntity<ApiResponse<VehicleCompatibilityResponse>> createCompatibility(@RequestBody VehicleCompatibilityRequest request) {
         try {
             VehicleCompatibilityResponse response = vehicleCompatibilityService.createCompatibility(request);
+            return ResponseEntity.ok(ApiResponse.success(response));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -74,12 +77,13 @@ public class VehicleCompatibilityControllerImpl implements VehicleCompatibilityC
     public ResponseEntity<ApiResponse<List<VehicleCompatibilityResponse>>> bulkCreate(@RequestBody VehicleCompatibilityRequest request) {
         try {
             List<VehicleCompatibilityResponse> responses = vehicleCompatibilityService.bulkCreate(request);
+            return ResponseEntity.ok(ApiResponse.success(responses));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -89,12 +93,13 @@ public class VehicleCompatibilityControllerImpl implements VehicleCompatibilityC
     public ResponseEntity<ApiResponse<Void>> deleteCompatibility(@PathVariable String id) {
         try {
             vehicleCompatibilityService.deleteCompatibility(id);
+            return ResponseEntity.ok(ApiResponse.success(null));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -106,13 +111,14 @@ public class VehicleCompatibilityControllerImpl implements VehicleCompatibilityC
             @RequestParam(required = false) String model,
             @RequestParam(required = false) Integer year) {
         try {
-            return ResponseEntity.ok(ApiResponse.success(null));
+            List<VehicleCompatibilityResponse> responses = vehicleCompatibilityService.searchByVehicle(make, model, year);
+            return ResponseEntity.ok(ApiResponse.success(responses));
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }

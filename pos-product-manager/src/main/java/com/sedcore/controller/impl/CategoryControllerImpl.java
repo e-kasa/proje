@@ -132,6 +132,7 @@ public class CategoryControllerImpl implements CategoryController {
         } catch (IllegalArgumentException e) {
             log.error("Geçersiz durum parametresi: {}", status);
             return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Geçersiz durum: " + status));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -147,6 +148,7 @@ public class CategoryControllerImpl implements CategoryController {
             log.info("Ana kategoriler listeleme isteği alındı");
             List<DtoCategory> categories = categoryService.getRootCategories();
             return ResponseEntity.ok(ApiResponse.success(
+                    categories.size() + " ana kategori getirildi", categories));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -162,6 +164,7 @@ public class CategoryControllerImpl implements CategoryController {
             log.info("Alt kategoriler listeleme isteği alındı: {}", parentId);
             List<DtoCategory> categories = categoryService.getChildCategories(parentId);
             return ResponseEntity.ok(ApiResponse.success(
+                    categories.size() + " alt kategori getirildi", categories));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -176,6 +179,7 @@ public class CategoryControllerImpl implements CategoryController {
         try {
             log.info("Kategori ağacı listeleme isteği alındı");
             List<DtoCategory> tree = categoryService.getCategoryTree();
+            return ResponseEntity.ok(ApiResponse.success("Kategori ağacı getirildi", tree));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -190,6 +194,7 @@ public class CategoryControllerImpl implements CategoryController {
         try {
             log.info("Kategori yolu getirme isteği alındı: {}", categoryId);
             String path = categoryService.getCategoryPath(categoryId);
+            return ResponseEntity.ok(ApiResponse.success("Kategori yolu getirildi", path));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -204,6 +209,7 @@ public class CategoryControllerImpl implements CategoryController {
         try {
             log.info("Slug oluşturma isteği alındı: {}", name);
             String slug = categoryService.generateSlug(name);
+            return ResponseEntity.ok(ApiResponse.success("Slug oluşturuldu", slug));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -220,6 +226,7 @@ public class CategoryControllerImpl implements CategoryController {
         try {
             log.info("Sıralama güncelleme isteği alındı: {} -> {}", categoryId, newOrder);
             categoryService.updateSortOrder(categoryId, newOrder);
+            return ResponseEntity.ok(ApiResponse.success("Sıralama güncellendi", null));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -241,6 +248,7 @@ public class CategoryControllerImpl implements CategoryController {
             DtoCategory category = categoryService.getCategoryWithRelations(
                     categoryId, includeChildren, includeVariants, includeAttributes
             );
+            return ResponseEntity.ok(ApiResponse.success("Kategori ilişkilerle getirildi", category));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -255,6 +263,7 @@ public class CategoryControllerImpl implements CategoryController {
         try {
             log.info("Kategori ağacı ilişkilerle listeleme isteği alındı");
             List<DtoCategory> tree = categoryService.getCategoryTreeWithRelations();
+            return ResponseEntity.ok(ApiResponse.success("Kategori ağacı ilişkilerle getirildi", tree));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -262,19 +271,6 @@ public class CategoryControllerImpl implements CategoryController {
             throw ExceptionMapper.map(e);
         }
     }
-
-   /*  @Override
-    @GetMapping("/{categoryId}/with-children")
-    public ResponseEntity<ApiResponse<DtoCategory>> getCategoryWithChildren(
-            @PathVariable String categoryId,
-            @RequestParam(required = false, defaultValue = "false") Boolean recursive) {
-        try {
-            log.info("Category children ile getirme isteği: {}, Recursive={}", categoryId, recursive);
-            DtoCategory category = categoryService.getCategoryWithChildren(categoryId, recursive);
-        } catch (Exception e) {
-          
-        }
-    }*/
 
     @Override
     public ResponseEntity<ApiResponse<CategoryVariant>> addVariantToCategory(String categoryId,
@@ -282,6 +278,7 @@ public class CategoryControllerImpl implements CategoryController {
         
         try {
             CategoryVariant categoryVariant = categoryVariantService.addVariantToCategory(categoryId, variantKey, variantName, variantType);
+            return ResponseEntity.ok(ApiResponse.success("Varyant kategoriye eklendi", categoryVariant));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -291,8 +288,19 @@ public class CategoryControllerImpl implements CategoryController {
     }
 
     @Override
-    public ResponseEntity<ApiResponse<DtoCategory>> getCategoryWithChildren(String categoryId, Boolean recursive) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getCategoryWithChildren'");
+    @GetMapping("/{categoryId}/with-children")
+    public ResponseEntity<ApiResponse<DtoCategory>> getCategoryWithChildren(
+            @PathVariable String categoryId,
+            @RequestParam(required = false, defaultValue = "false") Boolean recursive) {
+        try {
+            log.info("Category children ile getirme isteği: {}, Recursive={}", categoryId, recursive);
+            DtoCategory category = categoryService.getCategoryWithChildren(categoryId, recursive);
+            return ResponseEntity.ok(ApiResponse.success("Kategori alt kategorileriyle getirildi", category));
+        } catch (TOpenException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Operation error: {}", e);
+            throw ExceptionMapper.map(e);
+        }
     }
 }

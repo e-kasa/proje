@@ -4,7 +4,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/constants/env_config.dart';
-import 'core/theme/app_theme.dart';
 import 'core/utils/router.dart';
 import 'providers/theme_provider.dart';
 

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../providers/pos_provider.dart';
-import 'package:project_pos/core/widgets/widgets.dart';
 import 'receipt_preview_dialog.dart';
 
 class PaymentPanel extends ConsumerStatefulWidget {

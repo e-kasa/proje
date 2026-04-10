@@ -229,7 +229,7 @@ class ProductService {
   /// Toplam, aktif, dusuk stok ve stokta olmayan urun sayilarini doner.
   /// Backend'de ayri bir stats endpoint'i bulunmadigindan lokal hesaplanir.
   Future<Map<String, dynamic>> getProductStats() async {
-    final products = await getProducts();
+    final products = await getProducts(size: 9999);
     return {
       'totalProducts': products.length,
       'activeProducts': products.where((p) => p['isActive'] == true).length,

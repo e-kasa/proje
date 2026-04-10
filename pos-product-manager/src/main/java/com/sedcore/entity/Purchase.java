@@ -84,4 +84,7 @@ public class Purchase extends TOpenSimpleCompanyEntity {
     public boolean isOnCredit() {
         return getRemainingDebt().compareTo(BigDecimal.ZERO) > 0;
     }
+
+    @Version
+    private Long version;
 }

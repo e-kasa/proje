@@ -84,7 +84,7 @@ class RecommendationPanel extends ConsumerWidget {
 
             // Önerilen ürünler (yatay scroll) — loading sırasında da mevcut listeyi göster
             SizedBox(
-              height: 90,
+              height: 120,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: posState.recommendations.length,
@@ -131,7 +131,10 @@ class _RecommendationCard extends StatelessWidget {
     Color badgeColor = AppColors.info;
     IconData badgeIcon = Icons.trending_up;
 
-    if (recommendationType.contains('SIMILAR')) {
+    if (recommendationType.contains('CROSS_REFERENCE')) {
+      badgeColor = const Color(0xFFE74C3C); // Kırmızı — OEM çapraz referans
+      badgeIcon = Icons.swap_calls;
+    } else if (recommendationType.contains('SIMILAR')) {
       badgeColor = const Color(0xFF6C63FF); // Mor
       badgeIcon = Icons.check_circle_outline;
     } else if (recommendationType.contains('ALTERNATIVE')) {
@@ -208,11 +211,12 @@ class _RecommendationCard extends StatelessWidget {
                     padding: const EdgeInsets.all(8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         // Adı
                         Text(
                           name,
-                          maxLines: 2,
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontSize: 12,
@@ -223,21 +227,16 @@ class _RecommendationCard extends StatelessWidget {
 
                         // SKU
                         if (sku.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              sku,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: AppColors.textMuted,
-                                fontWeight: FontWeight.w400,
-                              ),
+                          Text(
+                            sku,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: AppColors.textMuted,
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
-
-                        const Spacer(),
 
                         // Fiyat
                         Text(

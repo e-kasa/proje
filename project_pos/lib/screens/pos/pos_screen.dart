@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:animate_do/animate_do.dart';
 import '../../core/theme/app_colors.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
@@ -13,7 +11,6 @@ import 'widgets/cart_panel.dart';
 import 'widgets/payment_panel.dart';
 import 'widgets/category_filter_bar.dart';
 import 'widgets/variant_selection_dialog.dart';
-import 'widgets/parked_orders_panel.dart';
 import 'widgets/out_of_stock_location_dialog.dart';
 
 class PosScreen extends ConsumerStatefulWidget {

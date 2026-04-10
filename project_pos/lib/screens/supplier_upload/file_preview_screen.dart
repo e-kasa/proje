@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../core/widgets/widgets.dart';
-import '../../core/theme/app_constants.dart';
 
 /// EKRAN 2: Önizleme
 /// Kullanıcı yüklenen dosyanın ilk 5-10 satırını görür ve doğrular

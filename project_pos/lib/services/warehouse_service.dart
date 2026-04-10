@@ -20,7 +20,9 @@ class WarehouseService {
     debugPrint('GET $_base?isActive=$isActive');
     try {
       final queryParams = <String, dynamic>{};
+      if (search != null) queryParams['search'] = search;
       if (storeCode != null) queryParams['storeCode'] = storeCode;
+      if (type != null) queryParams['type'] = type;
       if (isActive != null) queryParams['isActive'] = isActive;
       if (page != null) queryParams['page'] = page;
       if (limit != null) queryParams['limit'] = limit;

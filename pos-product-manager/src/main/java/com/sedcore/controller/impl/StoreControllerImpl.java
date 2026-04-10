@@ -36,6 +36,7 @@ public class StoreControllerImpl {
                     : storeService.listActive();
 
             return ResponseEntity.ok(ApiResponse.success(
+                    stores.stream().map(this::toMap).collect(Collectors.toList())));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -50,6 +51,7 @@ public class StoreControllerImpl {
         try {
             Store store = storeService.findById(id)
                     .orElseThrow(() -> new RuntimeException("Magaza bulunamadi: " + id));
+            return ResponseEntity.ok(ApiResponse.success(toMap(store)));
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);

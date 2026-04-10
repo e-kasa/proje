@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../core/api/api_client.dart';
 import '../../models/bulk_import_models.dart';
-import '../../services/product_service.dart';
 import '../../services/bulk_import_service.dart';
 import 'modals/update_stock_modal.dart';
 import 'modals/match_confirm_modal.dart';
 import 'modals/manual_match_modal.dart';
-import 'edit_product_modal.dart';
 
 /// Toplu İçe Aktarma - Ürün İnceleme ve Karar Ekranı V2
 /// Gerçek backend modelleri ile çalışan production-ready versiyon
@@ -46,8 +43,6 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
 
   String? _importId;
   String _sector = 'genel';
-  bool _isLoading = true;
-  String? _error;
 
   String get _sectorLabel {
     switch (_sector) {
@@ -58,7 +53,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
   }
 
   Future<void> _loadProducts() async {
-    setState(() { _isLoading = true; _error = null; });
+    setState(() {});
     try {
       final bulkImportService = BulkImportService(ApiClient());
       final data = await bulkImportService.getAnalysisResult(_importId ?? '');
@@ -69,13 +64,11 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
       _statistics = ImportStatistics.fromJson(
         data['statistics'] as Map<String, dynamic>,
       );
-      setState(() { _isLoading = false; });
+      setState(() {});
     } catch (e) {
       setState(() {
         _products = [];
         _statistics = ImportStatistics(total: 0, newProducts: 0, conflicts: 0, potentialMatches: 0, addVariants: 0, updateVariants: 0, needsVariants: 0, createVariantGroups: 0, errors: 0);
-        _isLoading = false;
-        _error = 'Veri yuklenemedi';
       });
     }
   }
@@ -180,11 +173,6 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
   }
 
   // Modal functions with real implementations
-  void _showCreateProductModal(AnalyzedProduct product) {
-    // TODO: Create new product modal (can reuse edit modal)
-    _showEditModal(product);
-  }
-
   void _showUpdateStockModal(AnalyzedProduct product) {
     showDialog(
       context: context,
@@ -278,41 +266,6 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
     if (result != null && result is UserDecision) {
       _saveDecision(product, result);
     }
-  }
-
-  void _showEditModal(AnalyzedProduct product) {
-    // Convert AnalyzedProduct to old format for edit modal
-    final productMap = {
-      'id': product.tempId,
-      'name': product.name,
-      'sku': product.sku,
-      'barcode': product.barcode,
-      'category': product.category,
-      'brand': product.brand,
-      'unit': product.unit,
-      'taxRate': product.taxRate,
-      'buyPrice': product.buyPrice,
-      'sellPrice': product.sellPrice,
-      'stock': product.stock,
-      'description': product.description,
-      'status': product.status.name.toLowerCase(),
-      'errors': product.errors,
-    };
-
-    showDialog(
-      context: context,
-      builder: (context) => EditProductModal(
-        product: productMap,
-        existingProducts: const [],
-        onSave: (updatedProduct) {
-          final decision = UserDecision.create(
-            tempId: product.tempId,
-            product: updatedProduct,
-          );
-          _saveDecision(product, decision);
-        },
-      ),
-    );
   }
 
   void _saveDecision(AnalyzedProduct product, UserDecision decision) {

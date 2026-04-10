@@ -281,8 +281,22 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
     }
 
     /**
+     * Ürün Aktifleştir
+     */
+    @Override
+    public void activateProduct(String id) {
+        log.info("Ürün aktifleştiriliyor: id={}", id);
+        Product product = productRepository.findByIdAndIsDeleted(id, false)
+                .orElseThrow(() -> new RuntimeException("Ürün bulunamadı: " + id));
+        product.setStatus(ProductStatus.ACTIVE);
+        save(product);
+        log.info("Ürün aktifleştirildi: id={}", id);
+    }
+
+    /**
      * Ürün Pasife Al (Soft Delete)
      */
+    @Override
     public void deactivateProduct(String id) {
         log.info("Ürün pasife alınıyor: id={}", id);
         Product product = productRepository.findByIdAndIsDeleted(id, false)

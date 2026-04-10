@@ -58,7 +58,7 @@ public class CustomerControllerImpl {
 
         } catch (Exception e) {
             log.error("Müşteri listesi hatası: {}", e);
-            throw new TOpenException(new TOpenMessage(TMessageType.CUSTOMER_LIST_ERROR_1400));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -101,7 +101,7 @@ public class CustomerControllerImpl {
 
         } catch (Exception e) {
             log.error("Müşteri oluşturma hatası: {}", e);
-            throw new TOpenException(new TOpenMessage(TMessageType.CUSTOMER_CREATE_ERROR_1401));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -132,7 +132,7 @@ public class CustomerControllerImpl {
 
         } catch (Exception e) {
             log.error("Exception occurred", e);
-            throw new TOpenException(new TOpenMessage(TMessageType.CUSTOMER_CREATE_ERROR_1401));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -152,7 +152,7 @@ public class CustomerControllerImpl {
 
         } catch (Exception e) {
             log.error("Exception occurred", e);
-            throw new TOpenException(new TOpenMessage(TMessageType.CUSTOMER_UPDATE_ERROR_1402));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -172,7 +172,7 @@ public class CustomerControllerImpl {
 
         } catch (Exception e) {
             log.error("Exception occurred", e);
-            throw new TOpenException(new TOpenMessage(TMessageType.CUSTOMER_DELETE_ERROR_1403));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -186,9 +186,10 @@ public class CustomerControllerImpl {
             stats.put("activeCustomers", all.stream().filter(c -> Boolean.TRUE.equals(c.getIsActive())).count());
             stats.put("inactiveCustomers", all.stream().filter(c -> !Boolean.TRUE.equals(c.getIsActive())).count());
             stats.put("corporateCustomers", all.stream().filter(c -> c.getCustomerType() != null && c.getCustomerType().name().equals("CORPORATE")).count());
+            return ResponseEntity.ok(ApiResponse.success(stats));
         } catch (Exception e) {
             log.error("Exception occurred", e);
-            throw new TOpenException(new TOpenMessage(TMessageType.CUSTOMER_UPDATE_ERROR_1402));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -207,7 +208,7 @@ public class CustomerControllerImpl {
 
         } catch (Exception e) {
             log.error("Exception occurred", e);
-            throw new TOpenException(new TOpenMessage(TMessageType.CUSTOMER_LIST_ERROR_1400));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -222,7 +223,7 @@ public class CustomerControllerImpl {
 
         } catch (Exception e) {
             log.error("Exception occurred", e);
-            throw new TOpenException(new TOpenMessage(TMessageType.CUSTOMER_GET_ERROR_1404));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -239,7 +240,7 @@ public class CustomerControllerImpl {
 
         } catch (Exception e) {
             log.error("Tahsilat kaydi hatasi: customerId={}, {}", id, e);
-            throw new TOpenException(new TOpenMessage(TMessageType.CUSTOMER_GET_ERROR_1404));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -251,7 +252,7 @@ public class CustomerControllerImpl {
         try {
             BigDecimal newLimit = body.get("creditLimit");
             if (newLimit == null) {
-                throw new TOpenException(new TOpenMessage(TMessageType.CUSTOMER_UPDATE_ERROR_1402));
+                throw new TOpenException(new TOpenMessage(TMessageType.FIELD_IS_REQUIRED_1001));
             }
             return ResponseEntity.ok(ApiResponse.success(customerService.updateCreditLimit(id, newLimit)));
         } catch (TOpenException e) {

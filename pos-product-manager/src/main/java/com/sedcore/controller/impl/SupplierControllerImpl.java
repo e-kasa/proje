@@ -226,7 +226,7 @@ public class SupplierControllerImpl {
         try {
             BigDecimal newLimit = body.get("creditLimit");
             if (newLimit == null) {
-                throw new TOpenException(new TOpenMessage(TMessageType.SUPPLIER_UPDATE_ERROR_1902));
+                throw new TOpenException(new TOpenMessage(TMessageType.FIELD_IS_REQUIRED_1001));
             }
             return ResponseEntity.ok(ApiResponse.success(supplierService.updateCreditLimit(id, newLimit)));
         } catch (TOpenException e) {

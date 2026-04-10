@@ -48,7 +48,7 @@ public class OpenApiConfig {
                                 .name("Proprietary")
                                 .url("https://pos.example.com/license")))
                 .addSecurityItem(new SecurityRequirement().addList("Bearer Authentication"))
-                .components(new io.swagger.v3.oas.models.components.Components()
+                .components(new io.swagger.v3.oas.models.Components()
                         .addSecuritySchemes("Bearer Authentication",
                                 new SecurityScheme()
                                         .type(SecurityScheme.Type.HTTP)

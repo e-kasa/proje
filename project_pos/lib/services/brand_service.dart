@@ -23,8 +23,8 @@ class BrandService {
       debugPrint('⚠️ Marka verisi beklenen formatta değil: ${response.data}');
       return [];
     } catch (e) {
-      debugPrint('❌ getActiveBrands hata: $e');
-      return [];
+      debugPrint('getActiveBrands hata: $e');
+      rethrow;
     }
   }
 
@@ -36,7 +36,8 @@ class BrandService {
       if (data is List) return data.cast<Map<String, dynamic>>();
       return [];
     } catch (e) {
-      return [];
+      debugPrint('getAllBrands hata: $e');
+      rethrow;
     }
   }
 

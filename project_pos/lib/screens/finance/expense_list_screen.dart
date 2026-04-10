@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/finance_service.dart';
 import '../../core/api/api_client.dart';
@@ -329,28 +328,23 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
     final amount = (expense['amount'] as num).toDouble();
     final status = expense['status'] as String;
 
-    Color statusColor;
     BadgeVariant statusVariant;
     String statusText;
 
     switch (status) {
       case 'paid':
-        statusColor = AppColors.success;
         statusVariant = BadgeVariant.success;
         statusText = t('finance.paid');
         break;
       case 'pending':
-        statusColor = AppColors.warning;
         statusVariant = BadgeVariant.warning;
         statusText = t('finance.pending');
         break;
       case 'cancelled':
-        statusColor = AppColors.textMuted;
         statusVariant = BadgeVariant.secondary;
         statusText = t('finance.cancelled');
         break;
       default:
-        statusColor = AppColors.textMuted;
         statusVariant = BadgeVariant.secondary;
         statusText = status;
     }

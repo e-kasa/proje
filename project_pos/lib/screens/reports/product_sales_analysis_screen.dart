@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 
@@ -233,7 +232,6 @@ class _ProductSalesAnalysisScreenState
   Widget _buildProductCard(Map<String, dynamic> item, int rank) {
     final productName = item['productName']?.toString() ?? '-';
     final sku = item['variantSku']?.toString() ?? '-';
-    final quantitySold = (item['quantitySold'] ?? 0) as int;
     final totalRevenue = (item['totalRevenue'] ?? 0).toDouble();
     final avgPrice = (item['averageUnitPrice'] ?? 0).toDouble();
     final costPrice = item['costPrice'];
@@ -359,46 +357,4 @@ class _ProductSalesAnalysisScreenState
     );
   }
 
-  Widget _buildFilterButtons() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Text(
-            'Süre:',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          AppButton.outline(
-            text: '${_dateFormat.format(_startDate)} - ${_dateFormat.format(_endDate)}',
-            onPressed: _pickDateRange,
-            icon: Icons.date_range,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatistics() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildStatCard('Ürün Sayısı', '${_products.length}'),
-          _buildStatCard('Toplam Satış', '${_products.fold<double>(0, (sum, p) => sum + ((p['totalRevenue'] ?? 0) as num).toDouble())}'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String label, String value) {
-    return Column(
-      children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
-        const SizedBox(height: 4),
-        Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-      ],
-    );
-  }
 }

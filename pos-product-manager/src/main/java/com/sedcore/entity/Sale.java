@@ -94,4 +94,7 @@ public class Sale extends TOpenSimpleCompanyEntity {
     public boolean isOnCredit() {
         return customer != null && getRemainingAmount().compareTo(BigDecimal.ZERO) > 0;
     }
+
+    @Version
+    private Long version;
 }

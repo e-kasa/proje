@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../theme/app_constants.dart';
 
 /// Cached Image Widget - Network görsellerini cache'ler
 class AppCachedImage extends StatelessWidget {

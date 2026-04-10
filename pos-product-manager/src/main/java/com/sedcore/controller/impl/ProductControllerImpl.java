@@ -5,7 +5,7 @@ import com.sedcore.model.ProductResponse;
 import com.sedcore.model.CreateProductRequest;
 import com.sedcore.model.product.DtoProduct;
 import com.sedcore.model.product.DtoProductUI;
-import com.sedcore.se.ApiResponse;
+import com.towpen.base.exceptions.ApiResponse;
 import com.sedcore.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -163,9 +163,8 @@ public class ProductControllerImpl implements ProductController {
         try {
             boolean activate = "ACTIVE".equalsIgnoreCase(status);
             if (activate) {
-                // reactivate: just update status to ACTIVE
-                productService.getProduct(id); // validates existence
-                log.info("Ürün aktifleştiriliyor: id={}", id);
+                productService.activateProduct(id);
+                log.info("Ürün aktifleştirildi: id={}", id);
             } else {
                 productService.deactivateProduct(id);
             }
@@ -202,11 +201,11 @@ public class ProductControllerImpl implements ProductController {
 
     @Override
     public DtoProduct saveProduct(DtoProductUI dtoProductUI) {
-        return null;
+        throw new UnsupportedOperationException("Use POST /api/v1/products endpoint instead");
     }
 
     @Override
     public List<DtoProduct> findByProductId(String productId) {
-        return List.of();
+        throw new UnsupportedOperationException("Use GET /api/v1/products/{id} endpoint instead");
     }
 }

@@ -548,7 +548,7 @@ class PosNotifier extends StateNotifier<PosState> {
   }
 
   void removeFromCart(String productId) {
-    state = state.copyWith(cartItems: state.cartItems.where((i) => i.productId != productId).toList());
+    state = state.copyWith(cartItems: state.cartItems.where((i) => i.variantId != productId).toList());
     loadRecommendations();
   }
 
@@ -558,7 +558,7 @@ class PosNotifier extends StateNotifier<PosState> {
       return;
     }
     final items = List<CartItem>.from(state.cartItems);
-    final index = items.indexWhere((i) => i.productId == productId);
+    final index = items.indexWhere((i) => i.variantId == productId);
     if (index >= 0) {
       final item = items[index];
       final stock = item.stock;
@@ -602,7 +602,7 @@ class PosNotifier extends StateNotifier<PosState> {
   void setCashReceived(double amount) => state = state.copyWith(cashReceived: amount);
   void setCardAmount(double amount) => state = state.copyWith(cardAmount: amount);
   void setTransferAmount(double amount) => state = state.copyWith(transferAmount: amount);
-  void setNote(String? note) => note == null || note.isEmpty ? state.copyWith(clearNote: true) : state.copyWith(note: note);
+  void setNote(String? note) => state = note == null || note.isEmpty ? state.copyWith(clearNote: true) : state.copyWith(note: note);
 
   Future<bool> submitSale() async {
     if (!state.canSubmit) return false;
@@ -639,6 +639,8 @@ class PosNotifier extends StateNotifier<PosState> {
         'customerId': state.selectedCustomer?['id']?.toString(),
         'paymentMethod': state.paymentMethod.apiValue,
         'notes': state.note,
+        if (state.activeStoreId != null && state.activeStoreId!.isNotEmpty)
+          'storeId': state.activeStoreId,
         'items': state.cartItems.map((item) => {
           'variantId': item.variantId,
           'quantity': item.quantity,

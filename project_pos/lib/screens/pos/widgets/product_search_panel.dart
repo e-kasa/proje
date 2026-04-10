@@ -208,9 +208,6 @@ class _ProductSearchPanelState extends ConsumerState<ProductSearchPanel> {
     final basePrice = (product['basePrice'] as num?)?.toDouble()
         ?? (product['sellingPrice'] as num?)?.toDouble()
         ?? 0.0;
-    final currencyFormat =
-        RegExp(r'\d').hasMatch('₺') ? null : null; // sadece placeholder
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

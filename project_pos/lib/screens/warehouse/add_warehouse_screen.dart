@@ -133,8 +133,6 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppAppBar.standard(

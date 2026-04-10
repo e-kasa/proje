@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import com.towpen.base.enums.model.TMessageType;
 import com.towpen.base.exceptions.TOpenException;
 import com.towpen.base.restservice.model.TOpenMessage;
+import com.sedcore.util.ExceptionMapper;
 
 import java.util.List;
 
@@ -35,7 +36,7 @@ public class BrandControllerImpl implements BrandController {
 
         } catch (Exception e) {
             log.error("Markalar getirilirken hata", e);
-            throw new TOpenException(new TOpenMessage(TMessageType.BRAND_LIST_ERROR_1300));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -51,7 +52,7 @@ public class BrandControllerImpl implements BrandController {
 
         } catch (Exception e) {
             log.error("Tüm markalar getirilirken hata", e);
-            throw new TOpenException(new TOpenMessage(TMessageType.BRAND_LIST_ERROR_1300));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -68,7 +69,7 @@ public class BrandControllerImpl implements BrandController {
 
         } catch (Exception e) {
             log.error("Marka oluşturulurken hata", e);
-            throw new TOpenException(new TOpenMessage(TMessageType.BRAND_CREATE_ERROR_1301));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -85,7 +86,7 @@ public class BrandControllerImpl implements BrandController {
 
         } catch (Exception e) {
             log.error("Marka güncellenirken hata", e);
-            throw new TOpenException(new TOpenMessage(TMessageType.BRAND_UPDATE_ERROR_1302));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -102,7 +103,7 @@ public class BrandControllerImpl implements BrandController {
 
         } catch (Exception e) {
             log.error("Marka silinirken hata", e);
-            throw new TOpenException(new TOpenMessage(TMessageType.BRAND_DELETE_ERROR_1303));
+            throw ExceptionMapper.map(e);
         }
     }
 
@@ -119,7 +120,7 @@ public class BrandControllerImpl implements BrandController {
 
         } catch (Exception e) {
             log.error("Marka durumu değiştirilirken hata", e);
-            throw new TOpenException(new TOpenMessage(TMessageType.BRAND_UPDATE_ERROR_1302));
+            throw ExceptionMapper.map(e);
         }
     }
 }

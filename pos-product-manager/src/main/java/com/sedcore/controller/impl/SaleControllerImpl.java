@@ -23,6 +23,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -33,7 +34,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/product/api/v1/sales")
+@RequestMapping("/api/v1/sales")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Sales", description = "Sales management endpoints")
@@ -45,6 +46,7 @@ public class SaleControllerImpl {
 
     // GET /product/api/v1/sales
     @GetMapping
+    @Transactional(readOnly = true)
     @Operation(summary = "List sales", description = "Retrieves list of sales with optional filters")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Sales list retrieved"),
@@ -67,58 +69,43 @@ public class SaleControllerImpl {
                 .filter(s -> isCancelled == null || isCancelled.equals(s.getIsCancelled()))
                 .map(this::toMap)
                 .collect(Collectors.toList());
+            return ResponseEntity.ok(ApiResponse.success(filtered));
         } catch (TOpenException e) {
-
             throw e;
-
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
 
     // GET /product/api/v1/sales/{id}
     @GetMapping("/{id}")
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Map<String, Object>>> getById(@PathVariable String id) {
         try {
             var sale = saleRepository.findById(id)
                 .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
             return ResponseEntity.ok(ApiResponse.success(toMap(sale)));
         } catch (TOpenException e) {
-
             throw e;
-
-        } catch (TOpenException e) {
-
-
-            throw e;
-
-
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
 
     // GET /product/api/v1/sales/by-number/{saleNumber}
     @GetMapping("/by-number/{saleNumber}")
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Map<String, Object>>> getByNumber(@PathVariable String saleNumber) {
         try {
             var sale = saleRepository.findBySaleNumber(saleNumber)
                 .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
             return ResponseEntity.ok(ApiResponse.success(toMap(sale)));
         } catch (TOpenException e) {
-
             throw e;
-
-        } catch (TOpenException e) {
-
-
-            throw e;
-
-
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -136,17 +123,9 @@ public class SaleControllerImpl {
             log.info("Satış oluşturuldu: {}", sale.getSaleNumber());
             return ResponseEntity.ok(ApiResponse.success(toMap(sale)));
         } catch (TOpenException e) {
-
             throw e;
-
-        } catch (TOpenException e) {
-
-
-            throw e;
-
-
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -167,17 +146,9 @@ public class SaleControllerImpl {
             log.info("Satis iadesi olusturuldu: saleId={}, tutar={}", id, response.getTotalReturnAmount());
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (TOpenException e) {
-
             throw e;
-
-        } catch (TOpenException e) {
-
-
-            throw e;
-
-
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -194,23 +165,16 @@ public class SaleControllerImpl {
             log.info("Satış iptal edildi: {}", sale.getSaleNumber());
             return ResponseEntity.ok(ApiResponse.success(toMap(sale)));
         } catch (TOpenException e) {
-
             throw e;
-
-        } catch (TOpenException e) {
-
-
-            throw e;
-
-
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
 
     // GET /product/api/v1/sales/stats
     @GetMapping("/stats")
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Map<String, Object>>> stats() {
         try {
             var all = (List<Sale>) saleRepository.findAll();
@@ -226,12 +190,11 @@ public class SaleControllerImpl {
                 .filter(sale -> !Boolean.TRUE.equals(sale.getIsCancelled()))
                 .map(Sale::getTotalAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
+            return ResponseEntity.ok(ApiResponse.success(s));
         } catch (TOpenException e) {
-
             throw e;
-
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error: {}", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -309,5 +272,5 @@ public class SaleControllerImpl {
         m.put("items",     items);
         m.put("hasReturn", hasReturn);
         return m;
-
-}                                                                                              }
+    }
+}

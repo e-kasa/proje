@@ -940,9 +940,7 @@ class BulkSavePayloadBuilder {
           continue;
       }
 
-      if (payload != null) {
-        payloads.add(payload);
-      }
+      payloads.add(payload);
     }
 
     return payloads;
@@ -1089,7 +1087,7 @@ class BulkSavePayloadBuilder {
       if (matchData['updateStock'] == true) ...{
         'stock': {
           'mode': matchData['stockMode'] ?? 'ADD',
-          'value': product.stock ?? 0,
+          'value': product.stock,
         },
       },
       if (matchData['updatePrice'] == true) ...{

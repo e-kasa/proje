@@ -10,6 +10,9 @@ import com.sedcore.model.SaleReturnItemRequest;
 import com.sedcore.model.SaleReturnRequest;
 import com.sedcore.model.SaleReturnResponse;
 import com.sedcore.repository.*;
+import com.towpen.base.enums.model.TMessageType;
+import com.towpen.base.exceptions.TOpenException;
+import com.towpen.base.restservice.model.TOpenMessage;
 import com.towpen.base.db.model.TOpenSimpleCompanyEntity;
 import com.towpen.base.security.BaseDbServiceImp;
 import com.towpen.base.security.ISessionInstanceService;
@@ -90,10 +93,7 @@ public class SaleServiceIntegrated
             ProductVariant variant = variantRepository.findById(item.getVariantId())
                     .orElseThrow(() -> new RuntimeException("Varyant bulunamadi: " + item.getVariantId()));
 
-            checkStockAvailability(variant.getId(), request.getStoreId(),
-                    request.getWarehouseId(), item.getQuantity());
-
-            // storeId/warehouseId null gelirse (POS'tan gönderilmemiş),
+            // storeId/warehouseId null gelirse (yönetici mağazaya bağlı değilse),
             // bu varyantın envanter kaydındaki lokasyonu kullan.
             // Aksi halde SALE_OUT hareketi inventory_view'da ayrı bir NULL grubuna
             // düşer ve stok görünümü güncellenmez.
@@ -109,11 +109,15 @@ public class SaleServiceIntegrated
                             .filter(iv -> iv.getPhysicalQuantity() != null && iv.getPhysicalQuantity() > 0)
                             .findFirst()
                             .orElse(invList.get(0));
-                    if (bestInv.getStoreId() != null && !bestInv.getStoreId().isBlank()) {
-                        effectiveStoreId = bestInv.getStoreId();
+                    if (effectiveStoreId == null || effectiveStoreId.isBlank()) {
+                        if (bestInv.getStoreId() != null && !bestInv.getStoreId().isBlank()) {
+                            effectiveStoreId = bestInv.getStoreId();
+                        }
                     }
-                    if (bestInv.getWarehouseId() != null && !bestInv.getWarehouseId().isBlank()) {
-                        effectiveWarehouseId = bestInv.getWarehouseId();
+                    if (effectiveWarehouseId == null || effectiveWarehouseId.isBlank()) {
+                        if (bestInv.getWarehouseId() != null && !bestInv.getWarehouseId().isBlank()) {
+                            effectiveWarehouseId = bestInv.getWarehouseId();
+                        }
                     }
                 }
                 // Hâlâ null ise: bu varyantın ilk PURCHASE_IN hareketinden store/warehouse al
@@ -131,6 +135,10 @@ public class SaleServiceIntegrated
                     }
                 }
             }
+
+            // Stok kontrolünü effective lokasyonla yap (null storeId hatası önlenir)
+            checkStockAvailability(variant.getId(), effectiveStoreId,
+                    effectiveWarehouseId, item.getQuantity());
 
             StockMovement movement = StockMovement.builder()
                     .variant(variant)
@@ -180,7 +188,7 @@ public class SaleServiceIntegrated
         }
 
         // 2. Her SALE_OUT için SALE_CANCEL_IN oluştur (stok geri al)
-        List<StockMovement> existingMovements = stockMovementRepository.findBySaleId(saleId);
+        List<StockMovement> existingMovements = stockMovementRepository.findBySaleId(saleId, CompanyContext.get());
         for (StockMovement mv : existingMovements) {
             if (mv.getMovementType() != StockMovementType.SALE_OUT) continue;
             StockMovement reversal = StockMovement.builder()
@@ -284,7 +292,7 @@ public class SaleServiceIntegrated
         }
 
         // Orijinal tüm hareketleri tek seferde çek
-        List<StockMovement> allMovements = stockMovementRepository.findBySaleId(saleId);
+        List<StockMovement> allMovements = stockMovementRepository.findBySaleId(saleId, CompanyContext.get());
 
         // Orijinal satış miktarları (SALE_OUT)
         Map<String, Integer>       soldQty          = new HashMap<>();
@@ -581,7 +589,7 @@ public class SaleServiceIntegrated
     private <E extends TOpenSimpleCompanyEntity> E prepareAndSave(
             org.springframework.data.repository.CrudRepository<E, String> repo, E entity) {
         String companyCode = CompanyContext.get();
-        if (companyCode == null || companyCode.isBlank()) companyCode = "syste";
+        if (companyCode == null || companyCode.isBlank()) companyCode = "SYSTEM";
         if (entity.getCompanyCode() == null || entity.getCompanyCode().isBlank()) {
             entity.setCompanyCode(companyCode);
         }
@@ -591,7 +599,7 @@ public class SaleServiceIntegrated
         if (entity.getCreateUser() == null || entity.getCreateUser().isBlank()) {
             String userCode = null;
             try { userCode = sessionInstanceService.getUserCode(); } catch (Exception ignored) {}
-            entity.setCreateUser(userCode != null && !userCode.isBlank() ? userCode : "syste");
+            entity.setCreateUser(userCode != null && !userCode.isBlank() ? userCode : "SYSTEM");
         }
         return repo.save(entity);
     }

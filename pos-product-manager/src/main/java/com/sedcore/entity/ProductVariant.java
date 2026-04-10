@@ -71,4 +71,7 @@ public class ProductVariant extends TOpenSimpleCompanyEntity {
 
     @Column(name = "shelf_location_code", length = 50)
     private String shelfLocationCode;
+
+    @Version
+    private Long version;
 }

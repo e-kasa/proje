@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/utils/i18n_helper.dart';
+
 import '../../core/widgets/widgets.dart';
-import '../../services/recommendation_service.dart';
-import '../../services/product_service.dart';
 import '../../services/service_locator.dart';
 
 /// Admin: Ürün İlişkileri Yönetim Paneli
@@ -276,8 +274,6 @@ class _ProductRelationshipManagementPanelState
 
   @override
   Widget build(BuildContext context) {
-    final t = i18nOf(ref);
-
     return Card(
       margin: const EdgeInsets.all(16),
       elevation: 2,

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'app_colors.dart';
 
 /// Modern Gradient'ler - Daha tatlı görünüm için
 class AppGradients {

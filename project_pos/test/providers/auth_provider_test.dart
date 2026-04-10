@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:project_pos/models/auth_state.dart';
 import 'package:project_pos/providers/auth_provider.dart';
 import 'package:project_pos/services/auth_service.dart';
 

@@ -21,6 +21,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -33,7 +34,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/product/api/v1/stock-movements")
+@RequestMapping("/api/v1/stock-movements")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Stock Movements", description = "Stock movement tracking endpoints")
@@ -47,6 +48,7 @@ public class StockMovementControllerImpl {
 
     // GET /product/api/v1/stock-movements
     @GetMapping
+    @Transactional(readOnly = true)
     @Operation(summary = "List stock movements", description = "Retrieves stock movements with filters")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Movements retrieved"),
@@ -74,35 +76,27 @@ public class StockMovementControllerImpl {
                 .filter(m -> movementType == null || movementType.equals(m.getMovementType().name()))
                 .map(this::toMap)
                 .collect(Collectors.toList());
+            return ResponseEntity.ok(ApiResponse.success(filtered));
         } catch (TOpenException e) {
-
             throw e;
-
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
 
     // GET /product/api/v1/stock-movements/{id}
     @GetMapping("/{id}")
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Map<String, Object>>> getById(@PathVariable String id) {
         try {
             var movement = stockMovementRepository.findById(id)
                 .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
             return ResponseEntity.ok(ApiResponse.success(toMap(movement)));
         } catch (TOpenException e) {
-
             throw e;
-
-        } catch (TOpenException e) {
-
-
-            throw e;
-
-
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -134,18 +128,20 @@ public class StockMovementControllerImpl {
                 variant.getSku(), movement.getMovementType(), movement.getQuantity());
             return ResponseEntity.ok(ApiResponse.success(toMap(movement)));
         } catch (IllegalArgumentException e) {
+            throw ExceptionMapper.map(e);
         } catch (TOpenException e) {
 
             throw e;
 
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
 
     // GET /product/api/v1/stock-movements/stats
     @GetMapping("/stats")
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Map<String, Object>>> stats() {
         try {
             List<StockMovement> all = (List<StockMovement>)stockMovementRepository.findAll();
@@ -155,12 +151,11 @@ public class StockMovementControllerImpl {
                 .filter(m -> m.getMovementType().name().endsWith("_IN")).count());
             s.put("outMovements", all.stream()
                 .filter(m -> m.getMovementType().name().endsWith("_OUT")).count());
+            return ResponseEntity.ok(ApiResponse.success(s));
         } catch (TOpenException e) {
-
             throw e;
-
         } catch (Exception e) {
-            log.error([^;]+);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -214,4 +209,4 @@ public class StockMovementControllerImpl {
         private Integer quantity;
     }
 
-                                                }
+}

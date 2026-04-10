@@ -17,6 +17,14 @@ public interface RecommendationService {
     List<RecommendationResponse> getSimilarProducts(
             List<String> productIds, int limit, ProductRelationType relationType);
 
+    /**
+     * Çapraz referans tabanlı ürün önerileri.
+     * Sepetteki varyantlarla aynı OEM/parça numarasına sahip
+     * diğer ürünleri alternatif olarak önerir.
+     */
+    List<RecommendationResponse> getCrossReferencedProducts(
+            List<String> variantIds, int limit);
+
     List<RecommendationResponse> calculateWeightedScore(
             List<RecommendationResponse> recommendations);
 

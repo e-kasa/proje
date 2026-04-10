@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 /// Backend'den Gelen Veri Yapısı
 class SupplierUploadResponse {
   final int productCount;

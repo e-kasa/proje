@@ -35,9 +35,4 @@ class ThemeAwareGradient {
     return darkened.toColor();
   }
 
-  static Color _lighten(Color color, double amount) {
-    final hsl = HSLColor.fromColor(color);
-    final lightened = hsl.withLightness((hsl.lightness + amount).clamp(0.0, 1.0));
-    return lightened.toColor();
-  }
 }

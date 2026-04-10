@@ -41,6 +41,7 @@ public class WarehouseControllerImpl {
                 warehouses = warehouseService.listActive();
             }
             return ResponseEntity.ok(ApiResponse.success(
+                    warehouses.stream().map(this::toMap).collect(Collectors.toList())));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
@@ -55,6 +56,7 @@ public class WarehouseControllerImpl {
         try {
             Warehouse wh = warehouseService.findById(id)
                     .orElseThrow(() -> new RuntimeException("Depo bulunamadi: " + id));
+            return ResponseEntity.ok(ApiResponse.success(toMap(wh)));
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.map(e);

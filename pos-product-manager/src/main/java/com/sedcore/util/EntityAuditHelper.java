@@ -30,8 +30,8 @@ public class EntityAuditHelper {
 
     /**
      * Entity kayıt öncesi audit alanlarını doldurur.
-     * - companyCode  : CompanyContext → TOpenContextHolder → "syste"
-     * - createUser   : ISessionInstanceService → "syste"
+     * - companyCode  : CompanyContext → TOpenContextHolder → "SYSTEM"
+     * - createUser   : ISessionInstanceService → "SYSTEM"
      * - createTime   : Calendar.now() (sadece null ise)
      */
     public void prepare(TOpenSimpleCompanyEntity entity) {
@@ -75,7 +75,7 @@ public class EntityAuditHelper {
         } catch (Exception ignored) { }
 
         log.warn("EntityAuditHelper: company code cozumlenemedi, 'syste' kullaniliyor");
-        return "syste";
+        return "SYSTEM";
     }
 
     private String resolveUserCode() {
@@ -83,6 +83,6 @@ public class EntityAuditHelper {
             String user = sessionInstanceService.getUserCode();
             if (user != null && !user.isBlank()) return user;
         } catch (Exception ignored) { }
-        return "syste";
+        return "SYSTEM";
     }
 }

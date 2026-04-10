@@ -20,6 +20,8 @@ public interface ProductService extends BaseDbService<Product> {
 
     Page<ProductResponse> searchProducts(String keyword, Pageable pageable);
 
+    void activateProduct(String id);
+
     void deactivateProduct(String id);
 
     void deleteProduct(String id);

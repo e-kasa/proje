@@ -83,10 +83,6 @@ public class Supplier extends TOpenSimpleCompanyEntity {
 
     // ===== İLİŞKİLER =====
 
-    @OneToOne
-    @JoinColumn(name = "product_variants_id")
-    private Product product;
-
     @OneToOne(mappedBy = "supplier", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private SupplierAccount account; // Cari hesap özeti
 }

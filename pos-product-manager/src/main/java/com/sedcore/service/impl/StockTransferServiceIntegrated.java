@@ -1,12 +1,16 @@
 package com.sedcore.service.impl;
 
+import com.sedcore.context.CompanyContext;
 import com.sedcore.entity.*;
 import com.sedcore.enums.StockMovementType;
 import com.sedcore.model.StockTransferItemRequest;
 import com.sedcore.model.StockTransferRequest;
 import com.sedcore.repository.*;
+import com.towpen.base.db.model.TOpenSimpleCompanyEntity;
+import com.towpen.base.security.ISessionInstanceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +39,7 @@ public class StockTransferServiceIntegrated {
     private final StockMovementRepository stockMovementRepository;
     private final ProductVariantRepository variantRepository;
     private final InventoryRepository inventoryRepository;
+    @Autowired private ISessionInstanceService sessionInstanceService;
 
     @Transactional
     public StockTransfer createTransfer(StockTransferRequest request) {
@@ -49,7 +54,7 @@ public class StockTransferServiceIntegrated {
         transfer.setToStoreId(request.getToStoreId());
         transfer.setToWarehouseId(request.getToWarehouseId());
 
-        transfer = stockTransferRepository.save(transfer);
+        transfer = prepareAndSave(stockTransferRepository, transfer);
         log.info("StockTransfer kaydedildi: ID={}", transfer.getId());
 
         // 2. HER KALEM İÇİN TRANSFER_OUT + TRANSFER_IN
@@ -73,7 +78,7 @@ public class StockTransferServiceIntegrated {
                     .quantity(item.getQuantity())
                     .transfer(transfer)
                     .build();
-            movements.add(stockMovementRepository.save(outMovement));
+            movements.add(prepareAndSave(stockMovementRepository, outMovement));
 
             // TRANSFER_IN — hedefe ekle
             StockMovement inMovement = StockMovement.builder()
@@ -84,7 +89,7 @@ public class StockTransferServiceIntegrated {
                     .quantity(item.getQuantity())
                     .transfer(transfer)
                     .build();
-            movements.add(stockMovementRepository.save(inMovement));
+            movements.add(prepareAndSave(stockMovementRepository, inMovement));
 
             log.info("Transfer hareketi: Variant={}, Miktar={}, {} -> {}",
                     variant.getSku(), item.getQuantity(),
@@ -116,5 +121,26 @@ public class StockTransferServiceIntegrated {
                     "Transfer icin stok yetersiz! Mevcut: %d, Istenen: %d (Variant: %s)",
                     available, quantity, variantId));
         }
+    }
+
+    /**
+     * Herhangi bir entity için audit alanları + companyCode set ederek kaydeder.
+     */
+    private <E extends TOpenSimpleCompanyEntity> E prepareAndSave(
+            org.springframework.data.repository.CrudRepository<E, String> repo, E entity) {
+        String companyCode = CompanyContext.get();
+        if (companyCode == null || companyCode.isBlank()) companyCode = "SYSTEM";
+        if (entity.getCompanyCode() == null || entity.getCompanyCode().isBlank()) {
+            entity.setCompanyCode(companyCode);
+        }
+        if (entity.getCreateTime() == null) {
+            entity.setCreateTime(java.util.Calendar.getInstance().getTime());
+        }
+        if (entity.getCreateUser() == null || entity.getCreateUser().isBlank()) {
+            String userCode = null;
+            try { userCode = sessionInstanceService.getUserCode(); } catch (Exception ignored) {}
+            entity.setCreateUser(userCode != null && !userCode.isBlank() ? userCode : "SYSTEM");
+        }
+        return repo.save(entity);
     }
 }

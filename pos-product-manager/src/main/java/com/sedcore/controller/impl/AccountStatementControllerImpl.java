@@ -14,6 +14,8 @@ import com.towpen.base.exceptions.TOpenException;
 import com.towpen.base.restservice.model.TOpenMessage;
 import com.sedcore.util.ExceptionMapper;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -89,6 +91,7 @@ public class AccountStatementControllerImpl {
                     .transactions(lines)
                     .build();
 
+            return ResponseEntity.ok(ApiResponse.success(entry));
         } catch (Exception e) {
             log.error("Hesap ekstresi hatasi: {}", e);
             throw ExceptionMapper.map(e);
@@ -96,6 +99,9 @@ public class AccountStatementControllerImpl {
     }
 
     // GET /product/api/v1/account-statements/overdue
+    // PERF WARNING: findAll() loads entire table into memory — should be replaced with
+    // a repository query like findByIsOverdueTrue() or a native query with date filtering
+    @Transactional(readOnly = true)
     @GetMapping("/overdue")
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getOverdue(
             @RequestParam(required = false) String accountType) {
@@ -135,6 +141,7 @@ public class AccountStatementControllerImpl {
                     })
                     .collect(Collectors.toList());
 
+            return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Vadesi gecmis islemler hatasi: {}", e);
             throw ExceptionMapper.map(e);
@@ -142,6 +149,9 @@ public class AccountStatementControllerImpl {
     }
 
     // GET /product/api/v1/account-statements/summary
+    // PERF WARNING: findAll() loads entire table into memory — should be replaced with
+    // aggregate queries (SUM/COUNT) at the database level
+    @Transactional(readOnly = true)
     @GetMapping("/summary")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getSummary(
             @RequestParam(required = false) String accountType) {
@@ -179,6 +189,7 @@ public class AccountStatementControllerImpl {
             summary.put("overdueTransactionCount", overdueCount);
             summary.put("totalTransactionCount", (long) active.size());
 
+            return ResponseEntity.ok(ApiResponse.success(summary));
         } catch (Exception e) {
             log.error("Hesap ozeti hatasi: {}", e);
             throw ExceptionMapper.map(e);

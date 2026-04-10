@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../core/api/api_client.dart';
 
 class AccountService {
@@ -15,7 +16,8 @@ class AccountService {
       final data = resp.data['data'];
       return data is Map<String, dynamic> ? data : null;
     } catch (e) {
-      return null;
+      debugPrint('getCustomerAccount hata: $e');
+      rethrow;
     }
   }
 
@@ -26,7 +28,8 @@ class AccountService {
       if (data is List) return data.cast<Map<String, dynamic>>();
       return [];
     } catch (e) {
-      return [];
+      debugPrint('getCustomerTransactions hata: $e');
+      rethrow;
     }
   }
 
@@ -90,7 +93,8 @@ class AccountService {
       );
       return List<Map<String, dynamic>>.from(resp.data['data'] ?? []);
     } catch (e) {
-      return [];
+      debugPrint('getOverdueAccounts hata: $e');
+      rethrow;
     }
   }
 
@@ -107,7 +111,8 @@ class AccountService {
       final data = resp.data['data'];
       return data is Map<String, dynamic> ? data : null;
     } catch (e) {
-      return null;
+      debugPrint('getAccountSummary hata: $e');
+      rethrow;
     }
   }
 }

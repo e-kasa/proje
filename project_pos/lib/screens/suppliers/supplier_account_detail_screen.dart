@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 import '../accounts/payment_record_modal.dart';
@@ -271,7 +270,6 @@ class _SupplierAccountDetailScreenState
 
   Widget _buildBalanceCard(double balance, bool isExceeded) {
     final isPositive = balance > 0;
-    final balanceColor = isPositive ? AppColors.danger : AppColors.success;
     final balanceLabel = isPositive ? 'Borcunuz Var' : balance < 0 ? 'Alacaginiz Var' : 'Hesap Kapali';
 
     return Container(

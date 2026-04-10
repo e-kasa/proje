@@ -59,7 +59,7 @@ public class StockCountControllerImpl {
             throw e;
 
         } catch (Exception e) {
-            log.error("Stok sayim hatasi: {}", e);
+            log.error("Stok sayim hatasi", e);
             throw ExceptionMapper.map(e);
         }
     }

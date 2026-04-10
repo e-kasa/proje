@@ -41,8 +41,8 @@ import java.util.stream.Collectors;
 @SecurityRequirement(name = "Bearer Authentication")
 public class SaleControllerImpl {
 
-    private final SaleService saleRepository;
-    private final SaleServiceIntegrated saleService;
+    private final SaleService saleService;
+    private final SaleServiceIntegrated saleServiceIntegrated;
 
     // GET /product/api/v1/sales
     @GetMapping
@@ -61,9 +61,9 @@ public class SaleControllerImpl {
         try {
             List<Sale> sales;
             if (customerId != null) {
-                sales = saleRepository.findByCustomerId(customerId);
+                sales = saleService.findByCustomerId(customerId);
             } else {
-                sales = (List<Sale>) saleRepository.findAll();
+                sales = (List<Sale>) saleService.findAll();
             }
             var filtered = sales.stream()
                 .filter(s -> isCancelled == null || isCancelled.equals(s.getIsCancelled()))
@@ -73,7 +73,7 @@ public class SaleControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -83,13 +83,13 @@ public class SaleControllerImpl {
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Map<String, Object>>> getById(@PathVariable String id) {
         try {
-            var sale = saleRepository.findById(id)
+            var sale = saleService.findById(id)
                 .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
             return ResponseEntity.ok(ApiResponse.success(toMap(sale)));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -99,13 +99,13 @@ public class SaleControllerImpl {
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Map<String, Object>>> getByNumber(@PathVariable String saleNumber) {
         try {
-            var sale = saleRepository.findBySaleNumber(saleNumber)
+            var sale = saleService.findBySaleNumber(saleNumber)
                 .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
             return ResponseEntity.ok(ApiResponse.success(toMap(sale)));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -119,13 +119,13 @@ public class SaleControllerImpl {
     })
     public ResponseEntity<ApiResponse<Map<String, Object>>> create(@Valid @RequestBody SaleRequest request) {
         try {
-            Sale sale = saleService.createSale(request);
+            Sale sale = saleServiceIntegrated.createSale(request);
             log.info("Satış oluşturuldu: {}", sale.getSaleNumber());
             return ResponseEntity.ok(ApiResponse.success(toMap(sale)));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -142,13 +142,13 @@ public class SaleControllerImpl {
             @PathVariable String id,
             @RequestBody SaleReturnRequest request) {
         try {
-            SaleReturnResponse response = saleService.createSaleReturn(id, request);
+            SaleReturnResponse response = saleServiceIntegrated.createSaleReturn(id, request);
             log.info("Satis iadesi olusturuldu: saleId={}, tutar={}", id, response.getTotalReturnAmount());
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -161,13 +161,13 @@ public class SaleControllerImpl {
         try {
             String reason = (body != null && body.get("reason") != null)
                     ? body.get("reason") : "Belirtilmedi";
-            Sale sale = saleService.cancelSale(id, reason);
+            Sale sale = saleServiceIntegrated.cancelSale(id, reason);
             log.info("Satış iptal edildi: {}", sale.getSaleNumber());
             return ResponseEntity.ok(ApiResponse.success(toMap(sale)));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -177,7 +177,7 @@ public class SaleControllerImpl {
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Map<String, Object>>> stats() {
         try {
-            var all = (List<Sale>) saleRepository.findAll();
+            var all = (List<Sale>) saleService.findAll();
             Map<String, Object> s = new HashMap<>();
             s.put("totalSales", all.size());
             s.put("activeSales", all.stream()
@@ -194,7 +194,7 @@ public class SaleControllerImpl {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }

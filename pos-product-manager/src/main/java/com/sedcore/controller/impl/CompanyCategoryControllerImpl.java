@@ -37,7 +37,7 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -53,7 +53,7 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -69,7 +69,7 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -85,7 +85,7 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -100,7 +100,7 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -119,7 +119,7 @@ public class CompanyCategoryControllerImpl implements CompanyCategoryController 
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }

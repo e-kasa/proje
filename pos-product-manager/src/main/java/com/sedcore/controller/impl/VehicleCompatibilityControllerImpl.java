@@ -35,7 +35,7 @@ public class VehicleCompatibilityControllerImpl implements VehicleCompatibilityC
             throw e;
 
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -51,7 +51,7 @@ public class VehicleCompatibilityControllerImpl implements VehicleCompatibilityC
             throw e;
 
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -67,7 +67,7 @@ public class VehicleCompatibilityControllerImpl implements VehicleCompatibilityC
             throw e;
 
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -83,7 +83,7 @@ public class VehicleCompatibilityControllerImpl implements VehicleCompatibilityC
             throw e;
 
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -99,7 +99,7 @@ public class VehicleCompatibilityControllerImpl implements VehicleCompatibilityC
             throw e;
 
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -118,7 +118,7 @@ public class VehicleCompatibilityControllerImpl implements VehicleCompatibilityC
             throw e;
 
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }

@@ -37,7 +37,7 @@ public class SalesReportControllerImpl {
             SalesSummary summary = salesReportService.getSalesSummary(startDate, endDate, groupBy);
             return ResponseEntity.ok(ApiResponse.success(summary));
         } catch (Exception e) {
-            log.error("Satis ozeti hatasi: {}", e);
+            log.error("Satis ozeti hatasi", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -52,7 +52,7 @@ public class SalesReportControllerImpl {
             List<ProductSalesAnalysis> analysis = salesReportService.getProductSalesAnalysis(startDate, endDate, limit);
             return ResponseEntity.ok(ApiResponse.success(analysis));
         } catch (Exception e) {
-            log.error("Urun satis analizi hatasi: {}", e);
+            log.error("Urun satis analizi hatasi", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -67,7 +67,7 @@ public class SalesReportControllerImpl {
             List<CustomerSalesAnalysis> analysis = salesReportService.getCustomerSalesAnalysis(startDate, endDate, limit);
             return ResponseEntity.ok(ApiResponse.success(analysis));
         } catch (Exception e) {
-            log.error("Musteri satis analizi hatasi: {}", e);
+            log.error("Musteri satis analizi hatasi", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -81,7 +81,7 @@ public class SalesReportControllerImpl {
             ProfitOverview overview = salesReportService.getProfitOverview(startDate, endDate);
             return ResponseEntity.ok(ApiResponse.success(overview));
         } catch (Exception e) {
-            log.error("Kar/zarar ozeti hatasi: {}", e);
+            log.error("Kar/zarar ozeti hatasi", e);
             throw ExceptionMapper.map(e);
         }
     }

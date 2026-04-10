@@ -35,7 +35,7 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
             throw e;
 
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -51,7 +51,7 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
             throw e;
 
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -68,7 +68,7 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
             throw e;
 
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -84,7 +84,7 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
             throw e;
 
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -100,7 +100,7 @@ public class CrossReferenceControllerImpl implements CrossReferenceController {
             throw e;
 
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }

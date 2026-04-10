@@ -18,10 +18,6 @@ import com.towpen.base.exceptions.TOpenException;
 import com.towpen.base.restservice.model.TOpenMessage;
 import com.sedcore.util.ExceptionMapper;
 import org.springframework.web.bind.annotation.RestController;
-import com.towpen.base.enums.model.TMessageType;
-import com.towpen.base.exceptions.TOpenException;
-import com.towpen.base.restservice.model.TOpenMessage;
-import com.sedcore.util.ExceptionMapper;
 
 import java.util.Arrays;
 import java.util.List;
@@ -83,7 +79,7 @@ public class RecommendationControllerImpl implements RecommendationController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -113,7 +109,7 @@ public class RecommendationControllerImpl implements RecommendationController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -144,7 +140,7 @@ public class RecommendationControllerImpl implements RecommendationController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -166,7 +162,7 @@ public class RecommendationControllerImpl implements RecommendationController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -188,7 +184,7 @@ public class RecommendationControllerImpl implements RecommendationController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -210,7 +206,7 @@ public class RecommendationControllerImpl implements RecommendationController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -245,7 +241,7 @@ public class RecommendationControllerImpl implements RecommendationController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -269,7 +265,7 @@ public class RecommendationControllerImpl implements RecommendationController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -295,7 +291,7 @@ public class RecommendationControllerImpl implements RecommendationController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -320,7 +316,7 @@ public class RecommendationControllerImpl implements RecommendationController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }}
 }

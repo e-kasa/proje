@@ -58,7 +58,7 @@ public class SupplierControllerImpl {
             throw e;
 
         } catch (Exception e) {
-            log.error("Tedarikci listesi hatasi: {}", e);
+            log.error("Tedarikci listesi hatasi", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -90,7 +90,7 @@ public class SupplierControllerImpl {
             throw e;
 
         } catch (Exception e) {
-            log.error("Tedarikci olusturma hatasi: {}", e);
+            log.error("Tedarikci olusturma hatasi", e);
             throw ExceptionMapper.map(e);
         }
     }

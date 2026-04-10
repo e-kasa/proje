@@ -57,7 +57,7 @@ public class CustomerControllerImpl {
             throw e;
 
         } catch (Exception e) {
-            log.error("Müşteri listesi hatası: {}", e);
+            log.error("Müşteri listesi hatası", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -100,7 +100,7 @@ public class CustomerControllerImpl {
             throw e;
 
         } catch (Exception e) {
-            log.error("Müşteri oluşturma hatası: {}", e);
+            log.error("Müşteri oluşturma hatası", e);
             throw ExceptionMapper.map(e);
         }
     }

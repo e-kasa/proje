@@ -14,7 +14,6 @@ import com.towpen.base.enums.model.TMessageType;
 import com.towpen.base.exceptions.TOpenException;
 import com.towpen.base.restservice.model.TOpenMessage;
 import com.sedcore.util.ExceptionMapper;
-import com.sedcore.util.ExceptionMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -51,7 +50,7 @@ public class PaymentControllerImpl implements PaymentController {
             throw e;
 
         } catch (Exception e) {
-            log.error("Odeme olusturma hatasi: {}", e);
+            log.error("Odeme olusturma hatasi", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -103,7 +102,7 @@ public class PaymentControllerImpl implements PaymentController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Odeme listesi hatasi: {}", e);
+            log.error("Odeme listesi hatasi", e);
             throw ExceptionMapper.map(e);
         }
     }

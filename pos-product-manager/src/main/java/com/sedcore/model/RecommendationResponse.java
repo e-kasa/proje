@@ -44,6 +44,11 @@ public class RecommendationResponse {
     private Double basePrice;
 
     /**
+     * Maliyet fiyatı — kâr hesaplaması için
+     */
+    private Double costPrice;
+
+    /**
      * Ürün resmi URL
      */
     private String imageUrl;

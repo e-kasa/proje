@@ -44,7 +44,7 @@ public class CategoryControllerImpl implements CategoryController {
             throw e;
 
         } catch (Exception e) {
-            log.error("Kategori oluşturma hatası: {}", e);
+            log.error("Kategori oluşturma hatası", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -63,7 +63,7 @@ public class CategoryControllerImpl implements CategoryController {
             throw e;
 
         } catch (Exception e) {
-            log.error("Kategori güncelleme hatası: {}", e);
+            log.error("Kategori güncelleme hatası", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -80,7 +80,7 @@ public class CategoryControllerImpl implements CategoryController {
             throw e;
 
         } catch (Exception e) {
-            log.error("Kategori silme hatası: {}", e);
+            log.error("Kategori silme hatası", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -97,7 +97,7 @@ public class CategoryControllerImpl implements CategoryController {
             throw e;
 
         } catch (Exception e) {
-            log.error("Kategori getirme hatası: {}", e);
+            log.error("Kategori getirme hatası", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -115,7 +115,7 @@ public class CategoryControllerImpl implements CategoryController {
             throw e;
 
         } catch (Exception e) {
-            log.error("Kategoriler listeleme hatası: {}", e);
+            log.error("Kategoriler listeleme hatası", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -136,7 +136,7 @@ public class CategoryControllerImpl implements CategoryController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -152,7 +152,7 @@ public class CategoryControllerImpl implements CategoryController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -168,7 +168,7 @@ public class CategoryControllerImpl implements CategoryController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -183,7 +183,7 @@ public class CategoryControllerImpl implements CategoryController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -198,7 +198,7 @@ public class CategoryControllerImpl implements CategoryController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -213,7 +213,7 @@ public class CategoryControllerImpl implements CategoryController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -230,7 +230,7 @@ public class CategoryControllerImpl implements CategoryController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -252,7 +252,7 @@ public class CategoryControllerImpl implements CategoryController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -267,7 +267,7 @@ public class CategoryControllerImpl implements CategoryController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -282,7 +282,7 @@ public class CategoryControllerImpl implements CategoryController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -299,7 +299,7 @@ public class CategoryControllerImpl implements CategoryController {
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }

@@ -83,7 +83,7 @@ public class AccountTransactionControllerImpl implements AccountTransactionContr
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Cari hareket listesi hatasi: {}", e);
+            log.error("Cari hareket listesi hatasi", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -120,7 +120,7 @@ public class AccountTransactionControllerImpl implements AccountTransactionContr
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }

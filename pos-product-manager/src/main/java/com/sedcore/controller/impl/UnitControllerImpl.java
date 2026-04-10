@@ -36,7 +36,7 @@ public class UnitControllerImpl implements UnitController {
             throw e;
 
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -53,7 +53,7 @@ public class UnitControllerImpl implements UnitController {
             throw e;
 
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -70,7 +70,7 @@ public class UnitControllerImpl implements UnitController {
             throw e;
 
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -87,7 +87,7 @@ public class UnitControllerImpl implements UnitController {
             throw e;
 
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -104,7 +104,7 @@ public class UnitControllerImpl implements UnitController {
             throw e;
 
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }
@@ -121,7 +121,7 @@ public class UnitControllerImpl implements UnitController {
             throw e;
 
         } catch (Exception e) {
-            log.error("Operation error: {}", e);
+            log.error("Operation error", e);
             throw ExceptionMapper.map(e);
         }
     }

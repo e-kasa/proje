@@ -284,7 +284,7 @@ class _CompanyCategoryScreenState extends ConsumerState<CompanyCategoryScreen> {
           children: [
             const Icon(Icons.error_outline, color: AppColors.danger, size: 48),
             const SizedBox(height: 12),
-            Text(state.error!, style: const TextStyle(color: AppColors.bgDanger),
+            Text(state.error!, style: const TextStyle(color: AppColors.danger)),
             const SizedBox(height: 16),
             AppButton.primary(
 

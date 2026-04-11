@@ -251,7 +251,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
       builder: (ctx) => AlertDialog(
         title: const Row(
           children: [
-            Icon(Icons.warning, color: AppColors.bgDanger,
+            Icon(Icons.warning, color: AppColors.danger),
             SizedBox(width: 12),
             Text('Araci Sil'),
           ],
@@ -460,10 +460,10 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
                   },
                   itemBuilder: (ctx) => [
                     const PopupMenuItem(value: 'edit', child: Row(children: [
-                      Icon(Icons.edit, size: 18, color: AppColors.bgInfo, SizedBox(width: 12), Text('Duzenle'),
+                      Icon(Icons.edit, size: 18, color: AppColors.info), SizedBox(width: 12), Text('Duzenle'),
                     ])),
                     const PopupMenuItem(value: 'delete', child: Row(children: [
-                      Icon(Icons.delete, size: 18, color: AppColors.bgDanger, SizedBox(width: 12), Text('Sil'),
+                      Icon(Icons.delete, size: 18, color: AppColors.danger), SizedBox(width: 12), Text('Sil'),
                     ])),
                   ],
                 ),

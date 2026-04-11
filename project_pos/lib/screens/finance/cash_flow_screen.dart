@@ -249,7 +249,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                                     currencyFormat.format(income),
                                     style: const TextStyle(
                                         fontSize: 12,
-                                        color: AppColors.bgSuccess,
+                                        color: AppColors.success),
                                     textAlign: TextAlign.right,
                                   ),
                                 ),
@@ -259,7 +259,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                                     currencyFormat.format(expense),
                                     style: const TextStyle(
                                         fontSize: 12,
-                                        color: AppColors.bgDanger,
+                                        color: AppColors.danger),
                                     textAlign: TextAlign.right,
                                   ),
                                 ),

@@ -145,7 +145,7 @@ class CartPanel extends ConsumerWidget {
         children: [
           _summaryRow('Ara Toplam', currencyFormat.format(state.subtotal)),
           if (state.totalDiscount > 0)
-            _summaryRow('İndirim', '-${currencyFormat.format(state.totalDiscount)}', color: AppColors.bgDanger,
+            _summaryRow('İndirim', '-${currencyFormat.format(state.totalDiscount)}', color: AppColors.danger),
           _summaryRow('KDV', currencyFormat.format(state.totalTax)),
           const Divider(height: 24),
           Row(
@@ -302,7 +302,7 @@ class _CustomerPickerSheetState extends ConsumerState<_CustomerPickerSheet> {
                 icon: const Icon(Icons.person_remove, size: 16),
                 label: const Text('Temizle', style: TextStyle(fontSize: 12)),
                 style: TextButton.styleFrom(
-                    foregroundColor: AppColors.bgDanger,
+                    foregroundColor: AppColors.danger),
               ),
           ]),
         ),

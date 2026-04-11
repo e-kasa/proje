@@ -85,7 +85,7 @@ class _StockValueReportScreenState
                       const SizedBox(height: 12),
                       Text(
                         _error!,
-                        style: const TextStyle(color: AppColors.bgDanger,
+                        style: const TextStyle(color: AppColors.danger),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
@@ -354,7 +354,7 @@ class _StockValueReportScreenState
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        _buildMiniTag('$itemCount SKU', AppColors.bgInfo,
+                        _buildMiniTag('$itemCount SKU', AppColors.info),
                         const SizedBox(width: 6),
                         _buildMiniTag('$totalQty ${t('stock.unit_piece')}', AppColors.purple),
                       ],

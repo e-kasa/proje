@@ -1262,6 +1262,169 @@ flutter test
 
 ---
 
+## 2.26 Flutter Kod Kalite Standartları — ZORUNLU
+
+> Bu standartlar kod review sonuçlarından çıkarılmıştır. Yeni kod yazarken ve mevcut kodu düzenlerken **hepsine uy.**
+
+### Renk API (Opacity)
+
+```dart
+// ✅ DOĞRU — Flutter 3.x+
+color.withValues(alpha: 0.1)
+Colors.black.withValues(alpha: 0.06)
+
+// ❌ YANLIŞ — deprecated
+color.withOpacity(0.1)
+```
+
+**`withOpacity()` kullanma. Her yerde `withValues(alpha: x)` kullan.**
+
+---
+
+### Tıklanabilir Widget'lar
+
+```dart
+// ✅ DOĞRU — Material ripple efekti sağlar
+Material(
+  color: Colors.transparent,
+  borderRadius: BorderRadius.circular(12),
+  child: InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(12),
+    splashColor: color.withValues(alpha: 0.1),
+    highlightColor: color.withValues(alpha: 0.05),
+    child: Padding(...),
+  ),
+)
+
+// ❌ YANLIŞ — ripple/splash yok
+GestureDetector(
+  onTap: onTap,
+  child: Container(...),
+)
+```
+
+**`GestureDetector` yerine her zaman `Material + InkWell` kullan.**  
+İkon butonlar için `Tooltip` sarmayı da ekle:
+```dart
+Tooltip(
+  message: 'Açıklama',
+  child: Material(
+    color: Colors.white.withValues(alpha: 0.15),
+    borderRadius: BorderRadius.circular(12),
+    child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(12), child: ...),
+  ),
+)
+```
+
+---
+
+### Renk Sistemi
+
+```dart
+// ✅ DOĞRU — AppColors design system
+AppColors.info        // mavi     (bilgi)
+AppColors.success     // yeşil    (başarı)
+AppColors.danger      // kırmızı  (hata/silme)
+AppColors.warning     // sarı     (uyarı)
+AppColors.secondary   // mor      (ikincil aksan)
+AppColors.teal        // teal     (aksan)
+AppColors.textMuted   // soluk gri metin
+AppColors.bgSuccess   // açık yeşil arka plan (#d1fae5)
+AppColors.bgInfo      // açık mavi arka plan  (#dbeafe)
+AppColors.bgWarning   // açık sarı arka plan  (#fef3c7)
+AppColors.bgDanger    // açık kırmızı arka plan (#fee2e2)
+
+// ❌ YANLIŞ — ham Flutter renkleri (Colors.white hariç)
+Colors.blue    → AppColors.info
+Colors.green   → AppColors.success
+Colors.red     → AppColors.danger
+Colors.orange  → AppColors.warning
+Colors.purple  → AppColors.secondary
+Colors.teal    → AppColors.teal
+Colors.grey    → AppColors.textMuted
+```
+
+---
+
+### Dark Mode
+
+```dart
+// Her ekranda / widget'ta dark mode kontrolü yap
+final isDark = Theme.of(context).brightness == Brightness.dark;
+final cardBg = isDark ? const Color(0xFF1A1A2E) : Colors.white;
+final textColor = isDark ? Colors.white : AppColors.textPrimary;
+final subTextColor = isDark ? Colors.white70 : AppColors.textSecondary;
+
+// Container/Card arka planlarında asla hardcode Colors.white yazma:
+// ❌ color: Colors.white
+// ✅ color: isDark ? const Color(0xFF1A1A2E) : Colors.white
+
+// Divider dark mode:
+Divider(color: isDark ? Colors.white12 : AppColors.border)
+
+// BoxShadow dark mode:
+BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06), ...)
+```
+
+---
+
+### Tarih Formatlama
+
+```dart
+import 'package:intl/intl.dart';
+
+// ✅ DOĞRU — intl kütüphanesi ile
+DateFormat('d MMMM yyyy', 'tr_TR').format(date)   // "11 Nisan 2026"
+DateFormat('dd.MM.yyyy', 'tr_TR').format(date)     // "11.04.2026"
+DateFormat('MMMM yyyy', 'tr_TR').format(date)      // "Nisan 2026"
+
+// ❌ YANLIŞ — hardcode ay dizisi
+const months = ['Ocak', 'Şubat', ...];
+months[date.month - 1]
+```
+
+---
+
+### Boş Durum Widget'ları
+
+```dart
+// ✅ DOĞRU — design system kullan
+AppEmptyState.noData(
+  title: 'Kayıt Bulunamadı',
+  description: 'Henüz veri eklenmemiş',
+)
+AppEmptyState.error(
+  title: 'Hata',
+  description: errorMessage,
+  onAction: _load,
+)
+
+// ❌ YANLIŞ — manuel boş durum container
+Center(child: Column(children: [Icon(Icons.inbox), Text('Veri yok')]))
+```
+
+---
+
+### Widget Kod Kalite Checklist
+
+Her yeni widget veya ekran yazarken kontrol et:
+
+```
+□ withOpacity() yok → withValues(alpha: x) kullanıldı
+□ GestureDetector yok → Material + InkWell kullanıldı
+□ Colors.blue/green/red/grey/orange/purple/teal yok → AppColors.* kullanıldı
+□ Hardcode Colors.white container yok → isDark ? Color(0xFF1A1A2E) : Colors.white
+□ Hardcode ay dizisi yok → DateFormat('MMMM', 'tr_TR') kullanıldı
+□ Manuel boş durum yok → AppEmptyState.noData() / .error() kullanıldı
+□ AppScaffold kullanıldı (Scaffold değil)
+□ AppAppBar.standard() kullanıldı (AppBar değil)
+□ Tıklanabilir elemanlarda Tooltip eklendi (ikonlar için)
+□ flutter analyze → 0 error
+```
+
+---
+
 # 3. SPRING BOOT BACKEND (`pos-product-manager/`)
 
 ## Teknoloji Stack

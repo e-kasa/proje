@@ -391,7 +391,7 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
                 const PopupMenuItem(
                   value: 'account',
                   child: MenuRow(Icons.account_balance_wallet_outlined,
-                      'Cari Hesap', AppColors.bgSuccess,
+                      'Cari Hesap', AppColors.success),
                 ),
                 const PopupMenuItem(
                   value: 'edit',
@@ -402,9 +402,9 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
                   value: 'toggle',
                   child: isActive
                       ? const MenuRow(Icons.block_outlined,
-                          'Pasiflestir', AppColors.bgWarning
+                          'Pasiflestir', AppColors.warning)
                       : const MenuRow(Icons.check_circle_outline,
-                          'Aktivlestir', AppColors.bgSuccess,
+                          'Aktivlestir', AppColors.success),
                 ),
               ],
             ),
@@ -416,7 +416,7 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
   Widget _balancePill(String label, double amount) {
     final isDebt = amount > 0;
     final color = isDebt
-        ? AppColors.warning
+        ? Colors.orange
         : amount < 0
             ? AppColors.success
             : AppColors.textMuted;

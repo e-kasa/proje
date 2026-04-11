@@ -180,7 +180,7 @@ class _SupplierImportUploadScreenState
           children: [
             Row(
               children: [
-                Icon(Icons.info_outline, color: AppColors.info[700]),
+                Icon(Icons.info_outline, color: Colors.blue[700]),
                 const SizedBox(width: 8),
                 const Text(
                   'Nasıl Çalışır?',
@@ -212,7 +212,7 @@ class _SupplierImportUploadScreenState
             width: 24,
             height: 24,
             decoration: BoxDecoration(
-              color: AppColors.info[100],
+              color: Colors.blue[100],
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -221,7 +221,7 @@ class _SupplierImportUploadScreenState
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.info[700],
+                  color: Colors.blue[700],
                 ),
               ),
             ),
@@ -240,10 +240,10 @@ class _SupplierImportUploadScreenState
       child: Container(
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: _selectedFile != null ? AppColors.success[50] : Colors.white,
+          color: _selectedFile != null ? Colors.green[50] : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: _selectedFile != null ? AppColors.success : Colors.grey.shade300,
+            color: _selectedFile != null ? Colors.green : Colors.grey.shade300,
             width: 2,
             style: BorderStyle.solid,
           ),
@@ -253,7 +253,7 @@ class _SupplierImportUploadScreenState
             Icon(
               _selectedFile != null ? Icons.check_circle : Icons.cloud_upload,
               size: 64,
-              color: _selectedFile != null ? AppColors.success : AppColors.textMuted,
+              color: _selectedFile != null ? Colors.green : Colors.grey,
             ),
             const SizedBox(height: 16),
             Text(
@@ -263,7 +263,7 @@ class _SupplierImportUploadScreenState
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: _selectedFile != null ? AppColors.success[700] : Colors.grey[700],
+                color: _selectedFile != null ? Colors.green[700] : Colors.grey[700],
               ),
               textAlign: TextAlign.center,
             ),
@@ -368,18 +368,18 @@ class _SupplierImportUploadScreenState
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.danger[50],
+        color: Colors.red[50],
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.red.shade300),
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline, color: AppColors.danger[700]),
+          Icon(Icons.error_outline, color: Colors.red[700]),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               _errorMessage!,
-              style: TextStyle(color: AppColors.danger[700]),
+              style: TextStyle(color: Colors.red[700]),
             ),
           ),
         ],
@@ -396,7 +396,7 @@ class _SupplierImportUploadScreenState
           children: [
             Row(
               children: [
-                Icon(Icons.help_outline, color: AppColors.warning[700]),
+                Icon(Icons.help_outline, color: Colors.orange[700]),
                 const SizedBox(width: 8),
                 const Text(
                   'Excel/CSV Formatı',
@@ -438,8 +438,8 @@ class _SupplierImportUploadScreenState
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
               color: requirement == 'zorunlu'
-                  ? AppColors.danger[100]
-                  : AppColors.info[100],
+                  ? Colors.red[100]
+                  : Colors.blue[100],
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
@@ -447,8 +447,8 @@ class _SupplierImportUploadScreenState
               style: TextStyle(
                 fontSize: 11,
                 color: requirement == 'zorunlu'
-                    ? AppColors.danger[700]
-                    : AppColors.info[700],
+                    ? Colors.red[700]
+                    : Colors.blue[700],
               ),
             ),
           ),
@@ -481,7 +481,7 @@ class _SupplierImportUploadScreenState
                 child: LinearProgressIndicator(
                   value: _uploadProgress,
                   minHeight: 8,
-                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.bgInfo,
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
                 ),
               ),
               const SizedBox(height: 8),

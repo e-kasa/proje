@@ -345,12 +345,12 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
             Container(
               width: 40, height: 40,
               decoration: BoxDecoration(
-                color: (_isActive ? const Color(0xFF10B981) : Theme.of(context).textTheme.bodySmall?.color ?? AppColors.textMuted).withValues(alpha: 0.12),
+                color: (_isActive ? const Color(0xFF10B981) : Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey).withValues(alpha: 0.12),
                 borderRadius: AppConstants.borderRadiusMedium,
               ),
               child: Icon(
                 _isActive ? Icons.check_circle_outline : Icons.cancel_outlined,
-                color: _isActive ? const Color(0xFF10B981) : Theme.of(context).textTheme.bodySmall?.color ?? AppColors.textMuted,
+                color: _isActive ? const Color(0xFF10B981) : Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey,
                 size: 22,
               ),
             ),
@@ -366,7 +366,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                     _isActive ? 'Aktif — satış ve işlemlerde kullanılabilir'
                               : 'Pasif — işlemlerde görünmez',
                     style: TextStyle(fontSize: 12,
-                        color: _isActive ? const Color(0xFF10B981) : Theme.of(context).textTheme.bodySmall?.color ?? AppColors.textMuted),
+                        color: _isActive ? const Color(0xFF10B981) : Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey),
                   ),
                 ],
               ),

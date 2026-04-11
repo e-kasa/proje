@@ -434,11 +434,11 @@ class PreviewStep extends ConsumerWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.swipe_rounded, size: 14, color: AppColors.bgInfo,
+                  Icon(Icons.swipe_rounded, size: 14, color: AppColors.info),
                   const SizedBox(width: 4),
                   Text(
                     t('common.scroll_to_see_all'),
-                    style: TextStyle(fontSize: 10, color: AppColors.bgInfo,
+                    style: TextStyle(fontSize: 10, color: AppColors.info),
                   ),
                 ],
               ),

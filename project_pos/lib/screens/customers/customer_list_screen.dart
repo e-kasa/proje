@@ -335,7 +335,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                 Row(
                   children: [
                     Icon(Icons.star_rounded,
-                        size: 14, color: AppColors.bgWarning,
+                        size: 14, color: AppColors.warning),
                     const SizedBox(width: 3),
                     Text(
                       '$points puan',
@@ -379,7 +379,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                 PopupMenuItem(
                   value: 'account',
                   child: MenuRow(Icons.account_balance_wallet,
-                      'Cari Hesap', AppColors.bgInfo,
+                      'Cari Hesap', AppColors.info),
                 ),
                 PopupMenuItem(
                   value: 'edit',
@@ -389,7 +389,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                 PopupMenuItem(
                   value: 'delete',
                   child: MenuRow(
-                      Icons.delete_outline, 'Sil', AppColors.bgDanger,
+                      Icons.delete_outline, 'Sil', AppColors.danger),
                 ),
               ],
             ),

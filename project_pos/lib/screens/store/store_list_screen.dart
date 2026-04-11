@@ -78,7 +78,7 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Row(
-          children: [Icon(Icons.warning_amber_rounded, color: AppColors.bgWarning, SizedBox(width: 12), Text('Mağaza Sil')],
+          children: [Icon(Icons.warning_amber_rounded, color: AppColors.warning), SizedBox(width: 12), Text('Mağaza Sil')],
         ),
         content: Text('$name mağazasını silmek istediğinize emin misiniz?'),
         actions: [
@@ -183,9 +183,9 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
       children: [
         Expanded(child: _buildStatCard('🏪 Toplam', total.toString(), 'Mağaza', AppColors.primary)),
         const SizedBox(width: 12),
-        Expanded(child: _buildStatCard('✅ Aktif', active.toString(), 'Mağaza', AppColors.bgSuccess),
+        Expanded(child: _buildStatCard('✅ Aktif', active.toString(), 'Mağaza', AppColors.success)),
         const SizedBox(width: 12),
-        Expanded(child: _buildStatCard('👥 Çalışan', totalEmployees.toString(), 'Kişi', AppColors.bgInfo),
+        Expanded(child: _buildStatCard('👥 Çalışan', totalEmployees.toString(), 'Kişi', AppColors.info)),
       ],
     );
   }
@@ -265,9 +265,9 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  _buildInfoChip(Icons.category, typeLabels[store['type']] ?? '', AppColors.bgInfo,
+                  _buildInfoChip(Icons.category, typeLabels[store['type']] ?? '', AppColors.info),
                   _buildInfoChip(Icons.person, store['managerName'] ?? '', AppColors.purple),
-                  _buildInfoChip(Icons.people, '${store['employeeCount']} Çalışan', AppColors.bgSuccess,
+                  _buildInfoChip(Icons.people, '${store['employeeCount']} Çalışan', AppColors.success),
                 ],
               ),
               const SizedBox(height: 12),

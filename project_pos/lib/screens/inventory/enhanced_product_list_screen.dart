@@ -736,13 +736,13 @@ class _EnhancedProductListScreenState
                       Row(
                         children: [
                           const Icon(Icons.compare_arrows,
-                              size: 12, color: AppColors.bgInfo,
+                              size: 12, color: AppColors.info),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               'Ref: ${product['_crossRefs']}',
                               style: const TextStyle(
-                                  fontSize: 11, color: AppColors.bgInfo,
+                                  fontSize: 11, color: AppColors.info),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),

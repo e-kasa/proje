@@ -441,7 +441,7 @@ class _AddProductWizardScreenState
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.check_circle_rounded,
-                        size: 14, color: AppColors.bgSuccess,
+                        size: 14, color: AppColors.success),
                     const SizedBox(width: 4),
                     Text(
                       '$_savedCount ${_t('product.product')}',

@@ -34,7 +34,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
     final i18n = ref.watch(i18nProvider);
 
     // Kategori renk paleti
-    const categoryColors = [AppColors.success, AppColors.primary, Colors.brown, AppColors.info, AppColors.secondary, AppColors.teal, Colors.deepOrange, Colors.indigo];
+    const categoryColors = [AppColors.success, AppColors.primary, Colors.brown, AppColors.info, Colors.purple, Colors.teal, Colors.deepOrange, Colors.indigo];
 
     // Fallback sabit liste
     final List<_CategoryData> defaultCategories = [
@@ -66,7 +66,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
         _MenuAction('Giderler', Icons.arrow_downward, '/finance/expenses', 'Gider girişi ve takibi'),
         _MenuAction('Nakit Akışı', Icons.currency_lira, '/finance/cash-flow', 'Para trafiği analizi'),
       ]),
-      _CategoryData('ANALİZ & SİSTEM', AppColors.secondary, [
+      _CategoryData('ANALİZ & SİSTEM', Colors.purple, [
         _MenuAction('Raporlar', Icons.analytics, '/reports', 'Detaylı sistem raporları'),
         _MenuAction('Satış Analizi', Icons.show_chart, '/reports/sales-summary', 'Grafiksel performans'),
         _MenuAction('Toplu Aktarım', Icons.cloud_upload, '/bulk-import', 'Excel ile veri aktarımı'),
@@ -220,7 +220,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
           const Text('Admin Panel', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
           const SizedBox(width: 8),
           IconButton(
-            icon: const Icon(Icons.logout, size: 18, color: AppColors.bgDanger,
+            icon: const Icon(Icons.logout, size: 18, color: AppColors.danger),
             onPressed: () => context.go('/login'),
             visualDensity: VisualDensity.compact,
             padding: EdgeInsets.zero,

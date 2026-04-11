@@ -110,7 +110,7 @@ class ReceiptPreviewDialog extends ConsumerWidget {
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.person_outline, size: 16, color: AppColors.bgInfo,
+                              const Icon(Icons.person_outline, size: 16, color: AppColors.info),
                               const SizedBox(width: 6),
                               Text(
                                 customer['name']?.toString() ?? 'Müşteri',

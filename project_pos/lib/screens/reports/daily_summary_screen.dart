@@ -140,7 +140,7 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
                   if (isToday)
                     const Text('Bugun',
                         style: TextStyle(
-                            fontSize: 12, color: AppColors.bgSuccess),
+                            fontSize: 12, color: AppColors.success)),
                 ],
               ),
             ),
@@ -428,7 +428,7 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
                       style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.bgSuccess),
+                          color: AppColors.success)),
                 ]),
               );
             }),

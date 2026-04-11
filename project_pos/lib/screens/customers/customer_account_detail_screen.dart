@@ -88,7 +88,7 @@ class _CustomerAccountDetailScreenState
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, size: 48, color: AppColors.bgDanger,
+              const Icon(Icons.error_outline, size: 48, color: AppColors.danger),
               const SizedBox(height: 12),
               Text(_error ?? 'Musteri bulunamadi',
                   style: const TextStyle(color: AppColors.textSecondary)),
@@ -458,7 +458,7 @@ class _CustomerAccountDetailScreenState
                             style: TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.bgWarning),
+                                color: AppColors.warning)),
                       ),
                     if (isCancelled)
                       Container(

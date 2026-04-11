@@ -249,7 +249,7 @@ class _ProductRelationshipManagementPanelState
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.bgDanger,
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
                 child: const Text('Sil'),
               ),
             ],

@@ -701,7 +701,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
                     const SizedBox(width: 16),
                     Row(
                       children: [
-                        const Icon(Icons.attach_money, size: 16, color: AppColors.bgSuccess,
+                        const Icon(Icons.attach_money, size: 16, color: AppColors.success),
                         Text(
                           '${barcode['price']} ₺',
                           style: const TextStyle(
@@ -715,7 +715,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
                     const SizedBox(width: 16),
                     Row(
                       children: [
-                        const Icon(Icons.inventory_2, size: 16, color: AppColors.bgInfo,
+                        const Icon(Icons.inventory_2, size: 16, color: AppColors.info),
                         const SizedBox(width: 4),
                         Text(
                           '${barcode['stock']}',

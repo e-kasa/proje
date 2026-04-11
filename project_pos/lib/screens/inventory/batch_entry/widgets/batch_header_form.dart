@@ -147,7 +147,7 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(Icons.check_circle_outline,
-                              size: 12, color: AppColors.bgSuccess,
+                              size: 12, color: AppColors.success),
                           const SizedBox(width: 4),
                           Text(t('batch.ready'),
                               style: const TextStyle(
@@ -170,7 +170,7 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(Icons.info_outline,
-                              size: 12, color: AppColors.bgWarning,
+                              size: 12, color: AppColors.warning),
                           const SizedBox(width: 4),
                           Text(t('batch.incomplete'),
                               style: const TextStyle(

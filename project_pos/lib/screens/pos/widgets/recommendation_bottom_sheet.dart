@@ -104,7 +104,7 @@ class _RecommendationSheet extends ConsumerWidget {
                     },
                     icon: const Icon(Icons.add_shopping_cart, size: 16),
                     label: const Text('Tümünü Ekle'),
-                    style: TextButton.styleFrom(foregroundColor: AppColors.bgSuccess,
+                    style: TextButton.styleFrom(foregroundColor: AppColors.success),
                   ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),

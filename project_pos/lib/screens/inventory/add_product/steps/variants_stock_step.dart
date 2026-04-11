@@ -404,9 +404,9 @@ class VariantsStockStep extends ConsumerWidget {
         }),
         ActionChip(
           avatar: const Icon(Icons.add_rounded,
-              size: 16, color: AppColors.bgSuccess,
+              size: 16, color: AppColors.success),
           label: Text(t('product.new_attribute'),
-              style: const TextStyle(fontSize: 12, color: AppColors.bgSuccess),
+              style: const TextStyle(fontSize: 12, color: AppColors.success)),
           backgroundColor: AppColors.success.withValues(alpha: 0.06),
           side: BorderSide(color: AppColors.success.withValues(alpha: 0.3)),
           onPressed: () => showAddAttributeDialog(
@@ -470,7 +470,7 @@ class VariantsStockStep extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Icon(Icons.close_rounded,
-                      size: 16, color: AppColors.bgDanger,
+                      size: 16, color: AppColors.danger),
                 ),
               ),
             ],
@@ -946,7 +946,7 @@ class VariantsStockStep extends ConsumerWidget {
                                     style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w600,
-                                        color: AppColors.bgDanger),
+                                        color: AppColors.danger)),
                               ),
                               prefixIconConstraints: const BoxConstraints(
                                   minWidth: 0, minHeight: 0),
@@ -974,7 +974,7 @@ class VariantsStockStep extends ConsumerWidget {
                                     style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w600,
-                                        color: AppColors.bgSuccess),
+                                        color: AppColors.success)),
                               ),
                               prefixIconConstraints: const BoxConstraints(
                                   minWidth: 0, minHeight: 0),

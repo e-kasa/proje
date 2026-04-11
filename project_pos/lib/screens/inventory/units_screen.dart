@@ -163,7 +163,7 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
         builder: (context, setDialogState) => AlertDialog(
           title: Row(
             children: [
-              const Icon(Icons.edit, color: AppColors.bgInfo,
+              const Icon(Icons.edit, color: AppColors.info),
               const SizedBox(width: 12),
               Text(t('inventory.edit_unit')),
             ],
@@ -528,7 +528,7 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
                       value: 'edit',
                       child: Row(
                         children: [
-                          Icon(Icons.edit, size: 18, color: AppColors.bgInfo,
+                          Icon(Icons.edit, size: 18, color: AppColors.info),
                           SizedBox(width: 12),
                           Text('Düzenle'),
                         ],
@@ -538,7 +538,7 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete, size: 18, color: AppColors.bgDanger,
+                          Icon(Icons.delete, size: 18, color: AppColors.danger),
                           SizedBox(width: 12),
                           Text('Sil'),
                         ],

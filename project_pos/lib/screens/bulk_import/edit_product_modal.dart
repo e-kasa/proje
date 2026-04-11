@@ -281,16 +281,16 @@ class _EditProductModalState extends ConsumerState<EditProductModal> {
           decoration: BoxDecoration(
             color: AppColors.info.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.bgInfo,
+            border: Border.all(color: AppColors.info),
           ),
           child: Row(
             children: [
-              const Icon(Icons.info, color: AppColors.bgInfo,
+              const Icon(Icons.info, color: AppColors.info),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   'Bu ürünü sistemdeki mevcut bir ürünle eşleştirin. Seçilen ürün güncellenecektir.',
-                  style: TextStyle(color: AppColors.bgInfo,
+                  style: TextStyle(color: AppColors.info),
                 ),
               ),
             ],
@@ -366,14 +366,14 @@ class _EditProductModalState extends ConsumerState<EditProductModal> {
               decoration: BoxDecoration(
                 color: AppColors.danger.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.bgDanger,
+                border: Border.all(color: AppColors.danger),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Row(
                     children: [
-                      Icon(Icons.warning, color: AppColors.bgDanger,
+                      Icon(Icons.warning, color: AppColors.danger),
                       const SizedBox(width: 12),
                       const Text(
                         'Aşağıdaki hataları düzeltin:',
@@ -559,7 +559,7 @@ class _EditProductModalState extends ConsumerState<EditProductModal> {
         ),
         child: Row(
           children: [
-            Radio<bool>(value: true, groupValue: isSelected, onChanged: (_) => onSelect(), activeColor: AppColors.bgSuccess,
+            Radio<bool>(value: true, groupValue: isSelected, onChanged: (_) => onSelect(), activeColor: AppColors.success),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

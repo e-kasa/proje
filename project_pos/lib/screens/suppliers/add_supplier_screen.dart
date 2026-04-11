@@ -271,21 +271,21 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
               children: [
                 Expanded(child: _accountRow(
                     Icons.account_balance_outlined, 'Güncel Bakiye', fmt(balance),
-                    balance != null && balance > 0 ? AppColors.danger : AppColors.bgSuccess),
+                    balance != null && balance > 0 ? AppColors.danger : AppColors.success)),
                 const SizedBox(width: 12),
                 Expanded(child: _accountRow(
-                    Icons.trending_up_outlined, 'Toplam Borç', fmt(debt), AppColors.bgDanger),
+                    Icons.trending_up_outlined, 'Toplam Borç', fmt(debt), AppColors.danger)),
               ],
             ),
             const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(child: _accountRow(
-                    Icons.check_circle_outline, 'Toplam Ödeme', fmt(paid), AppColors.bgSuccess),
+                    Icons.check_circle_outline, 'Toplam Ödeme', fmt(paid), AppColors.success)),
                 const SizedBox(width: 12),
                 Expanded(child: _accountRow(
                     Icons.credit_card_outlined, 'Kullanılabilir Limit', fmt(available),
-                    isExceeded ? AppColors.danger : AppColors.bgInfo),
+                    isExceeded ? AppColors.danger : AppColors.info)),
               ],
             ),
             if (limit != null) ...[

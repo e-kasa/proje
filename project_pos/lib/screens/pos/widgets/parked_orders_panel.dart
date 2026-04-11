@@ -170,7 +170,7 @@ class ParkedOrdersPanel extends ConsumerWidget {
                     ),
                     IconButton(
                       onPressed: () => _showDeleteConfirmation(context, index, notifier),
-                      icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.bgDanger,
+                      icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.danger),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                     ),

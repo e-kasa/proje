@@ -177,7 +177,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            const Icon(Icons.edit, color: AppColors.bgInfo,
+            const Icon(Icons.edit, color: AppColors.info),
             const SizedBox(width: 12),
             Text(t('inventory.edit_brand')),
           ],
@@ -560,7 +560,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                       value: 'edit',
                       child: Row(
                         children: [
-                          const Icon(Icons.edit, size: 18, color: AppColors.bgInfo,
+                          const Icon(Icons.edit, size: 18, color: AppColors.info),
                           const SizedBox(width: 12),
                           Text(t('common.edit')),
                         ],
@@ -584,7 +584,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                       value: 'delete',
                       child: Row(
                         children: [
-                          const Icon(Icons.delete, size: 18, color: AppColors.bgDanger,
+                          const Icon(Icons.delete, size: 18, color: AppColors.danger),
                           const SizedBox(width: 12),
                           Text(t('common.delete')),
                         ],

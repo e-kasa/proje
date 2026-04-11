@@ -335,7 +335,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
             padding: const EdgeInsets.only(top: 4, left: 12),
             child: Text(
               'En az 1 ürün eklemelisiniz',
-              style: theme.textTheme.bodySmall?.copyWith(color: AppColors.bgDanger,
+              style: theme.textTheme.bodySmall?.copyWith(color: AppColors.danger),
             ),
           ),
         const SizedBox(height: 8),
@@ -449,7 +449,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.remove_circle_outline_rounded, color: AppColors.danger, size: 20),
+                    icon: const Icon(Icons.remove_circle_outline_rounded, color: Colors.red, size: 20),
                     onPressed: () => setState(() => _items.removeAt(index)),
                     tooltip: 'Kalemi Kaldır',
                   ),
@@ -726,7 +726,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
     final shouldUpdate = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        icon: const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 48),
+        icon: const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 48),
         title: const Text('Kredi Limiti Tanımsız'),
         content: Text(
           '"$supplierName" tedarikçisinin kredi limiti tanımlanmamış.\n\n'

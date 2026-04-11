@@ -303,7 +303,7 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
                                 Text(compat['vehicleEngineType'], style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
                               if (compat['isVerified'] == true) ...[
                                 const SizedBox(width: 8),
-                                const Icon(Icons.verified, size: 14, color: AppColors.bgSuccess,
+                                const Icon(Icons.verified, size: 14, color: AppColors.success),
                               ],
                             ],
                           ),

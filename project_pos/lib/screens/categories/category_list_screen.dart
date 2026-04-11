@@ -441,9 +441,9 @@ class _CategoryTile extends StatelessWidget {
 
   /// Her seviye için görsel ayarlar
   static const _levelColors = [
-    AppColors.info,
-    AppColors.warning,
-    AppColors.secondary,
+    Colors.blue,
+    Colors.orange,
+    Colors.purple,
   ];
   static const _levelPrefixes = ['📁', '   └─', '      └─'];
   static const _levelLabels = ['Kök', 'Alt', 'Torun'];
@@ -451,7 +451,7 @@ class _CategoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color =
-        level < _levelColors.length ? _levelColors[level] : AppColors.textMuted;
+        level < _levelColors.length ? _levelColors[level] : Colors.grey;
     final prefix =
         level < _levelPrefixes.length ? _levelPrefixes[level] : '  ';
     final levelLabel =
@@ -619,10 +619,10 @@ class _CategoryTile extends StatelessWidget {
                       value: 'delete',
                       child: Row(children: [
                         Icon(Icons.delete,
-                            size: 20, color: AppColors.bgDanger,
+                            size: 20, color: AppColors.danger),
                         SizedBox(width: 12),
                         Text('Sil',
-                            style: TextStyle(color: AppColors.bgDanger),
+                            style: TextStyle(color: AppColors.danger)),
                       ]),
                     ),
                   ],

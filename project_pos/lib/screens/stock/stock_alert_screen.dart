@@ -88,7 +88,7 @@ class _StockAlertScreenState extends ConsumerState<StockAlertScreen> {
                         const SizedBox(height: 12),
                         Text(
                           _error!,
-                          style: const TextStyle(color: AppColors.bgDanger,
+                          style: const TextStyle(color: AppColors.danger),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 16),

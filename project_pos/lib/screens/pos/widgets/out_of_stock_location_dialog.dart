@@ -95,7 +95,7 @@ class OutOfStockLocationDialog extends StatelessWidget {
                       child: Text(
                         'Hiçbir lokasyonda stok bulunamadı.',
                         style: TextStyle(
-                            fontSize: 13, color: AppColors.bgDanger,
+                            fontSize: 13, color: AppColors.danger),
                       ),
                     ),
                   ],

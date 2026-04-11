@@ -310,7 +310,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.date_range,
-                            size: 14, color: AppColors.bgInfo,
+                            size: 14, color: AppColors.info),
                         const SizedBox(width: 4),
                         Text(
                           '${state.startDate != null ? _dateFmt.format(state.startDate!) : '...'}'
@@ -327,7 +327,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                           onTap: () =>
                               ref.read(saleListProvider.notifier).clearDateRange(),
                           child: Icon(Icons.close,
-                              size: 14, color: AppColors.bgInfo,
+                              size: 14, color: AppColors.info),
                         ),
                       ],
                     ),
@@ -521,9 +521,9 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                     height: 40,
                     decoration: BoxDecoration(
                       color: cancelled
-                          ? AppColors.danger.withValues(alpha: 0.1)
+                          ? Colors.red.withValues(alpha: 0.1)
                           : isPending
-                              ? AppColors.warning.withValues(alpha: 0.1)
+                              ? Colors.orange.withValues(alpha: 0.1)
                               : AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: AppConstants.borderRadiusSmall,
                     ),
@@ -534,9 +534,9 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                               ? Icons.schedule_rounded
                               : Icons.point_of_sale_rounded,
                       color: cancelled
-                          ? AppColors.danger
+                          ? Colors.red
                           : isPending
-                              ? AppColors.warning
+                              ? Colors.orange
                               : AppColors.primary,
                       size: 20,
                     ),
@@ -588,7 +588,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                         _fmt.format(total),
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: cancelled ? AppColors.textMuted : AppColors.primary,
+                          color: cancelled ? Colors.grey : AppColors.primary,
                         ),
                       ),
                       if (paymentMethod.isNotEmpty)
@@ -621,16 +621,16 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                   ],
                   const Spacer(),
                   if (cancelled)
-                    _tag(t('sales.cancelled'), Icons.cancel_outlined, AppColors.danger,
+                    _tag(t('sales.cancelled'), Icons.cancel_outlined, Colors.red,
                         theme)
                   else if (isPending)
-                    _tag(t('sales.pending'), Icons.schedule_rounded, AppColors.warning,
+                    _tag(t('sales.pending'), Icons.schedule_rounded, Colors.orange,
                         theme)
                   else if (isPaid)
-                    _tag(t('sales.paid'), Icons.check_circle_outline, AppColors.success,
+                    _tag(t('sales.paid'), Icons.check_circle_outline, Colors.green,
                         theme)
                   else
-                    _tag(t('sales.open'), Icons.hourglass_empty, AppColors.info, theme),
+                    _tag(t('sales.open'), Icons.hourglass_empty, Colors.blue, theme),
                 ],
               ),
             ],
@@ -685,7 +685,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 48, color: AppColors.bgDanger,
+          const Icon(Icons.error_outline, size: 48, color: Colors.red),
           const SizedBox(height: 12),
           Text(error, textAlign: TextAlign.center),
           const SizedBox(height: 16),

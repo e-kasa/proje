@@ -391,7 +391,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.save, color: AppColors.bgSuccess,
+            Icon(Icons.save, color: AppColors.success),
             const SizedBox(width: 12),
             const Text('Yeni Ürünleri Kaydet'),
           ],
@@ -410,7 +410,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
               Navigator.pop(context);
               _processBulkSaveNew(newProducts);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.bgSuccess,
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
             child: const Text('Evet, Kaydet'),
           ),
         ],
@@ -446,7 +446,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.inventory, color: AppColors.bgWarning,
+            Icon(Icons.inventory, color: AppColors.warning),
             const SizedBox(width: 12),
             const Text('Stok Güncelle'),
           ],
@@ -465,7 +465,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
               Navigator.pop(context);
               _processBulkUpdateStock(conflictProducts);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.bgWarning,
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.warning),
             child: const Text('Evet, Güncelle'),
           ),
         ],
@@ -565,7 +565,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.copy_all, color: AppColors.bgInfo,
+            Icon(Icons.copy_all, color: AppColors.info),
             const SizedBox(width: 12),
             const Text('Benzer Ürünlere Uygula'),
           ],
@@ -619,7 +619,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline, color: AppColors.bgInfo,
+                      Icon(Icons.info_outline, color: AppColors.info),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -671,7 +671,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.help_outline, color: AppColors.bgWarning,
+            Icon(Icons.help_outline, color: AppColors.warning),
             const SizedBox(width: 12),
             const Text('Onayla'),
           ],
@@ -691,7 +691,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
               Navigator.pop(context);
               _processApplyToSimilar(source, targets);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.bgInfo,
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.info),
             child: const Text('Evet, Uygula'),
           ),
         ],
@@ -723,7 +723,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.help_outline, color: AppColors.bgWarning,
+            Icon(Icons.help_outline, color: AppColors.warning),
             const SizedBox(width: 12),
             const Text('Kararı Değiştir'),
           ],
@@ -748,7 +748,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
               Navigator.pop(context);
               AppToast.info(context, 'Karar iptal edildi. Yeni bir karar verebilirsiniz.');
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.bgWarning,
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.warning),
             child: const Text('Evet, İptal Et'),
           ),
         ],
@@ -850,7 +850,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.warning, color: AppColors.bgWarning,
+            Icon(Icons.warning, color: AppColors.warning),
             const SizedBox(width: 12),
             const Text('Uyarı: Karar Verilmemiş Ürünler'),
           ],
@@ -870,7 +870,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
               Navigator.pop(context);
               _showSavePreviewModal(decisions);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.bgWarning,
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.warning),
             child: const Text('Devam Et'),
           ),
         ],
@@ -904,9 +904,9 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 16),
-              _buildSummaryRow(Icons.add_circle, 'Yeni Ürün Ekle', summary['create']!, AppColors.bgSuccess,
-              _buildSummaryRow(Icons.update, 'Stok Güncelle', summary['updateStock']!, AppColors.bgInfo,
-              _buildSummaryRow(Icons.price_change, 'Fiyat Güncelle', summary['updatePrice']!, AppColors.bgInfo,
+              _buildSummaryRow(Icons.add_circle, 'Yeni Ürün Ekle', summary['create']!, AppColors.success),
+              _buildSummaryRow(Icons.update, 'Stok Güncelle', summary['updateStock']!, AppColors.info),
+              _buildSummaryRow(Icons.price_change, 'Fiyat Güncelle', summary['updatePrice']!, AppColors.info),
               _buildSummaryRow(Icons.link, 'Ürün Eşleştir', summary['match']!, const Color(0xFFFF9800)),
               _buildSummaryRow(Icons.category, 'Varyant Ekle', summary['addVariant']!, const Color(0xFF9C27B0)),
               _buildSummaryRow(Icons.cancel, 'Atla', summary['skip']!, AppColors.textMuted),
@@ -1148,12 +1148,12 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.thumb_up, color: AppColors.bgSuccess,
+                  Icon(Icons.thumb_up, color: AppColors.success),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Değişiklikler sisteme yansıtıldı.',
-                      style: TextStyle(color: AppColors.bgSuccess,
+                      style: TextStyle(color: AppColors.success),
                     ),
                   ),
                 ],
@@ -1213,7 +1213,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.bgDanger,
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
             child: const Text('Tamam'),
           ),
         ],
@@ -1366,19 +1366,19 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
           Row(
             children: [
               Expanded(
-                child: _buildStatCard('Toplam', '${_statistics.total}', Icons.inventory_2, AppColors.bgInfo,
+                child: _buildStatCard('Toplam', '${_statistics.total}', Icons.inventory_2, AppColors.info),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _buildStatCard('Yeni', '${_statistics.newProducts}', Icons.add_circle, AppColors.bgSuccess,
+                child: _buildStatCard('Yeni', '${_statistics.newProducts}', Icons.add_circle, AppColors.success),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _buildStatCard('Çakışma', '${_statistics.conflicts}', Icons.warning, AppColors.bgWarning,
+                child: _buildStatCard('Çakışma', '${_statistics.conflicts}', Icons.warning, AppColors.warning),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _buildStatCard('Hata', '${_statistics.errors}', Icons.error, AppColors.bgDanger,
+                child: _buildStatCard('Hata', '${_statistics.errors}', Icons.error, AppColors.danger),
               ),
             ],
           ),
@@ -1592,7 +1592,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
           Row(
             children: [
               if (decidedCount < totalCount) ...[
-                Icon(Icons.info_outline, size: 14, color: AppColors.bgInfo,
+                Icon(Icons.info_outline, size: 14, color: AppColors.info),
                 const SizedBox(width: 4),
                 Text(
                   '${totalCount - decidedCount} ürün için karar bekleniyor',
@@ -1602,7 +1602,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
                   ),
                 ),
               ] else ...[
-                Icon(Icons.check_circle, size: 14, color: AppColors.bgSuccess,
+                Icon(Icons.check_circle, size: 14, color: AppColors.success),
                 const SizedBox(width: 4),
                 const Text(
                   'Tüm ürünler için karar verildi! Kaydetmeye hazır.',
@@ -2003,7 +2003,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
                       decoration: BoxDecoration(
                         color: AppColors.danger.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.bgDanger,
+                        border: Border.all(color: AppColors.danger),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2033,7 +2033,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
                       decoration: BoxDecoration(
                         color: AppColors.warning.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.bgWarning,
+                        border: Border.all(color: AppColors.warning),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

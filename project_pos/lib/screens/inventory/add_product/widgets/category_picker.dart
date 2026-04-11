@@ -334,7 +334,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                       },
                       icon: const Icon(Icons.clear, size: 14),
                       label: Text(widget.t('common.clear')),
-                      style: TextButton.styleFrom(foregroundColor: AppColors.bgDanger,
+                      style: TextButton.styleFrom(foregroundColor: AppColors.danger),
                     ),
                 ],
               ),

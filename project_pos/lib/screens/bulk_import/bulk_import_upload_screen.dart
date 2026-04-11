@@ -671,7 +671,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
               color: AppColors.success.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.check_circle, size: 52, color: AppColors.bgSuccess,
+            child: const Icon(Icons.check_circle, size: 52, color: AppColors.success),
           ),
           const SizedBox(height: 20),
           const Text(
@@ -687,7 +687,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
           const SizedBox(
             width: 32,
             height: 32,
-            child: CircularProgressIndicator(strokeWidth: 3, valueColor: AlwaysStoppedAnimation<Color>(AppColors.bgSuccess),
+            child: CircularProgressIndicator(strokeWidth: 3, valueColor: AlwaysStoppedAnimation<Color>(AppColors.success)),
           ),
         ],
       ),
@@ -710,7 +710,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
               color: AppColors.danger.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.error_outline, size: 44, color: AppColors.bgDanger,
+            child: const Icon(Icons.error_outline, size: 44, color: AppColors.danger),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -726,12 +726,12 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
             ),
             child: Row(
               children: [
-                const Icon(Icons.warning_amber_rounded, size: 18, color: AppColors.bgDanger,
+                const Icon(Icons.warning_amber_rounded, size: 18, color: AppColors.danger),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     _errorMessage ?? 'Bilinmeyen hata',
-                    style: const TextStyle(fontSize: 13, color: AppColors.bgDanger,
+                    style: const TextStyle(fontSize: 13, color: AppColors.danger),
                   ),
                 ),
               ],
@@ -931,9 +931,9 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
 
   Widget _buildSupportedFormats() {
     final formats = [
-      {'icon': Icons.table_chart, 'name': 'Excel', 'ext': '.xlsx, .xls', 'color': AppColors.success},
-      {'icon': Icons.description, 'name': 'CSV', 'ext': '.csv', 'color': AppColors.info},
-      {'icon': Icons.picture_as_pdf, 'name': 'PDF', 'ext': '.pdf', 'color': AppColors.danger},
+      {'icon': Icons.table_chart, 'name': 'Excel', 'ext': '.xlsx, .xls', 'color': Colors.green},
+      {'icon': Icons.description, 'name': 'CSV', 'ext': '.csv', 'color': Colors.blue},
+      {'icon': Icons.picture_as_pdf, 'name': 'PDF', 'ext': '.pdf', 'color': Colors.red},
     ];
 
     return Row(
@@ -1067,7 +1067,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
-            Icon(Icons.help_outline, color: AppColors.bgInfo,
+            Icon(Icons.help_outline, color: AppColors.info),
             SizedBox(width: 12),
             Text('Nasıl Çalışır?', style: TextStyle(fontSize: 18)),
           ],

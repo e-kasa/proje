@@ -209,11 +209,11 @@ class ProductEntryTable extends ConsumerWidget {
         return _chip(t('batch.new'), AppColors.orange);
       case RowStatus.existing:
       case RowStatus.matched:
-        return _chip(t('batch.existing'), AppColors.bgSuccess;
+        return _chip(t('batch.existing'), AppColors.success);
       case RowStatus.error:
         return Tooltip(
           message: row.errorMessage ?? t('common.error'),
-          child: _chip(t('common.error'), AppColors.bgDanger,
+          child: _chip(t('common.error'), AppColors.danger),
         );
       case RowStatus.saving:
         return const SizedBox(
@@ -222,7 +222,7 @@ class ProductEntryTable extends ConsumerWidget {
           child: CircularProgressIndicator(strokeWidth: 2),
         );
       case RowStatus.saved:
-        return _chip('\u2713 ${t('batch.saved')}', AppColors.bgInfo;
+        return _chip('\u2713 ${t('batch.saved')}', AppColors.info);
     }
   }
 

@@ -688,7 +688,7 @@ class _SaleReturnScreenState extends ConsumerState<SaleReturnScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 48, color: AppColors.bgDanger,
+          const Icon(Icons.error_outline, size: 48, color: Colors.red),
           const SizedBox(height: 12),
           Text(_error ?? 'Hata', textAlign: TextAlign.center),
           const SizedBox(height: 16),

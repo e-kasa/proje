@@ -457,7 +457,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
             trailing: alreadyAdded
                 ? Text(t('stock.added'),
                     style: const TextStyle(
-                        fontSize: 11, color: AppColors.bgSuccess)
+                        fontSize: 11, color: AppColors.success))
                 : const Icon(Icons.add_circle_outline,
                     color: AppColors.primary, size: 22),
             onTap: alreadyAdded

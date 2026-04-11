@@ -89,7 +89,7 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
       builder: (context) => AlertDialog(
         title: const Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: AppColors.bgWarning,
+            Icon(Icons.warning_amber_rounded, color: AppColors.warning),
             SizedBox(width: 12),
             Text('Depo Sil'),
           ],

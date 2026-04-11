@@ -72,7 +72,7 @@ class _FilePreviewScreenState extends State<FilePreviewScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.insert_drive_file, color: AppColors.info[700]),
+                      Icon(Icons.insert_drive_file, color: Colors.blue[700]),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -134,7 +134,7 @@ class _FilePreviewScreenState extends State<FilePreviewScreen> {
                 child: SingleChildScrollView(
                   child: DataTable(
                     headingRowColor: MaterialStateProperty.all(
-                      AppColors.info[50],
+                      Colors.blue[50],
                     ),
                     columns: const [
                       DataColumn(

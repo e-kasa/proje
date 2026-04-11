@@ -356,10 +356,10 @@ class StockBarcodeStep extends ConsumerWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () => showBulkStockDialog(context: context, state: state, onChanged: onChanged, t: t),
-                  icon: Icon(Icons.inventory_2, size: isMobile ? 18 : 20, color: AppColors.bgInfo,
+                  icon: Icon(Icons.inventory_2, size: isMobile ? 18 : 20, color: AppColors.info),
                   label: Text(
                     isMobile ? t('inventory.stock') : t('product.apply_stock'),
-                    style: TextStyle(fontSize: isMobile ? 11 : 13, color: AppColors.bgInfo,
+                    style: TextStyle(fontSize: isMobile ? 11 : 13, color: AppColors.info),
                   ),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: AppColors.info.withValues(alpha: 0.5)),
@@ -372,10 +372,10 @@ class StockBarcodeStep extends ConsumerWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () => showBulkPurchasePriceDialog(context: context, state: state, onChanged: onChanged, t: t),
-                  icon: Icon(Icons.attach_money, size: isMobile ? 18 : 20, color: AppColors.bgDanger,
+                  icon: Icon(Icons.attach_money, size: isMobile ? 18 : 20, color: AppColors.danger),
                   label: Text(
                     isMobile ? t('product.purchase') : t('product.purchase_price'),
-                    style: TextStyle(fontSize: isMobile ? 11 : 13, color: AppColors.bgDanger,
+                    style: TextStyle(fontSize: isMobile ? 11 : 13, color: AppColors.danger),
                   ),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: AppColors.danger.withValues(alpha: 0.5)),
@@ -388,10 +388,10 @@ class StockBarcodeStep extends ConsumerWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () => showBulkSalePriceDialog(context: context, state: state, onChanged: onChanged, t: t),
-                  icon: Icon(Icons.sell, size: isMobile ? 18 : 20, color: AppColors.bgSuccess,
+                  icon: Icon(Icons.sell, size: isMobile ? 18 : 20, color: AppColors.success),
                   label: Text(
                     isMobile ? t('product.sale') : t('product.sale_price'),
-                    style: TextStyle(fontSize: isMobile ? 11 : 13, color: AppColors.bgSuccess,
+                    style: TextStyle(fontSize: isMobile ? 11 : 13, color: AppColors.success),
                   ),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: AppColors.success.withValues(alpha: 0.5)),
@@ -528,7 +528,7 @@ class StockBarcodeStep extends ConsumerWidget {
                             initialValue: variant.purchasePrice.toStringAsFixed(2),
                             keyboardType: TextInputType.number,
                             decoration: inputDecoration('Alis').copyWith(
-                              prefixIcon: const Icon(Icons.attach_money, size: 18, color: AppColors.bgDanger,
+                              prefixIcon: const Icon(Icons.attach_money, size: 18, color: AppColors.danger),
                               prefixText: '\u20ba',
                             ),
                             onChanged: (val) { variant.purchasePrice = double.tryParse(val) ?? 0; onChanged(); },
@@ -541,7 +541,7 @@ class StockBarcodeStep extends ConsumerWidget {
                             initialValue: variant.salePrice.toStringAsFixed(2),
                             keyboardType: TextInputType.number,
                             decoration: inputDecoration('Satis').copyWith(
-                              prefixIcon: const Icon(Icons.sell, size: 18, color: AppColors.bgSuccess,
+                              prefixIcon: const Icon(Icons.sell, size: 18, color: AppColors.success),
                               prefixText: '\u20ba',
                             ),
                             onChanged: (val) { variant.salePrice = double.tryParse(val) ?? 0; onChanged(); },

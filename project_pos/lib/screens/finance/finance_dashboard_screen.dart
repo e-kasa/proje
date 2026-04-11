@@ -82,14 +82,14 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
                   // Expense by Category
                   if (_summary['expensesByCategory'] != null)
                     _buildCategoryBreakdown(t('finance.expenses_by_category'),
-                        _summary['expensesByCategory'], AppColors.bgDanger,
+                        _summary['expensesByCategory'], AppColors.danger),
 
                   const SizedBox(height: 16),
 
                   // Revenue by Category
                   if (_summary['revenuesByCategory'] != null)
                     _buildCategoryBreakdown(t('finance.income_by_category'),
-                        _summary['revenuesByCategory'], AppColors.bgSuccess,
+                        _summary['revenuesByCategory'], AppColors.success),
                 ],
               ),
             ),
@@ -329,7 +329,7 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
                 child: _buildActionButton(
                   icon: Icons.account_balance_wallet_outlined,
                   label: t('accounts.title'),
-                  color: AppColors.teal,
+                  color: Colors.teal,
                   onTap: () => context.go('/accounts'),
                 ),
               ),

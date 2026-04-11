@@ -86,7 +86,7 @@ class _SupplierUploadWizardScreenState
           LinearProgressIndicator(
             value: (currentProductIndex + 1) / totalProducts,
             backgroundColor: Colors.grey[300],
-            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.bgInfo,
+            valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
           ),
         ],
       ),
@@ -116,12 +116,12 @@ class _SupplierUploadWizardScreenState
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.info[50],
+        color: Colors.blue[50],
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
-          const Icon(Icons.inventory_2, size: 32, color: AppColors.bgInfo,
+          const Icon(Icons.inventory_2, size: 32, color: Colors.blue),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -167,7 +167,7 @@ class _SupplierUploadWizardScreenState
           title: 'YENI ÜRÜN OLUŞTUR',
           subtitle: 'Sistemde hiç olmayan yeni bir ürün ekle',
           icon: Icons.add_circle_outline,
-          color: AppColors.success,
+          color: Colors.green,
           isSelected: decision?.action == DecisionAction.createNew,
           onTap: () => _selectAction(DecisionAction.createNew),
           expandedContent:
@@ -191,7 +191,7 @@ class _SupplierUploadWizardScreenState
               ? 'Benzer ürün bulunamadı'
               : '${currentProduct.similarProducts.length} benzer ürün bulundu',
           icon: Icons.link,
-          color: AppColors.info,
+          color: Colors.blue,
           isSelected: decision?.action == DecisionAction.matchExisting,
           isEnabled: currentProduct.similarProducts.isNotEmpty,
           onTap: currentProduct.similarProducts.isNotEmpty
@@ -217,7 +217,7 @@ class _SupplierUploadWizardScreenState
               ? 'Benzer ürün bulunamadı'
               : 'Var olan bir ürüne yeni varyant ekle',
           icon: Icons.playlist_add,
-          color: AppColors.warning,
+          color: Colors.orange,
           isSelected: decision?.action == DecisionAction.addVariant,
           isEnabled: currentProduct.similarProducts.isNotEmpty,
           onTap: currentProduct.similarProducts.isNotEmpty
@@ -273,7 +273,7 @@ class _SupplierUploadWizardScreenState
                         : null,
                     activeColor: color,
                   ),
-                  Icon(icon, color: isEnabled ? color : AppColors.textMuted),
+                  Icon(icon, color: isEnabled ? color : Colors.grey),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -284,7 +284,7 @@ class _SupplierUploadWizardScreenState
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
-                            color: isEnabled ? Colors.black : AppColors.textMuted,
+                            color: isEnabled ? Colors.black : Colors.grey,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -292,7 +292,7 @@ class _SupplierUploadWizardScreenState
                           subtitle,
                           style: TextStyle(
                             fontSize: 13,
-                            color: isEnabled ? Colors.grey[700] : AppColors.textMuted,
+                            color: isEnabled ? Colors.grey[700] : Colors.grey,
                           ),
                         ),
                       ],
@@ -443,23 +443,23 @@ class _SupplierUploadWizardScreenState
 
     if (decision == null) {
       icon = Icons.warning_amber;
-      color = AppColors.warning;
+      color = Colors.orange;
       actionText = 'ATLANDI';
     } else {
       switch (decision.action) {
         case DecisionAction.createNew:
           icon = Icons.add_circle;
-          color = AppColors.success;
+          color = Colors.green;
           actionText = 'YENİ ÜRÜN';
           break;
         case DecisionAction.matchExisting:
           icon = Icons.link;
-          color = AppColors.info;
+          color = Colors.blue;
           actionText = 'MEVCUT ÜRÜNE EŞLE';
           break;
         case DecisionAction.addVariant:
           icon = Icons.playlist_add;
-          color = AppColors.warning;
+          color = Colors.orange;
           actionText = 'YENİ VARYANT';
           break;
       }
@@ -541,10 +541,10 @@ class _SupplierUploadWizardScreenState
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildSummaryStat('Yeni Ürün', newProductCount, AppColors.bgSuccess,
-              _buildSummaryStat('Eşleşme', matchCount, AppColors.bgInfo,
-              _buildSummaryStat('Yeni Varyant', variantCount, AppColors.bgWarning,
-              _buildSummaryStat('Atlanan', skippedCount, AppColors.textMuted),
+              _buildSummaryStat('Yeni Ürün', newProductCount, Colors.green),
+              _buildSummaryStat('Eşleşme', matchCount, Colors.blue),
+              _buildSummaryStat('Yeni Varyant', variantCount, Colors.orange),
+              _buildSummaryStat('Atlanan', skippedCount, Colors.grey),
             ],
           ),
           const SizedBox(height: 16),
@@ -565,7 +565,7 @@ class _SupplierUploadWizardScreenState
               label: Text(_isLoading ? 'Kaydediliyor...' : 'KAYDET VE TAMAMLA'),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: AppColors.success,
+                backgroundColor: Colors.green,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -912,7 +912,7 @@ class _SuccessScreen extends StatelessWidget {
             const Icon(
               Icons.check_circle,
               size: 64,
-              color: AppColors.success,
+              color: Colors.green,
             ),
             const SizedBox(height: 16),
             const Text(

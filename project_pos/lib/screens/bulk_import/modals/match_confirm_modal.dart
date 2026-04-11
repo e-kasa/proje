@@ -131,7 +131,7 @@ class _MatchConfirmModalState extends State<MatchConfirmModal> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.info_outline, color: AppColors.bgInfo,
+                          Icon(Icons.info_outline, color: AppColors.info),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(

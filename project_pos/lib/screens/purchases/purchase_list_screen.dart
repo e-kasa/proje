@@ -252,7 +252,7 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
           padding: const EdgeInsets.only(bottom: 10),
           child: AppCard(
           borderColor: cancelled
-              ? AppColors.danger.withValues(alpha: 0.3)
+              ? Colors.red.withValues(alpha: 0.3)
               : null,
           onTap: () async {
             await context.push('/purchases/detail/${p['id']}');
@@ -268,13 +268,13 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
                         height: 40,
                         decoration: BoxDecoration(
                           color: cancelled
-                              ? AppColors.danger.withValues(alpha: 0.1)
+                              ? Colors.red.withValues(alpha: 0.1)
                               : AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: AppConstants.borderRadiusSmall,
                         ),
                         child: Icon(
                           cancelled ? Icons.cancel_outlined : Icons.receipt_long_rounded,
-                          color: cancelled ? AppColors.danger : AppColors.primary,
+                          color: cancelled ? Colors.red : AppColors.primary,
                           size: 20,
                         ),
                       ),
@@ -307,14 +307,14 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
                             fmt.format(total),
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: cancelled ? AppColors.textMuted : AppColors.primary,
+                              color: cancelled ? Colors.grey : AppColors.primary,
                             ),
                           ),
                           if (remaining > 0 && !cancelled)
                             Text(
                               'Borç: ${fmt.format(remaining)}',
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: AppColors.warning[700],
+                                color: Colors.orange[700],
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -335,16 +335,16 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
                           ),
                         const Spacer(),
                         if (cancelled)
-                          _tag('İptal Edildi', Icons.cancel_outlined, AppColors.danger, theme)
+                          _tag('İptal Edildi', Icons.cancel_outlined, Colors.red, theme)
                         else if (remaining > 0)
-                          _tag('Vadeli', Icons.schedule_rounded, AppColors.warning, theme)
+                          _tag('Vadeli', Icons.schedule_rounded, Colors.orange, theme)
                         else
-                          _tag('Ödendi', Icons.check_circle_outline, AppColors.success, theme),
+                          _tag('Ödendi', Icons.check_circle_outline, Colors.green, theme),
                         if (!cancelled) ...[
                           const SizedBox(width: 8),
                           GestureDetector(
                             onTap: () => _confirmCancel(p['id'] as String),
-                            child: _tag('İptal Et', Icons.close_rounded, AppColors.danger, theme),
+                            child: _tag('İptal Et', Icons.close_rounded, Colors.red, theme),
                           ),
                         ],
                       ],

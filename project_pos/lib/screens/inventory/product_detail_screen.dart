@@ -180,7 +180,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, size: 64, color: AppColors.bgDanger,
+              const Icon(Icons.error_outline, size: 64, color: AppColors.danger),
               const SizedBox(height: 16),
               Text(_error ?? t('common.error')),
               AppButton.primary(text: t('common.retry'), onPressed: _loadProduct),
@@ -283,7 +283,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
                 Row(
                   children: [
                     _buildStatItem(cfg.labels.salePriceLabel, _currFmt.format(product['basePrice'] ?? 0), Icons.attach_money, AppColors.primary),
-                    _buildStatItem(t('stock.stock'), '${product['stock'] ?? 0}', Icons.inventory_2_outlined, AppColors.bgSuccess,
+                    _buildStatItem(t('stock.stock'), '${product['stock'] ?? 0}', Icons.inventory_2_outlined, AppColors.success),
                     _buildStatItem(t('common.status'), _getStatusLabel(status ?? 'ACTIVE'), Icons.circle, _getStatusColor(status ?? 'ACTIVE')),
                   ],
                 ),
@@ -311,7 +311,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
               padding: const EdgeInsets.all(24),
               child: Row(
                 children: [
-                  const Icon(Icons.shelves, color: AppColors.bgWarning,
+                  const Icon(Icons.shelves, color: AppColors.warning),
                   const SizedBox(width: 12),
                   Text('${cfg.labels.shelfField}: ${product['shelfCode']}', style: const TextStyle(fontSize: 15, color: AppColors.textPrimary)),
                 ],
@@ -421,7 +421,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
                 itemBuilder: (context, index) {
                   final cr = _crossRefs[index];
                   return AppCard(
-                    child: ListTile(leading: const Icon(Icons.swap_horiz, color: AppColors.bgInfo, title: Text(cr['crossRefNumber'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Text(cr['crossRefBrand'] ?? '')),
+                    child: ListTile(leading: const Icon(Icons.swap_horiz, color: AppColors.info), title: Text(cr['crossRefNumber'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Text(cr['crossRefBrand'] ?? '')),
                   );
                 },
               ),
@@ -502,7 +502,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
                       leading: CircleAvatar(backgroundColor: (cfg['color'] as Color).withValues(alpha: 0.1), child: Icon(cfg['icon'] as IconData, color: cfg['color'] as Color, size: 20)),
                       title: Text(cfg['label'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                       subtitle: Text(m['createTime'] != null ? _dateTimeFmt.format(DateTime.parse(m['createTime'].toString())) : ''),
-                      trailing: Text('${cfg['isIn'] ? '+' : '-'}${m['quantity']}', style: TextStyle(fontWeight: FontWeight.bold, color: cfg['isIn'] ? AppColors.success : AppColors.danger, fontSize: 15)),
+                      trailing: Text('${cfg['isIn'] ? '+' : '-'}${m['quantity']}', style: TextStyle(fontWeight: FontWeight.bold, color: cfg['isIn'] ? Colors.green : Colors.red, fontSize: 15)),
                     ),
                   );
                 },
@@ -595,14 +595,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
 
   Map<String, dynamic> _movementConfig(String type) {
     switch (type) {
-      case 'PURCHASE_IN':        return {'label': t('stock.purchase_in'), 'icon': Icons.add_shopping_cart, 'color': AppColors.success, 'isIn': true};
-      case 'PURCHASE_RETURN_OUT': return {'label': 'Satın Alma İade', 'icon': Icons.assignment_return, 'color': AppColors.warning, 'isIn': false};
-      case 'SALE_OUT':           return {'label': t('sales.sale'), 'icon': Icons.point_of_sale, 'color': AppColors.danger, 'isIn': false};
-      case 'SALE_RETURN_IN':     return {'label': 'Satış İade', 'icon': Icons.assignment_returned, 'color': AppColors.teal, 'isIn': true};
+      case 'PURCHASE_IN':        return {'label': t('stock.purchase_in'), 'icon': Icons.add_shopping_cart, 'color': Colors.green, 'isIn': true};
+      case 'PURCHASE_RETURN_OUT': return {'label': 'Satın Alma İade', 'icon': Icons.assignment_return, 'color': Colors.orange, 'isIn': false};
+      case 'SALE_OUT':           return {'label': t('sales.sale'), 'icon': Icons.point_of_sale, 'color': Colors.red, 'isIn': false};
+      case 'SALE_RETURN_IN':     return {'label': 'Satış İade', 'icon': Icons.assignment_returned, 'color': Colors.teal, 'isIn': true};
       case 'SALE_CANCEL_IN':     return {'label': 'Satış İptal', 'icon': Icons.cancel_outlined, 'color': Colors.deepOrange, 'isIn': true};
       case 'TRANSFER_IN':       return {'label': 'Transfer Giriş', 'icon': Icons.arrow_downward, 'color': Colors.indigo, 'isIn': true};
       case 'TRANSFER_OUT':      return {'label': 'Transfer Çıkış', 'icon': Icons.arrow_upward, 'color': Colors.indigo, 'isIn': false};
-      case 'ADJUSTMENT_IN':     return {'label': 'Sayım Fazlası', 'icon': Icons.add_circle_outline, 'color': AppColors.info, 'isIn': true};
+      case 'ADJUSTMENT_IN':     return {'label': 'Sayım Fazlası', 'icon': Icons.add_circle_outline, 'color': Colors.blue, 'isIn': true};
       case 'ADJUSTMENT_OUT':    return {'label': 'Sayım Eksiği', 'icon': Icons.remove_circle_outline, 'color': Colors.blueGrey, 'isIn': false};
       default:                  return {'label': type, 'icon': Icons.swap_vert, 'color': AppColors.textMuted, 'isIn': true};
     }

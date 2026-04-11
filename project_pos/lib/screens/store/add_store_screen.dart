@@ -254,7 +254,7 @@ class _AddStoreScreenState extends ConsumerState<AddStoreScreen> {
                       children: [
                         SwitchListTile(value: _hasWarehouse, onChanged: (v) => setState(() => _hasWarehouse = v), title: const Text('Deposu Var'), subtitle: Text(_hasWarehouse ? 'Mağazanın deposu var' : 'Mağazanın deposu yok', style: const TextStyle(fontSize: 12)), secondary: Icon(_hasWarehouse ? Icons.warehouse : Icons.store, color: _hasWarehouse ? AppColors.success : AppColors.textMuted)),
                         const Divider(),
-                        SwitchListTile(value: _isActive, onChanged: (v) => setState(() => _isActive = v), title: const Text('Aktif'), subtitle: Text(_isActive ? 'Mağaza şu anda aktif' : 'Mağaza şu anda pasif', style: const TextStyle(fontSize: 12)), secondary: Icon(_isActive ? Icons.check_circle : Icons.cancel, color: _isActive ? AppColors.success : AppColors.bgDanger),
+                        SwitchListTile(value: _isActive, onChanged: (v) => setState(() => _isActive = v), title: const Text('Aktif'), subtitle: Text(_isActive ? 'Mağaza şu anda aktif' : 'Mağaza şu anda pasif', style: const TextStyle(fontSize: 12)), secondary: Icon(_isActive ? Icons.check_circle : Icons.cancel, color: _isActive ? AppColors.success : AppColors.danger)),
                       ],
                     ),
                     const SizedBox(height: 24),

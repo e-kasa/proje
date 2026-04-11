@@ -662,9 +662,9 @@ class _ModernDashboardScreenState
                   InkWell(
                     onTap: () => context.go('/reports'),
                     borderRadius: BorderRadius.circular(6),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                      child: const Text(
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      child: Text(
                         'Tümünü gör →',
                         style: TextStyle(
                           fontSize: 12,

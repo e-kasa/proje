@@ -276,9 +276,9 @@ class _StockMovementHistoryScreenState
                 children: [
                   _buildFilterChip(t('common.all'), 'all', null),
                   const SizedBox(width: 8),
-                  _buildFilterChip(t('stock.incoming'), 'in', AppColors.bgSuccess,
+                  _buildFilterChip(t('stock.incoming'), 'in', AppColors.success),
                   const SizedBox(width: 8),
-                  _buildFilterChip(t('stock.outgoing'), 'out', AppColors.bgDanger,
+                  _buildFilterChip(t('stock.outgoing'), 'out', AppColors.danger),
                 ],
               ),
             ),
@@ -300,7 +300,7 @@ class _StockMovementHistoryScreenState
                             const SizedBox(height: 12),
                             Text(
                               _error!,
-                              style: const TextStyle(color: AppColors.bgDanger,
+                              style: const TextStyle(color: AppColors.danger),
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 16),

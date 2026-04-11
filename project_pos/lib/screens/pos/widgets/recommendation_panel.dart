@@ -43,11 +43,11 @@ class RecommendationPanel extends ConsumerWidget {
             // Başlık
             Row(
               children: [
-                Icon(Icons.lightbulb_outline, size: 18, color: AppColors.bgInfo,
+                Icon(Icons.lightbulb_outline, size: 18, color: AppColors.info),
                 const SizedBox(width: 8),
                 Text(
                   t('pos.recommended_products'),
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.bgInfo,
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.info),
                 ),
                 const SizedBox(width: 4),
                 if (posState.recommendations.isNotEmpty)
@@ -61,7 +61,7 @@ class RecommendationPanel extends ConsumerWidget {
                     width: 12, height: 12,
                     child: CircularProgressIndicator(
                       strokeWidth: 1.5,
-                      valueColor: AlwaysStoppedAnimation(AppColors.bgInfo,
+                      valueColor: AlwaysStoppedAnimation(AppColors.info),
                     ),
                   ),
                 ],

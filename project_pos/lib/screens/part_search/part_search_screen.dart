@@ -375,7 +375,7 @@ class _PartSearchScreenState extends ConsumerState<PartSearchScreen> {
                     if (result['salePrice'] != null)
                       Text(
                         '${result['salePrice']} TL',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.bgSuccess,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.success),
                       ),
                     if (result['shelfLocationCode'] != null && result['shelfLocationCode'].toString().isNotEmpty)
                       Container(
@@ -388,7 +388,7 @@ class _PartSearchScreenState extends ConsumerState<PartSearchScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.location_on, size: 12, color: AppColors.bgWarning,
+                            const Icon(Icons.location_on, size: 12, color: AppColors.warning),
                             const SizedBox(width: 2),
                             Text(
                               result['shelfLocationCode'],
@@ -457,7 +457,7 @@ class _PartSearchScreenState extends ConsumerState<PartSearchScreen> {
                 children: vehicles.take(5).map((v) => Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppColors.textMuted.withValues(alpha: 0.1),
+                    color: Colors.grey.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(

@@ -225,7 +225,7 @@ class _OverdueTrackingScreenState extends ConsumerState<OverdueTrackingScreen>
                   Row(
                     children: [
                       Icon(Icons.calendar_today,
-                          size: 13, color: AppColors.bgDanger,
+                          size: 13, color: AppColors.danger),
                       const SizedBox(width: 4),
                       Text(
                         dueDate.length >= 10

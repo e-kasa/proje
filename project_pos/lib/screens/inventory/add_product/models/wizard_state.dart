@@ -507,25 +507,25 @@ class WizardState extends ChangeNotifier {
   /// Returns a Color for visualizing attributes in variants
   Color getColorForAttribute(String attr) {
     final colors = [
-      AppColors.danger,
-      AppColors.info,
-      AppColors.success,
-      AppColors.warning,
-      AppColors.secondary,
-      AppColors.teal,
+      Colors.red,
+      Colors.blue,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.teal,
       Colors.pink,
     ];
     final lower = attr.toLowerCase();
-    if (lower.contains('kırmızı') || lower.contains('red')) return AppColors.danger;
-    if (lower.contains('mavi') || lower.contains('blue')) return AppColors.info;
-    if (lower.contains('yeşil') || lower.contains('green')) return AppColors.success;
+    if (lower.contains('kırmızı') || lower.contains('red')) return Colors.red;
+    if (lower.contains('mavi') || lower.contains('blue')) return Colors.blue;
+    if (lower.contains('yeşil') || lower.contains('green')) return Colors.green;
     if (lower.contains('siyah') || lower.contains('black')) return Colors.black87;
     if (lower.contains('beyaz') || lower.contains('white')) return Colors.grey.shade300;
     if (lower.contains('sarı') || lower.contains('yellow')) return Colors.amber;
-    if (lower.contains('turuncu') || lower.contains('orange')) return AppColors.warning;
-    if (lower.contains('mor') || lower.contains('purple')) return AppColors.secondary;
+    if (lower.contains('turuncu') || lower.contains('orange')) return Colors.orange;
+    if (lower.contains('mor') || lower.contains('purple')) return Colors.purple;
     if (lower.contains('pembe') || lower.contains('pink')) return Colors.pink;
-    if (lower.contains('gri') || lower.contains('grey') || lower.contains('gray')) return AppColors.textMuted;
+    if (lower.contains('gri') || lower.contains('grey') || lower.contains('gray')) return Colors.grey;
     if (lower.contains('kahve') || lower.contains('brown')) return Colors.brown;
     if (lower.contains('lacivert') || lower.contains('navy')) return const Color(0xFF001F54);
     return colors[attr.hashCode.abs() % colors.length];

@@ -187,7 +187,7 @@ class _UpdateStockModalState extends State<UpdateStockModal> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.check_circle, color: AppColors.bgSuccess,
+                  Icon(Icons.check_circle, color: AppColors.success),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -199,7 +199,7 @@ class _UpdateStockModalState extends State<UpdateStockModal> {
                           _updateMode == StockUpdateMode.ADD
                               ? '$currentStock + $newStock = $resultStock adet'
                               : '$currentStock → $resultStock adet',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.bgSuccess,
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.success),
                         ),
                       ],
                     ),

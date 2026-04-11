@@ -86,7 +86,7 @@ class PaymentRecordModal {
                     controller: bankCtrl,
                     decoration: InputDecoration(
                       labelText: 'Banka Adi',
-                      prefixIcon: const Icon(Icons.account_balance, color: AppColors.bgInfo,
+                      prefixIcon: const Icon(Icons.account_balance, color: AppColors.info),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
@@ -99,7 +99,7 @@ class PaymentRecordModal {
                     hintText: paymentType == 'CHECK' ? 'Cek no...'
                         : paymentType == 'BANK_TRANSFER' ? 'Dekont no...'
                         : 'Referans no...',
-                    prefixIcon: const Icon(Icons.tag, color: AppColors.bgInfo,
+                    prefixIcon: const Icon(Icons.tag, color: AppColors.info),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 ),

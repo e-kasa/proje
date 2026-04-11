@@ -94,10 +94,10 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                   child: Row(
                     children: [
                       Icon(Icons.assignment_return_outlined,
-                          size: 18, color: AppColors.bgWarning,
+                          size: 18, color: Colors.orange),
                       SizedBox(width: 8),
                       Text(t('sales.return'),
-                          style: TextStyle(color: AppColors.bgWarning),
+                          style: TextStyle(color: Colors.orange)),
                     ],
                   ),
                 ),
@@ -106,10 +106,10 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                   child: Row(
                     children: [
                       Icon(Icons.cancel_outlined,
-                          size: 18, color: AppColors.bgDanger,
+                          size: 18, color: Colors.red),
                       SizedBox(width: 8),
                       Text(t('sales.cancel_sale'),
-                          style: TextStyle(color: AppColors.bgDanger),
+                          style: TextStyle(color: Colors.red)),
                     ],
                   ),
                 ),
@@ -180,7 +180,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
       return _statusContainer(
         icon: Icons.cancel_outlined,
         text: t('sales.sale_cancelled_message'),
-        color: AppColors.danger,
+        color: Colors.red,
         reason: cancelDetail.isNotEmpty ? cancelDetail : null,
         theme: theme,
       );
@@ -192,7 +192,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
           _statusContainer(
             icon: Icons.schedule,
             text: t('sales.pending_payment'),
-            color: AppColors.warning,
+            color: Colors.orange,
             theme: theme,
           ),
           if (hasReturn) ...[
@@ -214,7 +214,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
           _statusContainer(
             icon: Icons.check_circle_outline,
             text: t('sales.sale_completed'),
-            color: AppColors.success,
+            color: Colors.green,
             theme: theme,
           ),
           const SizedBox(height: 8),
@@ -231,7 +231,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
     return _statusContainer(
       icon: Icons.check_circle_outline,
       text: t('sales.sale_completed'),
-      color: AppColors.success,
+      color: Colors.green,
       theme: theme,
     );
   }
@@ -429,7 +429,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
           if (totalDiscount > 0) ...[
             const SizedBox(height: 6),
             _amountRow(t('sales.discount'), -totalDiscount, theme,
-                color: AppColors.bgSuccess,
+                color: AppColors.success),
           ],
           if (totalTax > 0) ...[
             const SizedBox(height: 6),
@@ -551,7 +551,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                 Row(
                   children: [
                     Icon(Icons.currency_lira,
-                        size: 16, color: AppColors.bgSuccess,
+                        size: 16, color: AppColors.success),
                     const SizedBox(width: 8),
                     Text(
                       t('sales.change_amount'),
@@ -735,7 +735,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                     _itemTag('$qty ${t('common.quantity_unit')}', Icons.inventory_2_outlined,
                         AppColors.primary, theme),
                     _itemTag('${_fmt.format(unitPrice)} /br',
-                        Icons.sell_outlined, AppColors.teal, theme),
+                        Icons.sell_outlined, Colors.teal, theme),
                     if (discount > 0)
                       _itemTag(
                           '%${discount.toStringAsFixed(0)} ind.',
@@ -746,7 +746,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                       _itemTag(
                           '%${taxRate.toStringAsFixed(0)} KDV',
                           Icons.percent,
-                          AppColors.info,
+                          Colors.blue,
                           theme),
                   ],
                 ),
@@ -856,8 +856,8 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
               });
             },
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.warning,
-              side: const BorderSide(color: AppColors.bgWarning,
+              foregroundColor: Colors.orange,
+              side: const BorderSide(color: Colors.orange),
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: AppConstants.borderRadiusMedium,
@@ -872,8 +872,8 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
           child: OutlinedButton.icon(
             onPressed: () => _confirmCancel(context),
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.danger,
-              side: const BorderSide(color: AppColors.bgDanger,
+              foregroundColor: Colors.red,
+              side: const BorderSide(color: Colors.red),
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: AppConstants.borderRadiusMedium,
@@ -924,7 +924,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(t('sales.do_cancel'),
-                style: TextStyle(color: AppColors.bgDanger),
+                style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -954,7 +954,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 48, color: AppColors.bgDanger,
+          const Icon(Icons.error_outline, size: 48, color: Colors.red),
           const SizedBox(height: 12),
           Text(_error ?? 'Hata', textAlign: TextAlign.center),
           const SizedBox(height: 16),

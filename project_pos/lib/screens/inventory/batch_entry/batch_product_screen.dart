@@ -442,21 +442,21 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
                     _Metric(
                         label: t('common.quantity'),
                         value: '$totalQty',
-                        color: AppColors.bgInfo,
+                        color: AppColors.info),
                     _Metric(
                         label: t('batch.cost'),
                         value: _currency.format(state.totalCost),
-                        color: AppColors.bgWarning,
+                        color: AppColors.warning),
                     _Metric(
                         label: t('batch.sale'),
                         value: _currency.format(state.totalSale),
-                        color: AppColors.bgSuccess,
+                        color: AppColors.success),
                     _Metric(
                         label: t('batch.profit_percent'),
                         value: '%${margin.toStringAsFixed(1)}',
                         color: margin >= 20
                             ? AppColors.success
-                            : AppColors.bgDanger,
+                            : AppColors.danger),
                   ],
                 ),
               ),
@@ -723,14 +723,14 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                           Row(
                             children: [
                               const Icon(Icons.error_outline,
-                                  size: 12, color: AppColors.bgDanger,
+                                  size: 12, color: AppColors.danger),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
                                   row.errorMessage!,
                                   style: const TextStyle(
                                       fontSize: 11,
-                                      color: AppColors.bgDanger,
+                                      color: AppColors.danger),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -783,7 +783,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                           decoration: BoxDecoration(
                             color: (margin >= 20
                                     ? AppColors.success
-                                    : AppColors.bgWarning
+                                    : AppColors.warning)
                                 .withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(6),
                           ),
@@ -943,7 +943,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const Icon(Icons.trending_up_rounded,
-                                  size: 14, color: AppColors.bgSuccess,
+                                  size: 14, color: AppColors.success),
                               const SizedBox(width: 6),
                               Text(
                                 '${t('batch.unit_profit')}: ${widget.currency.format(row.salePrice - row.purchasePrice)}  •  ${t('common.total')}: ${widget.currency.format(row.lineProfit)}',
@@ -964,9 +964,9 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                             .read(batchEntryProvider.notifier)
                             .removeRow(row.id),
                         icon: const Icon(Icons.delete_outline_rounded,
-                            size: 16, color: AppColors.bgDanger,
+                            size: 16, color: AppColors.danger),
                         label: Text(t('common.remove'),
-                            style: const TextStyle(color: AppColors.bgDanger),
+                            style: const TextStyle(color: AppColors.danger)),
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 8),
@@ -1400,7 +1400,7 @@ class _ResultSheet extends StatelessWidget {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: (hasErrors ? AppColors.warning : AppColors.bgSuccess
+              color: (hasErrors ? AppColors.warning : AppColors.success)
                   .withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
@@ -1429,12 +1429,12 @@ class _ResultSheet extends StatelessWidget {
               _ResultStat(t('batch.processed'), '${result.totalProcessed}',
                   AppColors.primary),
               _ResultStat(t('batch.new_product'), '${result.newCreated}',
-                  AppColors.bgSuccess,
+                  AppColors.success),
               _ResultStat(t('batch.stock_updated'),
-                  '${result.stockUpdated}', AppColors.bgInfo,
+                  '${result.stockUpdated}', AppColors.info),
               if (result.errors > 0)
                 _ResultStat(t('common.error'), '${result.errors}',
-                    AppColors.bgDanger,
+                    AppColors.danger),
             ],
           ),
           if (result.errorMessages.isNotEmpty) ...[
@@ -1457,13 +1457,13 @@ class _ResultSheet extends StatelessWidget {
                             children: [
                               const Icon(Icons.error_outline,
                                   size: 14,
-                                  color: AppColors.bgDanger,
+                                  color: AppColors.danger),
                               const SizedBox(width: 6),
                               Expanded(
                                   child: Text(e,
                                       style: const TextStyle(
                                           fontSize: 12,
-                                          color: AppColors.bgDanger)),
+                                          color: AppColors.danger))),
                             ],
                           ),
                         ))

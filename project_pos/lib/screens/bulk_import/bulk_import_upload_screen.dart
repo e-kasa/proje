@@ -8,6 +8,7 @@ import '../../core/config/sector_config.dart';
 import '../../core/widgets/widgets.dart';
 import '../../providers/sector_provider.dart';
 import '../../services/service_locator.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 /// Profesyonel Toplu Ürün Yükleme Ekranı
 /// Sektör bazlı şablon desteği + Gerçek dosya yükleme
@@ -20,6 +21,8 @@ class BulkImportUploadScreen extends ConsumerStatefulWidget {
 
 class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
     with SingleTickerProviderStateMixin {
+  String Function(String) get t => i18nOf(ref);
+
   // ── State ──
   bool _isUploading = false;
   bool _uploadSuccess = false;
@@ -130,13 +133,13 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
         _uploadProgress = 0.0;
         _uploadSuccess = false;
         _errorMessage = null;
-        _currentStep = 'Dosya hazırlanıyor...';
+        _currentStep = t('bulk_import.step_preparing'); // TODO: i18n
       });
 
       // ── Step 1: Upload file ──
       setState(() {
         _uploadProgress = 0.15;
-        _currentStep = 'Dosya yükleniyor...';
+        _currentStep = t('bulk_import.step_uploading'); // TODO: i18n
       });
 
       final service = ref.read(bulkImportServiceProvider);
@@ -147,7 +150,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
 
       setState(() {
         _uploadProgress = 0.45;
-        _currentStep = 'Backend analiz ediyor...';
+        _currentStep = t('bulk_import.step_analyzing'); // TODO: i18n
       });
 
       // ── Step 2: Wait for analysis ──
@@ -155,14 +158,14 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
 
       setState(() {
         _uploadProgress = 0.85;
-        _currentStep = 'Ürünler işleniyor...';
+        _currentStep = t('bulk_import.step_processing'); // TODO: i18n
       });
 
       await Future.delayed(const Duration(milliseconds: 400));
 
       setState(() {
         _uploadProgress = 1.0;
-        _currentStep = 'Tamamlandı!';
+        _currentStep = t('bulk_import.step_done'); // TODO: i18n
         _uploadSuccess = true;
         _isUploading = false;
       });
@@ -206,7 +209,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
   Widget build(BuildContext context) {
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Toplu Ürün Yükleme',
+        title: t('bulk_import.upload'),
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline),
@@ -265,9 +268,9 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
 
   Widget _buildStepIndicator() {
     final steps = [
-      {'num': 1, 'label': 'Dosya Yükle', 'active': true, 'done': _uploadSuccess},
-      {'num': 2, 'label': 'İncele & Düzenle', 'active': false, 'done': false},
-      {'num': 3, 'label': 'Kaydet', 'active': false, 'done': false},
+      {'num': 1, 'label': t('bulk_import.upload'), 'active': true, 'done': _uploadSuccess}, // TODO: i18n
+      {'num': 2, 'label': t('bulk_import.review'), 'active': false, 'done': false}, // TODO: i18n
+      {'num': 3, 'label': t('common.save'), 'active': false, 'done': false},
     ];
 
     return Container(
@@ -480,7 +483,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
               ),
               const SizedBox(height: 20),
               Text(
-                _isDragging ? 'Dosyayı buraya bırakın' : 'Dosyayı sürükleyin veya seçin',
+                _isDragging ? t('bulk_import.drop_file_here') : t('bulk_import.drag_or_select'), // TODO: i18n
                 style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
@@ -489,14 +492,14 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
               ),
               const SizedBox(height: 6),
               Text(
-                'Excel (.xlsx, .xls), CSV veya PDF formatı desteklenir',
+                t('bulk_import.supported_formats'), // TODO: i18n
                 style: TextStyle(fontSize: 13, color: AppColors.textMuted),
               ),
               const SizedBox(height: 6),
               _buildSectorBadge(),
               const SizedBox(height: 20),
               AppButton.primary(
-                text: 'Dosya Seç',
+                text: t('bulk_import.select_file'), // TODO: i18n
                 icon: Icons.folder_open,
                 onPressed: _pickAndUpload,
               ),
@@ -522,7 +525,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
           Icon(sector['icon'] as IconData, size: 14, color: color),
           const SizedBox(width: 6),
           Text(
-            '${sector['label']} şablonu ile yüklenecek',
+            t('bulk_import.sector_template_label'), // TODO: i18n
             style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
           ),
         ],
@@ -604,7 +607,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
           TextButton.icon(
             onPressed: _resetUpload,
             icon: const Icon(Icons.close, size: 16),
-            label: const Text('İptal'),
+            label: Text(t('common.cancel')),
             style: TextButton.styleFrom(foregroundColor: AppColors.textMuted),
           ),
         ],
@@ -614,9 +617,9 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
 
   Widget _buildProgressSteps() {
     final steps = [
-      {'title': 'Dosya Yükleme', 'done': _uploadProgress >= 0.3},
-      {'title': 'Backend Analizi', 'done': _uploadProgress >= 0.6},
-      {'title': 'Ürün İşleme', 'done': _uploadProgress >= 0.9},
+      {'title': t('bulk_import.step_file_upload'), 'done': _uploadProgress >= 0.3}, // TODO: i18n
+      {'title': t('bulk_import.step_backend_analysis'), 'done': _uploadProgress >= 0.6}, // TODO: i18n
+      {'title': t('bulk_import.step_product_processing'), 'done': _uploadProgress >= 0.9}, // TODO: i18n
     ];
 
     return Column(
@@ -674,13 +677,13 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
             child: const Icon(Icons.check_circle, size: 52, color: AppColors.success),
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Yükleme Başarılı!',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          Text(
+            t('bulk_import.upload_success'), // TODO: i18n
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
           ),
           const SizedBox(height: 6),
           Text(
-            'İnceleme ekranına yönlendiriliyorsunuz...',
+            t('bulk_import.redirecting_review'), // TODO: i18n
             style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 20),
@@ -713,9 +716,9 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
             child: const Icon(Icons.error_outline, size: 44, color: AppColors.danger),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Yükleme Başarısız',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          Text(
+            t('bulk_import.upload_failed'), // TODO: i18n
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
           ),
           const SizedBox(height: 8),
           Container(
@@ -730,7 +733,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    _errorMessage ?? 'Bilinmeyen hata',
+                    _errorMessage ?? t('common.error'), // TODO: i18n
                     style: const TextStyle(fontSize: 13, color: AppColors.danger),
                   ),
                 ),
@@ -744,7 +747,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
               OutlinedButton.icon(
                 onPressed: _resetUpload,
                 icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('Tekrar Dene'),
+                label: Text(t('bulk_import.retry')), // TODO: i18n
               ),
             ],
           ),
@@ -789,12 +792,12 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '$label Excel Şablonu',
+                  t('bulk_import.excel_template'), // TODO: i18n
                   style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Sektöre özel kolonlarla hazır şablonu indirin',
+                  t('bulk_import.download_template_desc'), // TODO: i18n
                   style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                 ),
               ],
@@ -804,7 +807,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
           ElevatedButton.icon(
             onPressed: () => _downloadTemplate(),
             icon: const Icon(Icons.file_download, size: 18),
-            label: const Text('İndir'),
+            label: Text(t('common.import')), // TODO: i18n download
             style: ElevatedButton.styleFrom(
               backgroundColor: color,
               foregroundColor: Colors.white,
@@ -819,7 +822,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
 
   void _downloadTemplate() {
     final sector = _sectors.firstWhere((s) => s['key'] == _selectedSector);
-    AppToast.success(context, '${sector['label']} şablonu indiriliyor...');
+    AppToast.success(context, t('bulk_import.template_downloading')); // TODO: i18n
     // TODO: Call backend to download sector-specific template
     // ref.read(bulkImportServiceProvider).downloadTemplate(_selectedSector);
   }
@@ -847,9 +850,9 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
             children: [
               const Icon(Icons.view_column_outlined, size: 20, color: AppColors.primary),
               const SizedBox(width: 8),
-              const Text(
-                'Şablon Kolonları',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+              Text(
+                t('bulk_import.template_columns'), // TODO: i18n
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
               ),
               const Spacer(),
               Container(
@@ -910,7 +913,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
                 Icon(Icons.star, size: 12, color: (_sectors.firstWhere((s) => s['key'] == _selectedSector)['color'] as Color)),
                 const SizedBox(width: 4),
                 Text(
-                  'Sektöre özel kolonlar',
+                  t('bulk_import.sector_specific_columns'), // TODO: i18n
                   style: TextStyle(
                     fontSize: 11,
                     color: AppColors.textMuted,
@@ -988,9 +991,9 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
             children: [
               Icon(Icons.lightbulb_outline, color: AppColors.warning, size: 22),
               const SizedBox(width: 10),
-              const Text(
-                'İpuçları',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              Text(
+                t('bulk_import.tips'), // TODO: i18n
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
               ),
             ],
           ),
@@ -1065,11 +1068,11 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.help_outline, color: AppColors.info),
-            SizedBox(width: 12),
-            Text('Nasıl Çalışır?', style: TextStyle(fontSize: 18)),
+            const Icon(Icons.help_outline, color: AppColors.info),
+            const SizedBox(width: 12),
+            Text(t('bulk_import.how_it_works'), style: const TextStyle(fontSize: 18)), // TODO: i18n
           ],
         ),
         content: SingleChildScrollView(
@@ -1087,7 +1090,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Anladım'),
+            child: Text(t('bulk_import.got_it')), // TODO: i18n
           ),
         ],
       ),

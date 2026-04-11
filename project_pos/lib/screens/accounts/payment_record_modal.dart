@@ -17,9 +17,9 @@ class PaymentRecordModal {
     String paymentType = 'CASH';
 
     final title = isCustomer
-        ? 'Tahsilat Kaydet${accountName != null ? ' - $accountName' : ''}'
-        : 'Odeme Kaydet${accountName != null ? ' - $accountName' : ''}';
-    final buttonLabel = isCustomer ? 'Tahsilati Kaydet' : 'Odemeyi Kaydet';
+        ? 'Tahsilat Kaydet${accountName != null ? ' - $accountName' : ''}' // TODO: i18n accounts.payment
+        : 'Ödeme Kaydet${accountName != null ? ' - $accountName' : ''}'; // TODO: i18n accounts.payment
+    final buttonLabel = isCustomer ? 'Tahsilatı Kaydet' : 'Ödemeyi Kaydet'; // TODO: i18n
     final accentColor = isCustomer ? AppColors.success : AppColors.primary;
 
     return showDialog<Map<String, dynamic>?>(
@@ -53,7 +53,7 @@ class PaymentRecordModal {
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   autofocus: true,
                   decoration: InputDecoration(
-                    labelText: 'Tutar (TL) *',
+                    labelText: 'Tutar (TL) *', // TODO: i18n
                     prefixIcon: Icon(Icons.attach_money, color: accentColor),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     focusedBorder: OutlineInputBorder(
@@ -66,17 +66,17 @@ class PaymentRecordModal {
                 DropdownButtonFormField<String>(
                   value: paymentType,
                   decoration: InputDecoration(
-                    labelText: 'Odeme Tipi',
+                    labelText: 'Ödeme Tipi', // TODO: i18n
                     prefixIcon: const Icon(Icons.credit_card, color: AppColors.primary),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                   items: const [
-                    DropdownMenuItem(value: 'CASH', child: Text('Nakit')),
-                    DropdownMenuItem(value: 'BANK_TRANSFER', child: Text('Havale/EFT')),
-                    DropdownMenuItem(value: 'CREDIT_CARD', child: Text('Kredi Karti')),
-                    DropdownMenuItem(value: 'CHECK', child: Text('Cek')),
-                    DropdownMenuItem(value: 'PROMISSORY_NOTE', child: Text('Senet')),
-                    DropdownMenuItem(value: 'MOBILE_PAYMENT', child: Text('Mobil Odeme')),
+                    DropdownMenuItem(value: 'CASH', child: Text('Nakit')), // TODO: i18n
+                    DropdownMenuItem(value: 'BANK_TRANSFER', child: Text('Havale/EFT')), // TODO: i18n
+                    DropdownMenuItem(value: 'CREDIT_CARD', child: Text('Kredi Kartı')), // TODO: i18n
+                    DropdownMenuItem(value: 'CHECK', child: Text('Çek')), // TODO: i18n
+                    DropdownMenuItem(value: 'PROMISSORY_NOTE', child: Text('Senet')), // TODO: i18n
+                    DropdownMenuItem(value: 'MOBILE_PAYMENT', child: Text('Mobil Ödeme')), // TODO: i18n
                   ],
                   onChanged: (v) => setDialogState(() => paymentType = v ?? 'CASH'),
                 ),
@@ -85,7 +85,7 @@ class PaymentRecordModal {
                   TextField(
                     controller: bankCtrl,
                     decoration: InputDecoration(
-                      labelText: 'Banka Adi',
+                      labelText: 'Banka Adı', // TODO: i18n
                       prefixIcon: const Icon(Icons.account_balance, color: AppColors.info),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
@@ -95,10 +95,10 @@ class PaymentRecordModal {
                 TextField(
                   controller: refCtrl,
                   decoration: InputDecoration(
-                    labelText: 'Referans No (opsiyonel)',
-                    hintText: paymentType == 'CHECK' ? 'Cek no...'
-                        : paymentType == 'BANK_TRANSFER' ? 'Dekont no...'
-                        : 'Referans no...',
+                    labelText: 'Referans No (opsiyonel)', // TODO: i18n
+                    hintText: paymentType == 'CHECK' ? 'Çek no...' // TODO: i18n
+                        : paymentType == 'BANK_TRANSFER' ? 'Dekont no...' // TODO: i18n
+                        : 'Referans no...', // TODO: i18n
                     prefixIcon: const Icon(Icons.tag, color: AppColors.info),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
@@ -108,7 +108,7 @@ class PaymentRecordModal {
                   controller: descCtrl,
                   maxLines: 2,
                   decoration: InputDecoration(
-                    labelText: 'Aciklama (opsiyonel)',
+                    labelText: 'Açıklama (opsiyonel)', // TODO: i18n
                     prefixIcon: const Icon(Icons.notes, color: AppColors.textMuted),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
@@ -118,13 +118,13 @@ class PaymentRecordModal {
           ),
           actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Iptal')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('İptal')), // TODO: i18n common.cancel
             AppButton.danger(
               text: buttonLabel,
               icon: Icons.check,
               onPressed: () {
                 if (amountCtrl.text.isEmpty) {
-                  AppToast.warning(ctx, 'Tutar gerekli');
+                  AppToast.warning(ctx, 'Tutar gerekli'); // TODO: i18n
                   return;
                 }
                 Navigator.pop(ctx, {
@@ -218,7 +218,7 @@ class _AccountSelectContentState extends State<_AccountSelectContent> with Singl
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: const Text('Hesap Sec', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      title: const Text('Hesap Seç', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)), // TODO: i18n
       contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       content: SizedBox(
         width: double.maxFinite, height: 420,
@@ -227,7 +227,8 @@ class _AccountSelectContentState extends State<_AccountSelectContent> with Singl
             TextField(
               controller: _searchCtrl,
               decoration: InputDecoration(
-                hintText: 'Ara...', prefixIcon: const Icon(Icons.search, size: 20),
+                hintText: 'Ara...', // TODO: i18n common.search
+              prefixIcon: const Icon(Icons.search, size: 20),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), isDense: true,
               ),
@@ -238,8 +239,8 @@ class _AccountSelectContentState extends State<_AccountSelectContent> with Singl
               labelColor: AppColors.primary, unselectedLabelColor: AppColors.textMuted,
               indicatorColor: AppColors.primary,
               tabs: [
-                Tab(text: 'Musteriler (${_filteredC.length})'),
-                Tab(text: 'Tedarikciler (${_filteredS.length})'),
+                Tab(text: 'Müşteriler (${_filteredC.length})'), // TODO: i18n menu.customers
+                Tab(text: 'Tedarikçiler (${_filteredS.length})'), // TODO: i18n menu.suppliers
               ],
             ),
             Expanded(
@@ -253,12 +254,12 @@ class _AccountSelectContentState extends State<_AccountSelectContent> with Singl
           ],
         ),
       ),
-      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Iptal'))],
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('İptal'))], // TODO: i18n common.cancel
     );
   }
 
   Widget _list(List<Map<String, dynamic>> items, String type) {
-    if (items.isEmpty) return const Center(child: Text('Kayit bulunamadi', style: TextStyle(color: AppColors.textMuted)));
+    if (items.isEmpty) return const Center(child: Text('Kayıt bulunamadı', style: TextStyle(color: AppColors.textMuted))); // TODO: i18n common.no_records
     return ListView.separated(
       itemCount: items.length,
       separatorBuilder: (_, __) => const Divider(height: 1),

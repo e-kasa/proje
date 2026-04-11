@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/auth_state.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/i18n_provider.dart';
 import '../../core/widgets/widgets.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -16,6 +16,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen>
     with SingleTickerProviderStateMixin {
+  String Function(String) get t => i18nOf(ref);
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -56,7 +57,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       if (mounted) context.go('/dashboard');
     } catch (e) {
       if (!mounted) return;
-      AppToast.error(context, ref.read(i18nProvider).bundle('auth.login_failed'));
+      AppToast.error(context, t('auth.login_failed'));
     }
   }
 
@@ -313,9 +314,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   // ── FORM ─────────────────────────────────────────────────────────────────
   Widget _buildForm(AuthState authState, {double? maxWidth}) {
-    final i18n = ref.watch(i18nProvider);
-    String t(String code) => i18n.isLoaded ? i18n.bundle(code) : code;
-
     final form = Form(
       key: _formKey,
       child: Column(

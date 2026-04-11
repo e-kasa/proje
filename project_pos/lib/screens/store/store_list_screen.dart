@@ -6,6 +6,7 @@ import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/store_service.dart';
 import '../../core/api/api_client.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class StoreListScreen extends ConsumerStatefulWidget {
   const StoreListScreen({super.key});
@@ -15,6 +16,8 @@ class StoreListScreen extends ConsumerStatefulWidget {
 }
 
 class _StoreListScreenState extends ConsumerState<StoreListScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   final _searchController = TextEditingController();
   late StoreService _storeService;
 
@@ -23,11 +26,11 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
   bool _isLoading = true;
   String? _selectedType;
 
-  final List<String> _types = ['Tümü', 'Merkez', 'Şube', 'Outlet'];
-  final Map<String, String> _typeMap = {
-    'Merkez': 'flagship',
-    'Şube': 'branch',
-    'Outlet': 'outlet',
+  final List<String> _typeKeys = ['all', 'flagship', 'branch', 'outlet'];
+  final Map<String, String> _backendTypeMap = {
+    'flagship': 'flagship',
+    'branch': 'branch',
+    'outlet': 'outlet',
   };
 
   @override
@@ -54,7 +57,7 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      if (mounted) AppToast.error(context, 'Mağazalar yüklenirken hata oluştu');
+      if (mounted) AppToast.error(context, t('stores.load_error'));
     }
   }
 
@@ -77,13 +80,13 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
-          children: [Icon(Icons.warning_amber_rounded, color: AppColors.warning), SizedBox(width: 12), Text('Mağaza Sil')],
+        title: Row(
+          children: [const Icon(Icons.warning_amber_rounded, color: AppColors.warning), const SizedBox(width: 12), Text(t('stores.delete_title'))],
         ),
-        content: Text('$name mağazasını silmek istediğinize emin misiniz?'),
+        content: Text('$name ${t('stores.delete_confirm')}'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('İptal')),
-          AppButton.danger(text: 'Sil', onPressed: () => Navigator.pop(context, true)),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(t('common.cancel'))),
+          AppButton.danger(text: t('common.delete'), onPressed: () => Navigator.pop(context, true)),
         ],
       ),
     );
@@ -92,11 +95,11 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
       try {
         await _storeService.deleteStore(id);
         if (mounted) {
-          AppToast.success(context, 'Mağaza başarıyla silindi');
+          AppToast.success(context, t('stores.deleted_success'));
           _loadStores();
         }
       } catch (e) {
-        if (mounted) AppToast.error(context, 'Mağaza silinirken hata oluştu');
+        if (mounted) AppToast.error(context, t('stores.delete_error'));
       }
     }
   }
@@ -105,8 +108,8 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Mağaza Yönetimi',
-        actions: [IconButton(onPressed: _loadStores, icon: const Icon(Icons.refresh), tooltip: 'Yenile')],
+        title: t('stores.title'),
+        actions: [IconButton(onPressed: _loadStores, icon: const Icon(Icons.refresh), tooltip: t('common.refresh'))],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -123,7 +126,7 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
                         controller: _searchController,
                         onChanged: _filterStores,
                         decoration: InputDecoration(
-                          hintText: 'Mağaza ara...',
+                          hintText: t('stores.search_hint'),
                           prefixIcon: const Icon(Icons.search),
                           suffixIcon: _searchController.text.isNotEmpty ? IconButton(icon: const Icon(Icons.clear), onPressed: () {_searchController.clear(); _filterStores('');}) : null,
                           border: OutlineInputBorder(borderRadius: AppConstants.borderRadiusMedium),
@@ -135,18 +138,24 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
-                          children: _types.map((type) => Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: FilterChip(
-                              label: Text(type),
-                              selected: type == 'Tümü' ? _selectedType == null : _selectedType == _typeMap[type],
-                              onSelected: (selected) {
-                                setState(() {_selectedType = type == 'Tümü' ? null : _typeMap[type];});
-                                _loadStores();
-                              },
-                              selectedColor: AppColors.primary.withValues(alpha: 0.2),
-                            ),
-                          )).toList(),
+                          children: _typeKeys.map((key) {
+                            final label = key == 'all' ? t('common.all')
+                                : key == 'flagship' ? t('stores.type_flagship')
+                                : key == 'branch' ? t('stores.type_branch')
+                                : t('stores.type_outlet');
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: FilterChip(
+                                label: Text(label),
+                                selected: key == 'all' ? _selectedType == null : _selectedType == _backendTypeMap[key],
+                                onSelected: (selected) {
+                                  setState(() {_selectedType = key == 'all' ? null : _backendTypeMap[key];});
+                                  _loadStores();
+                                },
+                                selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                              ),
+                            );
+                          }).toList(),
                         ),
                       ),
                     ],
@@ -155,7 +164,7 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
                 const Divider(height: 1),
                 Expanded(
                   child: _filteredStores.isEmpty
-                      ? AppEmptyState(icon: Icons.store, title: 'Mağaza bulunamadı', actionText: 'Yeni Mağaza Ekle', onAction: () => context.push('/stores/add'))
+                      ? AppEmptyState(icon: Icons.store, title: t('stores.empty_title'), actionText: t('stores.add'), onAction: () => context.push('/stores/add'))
                       : ListView.builder(
                           padding: const EdgeInsets.all(16),
                           itemCount: _filteredStores.length,
@@ -168,7 +177,7 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
         
         onPressed: () => context.push('/stores/add'),
         icon: const Icon(Icons.add),
-        label: const Text('Yeni Mağaza'),
+        label: Text(t('stores.add')),
         backgroundColor: AppColors.primary,
       ),
     );
@@ -181,11 +190,11 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
 
     return Row(
       children: [
-        Expanded(child: _buildStatCard('🏪 Toplam', total.toString(), 'Mağaza', AppColors.primary)),
+        Expanded(child: _buildStatCard(t('stores.stat_total'), total.toString(), t('stores.store_suffix'), AppColors.primary)),
         const SizedBox(width: 12),
-        Expanded(child: _buildStatCard('✅ Aktif', active.toString(), 'Mağaza', AppColors.success)),
+        Expanded(child: _buildStatCard(t('stores.stat_active'), active.toString(), t('stores.store_suffix'), AppColors.success)),
         const SizedBox(width: 12),
-        Expanded(child: _buildStatCard('👥 Çalışan', totalEmployees.toString(), 'Kişi', AppColors.info)),
+        Expanded(child: _buildStatCard(t('stores.stat_employees'), totalEmployees.toString(), t('stores.person_suffix'), AppColors.info)),
       ],
     );
   }
@@ -218,7 +227,11 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
 
   Widget _buildStoreCard(Map<String, dynamic> store) {
     final isActive = store['isActive'] as bool? ?? true;
-    final typeLabels = {'flagship': '🏢 Merkez', 'branch': '🏪 Şube', 'outlet': '🏬 Outlet'};
+    final typeLabels = {
+      'flagship': t('stores.type_flagship'),
+      'branch': t('stores.type_branch'),
+      'outlet': t('stores.type_outlet'),
+    };
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -250,7 +263,7 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
                         Row(
                           children: [
                             Expanded(child: Text(store['name'] ?? '', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
-                            AppBadge(text: isActive ? 'Aktif' : 'Pasif', variant: isActive ? BadgeVariant.success : BadgeVariant.danger),
+                            AppBadge(text: isActive ? t('common.active') : t('common.passive'), variant: isActive ? BadgeVariant.success : BadgeVariant.danger),
                           ],
                         ),
                         const SizedBox(height: 4),
@@ -267,7 +280,7 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
                 children: [
                   _buildInfoChip(Icons.category, typeLabels[store['type']] ?? '', AppColors.info),
                   _buildInfoChip(Icons.person, store['managerName'] ?? '', AppColors.purple),
-                  _buildInfoChip(Icons.people, '${store['employeeCount']} Çalışan', AppColors.success),
+                  _buildInfoChip(Icons.people, '${store['employeeCount']} ${t('stores.employee_suffix')}', AppColors.success),
                 ],
               ),
               const SizedBox(height: 12),
@@ -277,9 +290,9 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(child: AppButton.outline(text: 'Düzenle', icon: Icons.edit, onPressed: () => context.push('/stores/edit/${store['id']}'))),
+                  Expanded(child: AppButton.outline(text: t('common.edit'), icon: Icons.edit, onPressed: () => context.push('/stores/edit/${store['id']}'))),
                   const SizedBox(width: 8),
-                  AppIconButton(icon: Icons.delete, variant: ButtonVariant.danger, onPressed: () => _deleteStore(store['id'], store['name']), tooltip: 'Sil'),
+                  AppIconButton(icon: Icons.delete, variant: ButtonVariant.danger, onPressed: () => _deleteStore(store['id'], store['name']), tooltip: t('common.delete')),
                 ],
               ),
             ],

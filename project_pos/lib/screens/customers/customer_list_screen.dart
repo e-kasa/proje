@@ -8,6 +8,7 @@ import '../../core/widgets/common/base_entity_list_screen.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 import 'add_customer_screen.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 // ---------------------------------------------------------------------------
 // Musteri tipi yardimcilari
@@ -39,6 +40,8 @@ class CustomerListScreen extends ConsumerStatefulWidget {
 }
 
 class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   final _baseKey = GlobalKey<BaseEntityListScreenState<Map<String, dynamic>>>();
 
   // Stats (filtresiz, sabit tutulur)
@@ -72,8 +75,8 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
   Future<void> _delete(Map<String, dynamic> customer) async {
     final confirmed = await AppConfirmationDialog.showDelete(
       context: context,
-      title: 'Musteriyi Sil',
-      message: 'Bu islem geri alinamaz. Satis kayitlari korunacaktir.',
+      title: t('common.delete'),
+      message: t('common.are_you_sure'),
       itemName: customer['name'] as String?,
     );
     if (!confirmed || !mounted) return;
@@ -82,10 +85,10 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
       await ref
           .read(customerServiceProvider)
           .deleteCustomer(customer['id']);
-      if (mounted) AppToast.success(context, '${customer['name']} silindi');
+      if (mounted) AppToast.success(context, '${customer['name']} ${t('common.deleted')}');
       _baseKey.currentState?.load();
     } catch (e) {
-      if (mounted) AppToast.error(context, 'Silinemedi: $e');
+      if (mounted) AppToast.error(context, '${t('common.error')}: $e');
     }
   }
 
@@ -93,9 +96,8 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
     if (selectedIds.isEmpty) return;
     final confirmed = await AppConfirmationDialog.showDelete(
       context: context,
-      title: 'Toplu Silme',
-      message:
-          '${selectedIds.length} musteriyi silmek istediginize emin misiniz?',
+      title: t('common.delete'),
+      message: t('common.are_you_sure'),
     );
     if (!confirmed || !mounted) return;
 
@@ -105,10 +107,10 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
         await svc.deleteCustomer(id);
       }
       if (mounted) {
-        AppToast.success(context, '${selectedIds.length} musteri silindi');
+        AppToast.success(context, '${selectedIds.length} ${t('customers.title')} ${t('common.deleted')}');
       }
     } catch (e) {
-      if (mounted) AppToast.error(context, 'Hata: $e');
+      if (mounted) AppToast.error(context, '${t('common.error')}: $e');
     }
   }
 
@@ -117,17 +119,17 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
   Widget build(BuildContext context) {
     return BaseEntityListScreen<Map<String, dynamic>>(
       key: _baseKey,
-      title: 'Musteri Yonetimi',
-      searchHint: 'Isim, telefon veya e-posta ara...',
+      title: t('menu.customers'),
+      searchHint: t('common.search'),
       icon: Icons.people_outline,
       accentColor: AppColors.primary,
-      fabLabel: 'Yeni Musteri',
+      fabLabel: t('customers.add'),
       fabIcon: Icons.person_add,
-      emptyTitle: 'Henuz musteri yok',
-      emptyDescription: 'Baslamak icin yeni bir musteri ekleyin',
-      emptyActionText: 'Musteri Ekle',
+      emptyTitle: t('common.no_data'),
+      emptyDescription: t('common.no_records'),
+      emptyActionText: t('customers.add'),
       bulkActionIcon: Icons.delete_outline,
-      bulkActionTooltip: 'Secilenleri Sil',
+      bulkActionTooltip: t('common.delete'),
       onAdd: _openAdd,
       onBulkAction: _bulkDelete,
       idExtractor: (c) => c['id']?.toString() ?? '',
@@ -214,25 +216,25 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
         return [
           StatPill(
             value: '$total',
-            label: 'Toplam',
+            label: 'Toplam', // TODO: i18n
             icon: Icons.people_outline,
             color: AppColors.primary,
           ),
           StatPill(
             value: '$active',
-            label: 'Aktif',
+            label: t('common.active'),
             icon: Icons.check_circle_outline,
             color: AppColors.success,
           ),
           StatPill(
             value: '$passive',
-            label: 'Pasif',
+            label: t('common.passive'),
             icon: Icons.cancel_outlined,
             color: AppColors.textMuted,
           ),
           StatPill(
             value: '$corporate',
-            label: 'Kurumsal',
+            label: 'Kurumsal', // TODO: i18n
             icon: Icons.business_outlined,
             color: AppColors.info,
           ),
@@ -375,21 +377,21 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                 if (v == 'edit') _openEdit(customer);
                 if (v == 'delete') _delete(customer);
               },
-              itemBuilder: (_) => const [
+              itemBuilder: (_) => [
                 PopupMenuItem(
                   value: 'account',
                   child: MenuRow(Icons.account_balance_wallet,
-                      'Cari Hesap', AppColors.info),
+                      t('menu.accounts'), AppColors.info),
                 ),
                 PopupMenuItem(
                   value: 'edit',
                   child: MenuRow(
-                      Icons.edit_outlined, 'Duzenle', AppColors.primary),
+                      Icons.edit_outlined, t('common.edit'), AppColors.primary),
                 ),
                 PopupMenuItem(
                   value: 'delete',
                   child: MenuRow(
-                      Icons.delete_outline, 'Sil', AppColors.danger),
+                      Icons.delete_outline, t('common.delete'), AppColors.danger),
                 ),
               ],
             ),

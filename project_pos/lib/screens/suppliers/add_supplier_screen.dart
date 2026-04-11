@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/widgets/widgets.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/i18n_helper.dart';
 import '../../services/service_locator.dart';
 
 class AddSupplierScreen extends ConsumerStatefulWidget {
@@ -16,6 +17,8 @@ class AddSupplierScreen extends ConsumerStatefulWidget {
 }
 
 class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   final _formKey = GlobalKey<FormState>();
 
   late TextEditingController _companyNameController;
@@ -87,7 +90,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
       }
     } catch (e) {
       if (mounted) {
-        AppToast.error(context, 'Tedarikçi yüklenemedi: $e');
+        AppToast.error(context, '${t('suppliers.load_error')}: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -156,19 +159,19 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
         final id = (widget.supplier?['id'] ?? widget.supplierId).toString();
         await supplierService.updateSupplier(id, data);
         if (mounted) {
-          AppToast.success(context, 'Tedarikçi güncellendi');
+          AppToast.success(context, t('suppliers.updated'));
         }
       } else {
         await supplierService.createSupplier(data);
         if (mounted) {
-          AppToast.success(context, 'Tedarikçi oluşturuldu');
+          AppToast.success(context, t('suppliers.created'));
         }
       }
 
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
-        AppToast.error(context, 'Hata: $e');
+        AppToast.error(context, '${t('common.error')}: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -208,16 +211,16 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
                     color: AppColors.textMuted, size: 20),
               ),
               const SizedBox(width: 14),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Cari Hesap',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
+                    Text(t('suppliers.account'),
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary)),
-                    SizedBox(height: 2),
-                    Text('Henüz satın alma kaydı yok',
-                        style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                    const SizedBox(height: 2),
+                    Text(t('suppliers.no_purchase_records'),
+                        style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
                   ],
                 ),
               ),
@@ -247,7 +250,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
                 Icon(Icons.account_balance_wallet_outlined,
                     color: isExceeded ? AppColors.danger : AppColors.primary, size: 20),
                 const SizedBox(width: 8),
-                Text('Cari Hesap Durumu',
+                Text(t('suppliers.account_status'),
                     style: TextStyle(
                         fontSize: 16, fontWeight: FontWeight.bold,
                         color: isExceeded ? AppColors.danger : AppColors.textPrimary)),
@@ -259,8 +262,8 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
                       color: AppColors.danger.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text('Limit Aşıldı',
-                        style: TextStyle(fontSize: 11, color: AppColors.danger,
+                    child: Text(t('suppliers.limit_exceeded'),
+                        style: const TextStyle(fontSize: 11, color: AppColors.danger,
                             fontWeight: FontWeight.w600)),
                   ),
                 ],
@@ -270,21 +273,21 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
             Row(
               children: [
                 Expanded(child: _accountRow(
-                    Icons.account_balance_outlined, 'Güncel Bakiye', fmt(balance),
+                    Icons.account_balance_outlined, t('suppliers.current_balance'), fmt(balance),
                     balance != null && balance > 0 ? AppColors.danger : AppColors.success)),
                 const SizedBox(width: 12),
                 Expanded(child: _accountRow(
-                    Icons.trending_up_outlined, 'Toplam Borç', fmt(debt), AppColors.danger)),
+                    Icons.trending_up_outlined, t('suppliers.total_debt'), fmt(debt), AppColors.danger)),
               ],
             ),
             const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(child: _accountRow(
-                    Icons.check_circle_outline, 'Toplam Ödeme', fmt(paid), AppColors.success)),
+                    Icons.check_circle_outline, t('suppliers.total_payment'), fmt(paid), AppColors.success)),
                 const SizedBox(width: 12),
                 Expanded(child: _accountRow(
-                    Icons.credit_card_outlined, 'Kullanılabilir Limit', fmt(available),
+                    Icons.credit_card_outlined, t('suppliers.available_limit'), fmt(available),
                     isExceeded ? AppColors.danger : AppColors.info)),
               ],
             ),
@@ -292,11 +295,11 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Text('Kredi Limiti: ${fmt(limit)}',
+                  Text('${t('suppliers.credit_limit')}: ${fmt(limit)}',
                       style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
                   const Spacer(),
                   Text(
-                    '${((balance ?? 0) / limit * 100).clamp(0, 100).toStringAsFixed(0)}% kullanıldı',
+                    '${((balance ?? 0) / limit * 100).clamp(0, 100).toStringAsFixed(0)}% ${t('suppliers.used')}',
                     style: TextStyle(
                         fontSize: 11,
                         color: isExceeded ? AppColors.danger : AppColors.textMuted),
@@ -321,21 +324,21 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
               children: [
                 Expanded(child: _cardActionBtn(
                   icon: Icons.payments_outlined,
-                  label: 'Ödeme Yap',
+                  label: t('suppliers.make_payment'),
                   color: AppColors.success,
                   onTap: _showPaymentDialog,
                 )),
                 const SizedBox(width: 8),
                 Expanded(child: _cardActionBtn(
                   icon: Icons.receipt_long_outlined,
-                  label: 'Hareketler',
+                  label: t('suppliers.movements'),
                   color: AppColors.primary,
                   onTap: _showTransactionsSheet,
                 )),
                 const SizedBox(width: 8),
                 Expanded(child: _cardActionBtn(
                   icon: Icons.tune_outlined,
-                  label: 'Limit Düzenle',
+                  label: t('suppliers.edit_limit'),
                   color: AppColors.info,
                   onTap: _showCreditLimitDialog,
                 )),
@@ -415,7 +418,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDs) => AlertDialog(
-          title: const Text('Ödeme Kaydet'),
+          title: Text(t('suppliers.record_payment')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -423,35 +426,35 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
                 controller: amountCtrl,
                 autofocus: true,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Tutar (₺) *',
-                  prefixIcon: Icon(Icons.attach_money),
+                decoration: InputDecoration(
+                  labelText: '${t('suppliers.amount')} (₺) *',
+                  prefixIcon: const Icon(Icons.attach_money),
                 ),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: selectedType,
-                decoration: const InputDecoration(labelText: 'Ödeme Yöntemi'),
-                items: const [
-                  DropdownMenuItem(value: 'CASH', child: Text('Nakit')),
-                  DropdownMenuItem(value: 'BANK_TRANSFER', child: Text('Havale/EFT')),
-                  DropdownMenuItem(value: 'CREDIT_CARD', child: Text('Kredi Kartı')),
-                  DropdownMenuItem(value: 'CHECK', child: Text('Çek')),
-                  DropdownMenuItem(value: 'OTHER', child: Text('Diğer')),
+                decoration: InputDecoration(labelText: t('suppliers.payment_method')),
+                items: [
+                  DropdownMenuItem(value: 'CASH', child: Text(t('suppliers.cash'))),
+                  DropdownMenuItem(value: 'BANK_TRANSFER', child: Text(t('suppliers.bank_transfer'))),
+                  DropdownMenuItem(value: 'CREDIT_CARD', child: Text(t('suppliers.credit_card'))),
+                  DropdownMenuItem(value: 'CHECK', child: Text(t('suppliers.check'))),
+                  DropdownMenuItem(value: 'OTHER', child: Text(t('common.other'))),
                 ],
                 onChanged: (v) => setDs(() => selectedType = v ?? 'CASH'),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: descCtrl,
-                decoration: const InputDecoration(labelText: 'Açıklama (isteğe bağlı)'),
+                decoration: InputDecoration(labelText: t('suppliers.description_optional')),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('İptal'),
+              child: Text(t('common.cancel')),
             ),
             StatefulBuilder(
               builder: (ctx2, setSaving) {
@@ -477,7 +480,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
                             if (ctx.mounted) Navigator.pop(ctx);
                             await _loadAccountData();
                             if (mounted) {
-                              AppToast.success(context, 'Ödeme kaydedildi');
+                              AppToast.success(context, t('suppliers.payment_saved'));
                             }
                           } catch (e) {
                             setSaving(() => saving = false);
@@ -491,7 +494,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
                           width: 16, height: 16,
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white))
-                      : const Text('Kaydet'),
+                      : Text(t('common.save')),
                 );
               },
             ),
@@ -513,21 +516,21 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDs) {
           return AlertDialog(
-            title: const Text('Kredi Limiti Düzenle'),
+            title: Text(t('suppliers.edit_credit_limit')),
             content: TextField(
               controller: limitCtrl,
               autofocus: true,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Yeni Kredi Limiti (₺)',
-                prefixIcon: Icon(Icons.credit_card_outlined),
+              decoration: InputDecoration(
+                labelText: '${t('suppliers.new_credit_limit')} (₺)',
+                prefixIcon: const Icon(Icons.credit_card_outlined),
               ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('İptal'),
+                child: Text(t('common.cancel')),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -545,7 +548,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
                           if (ctx.mounted) Navigator.pop(ctx);
                           await _loadAccountData();
                           if (mounted) {
-                            AppToast.success(context, 'Kredi limiti güncellendi');
+                            AppToast.success(context, t('suppliers.credit_limit_updated'));
                           }
                         } catch (e) {
                           setDs(() => saving = false);
@@ -559,7 +562,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
                         width: 16, height: 16,
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white))
-                    : const Text('Kaydet'),
+                    : Text(t('common.save')),
               ),
             ],
           );
@@ -599,14 +602,14 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
                       borderRadius: BorderRadius.circular(2)),
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: Row(
                   children: [
-                    Icon(Icons.receipt_long_outlined, color: AppColors.primary),
-                    SizedBox(width: 8),
-                    Text('Hesap Hareketleri',
-                        style: TextStyle(
+                    const Icon(Icons.receipt_long_outlined, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Text(t('suppliers.account_movements'),
+                        style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold)),
                   ],
                 ),
@@ -615,8 +618,8 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
               if (snap.connectionState == ConnectionState.waiting)
                 const Expanded(child: Center(child: CircularProgressIndicator()))
               else if (snap.data == null || snap.data!.isEmpty)
-                const Expanded(
-                    child: Center(child: Text('Henüz hareket yok')))
+                Expanded(
+                    child: Center(child: Text(t('suppliers.no_movements'))))
               else
                 Expanded(
                   child: ListView.builder(
@@ -670,7 +673,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
                             ),
                             if (tx['balance'] != null)
                               Text(
-                                'Bakiye: ₺${(tx['balance'] as num).toStringAsFixed(2)}',
+                                '${t('suppliers.balance')}: ₺${(tx['balance'] as num).toStringAsFixed(2)}',
                                 style: const TextStyle(
                                     fontSize: 10,
                                     color: AppColors.textMuted),
@@ -717,16 +720,16 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Tedarikçi Durumu',
-                      style: TextStyle(
+                  Text(t('suppliers.status'),
+                      style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary)),
                   const SizedBox(height: 2),
                   Text(
                     _isActive
-                        ? 'Aktif — sipariş ve satın almalarda kullanılabilir'
-                        : 'Pasif — sipariş verilemez, listede gizlenir',
+                        ? t('suppliers.active_description')
+                        : t('suppliers.passive_description'),
                     style: TextStyle(
                         fontSize: 12,
                         color: _isActive
@@ -742,14 +745,14 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _statusButton(
-                  label: 'Aktif',
+                  label: t('common.active'),
                   selected: _isActive,
                   color: AppColors.success,
                   onTap: () => setState(() => _isActive = true),
                 ),
                 const SizedBox(width: 6),
                 _statusButton(
-                  label: 'Pasif',
+                  label: t('common.passive'),
                   selected: !_isActive,
                   color: AppColors.danger,
                   onTap: () => setState(() => _isActive = false),
@@ -800,7 +803,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
 
     return AppScaffold(
       appBar: AppAppBar.primary(
-        title: isEdit ? 'Tedarikçi Düzenle' : 'Yeni Tedarikçi',
+        title: isEdit ? t('suppliers.edit') : t('suppliers.add'),
         actions: [
           if (_isLoading)
             const Center(
@@ -831,26 +834,26 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
 
                   // ── Firma Bilgileri ──────────────────────────────
                   AppSectionCard(
-                    title: 'Firma Bilgileri',
+                    title: t('suppliers.company_info'),
                     icon: Icons.business,
                     children: [
                       AppInput(
                         controller: _companyNameController,
-                        label: 'Firma Adı *',
+                        label: '${t('suppliers.company_name')} *',
                         hint: 'Örn: ABC Tedarik Ltd. Şti.',
                         prefixIcon: Icons.business_outlined,
                         validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Firma adı zorunludur'
+                            ? t('suppliers.company_name_required')
                             : null,
                       ),
                       const SizedBox(height: AppConstants.formFieldSpacing),
                       AppInput(
                         controller: _contactNameController,
-                        label: 'İletişim Kişisi *',
+                        label: '${t('suppliers.contact_person')} *',
                         hint: 'Örn: Ahmet Yılmaz',
                         prefixIcon: Icons.person_outline,
                         validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'İletişim kişisi zorunludur'
+                            ? t('suppliers.contact_required')
                             : null,
                       ),
                     ],
@@ -860,23 +863,23 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
 
                   // ── İletişim Bilgileri ───────────────────────────
                   AppSectionCard(
-                    title: 'İletişim Bilgileri',
+                    title: t('suppliers.contact_info'),
                     icon: Icons.contact_phone,
                     children: [
                       AppInput(
                         controller: _phoneController,
-                        label: 'Telefon *',
+                        label: '${t('suppliers.phone')} *',
                         hint: '0212 345 67 89',
                         prefixIcon: Icons.phone_outlined,
                         keyboardType: TextInputType.phone,
                         validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Telefon numarası zorunludur'
+                            ? t('suppliers.phone_required')
                             : null,
                       ),
                       const SizedBox(height: AppConstants.formFieldSpacing),
                       AppInput(
                         controller: _emailController,
-                        label: 'E-posta',
+                        label: t('suppliers.email'),
                         hint: 'ornek@sirket.com',
                         prefixIcon: Icons.email_outlined,
                         keyboardType: TextInputType.emailAddress,
@@ -885,7 +888,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
                             if (!RegExp(
                                     r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                                 .hasMatch(v)) {
-                              return 'Geçerli bir e-posta adresi girin';
+                              return t('suppliers.email_invalid');
                             }
                           }
                           return null;
@@ -894,7 +897,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
                       const SizedBox(height: AppConstants.formFieldSpacing),
                       AppInput(
                         controller: _addressController,
-                        label: 'Adres',
+                        label: t('suppliers.address'),
                         hint: 'Tam adres...',
                         prefixIcon: Icons.location_on_outlined,
                         maxLines: 3,
@@ -902,7 +905,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
                       const SizedBox(height: AppConstants.formFieldSpacing),
                       AppInput(
                         controller: _websiteController,
-                        label: 'Ürün / Katalog Sitesi',
+                        label: t('suppliers.website'),
                         hint: 'https://www.tedarikci.com/katalog',
                         prefixIcon: Icons.language_outlined,
                         keyboardType: TextInputType.url,
@@ -914,12 +917,12 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
 
                   // ── Vergi Bilgileri ──────────────────────────────
                   AppSectionCard(
-                    title: 'Vergi Bilgileri',
+                    title: t('suppliers.tax_info'),
                     icon: Icons.receipt_long,
                     children: [
                       AppInput(
                         controller: _taxNumberController,
-                        label: 'Vergi Numarası',
+                        label: t('suppliers.tax_number'),
                         hint: '1234567890',
                         prefixIcon: Icons.numbers,
                         keyboardType: TextInputType.number,
@@ -927,7 +930,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
                       const SizedBox(height: AppConstants.formFieldSpacing),
                       AppInput(
                         controller: _taxOfficeController,
-                        label: 'Vergi Dairesi',
+                        label: t('suppliers.tax_office'),
                         hint: 'Örn: Kadıköy',
                         prefixIcon: Icons.account_balance_outlined,
                       ),
@@ -944,8 +947,8 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
                   // ── Kaydet Butonu ────────────────────────────────
                   AppButton.primary(
                     text: _isLoading
-                        ? 'Kaydediliyor...'
-                        : (isEdit ? 'Güncelle' : 'Kaydet'),
+                        ? t('common.saving')
+                        : (isEdit ? t('common.update') : t('common.save')),
                     onPressed: _isLoading ? null : _saveSupplier,
                     icon: Icons.save,
                     isLoading: _isLoading,

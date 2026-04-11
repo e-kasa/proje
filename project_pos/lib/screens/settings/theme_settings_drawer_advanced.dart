@@ -4,6 +4,7 @@ import 'package:flex_color_picker/flex_color_picker.dart';
 import '../../providers/theme_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
+import '../../core/utils/i18n_helper.dart';
 
 /// Gelişmiş tema özelleştirici — bottom sheet olarak açılır.
 /// Settings ekranındaki temel ayarlara ek olarak özel renk seçimi sunar.
@@ -18,6 +19,7 @@ class ThemeSettingsDrawerAdvanced extends ConsumerStatefulWidget {
 class _ThemeSettingsDrawerAdvancedState
     extends ConsumerState<ThemeSettingsDrawerAdvanced>
     with SingleTickerProviderStateMixin {
+  String Function(String) get t => i18nOf(ref);
   late TabController _tabCtrl;
 
   @override
@@ -61,13 +63,13 @@ class _ThemeSettingsDrawerAdvancedState
           child: Row(children: [
             const Icon(Icons.palette_outlined, color: Colors.white, size: 24),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Tema Özelleştirici',
-                    style: TextStyle(color: Colors.white,
+                Text(t('settings.theme'), // TODO: i18n theme_customizer key
+                    style: const TextStyle(color: Colors.white,
                         fontSize: 17, fontWeight: FontWeight.bold)),
-                SizedBox(height: 2),
-                Text('Renk, düzen ve özel renkler',
+                const SizedBox(height: 2),
+                const Text('Renk, düzen ve özel renkler', // TODO: i18n
                     style: TextStyle(color: Colors.white70, fontSize: 12)),
               ]),
             ),
@@ -90,10 +92,10 @@ class _ThemeSettingsDrawerAdvancedState
             labelStyle: const TextStyle(
                 fontSize: 13, fontWeight: FontWeight.w600),
             unselectedLabelStyle: const TextStyle(fontSize: 13),
-            tabs: const [
-              Tab(text: 'Tema'),
-              Tab(text: 'Düzen'),
-              Tab(text: 'Özel Renk'),
+            tabs: [
+              Tab(text: t('settings.theme')),
+              Tab(text: 'Düzen'), // TODO: i18n
+              Tab(text: 'Özel Renk'), // TODO: i18n
             ],
           ),
         ),
@@ -120,18 +122,18 @@ class _ThemeSettingsDrawerAdvancedState
           child: Row(children: [
             Expanded(
               child: AppButton.outline(
-                text: 'Sıfırla',
+                text: t('common.reset'), // TODO: i18n key common.reset
                 icon: Icons.restart_alt,
                 onPressed: () {
                   notifier.reset();
-                  AppToast.success(context, 'Tema sıfırlandı');
+                  AppToast.success(context, t('settings.theme')); // TODO: i18n theme_reset key
                 },
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: AppButton.primary(
-                text: 'Tamam',
+                text: t('common.ok'), // TODO: i18n key common.ok
                 icon: Icons.check,
                 onPressed: () => Navigator.pop(context),
               ),

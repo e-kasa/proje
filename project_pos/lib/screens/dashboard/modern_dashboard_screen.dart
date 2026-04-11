@@ -8,6 +8,7 @@ import '../../core/widgets/widgets.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../services/service_locator.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class ModernDashboardScreen extends ConsumerStatefulWidget {
   const ModernDashboardScreen({super.key});
@@ -19,6 +20,7 @@ class ModernDashboardScreen extends ConsumerStatefulWidget {
 
 class _ModernDashboardScreenState
     extends ConsumerState<ModernDashboardScreen> {
+  String Function(String) get t => i18nOf(ref);
   bool _isLoading = true;
   Map<String, dynamic> _stats = {};
   String _error = '';
@@ -62,11 +64,11 @@ class _ModernDashboardScreenState
           slivers: [
             SliverToBoxAdapter(child: _buildHeroHeader()),
             SliverToBoxAdapter(child: _buildKpiRow()),
-            SliverToBoxAdapter(child: _buildSectionTitle('Hızlı Aksiyonlar')),
+            SliverToBoxAdapter(child: _buildSectionTitle('Hızlı Aksiyonlar')), // TODO: i18n
             SliverToBoxAdapter(child: _buildQuickActions()),
-            SliverToBoxAdapter(child: _buildSectionTitle('Modüller')),
+            SliverToBoxAdapter(child: _buildSectionTitle('Modüller')), // TODO: i18n
             SliverToBoxAdapter(child: _buildModules()),
-            SliverToBoxAdapter(child: _buildSectionTitle('Son Aktiviteler')),
+            SliverToBoxAdapter(child: _buildSectionTitle('Son Aktiviteler')), // TODO: i18n
             SliverToBoxAdapter(child: _buildActivity()),
             const SliverToBoxAdapter(child: SizedBox(height: 32)),
           ],
@@ -80,10 +82,10 @@ class _ModernDashboardScreenState
     final now = DateTime.now();
     final hour = now.hour;
     final greeting = hour < 12
-        ? 'Günaydın'
+        ? t('dashboard.good_morning') // TODO: i18n key
         : hour < 18
-            ? 'İyi Günler'
-            : 'İyi Akşamlar';
+            ? t('dashboard.good_day') // TODO: i18n key
+            : t('dashboard.good_evening'); // TODO: i18n key
     final icon = hour < 12 ? '🌅' : hour < 18 ? '☀️' : '🌙';
     final user = ref.watch(authProvider).user;
     final name = user?.displayName ?? 'Admin';
@@ -213,13 +215,13 @@ class _ModernDashboardScreenState
                     _headerIconButton(
                       icon: Icons.refresh_outlined,
                       onTap: _load,
-                      tooltip: 'Yenile',
+                      tooltip: t('common.refresh'), // TODO: i18n key common.refresh
                     ),
                     const SizedBox(height: 10),
                     _headerIconButton(
                       icon: Icons.person_outline,
                       onTap: () => context.go('/profile'),
-                      tooltip: 'Profil',
+                      tooltip: t('profile.title'),
                       hasBorder: true,
                     ),
                   ],
@@ -275,7 +277,7 @@ class _ModernDashboardScreenState
         children: [
           Expanded(
             child: _kpiCard(
-              label: 'Günlük Gelir',
+              label: t('dashboard.sales_today'),
               value: '₺${_fmt(revenue)}',
               icon: Icons.payments_outlined,
               color: AppColors.success,
@@ -285,7 +287,7 @@ class _ModernDashboardScreenState
           const SizedBox(width: 10),
           Expanded(
             child: _kpiCard(
-              label: 'Satış Adedi',
+              label: 'Satış Adedi', // TODO: i18n
               value: sales.toString(),
               icon: Icons.shopping_cart_outlined,
               color: AppColors.primary,
@@ -295,7 +297,7 @@ class _ModernDashboardScreenState
           const SizedBox(width: 10),
           Expanded(
             child: _kpiCard(
-              label: 'Müşteriler',
+              label: 'Müşteriler', // TODO: i18n
               value: customers.toString(),
               icon: Icons.people_outline,
               color: AppColors.info,
@@ -305,7 +307,7 @@ class _ModernDashboardScreenState
           const SizedBox(width: 10),
           Expanded(
             child: _kpiCard(
-              label: 'Düşük Stok',
+              label: 'Düşük Stok', // TODO: i18n
               value: lowStock.toString(),
               icon: Icons.warning_amber_outlined,
               color: lowStock > 0 ? AppColors.danger : AppColors.success,
@@ -395,12 +397,12 @@ class _ModernDashboardScreenState
   // ── QUICK ACTIONS ────────────────────────────────────────────────────────────
   Widget _buildQuickActions() {
     final actions = [
-      _Action('POS Satış', Icons.point_of_sale, AppGradients.successGradient, '/pos'),
-      _Action('Barkod Tara', Icons.qr_code_scanner, AppGradients.primaryGradient, '/scanner'),
-      _Action('Satış Geçmişi', Icons.receipt_long_outlined, AppGradients.infoGradient, '/sales'),
-      _Action('Stok Durumu', Icons.inventory_2_outlined, AppGradients.mintGradient, '/stock'),
-      _Action('Yeni Ürün', Icons.add_box_outlined, AppGradients.purpleGradient, '/inventory/add-product'),
-      _Action('Raporlar', Icons.bar_chart_rounded, AppGradients.sunsetGradient, '/reports'),
+      _Action('POS Satış', Icons.point_of_sale, AppGradients.successGradient, '/pos'), // TODO: i18n
+      _Action('Barkod Tara', Icons.qr_code_scanner, AppGradients.primaryGradient, '/scanner'), // TODO: i18n
+      _Action('Satış Geçmişi', Icons.receipt_long_outlined, AppGradients.infoGradient, '/sales'), // TODO: i18n
+      _Action('Stok Durumu', Icons.inventory_2_outlined, AppGradients.mintGradient, '/stock'), // TODO: i18n
+      _Action('Yeni Ürün', Icons.add_box_outlined, AppGradients.purpleGradient, '/inventory/add-product'), // TODO: i18n
+      _Action('Raporlar', Icons.bar_chart_rounded, AppGradients.sunsetGradient, '/reports'), // TODO: i18n
     ];
 
     return Padding(
@@ -483,18 +485,18 @@ class _ModernDashboardScreenState
     final lowStock = (_stats['lowStockProducts'] as num?)?.toInt() ?? 0;
 
     final modules = [
-      _Module('Ürün Kataloğu', '$products ürün', Icons.shopping_bag_outlined,
+      _Module(t('dashboard.total_products'), '$products ürün', Icons.shopping_bag_outlined, // TODO: i18n subtitle
           AppGradients.coralGradient, '/inventory/products'),
-      _Module('Müşteriler', '$customers kayıt', Icons.people_outline,
+      _Module('Müşteriler', '$customers kayıt', Icons.people_outline, // TODO: i18n
           AppGradients.blueGradient, '/customers'),
-      _Module('Tedarikçiler', 'Hesap yönetimi', Icons.local_shipping_outlined,
+      _Module('Tedarikçiler', 'Hesap yönetimi', Icons.local_shipping_outlined, // TODO: i18n
           AppGradients.primaryGradient, '/suppliers'),
-      _Module('Stok Alarmları', '$lowStock ürün kritik', Icons.notifications_active_outlined,
+      _Module('Stok Alarmları', '$lowStock ürün kritik', Icons.notifications_active_outlined, // TODO: i18n
           lowStock > 0 ? AppGradients.dangerGradient : AppGradients.mintGradient,
           '/stock/alerts'),
-      _Module('Cari Hesaplar', 'Bakiye takibi', Icons.account_balance_wallet_outlined,
+      _Module('Cari Hesaplar', 'Bakiye takibi', Icons.account_balance_wallet_outlined, // TODO: i18n
           AppGradients.warningGradient, '/accounts'),
-      _Module('Satış Analizi', 'Günlük rapor', Icons.analytics_outlined,
+      _Module('Satış Analizi', 'Günlük rapor', Icons.analytics_outlined, // TODO: i18n
           AppGradients.sunsetGradient, '/reports/sales-summary'),
     ];
 
@@ -601,7 +603,7 @@ class _ModernDashboardScreenState
       items.add(_ActivityItem(
         icon: Icons.shopping_cart_checkout,
         color: AppColors.success,
-        title: 'Satış tamamlandı',
+        title: 'Satış tamamlandı', // TODO: i18n
         subtitle: 'SAT-${s['id']} — ₺${amount.toStringAsFixed(2)}',
         time: _timeAgo(s['date']),
       ));
@@ -610,9 +612,9 @@ class _ModernDashboardScreenState
       items.add(_ActivityItem(
         icon: Icons.warning_amber_rounded,
         color: AppColors.warning,
-        title: 'Düşük stok uyarısı',
-        subtitle: '${p['name']} — ${p['stock']} adet kaldı',
-        time: 'Şimdi',
+        title: 'Düşük stok uyarısı', // TODO: i18n
+        subtitle: '${p['name']} — ${p['stock']} adet kaldı', // TODO: i18n
+        time: 'Şimdi', // TODO: i18n
       ));
     }
 
@@ -620,8 +622,8 @@ class _ModernDashboardScreenState
       return Padding(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
         child: AppEmptyState.noData(
-          title: 'Henüz aktivite yok',
-          description: 'Satış yapıldığında ve stok durumu değiştiğinde burada görünecek.',
+          title: t('common.no_data'),
+          description: 'Satış yapıldığında ve stok durumu değiştiğinde burada görünecek.', // TODO: i18n
         ),
       );
     }
@@ -652,7 +654,7 @@ class _ModernDashboardScreenState
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Son Aktiviteler',
+                    'Son Aktiviteler', // TODO: i18n
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
@@ -662,10 +664,10 @@ class _ModernDashboardScreenState
                   InkWell(
                     onTap: () => context.go('/reports'),
                     borderRadius: BorderRadius.circular(6),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                       child: Text(
-                        'Tümünü gör →',
+                        'Tümünü gör →', // TODO: i18n
                         style: TextStyle(
                           fontSize: 12,
                           color: AppColors.primary,

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class PaymentListScreen extends ConsumerStatefulWidget {
   const PaymentListScreen({super.key});
@@ -13,6 +14,8 @@ class PaymentListScreen extends ConsumerStatefulWidget {
 }
 
 class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   List<Map<String, dynamic>> _payments = [];
   bool _isLoading = false;
   String _selectedType = 'all'; // all, income, expense
@@ -65,7 +68,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
         _totalExpense = 0;
       });
       if (mounted) {
-        AppToast.error(context, 'Veri yuklenemedi');
+        AppToast.error(context, t('common.error'));
       }
     }
   }
@@ -95,7 +98,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
 
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Odemeler',
+        title: t('finance.payments'),
         actions: [
           IconButton(
             onPressed: _loadPayments,
@@ -114,7 +117,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                     children: [
                       Expanded(
                         child: _SummaryCard(
-                          label: 'Toplam Tahsilat',
+                          label: t('finance.total_collection'), // TODO: i18n key: finance.total_collection
                           value: currencyFormat.format(_totalIncome),
                           color: AppColors.success,
                           icon: Icons.arrow_downward,
@@ -123,7 +126,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: _SummaryCard(
-                          label: 'Toplam Odeme',
+                          label: t('finance.total_payment'), // TODO: i18n key: finance.total_payment
                           value: currencyFormat.format(_totalExpense),
                           color: AppColors.danger,
                           icon: Icons.arrow_upward,
@@ -132,7 +135,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: _SummaryCard(
-                          label: 'Net',
+                          label: t('finance.net'), // TODO: i18n key: finance.net
                           value: currencyFormat.format(net),
                           color: net >= 0 ? AppColors.success : AppColors.danger,
                           icon: net >= 0
@@ -152,13 +155,13 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                       // Type toggle
                       Expanded(
                         child: SegmentedButton<String>(
-                          segments: const [
+                          segments: [
                             ButtonSegment(
-                                value: 'all', label: Text('Tumu')),
+                                value: 'all', label: Text(t('common.all'))),
                             ButtonSegment(
-                                value: 'income', label: Text('Tahsilat')),
+                                value: 'income', label: Text(t('finance.collection'))), // TODO: i18n key: finance.collection
                             ButtonSegment(
-                                value: 'expense', label: Text('Odeme')),
+                                value: 'expense', label: Text(t('finance.payment'))), // TODO: i18n key: finance.payment
                           ],
                           selected: {_selectedType},
                           onSelectionChanged: (selection) {
@@ -183,7 +186,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                   child: TextField(
                     controller: _searchController,
                     decoration: InputDecoration(
-                      hintText: 'Ara... (kisi, aciklama, referans)',
+                      hintText: t('finance.search_hint'), // TODO: i18n key: finance.search_hint
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -212,8 +215,8 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                 Expanded(
                   child: _filteredPayments.isEmpty
                       ? AppEmptyState.noData(
-                          title: 'Odeme bulunamadi',
-                          description: 'Henuz odeme kaydi yok',
+                          title: t('common.no_records'),
+                          description: t('finance.no_payments'), // TODO: i18n key: finance.no_payments
                         )
                       : ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16),

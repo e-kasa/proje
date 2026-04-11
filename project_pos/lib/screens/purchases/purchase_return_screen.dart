@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
 import '../../core/utils/app_logger.dart';
 import '../../services/service_locator.dart';
+import '../../core/utils/i18n_helper.dart';
 
 /// İade nedenleri
 const List<Map<String, String>> _returnReasons = [
@@ -26,6 +27,8 @@ class PurchaseReturnScreen extends ConsumerStatefulWidget {
 }
 
 class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   bool _isLoading = true;
   bool _isSubmitting = false;
   String? _error;
@@ -102,7 +105,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
 
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Satın Alma İadesi',
+        title: t('purchases.return_title'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
@@ -141,7 +144,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
 
   Widget _buildPurchaseInfo(ThemeData theme) {
     final invoiceNo = _purchase['invoiceNumber']?.toString() ?? '-';
-    final supplierName = _purchase['supplierName']?.toString() ?? 'Tedarikçi';
+    final supplierName = _purchase['supplierName']?.toString() ?? t('purchases.supplier');
     final dateStr = _purchase['purchaseDate']?.toString();
     final dateDisplay = dateStr != null
         ? _dateFmt.format(DateTime.tryParse(dateStr) ?? DateTime.now())
@@ -178,7 +181,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Fatura: $invoiceNo  •  $dateDisplay',
+                  '${t('purchases.invoice_number')}: $invoiceNo  •  $dateDisplay',
                   style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant),
                 ),
@@ -211,7 +214,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                   size: 18, color: AppColors.primary),
               const SizedBox(width: 8),
               Text(
-                'İade Nedeni',
+                t('purchases.return_reason'),
                 style: theme.textTheme.titleSmall
                     ?.copyWith(fontWeight: FontWeight.bold),
               ),
@@ -254,7 +257,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                 size: 20, color: AppColors.primary),
             const SizedBox(width: 8),
             Text(
-              'İade Edilecek Ürünler',
+              t('purchases.return_products'),
               style: theme.textTheme.titleSmall
                   ?.copyWith(fontWeight: FontWeight.bold),
             ),
@@ -281,8 +284,8 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
               ),
               label: Text(
                 _returnItems.every((i) => i.selected)
-                    ? 'Seçimi Kaldır'
-                    : 'Tümünü Seç',
+                    ? t('common.deselect_all')
+                    : t('common.select_all'),
                 style: const TextStyle(fontSize: 12),
               ),
               style: TextButton.styleFrom(
@@ -312,7 +315,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                 Icon(Icons.inbox_outlined,
                     size: 40, color: Colors.grey[400]),
                 const SizedBox(height: 8),
-                Text('Satın almada ürün bilgisi bulunamadı',
+                Text(t('purchases.no_items_title'),
                     style: TextStyle(color: Colors.grey[500])),
               ],
             ),
@@ -330,7 +333,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
       _ReturnItem item, int index, ThemeData theme) {
     final name = item.original['productName']?.toString() ??
         item.original['variantName']?.toString() ??
-        'Ürün';
+        t('purchases.product');
     final sku = item.original['variantSku']?.toString() ?? '';
     final unitPrice =
         (item.original['unitPrice'] as num?)?.toDouble() ?? 0;
@@ -409,7 +412,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                     ],
                     const SizedBox(height: 2),
                     Text(
-                      '${_fmt.format(unitPrice)} x $originalQty adet',
+                      '${_fmt.format(unitPrice)} x $originalQty ${t('purchases.unit')}',
                       style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant),
                     ),
@@ -424,7 +427,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
               children: [
                 const SizedBox(width: 48),
                 Text(
-                  'İade miktarı:',
+                  t('purchases.return_quantity'),
                   style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant),
                 ),
@@ -510,7 +513,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                   size: 18, color: AppColors.primary),
               const SizedBox(width: 8),
               Text(
-                'İade Notu',
+                t('purchases.return_note'),
                 style: theme.textTheme.titleSmall
                     ?.copyWith(fontWeight: FontWeight.bold),
               ),
@@ -521,7 +524,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
             controller: _noteCtrl,
             maxLines: 3,
             decoration: InputDecoration(
-              hintText: 'İade ile ilgili not ekleyin (opsiyonel)...',
+              hintText: t('purchases.return_note_hint'),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -563,13 +566,13 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'İade Tutarı',
+                      t('purchases.return_amount'),
                       style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant),
                     ),
                     Text(
-                      '${_selectedItems.length} kalem, '
-                      '${_selectedItems.fold<int>(0, (s, i) => s + i.returnQuantity)} adet',
+                      '${_selectedItems.length} ${t('purchases.items')}, '
+                      '${_selectedItems.fold<int>(0, (s, i) => s + i.returnQuantity)} ${t('purchases.unit')}',
                       style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                           fontSize: 11),
@@ -587,7 +590,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
             ),
             const SizedBox(height: 12),
             AppButton.danger(
-              text: _isSubmitting ? 'Kaydediliyor...' : 'İadeyi Onayla',
+              text: _isSubmitting ? t('common.saving') : t('purchases.confirm_return'),
               icon: Icons.assignment_return,
               onPressed: _canSubmit ? _submit : null,
               isLoading: _isSubmitting,
@@ -605,10 +608,10 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
   Future<void> _submit() async {
     final confirm = await AppConfirmationDialog.show(
       context: context,
-      title: 'İadeyi Onayla',
-      message: '${_selectedItems.length} kalem, toplam ${_fmt.format(_totalReturnAmount)} tutarında '
-          'iade işlemi yapılacak.\n\nStok otomatik olarak güncellenecektir.\n\nDevam etmek istiyor musunuz?',
-      confirmText: 'Onayla',
+      title: t('purchases.confirm_return'),
+      message: '${_selectedItems.length} ${t('purchases.items')}, ${t('purchases.total')} ${_fmt.format(_totalReturnAmount)} '
+          '${t('purchases.return_confirm_message')}',
+      confirmText: t('common.confirm'),
       confirmColor: AppColors.orange,
       icon: Icons.assignment_return,
       iconColor: AppColors.orange,
@@ -648,7 +651,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
           .createPurchaseReturn(widget.purchaseId, payload);
 
       if (mounted) {
-        AppToast.success(context, 'Satın alma iadesi başarıyla oluşturuldu');
+        AppToast.success(context, t('purchases.return_success'));
         context.pop(true);
       }
     } catch (e) {
@@ -656,7 +659,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
           tag: 'PurchaseReturn', error: e);
       setState(() => _isSubmitting = false);
       if (mounted) {
-        AppToast.error(context, 'İade hatası: $e');
+        AppToast.error(context, '${t('purchases.return_error')}: $e');
       }
     }
   }
@@ -665,9 +668,9 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
 
   Widget _buildError() {
     return AppEmptyState.error(
-      title: 'Veri yüklenirken hata oluştu',
-      description: _error ?? 'Hata',
-      actionText: 'Tekrar Dene',
+      title: t('common.load_error'),
+      description: _error ?? t('common.error'),
+      actionText: t('common.retry'),
       onAction: _load,
     );
   }

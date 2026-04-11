@@ -7,6 +7,7 @@ import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 import '../../services/purchase_service.dart';
+import '../../core/utils/i18n_helper.dart';
 
 // ─── State ──────────────────────────────────────────────────────────────────
 
@@ -82,16 +83,16 @@ class PurchaseListNotifier extends StateNotifier<PurchaseListState> {
 
   void setFilter(bool? val) => state = state.copyWith(isCancelledFilter: val);
 
-  Future<void> cancel(String id, BuildContext context) async {
+  Future<void> cancel(String id, BuildContext context, String Function(String) t) async {
     try {
       await _service.cancelPurchase(id);
       await load();
       if (context.mounted) {
-        AppToast.warning(context, 'Satın alma iptal edildi');
+        AppToast.warning(context, t('purchases.cancelled_success'));
       }
     } catch (e) {
       if (context.mounted) {
-        AppToast.error(context, 'İptal hatası: $e');
+        AppToast.error(context, '${t('common.error')}: $e');
       }
     }
   }
@@ -112,6 +113,8 @@ class PurchaseListScreen extends ConsumerStatefulWidget {
 }
 
 class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   final _searchCtrl = TextEditingController();
 
   @override
@@ -135,12 +138,12 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
 
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Satın Alma',
+        title: t('purchases.title'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref.read(purchaseListProvider.notifier).load(),
-            tooltip: 'Yenile',
+            tooltip: t('common.refresh'),
           ),
         ],
       ),
@@ -150,7 +153,7 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
           if (mounted) ref.read(purchaseListProvider.notifier).load();
         },
         icon: const Icon(Icons.add),
-        label: const Text('Yeni Alım'),
+        label: Text(t('purchases.add')),
       ),
       body: Column(
         children: [
@@ -180,7 +183,7 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
             controller: _searchCtrl,
             onChanged: (v) => ref.read(purchaseListProvider.notifier).setSearch(v),
             decoration: InputDecoration(
-              hintText: 'Fatura no veya tedarikçi ara...',
+              hintText: t('purchases.search_hint'),
               prefixIcon: const Icon(Icons.search),
               suffixIcon: _searchCtrl.text.isNotEmpty
                   ? IconButton(
@@ -204,14 +207,14 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
           // Filtre çipleri
           Row(
             children: [
-              _filterChip('Tümü', null, state.isCancelledFilter),
+              _filterChip(t('common.all'), null, state.isCancelledFilter),
               const SizedBox(width: 8),
-              _filterChip('Aktif', false, state.isCancelledFilter),
+              _filterChip(t('common.active'), false, state.isCancelledFilter),
               const SizedBox(width: 8),
-              _filterChip('İptal', true, state.isCancelledFilter),
+              _filterChip(t('common.cancelled'), true, state.isCancelledFilter),
               const Spacer(),
               Text(
-                '${state.filtered.length} kayıt',
+                '${state.filtered.length} ${t('common.records')}',
                 style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
             ],
@@ -284,7 +287,7 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              p['supplierName'] ?? 'Tedarikçi',
+                              p['supplierName'] ?? t('purchases.supplier'),
                               style: theme.textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 decoration: cancelled ? TextDecoration.lineThrough : null,
@@ -292,7 +295,7 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Fatura: ${p['invoiceNumber'] ?? '-'}  •  $dateStr',
+                              '${t('purchases.invoice_number')}: ${p['invoiceNumber'] ?? '-'}  •  $dateStr',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
@@ -312,7 +315,7 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
                           ),
                           if (remaining > 0 && !cancelled)
                             Text(
-                              'Borç: ${fmt.format(remaining)}',
+                              '${t('purchases.debt')}: ${fmt.format(remaining)}',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: Colors.orange[700],
                                 fontWeight: FontWeight.w500,
@@ -328,23 +331,23 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
                       children: [
                         if (p['itemCount'] != null)
                           _tag(
-                            '${p['itemCount']} kalem',
+                            '${p['itemCount']} ${t('purchases.items')}',
                             Icons.inventory_2_outlined,
                             theme.colorScheme.onSurfaceVariant,
                             theme,
                           ),
                         const Spacer(),
                         if (cancelled)
-                          _tag('İptal Edildi', Icons.cancel_outlined, Colors.red, theme)
+                          _tag(t('common.cancelled'), Icons.cancel_outlined, Colors.red, theme)
                         else if (remaining > 0)
-                          _tag('Vadeli', Icons.schedule_rounded, Colors.orange, theme)
+                          _tag(t('purchases.on_credit'), Icons.schedule_rounded, Colors.orange, theme)
                         else
-                          _tag('Ödendi', Icons.check_circle_outline, Colors.green, theme),
+                          _tag(t('purchases.paid'), Icons.check_circle_outline, Colors.green, theme),
                         if (!cancelled) ...[
                           const SizedBox(width: 8),
                           GestureDetector(
                             onTap: () => _confirmCancel(p['id'] as String),
-                            child: _tag('İptal Et', Icons.close_rounded, Colors.red, theme),
+                            child: _tag(t('common.cancel'), Icons.close_rounded, Colors.red, theme),
                           ),
                         ],
                       ],
@@ -378,28 +381,28 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
 
   Widget _buildError(String error) {
     return AppEmptyState.error(
-      title: 'Veri yüklenirken hata oluştu',
+      title: t('common.load_error'),
       description: error,
-      actionText: 'Tekrar Dene',
+      actionText: t('common.retry'),
       onAction: () => ref.read(purchaseListProvider.notifier).load(),
     );
   }
 
   Widget _buildEmpty() {
     return AppEmptyState.noData(
-      title: 'Satın alma kaydı bulunamadı',
-      description: '"Yeni Alım" butonuna tıklayarak başlayın',
+      title: t('purchases.empty_title'),
+      description: t('purchases.empty_description'),
     );
   }
 
   Future<void> _confirmCancel(String id) async {
     final confirm = await AppConfirmationDialog.showDelete(
       context: context,
-      title: 'Satın Almayı İptal Et',
-      message: 'Bu satın almayı iptal etmek istediğinize emin misiniz?',
+      title: t('purchases.cancel_title'),
+      message: t('purchases.cancel_confirm'),
     );
     if (confirm && mounted) {
-      await ref.read(purchaseListProvider.notifier).cancel(id, context);
+      await ref.read(purchaseListProvider.notifier).cancel(id, context, t);
     }
   }
 }

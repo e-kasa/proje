@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 import '../accounts/payment_record_modal.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 class CustomerAccountDetailScreen extends ConsumerStatefulWidget {
   final String customerId;
@@ -17,12 +18,13 @@ class CustomerAccountDetailScreen extends ConsumerStatefulWidget {
 
 class _CustomerAccountDetailScreenState
     extends ConsumerState<CustomerAccountDetailScreen> {
+  String Function(String) get t => i18nOf(ref);
   Map<String, dynamic>? _customer;
   Map<String, dynamic>? _account;
   List<Map<String, dynamic>> _transactions = [];
   bool _isLoading = true;
   String? _error;
-  String _txFilter = 'Tumu';
+  String _txFilter = 'ALL'; // ALL | DEBIT | CREDIT
 
   @override
   void initState() {
@@ -58,13 +60,13 @@ class _CustomerAccountDetailScreenState
   }
 
   List<Map<String, dynamic>> get _filteredTransactions {
-    if (_txFilter == 'Tumu') return _transactions;
-    if (_txFilter == 'Borc') {
+    if (_txFilter == 'ALL') return _transactions;
+    if (_txFilter == 'DEBIT') {
       return _transactions
           .where((t) => (t['debitAmount'] ?? 0) > 0)
           .toList();
     }
-    if (_txFilter == 'Alacak') {
+    if (_txFilter == 'CREDIT') {
       return _transactions
           .where((t) => (t['creditAmount'] ?? 0) > 0)
           .toList();
@@ -76,26 +78,26 @@ class _CustomerAccountDetailScreenState
   Widget build(BuildContext context) {
     if (_isLoading) {
       return AppScaffold(
-        appBar: AppAppBar.standard(title: 'Cari Hesap'),
+        appBar: AppAppBar.standard(title: t('accounts.title')),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_error != null || _customer == null) {
       return AppScaffold(
-        appBar: AppAppBar.standard(title: 'Cari Hesap'),
+        appBar: AppAppBar.standard(title: t('accounts.title')),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.error_outline, size: 48, color: AppColors.danger),
               const SizedBox(height: 12),
-              Text(_error ?? 'Musteri bulunamadi',
+              Text(_error ?? t('common.error'),
                   style: const TextStyle(color: AppColors.textSecondary)),
               const SizedBox(height: 12),
               AppButton.primary(
 
-                text: 'Tekrar Dene',
+                text: t('common.refresh'),
 
                 onPressed: _loadAll,
 
@@ -144,22 +146,25 @@ class _CustomerAccountDetailScreenState
               children: [
                 Expanded(
                     child: _summaryCard(
-                        'Toplam Borc', totalDebt, AppColors.danger, Icons.arrow_upward)),
+                        'Toplam Borç', // TODO: i18n
+                        totalDebt, AppColors.danger, Icons.arrow_upward)),
                 const SizedBox(width: 10),
                 Expanded(
                     child: _summaryCard(
-                        'Toplam Tahsilat', totalCredit, AppColors.success, Icons.arrow_downward)),
+                        'Toplam Tahsilat', // TODO: i18n
+                        totalCredit, AppColors.success, Icons.arrow_downward)),
               ],
             ),
             const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
-                    child: _summaryCard('Vadesi Gecmis', overdueAmount,
+                    child: _summaryCard('Vadesi Geçmiş', // TODO: i18n
+                        overdueAmount,
                         AppColors.warning, Icons.warning_amber)),
                 const SizedBox(width: 10),
                 Expanded(
-                    child: _summaryCard('Kredi Limiti', creditLimit,
+                    child: _summaryCard(t('customers.credit_limit'), creditLimit,
                         AppColors.info, Icons.credit_card)),
               ],
             ),
@@ -167,12 +172,14 @@ class _CustomerAccountDetailScreenState
             Row(
               children: [
                 Expanded(
-                    child: _summaryCard('Kullanilabilir', availableCredit,
+                    child: _summaryCard('Kullanılabilir', // TODO: i18n
+                        availableCredit,
                         isLimitExceeded ? AppColors.danger : AppColors.success,
                         Icons.account_balance_wallet)),
                 const SizedBox(width: 10),
                 Expanded(
-                    child: _summaryCard('Hareket Sayisi', txCount.toDouble(),
+                    child: _summaryCard('Hareket Sayısı', // TODO: i18n
+                        txCount.toDouble(),
                         AppColors.primary, Icons.receipt_long,
                         isCount: true)),
               ],
@@ -183,7 +190,7 @@ class _CustomerAccountDetailScreenState
             SizedBox(
               width: double.infinity,
               child: AppButton.primary(
-                text: 'Tahsilat Kaydet',
+                text: t('accounts.payment'),
                 icon: Icons.payments,
                 size: ButtonSize.small,
                 onPressed: () => _showPaymentDialog(),
@@ -195,7 +202,7 @@ class _CustomerAccountDetailScreenState
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Hesap Hareketleri (${_filteredTransactions.length})',
+                Text('${t('accounts.transactions')} (${_filteredTransactions.length})',
                     style: const TextStyle(
                         fontSize: 16, fontWeight: FontWeight.bold)),
               ],
@@ -207,21 +214,24 @@ class _CustomerAccountDetailScreenState
               height: 36,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                children: ['Tumu', 'Borc', 'Alacak'].map((f) {
-                  final selected = _txFilter == f;
+                children: [
+                  {'key': 'ALL', 'label': t('common.all'), 'color': AppColors.primary},
+                  {'key': 'DEBIT', 'label': 'Borç', 'color': AppColors.danger}, // TODO: i18n
+                  {'key': 'CREDIT', 'label': 'Alacak', 'color': AppColors.success}, // TODO: i18n
+                ].map((entry) {
+                  final key = entry['key'] as String;
+                  final label = entry['label'] as String;
+                  final chipColor = entry['color'] as Color;
+                  final selected = _txFilter == key;
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: FilterChip(
-                      label: Text(f, style: TextStyle(fontSize: 12,
+                      label: Text(label, style: TextStyle(fontSize: 12,
                           color: selected ? Colors.white : AppColors.textPrimary)),
                       selected: selected,
-                      selectedColor: f == 'Borc'
-                          ? AppColors.danger
-                          : f == 'Alacak'
-                              ? AppColors.success
-                              : AppColors.primary,
+                      selectedColor: chipColor,
                       backgroundColor: Colors.white,
-                      onSelected: (_) => setState(() => _txFilter = f),
+                      onSelected: (_) => setState(() => _txFilter = key),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8)),
                     ),
@@ -234,8 +244,8 @@ class _CustomerAccountDetailScreenState
             // Hareket Listesi
             if (_filteredTransactions.isEmpty)
               AppEmptyState.noData(
-                title: 'Henuz hareket kaydedilmemis',
-                description: 'Bu hesaba ait hareket bulunmuyor',
+                title: t('common.no_data'),
+                description: t('common.no_records'),
               )
             else
               ..._filteredTransactions.map(_buildTransactionCard),
@@ -250,10 +260,10 @@ class _CustomerAccountDetailScreenState
   Widget _buildBalanceCard(double balance, bool isExceeded) {
     final isPositive = balance > 0;
     final balanceLabel = isPositive
-        ? 'Borclu'
+        ? 'Borçlu' // TODO: i18n
         : balance < 0
-            ? 'Alacakli'
-            : 'Hesap Kapali';
+            ? 'Alacaklı' // TODO: i18n
+            : 'Hesap Kapalı'; // TODO: i18n
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -279,8 +289,8 @@ class _CustomerAccountDetailScreenState
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Guncel Bakiye',
-                  style: TextStyle(color: Colors.white70, fontSize: 13)),
+              Text(t('accounts.balance'),
+                  style: const TextStyle(color: Colors.white70, fontSize: 13)),
               if (isExceeded)
                 Container(
                   padding:
@@ -289,7 +299,7 @@ class _CustomerAccountDetailScreenState
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Text('LIMIT ASILDI',
+                  child: const Text('LIMIT AŞILDI', // TODO: i18n
                       style: TextStyle(
                           color: Colors.white,
                           fontSize: 10,
@@ -454,7 +464,7 @@ class _CustomerAccountDetailScreenState
                           color: AppColors.warning.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text('VADESI GECMIS',
+                        child: const Text('VADESİ GEÇMİŞ', // TODO: i18n
                             style: TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
@@ -468,7 +478,7 @@ class _CustomerAccountDetailScreenState
                           color: AppColors.textMuted.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text('IPTAL',
+                        child: const Text('İPTAL', // TODO: i18n
                             style: TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
@@ -490,7 +500,7 @@ class _CustomerAccountDetailScreenState
                             fontSize: 11, color: AppColors.textMuted)),
                     if (dueDate.isNotEmpty) ...[
                       const SizedBox(width: 6),
-                      Text('Vade: $dueDate',
+                      Text('${t('accounts.overdue')}: $dueDate',
                           style: TextStyle(
                               fontSize: 10,
                               color: isOverdue
@@ -554,12 +564,12 @@ class _CustomerAccountDetailScreenState
       );
       if (mounted) {
         final amount = data['amount'] as double;
-        AppToast.success(context, '${_formatCurrency(amount)} TL tahsilat kaydedildi');
+        AppToast.success(context, '${_formatCurrency(amount)} TL ${t('accounts.payment')}');
       }
       _loadAll();
     } catch (e) {
       if (mounted) {
-        AppToast.error(context, 'Tahsilat kaydedilemedi: $e');
+        AppToast.error(context, '${t('common.error')}: $e');
       }
     }
   }

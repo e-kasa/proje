@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/models/bulk_import_models.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 
 /// Eşleştirme Onay Modal - POTENTIAL_MATCH durumu için
-class MatchConfirmModal extends StatefulWidget {
+class MatchConfirmModal extends ConsumerStatefulWidget {
   final AnalyzedProduct product;
   final Function(UserDecision) onDecision;
 
@@ -15,10 +17,11 @@ class MatchConfirmModal extends StatefulWidget {
   });
 
   @override
-  State<MatchConfirmModal> createState() => _MatchConfirmModalState();
+  ConsumerState<MatchConfirmModal> createState() => _MatchConfirmModalState();
 }
 
-class _MatchConfirmModalState extends State<MatchConfirmModal> {
+class _MatchConfirmModalState extends ConsumerState<MatchConfirmModal> {
+  String Function(String) get t => i18nOf(ref);
   MergeStrategy _mergeStrategy = MergeStrategy.UPDATE_STOCK;
   bool _updateStock = true;
   bool _updatePrice = false;
@@ -95,12 +98,12 @@ class _MatchConfirmModalState extends State<MatchConfirmModal> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Ürün Eşleştirme',
+                          'Ürün Eşleştirme', // TODO: i18n bulk_import.product_match_title
                           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Benzerlik: %$similarity',
+                          'Benzerlik: %$similarity', // TODO: i18n bulk_import.similarity_pct
                           style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
                         ),
                       ],
@@ -154,7 +157,7 @@ class _MatchConfirmModalState extends State<MatchConfirmModal> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'İçe Aktarılan Ürün',
+                                'İçe Aktarılan Ürün', // TODO: i18n bulk_import.imported_product
                                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 12),
@@ -183,7 +186,7 @@ class _MatchConfirmModalState extends State<MatchConfirmModal> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'Sistemdeki Ürün',
+                                'Sistemdeki Ürün', // TODO: i18n bulk_import.existing_product
                                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 12),
@@ -205,13 +208,13 @@ class _MatchConfirmModalState extends State<MatchConfirmModal> {
 
                     // Merge Strategy
                     const Text(
-                      'Birleştirme Stratejisi:',
+                      'Birleştirme Stratejisi:', // TODO: i18n bulk_import.merge_strategy
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 12),
 
                     CheckboxListTile(
-                      title: const Text('Stok Güncelle'),
+                      title: const Text('Stok Güncelle'), // TODO: i18n bulk_import.update_stock
                       subtitle: Text(
                         _stockMode == StockUpdateMode.ADD
                             ? '${matched.currentStock} + ${widget.product.stock} = ${matched.currentStock + widget.product.stock}'
@@ -251,7 +254,7 @@ class _MatchConfirmModalState extends State<MatchConfirmModal> {
                       ),
 
                     CheckboxListTile(
-                      title: const Text('Fiyat Güncelle'),
+                      title: const Text('Fiyat Güncelle'), // TODO: i18n bulk_import.update_price
                       subtitle: Text(
                         'Alış: ₺${widget.product.buyPrice}, Satış: ₺${widget.product.sellPrice}',
                       ),
@@ -281,12 +284,12 @@ class _MatchConfirmModalState extends State<MatchConfirmModal> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('İptal'),
+                    child: const Text('İptal'), // TODO: i18n common.cancel
                   ),
                   const SizedBox(width: 12),
                   AppButton.primary(
 
-                    text: 'Eşleştir',
+                    text: 'Eşleştir', // TODO: i18n common.match
 
                     icon: Icons.link,
                     onPressed: _confirm,

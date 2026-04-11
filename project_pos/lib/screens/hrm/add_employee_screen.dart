@@ -7,6 +7,7 @@ import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/hrm_service.dart';
 import '../../core/api/api_client.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class AddEmployeeScreen extends ConsumerStatefulWidget {
   final int? employeeId;
@@ -17,6 +18,7 @@ class AddEmployeeScreen extends ConsumerStatefulWidget {
 }
 
 class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen> {
+  String Function(String) get t => i18nOf(ref);
   final _formKey = GlobalKey<FormState>();
   late HrmService _hrmService;
   bool _isLoading = false;
@@ -80,7 +82,7 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen> {
         }
       }
     } catch (e) {
-      if (mounted) AppToast.error(context, 'Calisan yuklenemedi');
+      if (mounted) AppToast.error(context, t('common.error'));
     }
     setState(() => _isLoading = false);
   }
@@ -115,15 +117,11 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen> {
       }
 
       if (mounted) {
-        AppToast.success(
-            context,
-            _isEditing
-                ? 'Calisan guncellendi'
-                : 'Calisan olusturuldu');
+        AppToast.success(context, t('common.saved'));
         context.pop(true);
       }
     } catch (e) {
-      if (mounted) AppToast.error(context, 'Kayit sirasinda hata olustu');
+      if (mounted) AppToast.error(context, t('common.error'));
     }
     setState(() => _isSaving = false);
   }
@@ -143,7 +141,7 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: _isEditing ? 'Calisan Duzenle' : 'Yeni Calisan',
+        title: _isEditing ? t('hrm.title') : t('hrm.add_employee'), // TODO: i18n edit_employee key
         actions: [
           if (!_isLoading)
             TextButton(
@@ -153,8 +151,8 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen> {
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Kaydet',
-                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  : Text(t('common.save'),
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
             ),
         ],
       ),
@@ -165,7 +163,7 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen> {
               child: ListView(
                 padding: AppConstants.pagePadding,
                 children: [
-                  _sectionTitle('Kisisel Bilgiler'),
+                  _sectionTitle('Kisisel Bilgiler'), // TODO: i18n
                   const SizedBox(height: 12),
                   _buildTextField(
                     controller: _nameCtrl,
@@ -189,7 +187,7 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen> {
                     keyboardType: TextInputType.phone,
                   ),
                   const SizedBox(height: 20),
-                  _sectionTitle('Is Bilgileri'),
+                  _sectionTitle('Is Bilgileri'), // TODO: i18n
                   const SizedBox(height: 12),
                   _buildDepartmentDropdown(),
                   const SizedBox(height: 12),
@@ -212,7 +210,7 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen> {
                   const SizedBox(height: 12),
                   _buildStatusToggle(),
                   const SizedBox(height: 20),
-                  _sectionTitle('Ek Bilgiler'),
+                  _sectionTitle('Ek Bilgiler'), // TODO: i18n
                   const SizedBox(height: 12),
                   _buildTextField(
                     controller: _notesCtrl,
@@ -223,10 +221,10 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen> {
                   const SizedBox(height: 32),
                   AppButton.primary(
                     text: _isSaving
-                        ? 'Kaydediliyor...'
+                        ? 'Kaydediliyor...' // TODO: i18n saving key
                         : _isEditing
-                            ? 'Guncelle'
-                            : 'Kaydet',
+                            ? t('common.save') // TODO: i18n update key
+                            : t('common.save'),
                     onPressed: _isSaving ? null : _save,
                     fullWidth: true,
                     isLoading: _isSaving,

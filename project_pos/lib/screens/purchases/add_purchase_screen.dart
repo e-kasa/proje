@@ -7,6 +7,7 @@ import '../../services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
 import '../../core/theme/app_constants.dart';
+import '../../core/utils/i18n_helper.dart';
 
 // ─── Satır modeli ────────────────────────────────────────────────────────────
 
@@ -36,6 +37,8 @@ class AddPurchaseScreen extends ConsumerStatefulWidget {
 }
 
 class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   final _formKey = GlobalKey<FormState>();
   final _invoiceCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
@@ -109,7 +112,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
 
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Yeni Satın Alma',
+        title: t('purchases.add'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
@@ -143,7 +146,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
               child: ListView(
                 padding: AppConstants.pagePadding,
                 children: [
-                  _buildSectionTitle('Tedarikçi Bilgileri', Icons.business_rounded, theme),
+                  _buildSectionTitle(t('purchases.supplier_info'), Icons.business_rounded, theme),
                   const SizedBox(height: 12),
                   _buildSupplierDropdown(theme),
                   const SizedBox(height: 12),
@@ -151,7 +154,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
                   const SizedBox(height: 12),
                   _buildDateRow(theme),
                   const SizedBox(height: 20),
-                  _buildSectionTitle('Konum', Icons.warehouse_rounded, theme),
+                  _buildSectionTitle(t('purchases.location'), Icons.warehouse_rounded, theme),
                   const SizedBox(height: 12),
                   Row(
                     children: [
@@ -161,7 +164,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  _buildSectionTitle('Ürünler', Icons.inventory_2_rounded, theme),
+                  _buildSectionTitle(t('purchases.products'), Icons.inventory_2_rounded, theme),
                   const SizedBox(height: 12),
                   _buildItemSearch(theme),
                   const SizedBox(height: 12),
@@ -200,8 +203,8 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
   Widget _buildSupplierDropdown(ThemeData theme) {
     return DropdownButtonFormField<String>(
       value: _selectedSupplierId,
-      decoration: _inputDeco('Tedarikçi *', Icons.business_outlined, theme),
-      hint: const Text('Tedarikçi seçin'),
+      decoration: _inputDeco(t('purchases.supplier_required'), Icons.business_outlined, theme),
+      hint: Text(t('purchases.select_supplier')),
       items: _suppliers.map((s) {
         return DropdownMenuItem<String>(
           value: s['id']?.toString(),
@@ -209,16 +212,16 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
         );
       }).toList(),
       onChanged: (v) => setState(() => _selectedSupplierId = v),
-      validator: (v) => v == null ? 'Tedarikçi seçiniz' : null,
+      validator: (v) => v == null ? t('purchases.select_supplier') : null,
     );
   }
 
   Widget _buildInvoiceRow(ThemeData theme) {
     return AppInput(
-      label: 'Fatura Numarası *',
+      label: t('purchases.invoice_number_required'),
       controller: _invoiceCtrl,
       prefixIcon: Icons.receipt_outlined,
-      validator: (v) => (v == null || v.isEmpty) ? 'Fatura numarası giriniz' : null,
+      validator: (v) => (v == null || v.isEmpty) ? t('purchases.enter_invoice_number') : null,
     );
   }
 
@@ -227,7 +230,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
       onTap: _pickDate,
       borderRadius: AppConstants.borderRadiusSmall,
       child: InputDecorator(
-        decoration: _inputDeco('Tarih *', Icons.calendar_today_outlined, theme),
+        decoration: _inputDeco(t('purchases.date_required'), Icons.calendar_today_outlined, theme),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -242,8 +245,8 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
   Widget _buildWarehouseDropdown(ThemeData theme) {
     return DropdownButtonFormField<String>(
       value: _selectedWarehouseId,
-      decoration: _inputDeco('Depo *', Icons.warehouse_outlined, theme),
-      hint: const Text('Depo'),
+      decoration: _inputDeco(t('purchases.warehouse_required'), Icons.warehouse_outlined, theme),
+      hint: Text(t('warehouses.title')),
       isExpanded: true,
       items: _warehouses.map((w) {
         // backend PurchaseRequest.warehouseId = plain code ("WH-01"), not UUID
@@ -254,15 +257,15 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
         );
       }).toList(),
       onChanged: (v) => setState(() => _selectedWarehouseId = v),
-      validator: (v) => v == null ? 'Depo seçiniz' : null,
+      validator: (v) => v == null ? t('purchases.select_warehouse') : null,
     );
   }
 
   Widget _buildStoreDropdown(ThemeData theme) {
     return DropdownButtonFormField<String>(
       value: _selectedStoreId,
-      decoration: _inputDeco('Mağaza *', Icons.store_outlined, theme),
-      hint: const Text('Mağaza'),
+      decoration: _inputDeco(t('purchases.store_required'), Icons.store_outlined, theme),
+      hint: Text(t('stores.title')),
       isExpanded: true,
       items: _stores.map((s) {
         // backend PurchaseRequest.storeId = plain code ("STORE-01"), not UUID
@@ -273,7 +276,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
         );
       }).toList(),
       onChanged: (v) => setState(() => _selectedStoreId = v),
-      validator: (v) => v == null ? 'Mağaza seçiniz' : null,
+      validator: (v) => v == null ? t('purchases.select_store') : null,
     );
   }
 
@@ -291,7 +294,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
           child: TextField(
             controller: _searchCtrl,
             decoration: InputDecoration(
-              hintText: 'Ürün adı veya SKU ile ara...',
+              hintText: t('purchases.product_search_hint'),
               prefixIcon: const Icon(Icons.search_rounded),
               suffixIcon: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -312,7 +315,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
                   IconButton(
                     icon: const Icon(Icons.qr_code_scanner_rounded),
                     onPressed: _scanBarcode,
-                    tooltip: 'Barkod Tara',
+                    tooltip: t('purchases.scan_barcode'),
                   ),
                 ],
               ),
@@ -334,7 +337,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
           Padding(
             padding: const EdgeInsets.only(top: 4, left: 12),
             child: Text(
-              'En az 1 ürün eklemelisiniz',
+              t('purchases.min_one_product'),
               style: theme.textTheme.bodySmall?.copyWith(color: AppColors.danger),
             ),
           ),
@@ -369,7 +372,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
                 child: const Icon(Icons.inventory_2_outlined, size: 16),
               ),
               title: Text(p['name']?.toString() ?? '', style: const TextStyle(fontSize: 13)),
-              subtitle: const Text('Varyant yok', style: TextStyle(fontSize: 11)),
+              subtitle: Text(t('purchases.no_variants'), style: const TextStyle(fontSize: 11)),
               enabled: false,
             );
           }
@@ -399,7 +402,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
               child: const Icon(Icons.inventory_2_outlined, size: 16, color: AppColors.primary),
             ),
             title: Text(p['name']?.toString() ?? '', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-            subtitle: Text('${variants.length} varyant', style: const TextStyle(fontSize: 11)),
+            subtitle: Text('${variants.length} ${t('purchases.variants')}', style: const TextStyle(fontSize: 11)),
             children: variants.map((v) {
               final attrs = v['attributes'] != null ? ' — ${v['attributes']}' : '';
               return ListTile(
@@ -451,7 +454,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
                   IconButton(
                     icon: const Icon(Icons.remove_circle_outline_rounded, color: Colors.red, size: 20),
                     onPressed: () => setState(() => _items.removeAt(index)),
-                    tooltip: 'Kalemi Kaldır',
+                    tooltip: t('purchases.remove_item'),
                   ),
                 ],
               ),
@@ -460,7 +463,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
                 children: [
                   // Miktar
                   _buildNumberField(
-                    label: 'Miktar',
+                    label: t('purchases.quantity'),
                     value: item.quantity.toString(),
                     onChanged: (v) {
                       final n = int.tryParse(v);
@@ -470,7 +473,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
                   const SizedBox(width: 12),
                   // Birim Fiyat
                   _buildNumberField(
-                    label: 'Birim Fiyat (₺)',
+                    label: t('purchases.unit_price'),
                     value: item.unitPrice == 0 ? '' : item.unitPrice.toStringAsFixed(2),
                     onChanged: (v) {
                       final n = double.tryParse(v.replaceAll(',', '.'));
@@ -540,12 +543,12 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
           Row(children: [
             const Icon(Icons.calculate_outlined, size: 18),
             const SizedBox(width: 8),
-            Text('${_items.length} kalem', style: theme.textTheme.bodyMedium),
+            Text('${_items.length} ${t('purchases.items')}', style: theme.textTheme.bodyMedium),
           ]),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('Toplam Tutar', style: theme.textTheme.bodySmall),
+              Text(t('purchases.total_amount'), style: theme.textTheme.bodySmall),
               Text(
                 _fmt.format(_grandTotal),
                 style: theme.textTheme.titleMedium?.copyWith(
@@ -562,7 +565,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
 
   Widget _buildNotesField(ThemeData theme) {
     return AppInput(
-      label: 'Notlar (opsiyonel)',
+      label: t('purchases.notes_optional'),
       controller: _notesCtrl,
       prefixIcon: Icons.notes_rounded,
       maxLines: 2,
@@ -574,7 +577,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
       height: 52,
       child: AppButton.primary(
         onPressed: _isSubmitting ? null : _submit,
-        text: _isSubmitting ? 'Kaydediliyor...' : 'Satın Almayı Kaydet',
+        text: _isSubmitting ? t('common.saving') : t('purchases.save_purchase'),
         icon: Icons.save_rounded,
       ),
     );
@@ -684,14 +687,14 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
 
     if (_items.isEmpty) {
       setState(() => _itemsError = true);
-      AppToast.warning(context, 'En az 1 ürün kalemi eklenmelidir');
+      AppToast.warning(context, t('purchases.min_one_product'));
       return;
     }
 
     // Fiyat kontrolü
     final zeroPrice = _items.any((i) => i.unitPrice <= 0);
     if (zeroPrice) {
-      AppToast.warning(context, 'Tüm kalemlerin birim fiyatı girilmelidir');
+      AppToast.warning(context, t('purchases.all_prices_required'));
       return;
     }
 
@@ -701,7 +704,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
       await ref.read(purchaseServiceProvider).createPurchase(_buildRequest());
 
       if (mounted) {
-        AppToast.success(context, 'Satın alma başarıyla kaydedildi');
+        AppToast.success(context, t('purchases.saved_success'));
         context.pop();
       }
     } catch (e) {
@@ -712,7 +715,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
       if (_isCreditLimitError(e) && _selectedSupplierId != null) {
         _showCreditLimitPrompt();
       } else {
-        AppToast.error(context, 'Hata: $e');
+        AppToast.error(context, '${t('common.error')}: $e');
       }
     }
   }
@@ -721,26 +724,25 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
     final supplierName = _suppliers
         .firstWhere((s) => s['id']?.toString() == _selectedSupplierId,
             orElse: () => {})['name']
-        ?.toString() ?? 'Tedarikçi';
+        ?.toString() ?? t('purchases.supplier');
 
     final shouldUpdate = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         icon: const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 48),
-        title: const Text('Kredi Limiti Tanımsız'),
+        title: Text(t('purchases.credit_limit_undefined')),
         content: Text(
-          '"$supplierName" tedarikçisinin kredi limiti tanımlanmamış.\n\n'
-          'Satın alma işlemini tamamlamak için önce kredi limitini güncellemek ister misiniz?',
+          '"$supplierName" ${t('purchases.credit_limit_undefined_message')}',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Vazgeç'),
+            child: Text(t('common.cancel')),
           ),
           FilledButton.icon(
             onPressed: () => Navigator.pop(ctx, true),
             icon: const Icon(Icons.edit_rounded, size: 18),
-            label: const Text('Kredi Limiti Güncelle'),
+            label: Text(t('purchases.update_credit_limit')),
           ),
         ],
       ),
@@ -767,7 +769,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
                   color: AppColors.primary, size: 24),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('Kredi Limiti — $supplierName',
+                child: Text('${t('purchases.credit_limit')} — $supplierName',
                     style: const TextStyle(fontSize: 16)),
               ),
             ],
@@ -779,8 +781,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Bu tedarikçi için kredi limitini belirleyin. '
-                  'İşlem sonrasında satın alma otomatik olarak tekrar denenecektir.',
+                  t('purchases.credit_limit_description'),
                   style: TextStyle(
                     fontSize: 13,
                     color: Theme.of(ctx).colorScheme.onSurfaceVariant,
@@ -788,14 +789,14 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
                 ),
                 const SizedBox(height: 16),
                 AppInput(
-                  label: 'Kredi Limiti (₺)',
+                  label: t('purchases.credit_limit_label'),
                   controller: limitCtrl,
                   prefixIcon: Icons.monetization_on_outlined,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Limit giriniz';
+                    if (v == null || v.isEmpty) return t('purchases.enter_limit');
                     final n = double.tryParse(v.replaceAll(',', '.'));
-                    if (n == null || n <= 0) return 'Geçerli bir tutar giriniz';
+                    if (n == null || n <= 0) return t('purchases.enter_valid_amount');
                     return null;
                   },
                 ),
@@ -805,7 +806,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
           actions: [
             TextButton(
               onPressed: saving ? null : () => Navigator.pop(ctx, false),
-              child: const Text('Vazgeç'),
+              child: Text(t('common.cancel')),
             ),
             FilledButton.icon(
               onPressed: saving
@@ -822,7 +823,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
                       } catch (e) {
                         setDialogState(() => saving = false);
                         if (ctx.mounted) {
-                          AppToast.error(ctx, 'Güncelleme hatası: $e');
+                          AppToast.error(ctx, '${t('common.error')}: $e');
                         }
                       }
                     },
@@ -833,7 +834,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white))
                   : const Icon(Icons.save_rounded, size: 18),
-              label: Text(saving ? 'Kaydediliyor...' : 'Kaydet ve Devam Et'),
+              label: Text(saving ? t('common.saving') : t('purchases.save_and_continue')),
             ),
           ],
         ),
@@ -841,7 +842,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
     );
 
     if (updated == true && mounted) {
-      AppToast.success(context, 'Kredi limiti güncellendi, satın alma tekrar deneniyor...');
+      AppToast.success(context, t('purchases.credit_limit_updated'));
       // Kısa bir gecikme ile kullanıcıya bilgi göster, sonra otomatik tekrar dene
       await Future.delayed(const Duration(milliseconds: 500));
       _submit();

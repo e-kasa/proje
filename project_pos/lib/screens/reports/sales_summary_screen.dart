@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class SalesSummaryScreen extends ConsumerStatefulWidget {
   const SalesSummaryScreen({super.key});
@@ -13,6 +14,8 @@ class SalesSummaryScreen extends ConsumerStatefulWidget {
 }
 
 class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
   DateTime _endDate = DateTime.now();
   int _selectedPeriod = 0; // 0=Gunluk, 1=Haftalik, 2=Aylik
@@ -23,7 +26,7 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
       NumberFormat.currency(locale: 'tr_TR', symbol: '\u20BA');
   final _dateFormat = DateFormat('dd.MM.yyyy');
 
-  static const _periodLabels = ['Gunluk', 'Haftalik', 'Aylik'];
+  List<String> get _periodLabels => [t('reports.daily'), t('reports.weekly'), t('reports.monthly')]; // TODO: i18n keys: reports.daily, reports.weekly, reports.monthly
   static const _periodValues = ['day', 'week', 'month'];
 
   @override
@@ -41,7 +44,7 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
         endDate: _endDate.toIso8601String(),
         groupBy: _periodValues[_selectedPeriod],
       );
-      if (result == null) throw Exception('Veri bulunamadi');
+      if (result == null) throw Exception(t('common.no_data'));
       setState(() {
         _data = result;
         _isLoading = false;
@@ -52,7 +55,7 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
         _isLoading = false;
       });
       if (mounted) {
-        AppToast.error(context, 'Veri yuklenemedi');
+        AppToast.error(context, t('common.error'));
       }
     }
   }
@@ -80,11 +83,11 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
 
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Satis Ozeti',
+        title: t('reports.sales_summary'),
         actions: [
           IconButton(
             icon: const Icon(Icons.date_range),
-            tooltip: 'Tarih Araligi Sec',
+            tooltip: t('reports.date_range'),
             onPressed: _pickDateRange,
           ),
           IconButton(
@@ -96,7 +99,7 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _data == null
-              ? AppEmptyState.error(title: 'Veri bulunamadi', onAction: _loadData)
+              ? AppEmptyState.error(title: t('common.no_data'), onAction: _loadData)
               : RefreshIndicator(
                   onRefresh: _loadData,
                   child: _buildContent(),
@@ -180,7 +183,7 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
           children: [
             Expanded(
               child: _buildSummaryCard(
-                'Satis Adedi',
+                t('reports.sales_count'), // TODO: i18n key: reports.sales_count
                 totalSalesCount,
                 Icons.receipt_long,
                 AppColors.primary,
@@ -189,7 +192,7 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: _buildSummaryCard(
-                'Toplam Ciro',
+                t('reports.total_revenue'), // TODO: i18n key: reports.total_revenue
                 _currencyFormat.format(totalRevenue),
                 Icons.trending_up,
                 AppColors.success,
@@ -198,7 +201,7 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: _buildSummaryCard(
-                'Ort. Sepet',
+                t('reports.avg_basket'), // TODO: i18n key: reports.avg_basket
                 _currencyFormat.format(averageOrderValue),
                 Icons.analytics,
                 AppColors.info,
@@ -210,9 +213,9 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
 
         // Payment method distribution
         if (paymentMethods.isNotEmpty) ...[
-          const Text(
-            'Odeme Yontemi Dagilimi',
-            style: TextStyle(
+          Text(
+            t('reports.payment_method_distribution'), // TODO: i18n key: reports.payment_method_distribution
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
@@ -238,7 +241,7 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
         // Period data list
         if (periodData.isNotEmpty) ...[
           Text(
-            '${_periodLabels[_selectedPeriod]} Veriler',
+            '${_periodLabels[_selectedPeriod]} ${t('reports.data')}', // TODO: i18n key: reports.data
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -398,7 +401,7 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Satis: ${(item['salesCount'] ?? 0)}',
+                '${t('sales.title')}: ${(item['salesCount'] ?? 0)}',
                 style: const TextStyle(
                   fontSize: 12,
                   color: AppColors.textSecondary,

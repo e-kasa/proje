@@ -4,6 +4,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class BarcodeScannerScreen extends ConsumerStatefulWidget {
   const BarcodeScannerScreen({super.key});
@@ -14,6 +15,7 @@ class BarcodeScannerScreen extends ConsumerStatefulWidget {
 }
 
 class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> {
+  String Function(String) get t => i18nOf(ref);
   MobileScannerController cameraController = MobileScannerController();
   bool _isProcessing = false;
   String? _scannedCode;
@@ -70,9 +72,9 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            const Text(
-              'Barkod Tarandı',
-              style: TextStyle(fontSize: 18),
+            Text(
+              t('scanner.title'), // TODO: i18n barcode_scanned key
+              style: const TextStyle(fontSize: 18),
             ),
           ],
         ),
@@ -80,9 +82,9 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Barkod Kodu:',
-              style: TextStyle(
+            Text(
+              'Barkod Kodu:', // TODO: i18n barcode_code key
+              style: const TextStyle(
                 fontSize: 14,
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w600,
@@ -118,10 +120,10 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> {
               });
               Navigator.pop(context);
             },
-            child: const Text('Tekrar Tara'),
+            child: Text('Tekrar Tara'), // TODO: i18n rescan key
           ),
           AppButton.primary(
-            text: 'Ürünü Bul',
+            text: t('common.search'), // TODO: i18n find_product key
             icon: Icons.search,
             onPressed: () {
               Navigator.pop(context);
@@ -197,20 +199,20 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> {
                       color: Colors.black.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Column(
+                    child: Column(
                       children: [
                         Text(
-                          'Barkodu Okutun',
+                          t('scanner.title'), // TODO: i18n scan_barcode key
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
-                          'Ürün barkodunu kare içerisine hizalayın',
-                          style: TextStyle(
+                          'Ürün barkodunu kare içerisine hizalayın', // TODO: i18n
+                          style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 14,
                           ),
@@ -278,19 +280,19 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> {
                         children: [
                           _buildQuickAction(
                             icon: Icons.add_circle_outline,
-                            label: 'Ürün Ekle',
+                            label: t('common.add'), // TODO: i18n add_product key
                             onTap: () => context.go('/inventory/add-product'),
                           ),
                           const SizedBox(width: 24),
                           _buildQuickAction(
                             icon: Icons.history,
-                            label: 'Geçmiş',
+                            label: 'Geçmiş', // TODO: i18n history key
                             onTap: () {},
                           ),
                           const SizedBox(width: 24),
                           _buildQuickAction(
                             icon: Icons.settings,
-                            label: 'Ayarlar',
+                            label: t('menu.settings'), // TODO: i18n
                             onTap: () {},
                           ),
                         ],

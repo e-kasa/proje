@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class CashFlowScreen extends ConsumerStatefulWidget {
   const CashFlowScreen({super.key});
@@ -13,6 +14,8 @@ class CashFlowScreen extends ConsumerStatefulWidget {
 }
 
 class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   bool _isLoading = false;
   String _selectedPeriod = 'monthly'; // daily, weekly, monthly
 
@@ -63,7 +66,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
         _isLoading = false;
       });
       if (mounted) {
-        AppToast.error(context, 'Veri yuklenemedi');
+        AppToast.error(context, t('common.error'));
       }
     }
   }
@@ -75,7 +78,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
 
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Nakit Akisi',
+        title: t('finance.cash_flow'),
         actions: [
           IconButton(
             onPressed: _loadCashFlow,
@@ -93,13 +96,13 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                   // Period selector
                   Center(
                     child: SegmentedButton<String>(
-                      segments: const [
+                      segments: [
                         ButtonSegment(
-                            value: 'daily', label: Text('Gunluk')),
+                            value: 'daily', label: Text(t('reports.daily'))), // TODO: i18n key: reports.daily
                         ButtonSegment(
-                            value: 'weekly', label: Text('Haftalik')),
+                            value: 'weekly', label: Text(t('reports.weekly'))), // TODO: i18n key: reports.weekly
                         ButtonSegment(
-                            value: 'monthly', label: Text('Aylik')),
+                            value: 'monthly', label: Text(t('reports.monthly'))), // TODO: i18n key: reports.monthly
                       ],
                       selected: {_selectedPeriod},
                       onSelectionChanged: (selection) {
@@ -118,7 +121,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                     children: [
                       Expanded(
                         child: _FlowCard(
-                          label: 'Giris',
+                          label: t('finance.income'),
                           value: currencyFormat.format(_totalIncome),
                           color: AppColors.success,
                           icon: Icons.arrow_downward,
@@ -127,7 +130,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: _FlowCard(
-                          label: 'Cikis',
+                          label: t('finance.expenses'),
                           value: currencyFormat.format(_totalExpense),
                           color: AppColors.danger,
                           icon: Icons.arrow_upward,
@@ -136,7 +139,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: _FlowCard(
-                          label: 'Net Akis',
+                          label: t('finance.net_flow'), // TODO: i18n key: finance.net_flow
                           value: currencyFormat.format(_netFlow),
                           color: AppColors.primary,
                           icon: _netFlow >= 0
@@ -154,16 +157,16 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Gelir / Gider Karsilastirmasi',
-                          style: TextStyle(
+                        Text(
+                          t('finance.income_expense_comparison'), // TODO: i18n key: finance.income_expense_comparison
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 16),
                         ..._periodData.map((data) {
-                          return _BarRow(data: data, periodData: _periodData);
+                          return _BarRow(data: data, periodData: _periodData, incomeLabel: t('finance.income'), expenseLabel: t('finance.expenses'));
                         }),
                       ],
                     ),
@@ -176,9 +179,9 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Detayli Tablo',
-                          style: TextStyle(
+                        Text(
+                          t('finance.detail_table'), // TODO: i18n key: finance.detail_table
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -192,32 +195,32 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                             color: AppColors.bgLight,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Row(
+                          child: Row(
                             children: [
                               Expanded(
                                   flex: 2,
-                                  child: Text('Donem',
-                                      style: TextStyle(
+                                  child: Text(t('finance.period'), // TODO: i18n key: finance.period
+                                      style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 12))),
                               Expanded(
                                   flex: 2,
-                                  child: Text('Gelir',
-                                      style: TextStyle(
+                                  child: Text(t('finance.income'),
+                                      style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 12),
                                       textAlign: TextAlign.right)),
                               Expanded(
                                   flex: 2,
-                                  child: Text('Gider',
-                                      style: TextStyle(
+                                  child: Text(t('finance.expenses'),
+                                      style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 12),
                                       textAlign: TextAlign.right)),
                               Expanded(
                                   flex: 2,
-                                  child: Text('Net',
-                                      style: TextStyle(
+                                  child: Text(t('finance.net'), // TODO: i18n key: finance.net
+                                      style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 12),
                                       textAlign: TextAlign.right)),
@@ -354,8 +357,10 @@ class _FlowCard extends StatelessWidget {
 class _BarRow extends StatelessWidget {
   final Map<String, dynamic> data;
   final List<Map<String, dynamic>> periodData;
+  final String incomeLabel;
+  final String expenseLabel;
 
-  const _BarRow({required this.data, required this.periodData});
+  const _BarRow({required this.data, required this.periodData, required this.incomeLabel, required this.expenseLabel});
 
   @override
   Widget build(BuildContext context) {
@@ -388,7 +393,7 @@ class _BarRow extends StatelessWidget {
               SizedBox(
                 width: 40,
                 child: Text(
-                  'Gelir',
+                  incomeLabel,
                   style: TextStyle(fontSize: 10, color: AppColors.textMuted),
                 ),
               ),
@@ -424,7 +429,7 @@ class _BarRow extends StatelessWidget {
               SizedBox(
                 width: 40,
                 child: Text(
-                  'Gider',
+                  expenseLabel,
                   style: TextStyle(fontSize: 10, color: AppColors.textMuted),
                 ),
               ),

@@ -1,12 +1,14 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/i18n_helper.dart';
 import '../../models/supplier_import_models.dart';
 import '../../core/api/api_client.dart';
 import '../../services/bulk_import_service.dart';
 import '../../core/widgets/widgets.dart';
 
 /// Modern Tedarikçi İthalat İnceleme Ekranı
-class SupplierImportReviewScreen extends StatefulWidget {
+class SupplierImportReviewScreen extends ConsumerStatefulWidget {
   final String? importId;
 
   const SupplierImportReviewScreen({
@@ -15,12 +17,13 @@ class SupplierImportReviewScreen extends StatefulWidget {
   });
 
   @override
-  State<SupplierImportReviewScreen> createState() =>
+  ConsumerState<SupplierImportReviewScreen> createState() =>
       _SupplierImportReviewScreenState();
 }
 
 class _SupplierImportReviewScreenState
-    extends State<SupplierImportReviewScreen> {
+    extends ConsumerState<SupplierImportReviewScreen> {
+  String Function(String) get t => i18nOf(ref);
   late SupplierImportResponse _response;
   bool _loading = true;
   String? _expandedProductId;
@@ -60,18 +63,18 @@ class _SupplierImportReviewScreenState
       final confirm = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Eksik Kararlar'),
+          title: const Text('Eksik Kararlar'), // TODO: i18n bulk_import.missing_decisions
           content: Text(
             '${undecided.length} ürün için henüz karar vermediniz.\n\nDevam etmek istiyor musunuz?',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('İptal'),
+              child: const Text('İptal'), // TODO: i18n common.cancel
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Devam Et'),
+              child: const Text('Devam Et'), // TODO: i18n common.continue
             ),
           ],
         ),
@@ -110,7 +113,7 @@ class _SupplierImportReviewScreenState
               const CircularProgressIndicator(),
               const SizedBox(height: 16),
               Text(
-                'Ürünler kaydediliyor...',
+                'Ürünler kaydediliyor...', // TODO: i18n bulk_import.saving_products
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ],
@@ -125,15 +128,15 @@ class _SupplierImportReviewScreenState
       context: context,
       builder: (context) => AlertDialog(
         icon: const Icon(Icons.check_circle, color: Colors.green, size: 64),
-        title: const Text('Başarılı!'),
-        content: Text('$_decidedCount ürün başarıyla kaydedildi.'),
+        title: const Text('Başarılı!'), // TODO: i18n common.success
+        content: Text('$_decidedCount ürün başarıyla kaydedildi.'), // TODO: i18n bulk_import.products_saved
         actions: [
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context); // Close dialog
               Navigator.pop(context, true); // Close screen
             },
-            child: const Text('Tamam'),
+            child: const Text('Tamam'), // TODO: i18n common.ok
           ),
         ],
       ),
@@ -160,7 +163,7 @@ class _SupplierImportReviewScreenState
   Widget build(BuildContext context) {
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Tedarikçi Ürün Kontrolü',
+        title: 'Tedarikçi Ürün Kontrolü', // TODO: i18n supplier_upload.product_review_title
         actions: [
           if (!_loading)
             Padding(
@@ -619,7 +622,7 @@ class _SupplierImportReviewScreenState
               });
             },
             icon: const Icon(Icons.edit, size: 18),
-            label: const Text('Değiştir'),
+            label: const Text('Değiştir'), // TODO: i18n common.edit
           ),
         ],
       ),
@@ -634,7 +637,7 @@ class _SupplierImportReviewScreenState
           ElevatedButton.icon(
             onPressed: () => _showDecisionSheet(item),
             icon: const Icon(Icons.add_circle, size: 22),
-            label: const Text('Yeni Ürün Oluştur'),
+            label: const Text('Yeni Ürün Oluştur'), // TODO: i18n bulk_import.create_new_product
             style: ElevatedButton.styleFrom(
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -653,7 +656,7 @@ class _SupplierImportReviewScreenState
               });
             },
             icon: const Icon(Icons.block, size: 20),
-            label: const Text('Atla'),
+            label: const Text('Atla'), // TODO: i18n bulk_import.skip
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(

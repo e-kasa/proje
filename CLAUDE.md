@@ -680,6 +680,8 @@ API isteği başarısız
 | `catch (_) {}` sessiz | En az `debugPrint('$e')` ekle |
 | `DropdownButtonFormField` assertion | `value` mutlaka items listesinde olmalı, `safeValue` guard kullan |
 | `response.data['items']` | `response.data['data']` — backend `ApiResponse<T>` döner |
+| `Text('Kaydet')` hardcode Türkçe | `Text(t('common.save'))` — `i18nOf(ref)` kullan (§2.26) |
+| `AppToast.success(context, 'Başarılı')` hardcode | `AppToast.success(context, t('common.saved'))` |
 
 ---
 
@@ -1251,6 +1253,7 @@ stockService.getStockMovements(
 □ Navigation dönüş: context.pop(true) → üst ekran yenilesin
 □ router.dart'a route ekle
 □ menu_screen.dart'a menü linki ekle (gerekiyorsa)
+□ i18n: import i18n_helper.dart + get t => i18nOf(ref) getter — hardcode metin YOK (§2.26)
 ```
 
 ```bash
@@ -1262,9 +1265,169 @@ flutter test
 
 ---
 
-## 2.26 Flutter Kod Kalite Standartları — ZORUNLU
+## 2.26 Çok Dilli Destek (i18n) — ZORUNLU
 
-> Bu standartlar kod review sonuçlarından çıkarılmıştır. Yeni kod yazarken ve mevcut kodu düzenlerken **hepsine uy.**
+> **Kural:** Ekranlarda hardcode Türkçe metin YAZMA. Her metin `i18nOf(ref)` üzerinden bundle key ile gelmelidir.
+
+### Nasıl Çalışır
+
+- Backend `GET security/i18n/all?lang=TR` → `{ messages: {...}, bundles: {...} }` döner
+- `messages` → Backend hata kodları: `'1004'` → `"Bu kayıt zaten mevcut"`
+- `bundles` → UI metinleri: `'common.save'` → `"Kaydet"` / `"Save"` (dile göre)
+- Kullanıcı TR ↔ EN değiştirince tüm UI otomatik güncellenir (Riverpod reaktif)
+
+### Import
+
+```dart
+import 'package:project_pos/core/utils/i18n_helper.dart';
+```
+
+### Temel Kullanım Patternleri
+
+```dart
+// ── Pattern 1: build() içinde tek seferlik ──────────────────
+@override
+Widget build(BuildContext context) {
+  final t = i18nOf(ref);        // ← her build()'de ref.watch çalışır, reaktif
+  return AppScaffold(
+    appBar: AppAppBar.standard(title: t('menu.stock')),
+    body: Text(t('common.no_data')),
+  );
+}
+
+// ── Pattern 2: getter (birden fazla metodda kullanım) ────────
+class _MyScreenState extends ConsumerState<MyScreen> {
+  String Function(String) get t => i18nOf(ref);  // ← getter pattern
+
+  Future<void> _delete() async {
+    final confirmed = await AppConfirmationDialog.showDelete(
+      context: context,
+      title: t('common.delete'),
+      message: t('common.are_you_sure'),
+    );
+    if (!confirmed) return;
+    try {
+      await _service.delete(id);
+      if (mounted) AppToast.success(context, t('common.deleted'));
+    } catch (e) {
+      if (mounted) AppToast.error(context, t('common.error'));
+    }
+  }
+}
+
+// ── Pattern 3: Backend hata kodu çeviri ─────────────────────
+final msg = i18nMsgOf(ref);
+AppToast.error(context, msg('1004'));  // → "Bu kayıt zaten mevcut"
+```
+
+### ❌ Hardcode Metin YAZMA
+
+```dart
+// ❌ YANLIŞ — hardcode Türkçe
+Text('Kaydet')
+AppToast.success(context, 'Başarıyla kaydedildi')
+AppAppBar.standard(title: 'Stok Hareketleri')
+AppEmptyState.noData(title: 'Veri yok', description: 'Henüz kayıt eklenmedi')
+
+// ✅ DOĞRU — i18n key
+Text(t('common.save'))
+AppToast.success(context, t('common.saved'))
+AppAppBar.standard(title: t('menu.stock_movements'))
+AppEmptyState.noData(title: t('common.no_data'), description: t('common.no_records'))
+```
+
+### Bundle Key Konvansiyonu
+
+```
+<modül>.<eylem_veya_alan>
+
+Örnekler:
+  common.save           → Kaydet / Save
+  common.cancel         → İptal / Cancel
+  common.delete         → Sil / Delete
+  common.edit           → Düzenle / Edit
+  common.add            → Ekle / Add
+  common.search         → Ara / Search
+  common.filter         → Filtrele / Filter
+  common.all            → Tümü / All
+  common.active         → Aktif / Active
+  common.passive        → Pasif / Passive
+  common.yes            → Evet / Yes
+  common.no             → Hayır / No
+  common.error          → Hata oluştu / An error occurred
+  common.saved          → Kaydedildi / Saved
+  common.deleted        → Silindi / Deleted
+  common.are_you_sure   → Emin misiniz? / Are you sure?
+  common.no_data        → Veri bulunamadı / No data found
+  common.no_records     → Henüz kayıt eklenmedi / No records yet
+  common.loading        → Yükleniyor... / Loading...
+  common.refresh        → Yenile / Refresh
+
+  menu.dashboard        → Dashboard
+  menu.pos              → Satış / POS
+  menu.stock            → Stok
+  menu.stock_movements  → Stok Hareketleri
+  menu.stock_alerts     → Stok Uyarıları
+  menu.customers        → Müşteriler
+  menu.suppliers        → Tedarikçiler
+  menu.purchases        → Satın Alma
+  menu.reports          → Raporlar
+  menu.finance          → Finans
+  menu.accounts         → Cari Hesaplar
+  menu.settings         → Ayarlar
+
+  finance.income        → Gelir
+  finance.expenses      → Giderler
+  finance.paid          → Ödendi
+  finance.pending       → Beklemede
+  finance.cancelled     → İptal
+  finance.cash          → Nakit
+  finance.credit_card   → Kredi Kartı
+  finance.bank_transfer → Banka Havalesi
+
+  auth.login            → Giriş Yap
+  auth.logout           → Çıkış Yap
+  auth.login_failed     → Giriş başarısız
+```
+
+### Yeni Bundle Key Ekleme
+
+Backend'de key yoksa → `security` servisinde i18n tablosuna ekle. Eğer backend erişimi yoksa geçici olarak key'i hardcode yap ama yoruma `// TODO: i18n key eklenecek` notu düş:
+
+```dart
+// TODO: i18n key eklenecek — 'stock.low_stock_alert'
+Text('Düşük Stok Uyarısı')
+```
+
+### Dil Değiştirme
+
+```dart
+// TR → EN veya EN → TR
+ref.read(i18nProvider.notifier).changeLanguage('EN');
+ref.read(i18nProvider.notifier).changeLanguage('TR');
+```
+
+### Yeni Ekran i18n Checklist
+
+```
+□ i18n_helper.dart import edildi
+□ String Function(String) get t => i18nOf(ref); getter eklendi
+□ Tüm AppBar title'ları → t('menu.*')
+□ Tüm buton text'leri → t('common.*')
+□ Tüm Toast mesajları → t('common.*')
+□ Tüm AppEmptyState title/description'ları → t('common.*')
+□ Tüm AppConfirmationDialog title/message'ları → t('common.*')
+□ Tüm dropdown/chip label'ları → t('...')
+□ Backend hata mesajları → i18nMsgOf(ref)('errorCode')
+□ Hardcode Türkçe metin kalmadı
+```
+
+---
+
+## 2.27 Flutter Kod Kalite Standartları — ZORUNLU
+
+> Bu standartlar kod review sonuçlarından çıkarılmıştır. Yeni kod yazarken ve mevcut kodu düzenlerken **hepsine uy.**  
+> **i18n standartları için §2.26'ya bak — her metin bundle key ile yazılmalı.**
 
 ### Renk API (Opacity)
 
@@ -2182,6 +2345,8 @@ export const ProductService = {
 7. service_locator.dart   → Provider<MyService> ekle
 8. Flutter Provider       → StateNotifier + autoDispose (gerekiyorsa)
 9. Flutter Screen         → ConsumerStatefulWidget şablonu
+                            i18n: import i18n_helper.dart + get t => i18nOf(ref)
+                            Hardcode metin YOK — tüm metinler t('key') ile (§2.26)
 10. router.dart           → GoRoute ekle
 11. Menü                  → menu_screen.dart bölüm ekle (+ rol filtresi)
 ```

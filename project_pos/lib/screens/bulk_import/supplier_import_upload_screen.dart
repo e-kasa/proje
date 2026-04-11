@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 /// Tedarikçi Dosya Yükleme ve Backend Entegrasyon Ekranı
 class SupplierImportUploadScreen extends ConsumerStatefulWidget {
@@ -17,6 +18,8 @@ class SupplierImportUploadScreen extends ConsumerStatefulWidget {
 
 class _SupplierImportUploadScreenState
     extends ConsumerState<SupplierImportUploadScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   // State
   File? _selectedFile;
   bool _uploading = false;
@@ -62,7 +65,7 @@ class _SupplierImportUploadScreenState
   /// ADIM 2: Backend'e yükle ve analiz başlat
   Future<void> _uploadAndAnalyze() async {
     if (_selectedFile == null) {
-      setState(() => _errorMessage = 'Lütfen bir dosya seçin');
+      setState(() => _errorMessage = t('bulk_import.please_select_file')); // TODO: i18n
       return;
     }
 
@@ -118,7 +121,7 @@ class _SupplierImportUploadScreenState
       if (mounted) {
         setState(() {
           _analyzing = false;
-          _errorMessage = 'Analiz sirasinda hata: ${e.toString()}';
+          _errorMessage = '${t('bulk_import.analysis_error')}: ${e.toString()}'; // TODO: i18n
         });
       }
     }
@@ -128,7 +131,7 @@ class _SupplierImportUploadScreenState
   Widget build(BuildContext context) {
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Tedarikçi Dosyası Yükle',
+        title: t('supplier_upload.upload'),
         elevation: 0,
       ),
       body: _uploading || _analyzing
@@ -182,9 +185,9 @@ class _SupplierImportUploadScreenState
               children: [
                 Icon(Icons.info_outline, color: Colors.blue[700]),
                 const SizedBox(width: 8),
-                const Text(
-                  'Nasıl Çalışır?',
-                  style: TextStyle(
+                Text(
+                  t('bulk_import.how_it_works'), // TODO: i18n
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -192,11 +195,11 @@ class _SupplierImportUploadScreenState
               ],
             ),
             const SizedBox(height: 12),
-            _buildInfoStep(1, 'Excel/CSV dosyanızı yükleyin'),
-            _buildInfoStep(2, 'Backend dosyayı analiz eder'),
-            _buildInfoStep(3, 'Benzer ürünler bulunur'),
-            _buildInfoStep(4, 'Siz karar verirsiniz'),
-            _buildInfoStep(5, 'Ürünler sisteme eklenir'),
+            _buildInfoStep(1, t('supplier_upload.step1')), // TODO: i18n
+            _buildInfoStep(2, t('supplier_upload.step2')), // TODO: i18n
+            _buildInfoStep(3, t('supplier_upload.step3')), // TODO: i18n
+            _buildInfoStep(4, t('supplier_upload.step4')), // TODO: i18n
+            _buildInfoStep(5, t('supplier_upload.step5')), // TODO: i18n
           ],
         ),
       ),
@@ -259,7 +262,7 @@ class _SupplierImportUploadScreenState
             Text(
               _selectedFile != null
                   ? _selectedFile!.path.split('/').last
-                  : 'Excel veya CSV dosyası seçin',
+                  : t('supplier_upload.select_excel_csv'), // TODO: i18n
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -270,8 +273,8 @@ class _SupplierImportUploadScreenState
             const SizedBox(height: 8),
             Text(
               _selectedFile != null
-                  ? 'Dosya seçildi - Değiştirmek için tıklayın'
-                  : 'Tıklayın ve dosya seçin',
+                  ? t('supplier_upload.file_selected') // TODO: i18n
+                  : t('supplier_upload.click_select'), // TODO: i18n
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -290,9 +293,9 @@ class _SupplierImportUploadScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Tedarikçi Bilgileri (Opsiyonel)',
-              style: TextStyle(
+            Text(
+              t('supplier_upload.supplier_info_optional'), // TODO: i18n
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -350,9 +353,9 @@ class _SupplierImportUploadScreenState
     return ElevatedButton.icon(
       onPressed: _selectedFile != null ? _uploadAndAnalyze : null,
       icon: const Icon(Icons.upload, size: 24),
-      label: const Text(
-        'Yükle ve Analiz Et',
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      label: Text(
+        t('supplier_upload.upload_analyze'), // TODO: i18n
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
       ),
       style: ElevatedButton.styleFrom(
         foregroundColor: Colors.white,
@@ -398,9 +401,9 @@ class _SupplierImportUploadScreenState
               children: [
                 Icon(Icons.help_outline, color: Colors.orange[700]),
                 const SizedBox(width: 8),
-                const Text(
-                  'Excel/CSV Formatı',
-                  style: TextStyle(
+                Text(
+                  t('supplier_upload.excel_csv_format'), // TODO: i18n
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -408,9 +411,9 @@ class _SupplierImportUploadScreenState
               ],
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Excel dosyanızda şu sütunlar bulunmalıdır:',
-              style: TextStyle(fontSize: 14),
+            Text(
+              t('supplier_upload.excel_columns_required'), // TODO: i18n
+              style: const TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 8),
             _buildColumnInfo('Ürün Adı', 'zorunlu'),
@@ -468,7 +471,7 @@ class _SupplierImportUploadScreenState
               const CircularProgressIndicator(strokeWidth: 6),
               const SizedBox(height: 24),
               Text(
-                'Dosya yükleniyor...',
+                t('bulk_import.step_uploading'), // TODO: i18n
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -496,7 +499,7 @@ class _SupplierImportUploadScreenState
               const CircularProgressIndicator(strokeWidth: 6),
               const SizedBox(height: 24),
               Text(
-                'Backend Analiz Ediyor...',
+                t('bulk_import.step_analyzing'), // TODO: i18n
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -505,7 +508,7 @@ class _SupplierImportUploadScreenState
               ),
               const SizedBox(height: 12),
               Text(
-                'Benzer ürünler aranıyor...',
+                t('supplier_upload.searching_similar'), // TODO: i18n
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[600],

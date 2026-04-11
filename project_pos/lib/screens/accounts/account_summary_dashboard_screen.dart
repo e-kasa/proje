@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 import 'payment_record_modal.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 class AccountSummaryDashboardScreen extends ConsumerStatefulWidget {
   const AccountSummaryDashboardScreen({super.key});
@@ -16,6 +17,7 @@ class AccountSummaryDashboardScreen extends ConsumerStatefulWidget {
 
 class _AccountSummaryDashboardScreenState
     extends ConsumerState<AccountSummaryDashboardScreen> {
+  String Function(String) get t => i18nOf(ref);
   Map<String, dynamic>? _summary;
   List<Map<String, dynamic>> _overdueList = [];
   bool _loading = true;
@@ -55,7 +57,7 @@ class _AccountSummaryDashboardScreenState
   Widget build(BuildContext context) {
     return AppScaffold(
       appBar: AppAppBar.gradient(
-        title: 'Cari Hesap Ozeti',
+        title: t('accounts.title'),
       ),
       body: RefreshIndicator(
         onRefresh: _loadData,
@@ -70,9 +72,9 @@ class _AccountSummaryDashboardScreenState
 
   Widget _buildError() {
     return AppEmptyState.error(
-      title: 'Veri yuklenirken hata olustu',
+      title: t('common.error'),
       description: _error ?? '',
-      actionText: 'Tekrar Dene',
+      actionText: t('common.refresh'),
       onAction: _loadData,
     );
   }
@@ -109,28 +111,28 @@ class _AccountSummaryDashboardScreenState
       childAspectRatio: 1.5,
       children: [
         _statCard(
-          'Toplam Musteri Alacagi',
+          'Toplam Müşteri Alacağı', // TODO: i18n
           _formatCurrency(totalReceivable),
           Icons.people_alt,
           AppColors.primary,
           AppColors.indigo,
         ),
         _statCard(
-          'Toplam Tedarikci Borcu',
+          'Toplam Tedarikçi Borcu', // TODO: i18n
           _formatCurrency(totalPayable),
           Icons.business,
           AppColors.orange,
           AppColors.pink,
         ),
         _statCard(
-          'Vadesi Gecmis Tutar',
+          t('accounts.overdue'),
           _formatCurrency(overdueAmount),
           Icons.warning_amber_rounded,
           AppColors.danger,
           AppColors.orange,
         ),
         _statCard(
-          'Toplam Hareket',
+          'Toplam Hareket', // TODO: i18n
           totalTransactions.toString(),
           Icons.swap_horiz,
           AppColors.teal,
@@ -207,7 +209,7 @@ class _AccountSummaryDashboardScreenState
         Expanded(
           child: _quickActionButton(
             icon: Icons.receipt_long,
-            label: 'Ekstre Goruntule',
+            label: t('accounts.transactions'),
             color: AppColors.primary,
             onTap: () async {
               final result = await AccountSelectDialog.show(
@@ -227,7 +229,7 @@ class _AccountSummaryDashboardScreenState
         Expanded(
           child: _quickActionButton(
             icon: Icons.schedule,
-            label: 'Vadesi Gecmis',
+            label: t('accounts.overdue'),
             color: AppColors.danger,
             onTap: () => context.push('/accounts/overdue'),
           ),
@@ -293,9 +295,9 @@ class _AccountSummaryDashboardScreenState
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Vadesi Gecmis Hesaplar',
-              style: TextStyle(
+            Text(
+              t('accounts.overdue'),
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
@@ -303,7 +305,7 @@ class _AccountSummaryDashboardScreenState
             ),
             if (_overdueList.length > 5)
               AppButton.outline(
-                text: 'Tumunu Gor',
+                text: t('common.all'),
                 onPressed: () => context.push('/accounts/overdue'),
                 size: ButtonSize.small,
               ),
@@ -312,8 +314,8 @@ class _AccountSummaryDashboardScreenState
         const SizedBox(height: 8),
         if (top5.isEmpty)
           AppEmptyState.noData(
-            title: 'Vadesi gecmis hesap bulunmuyor',
-            description: 'Tum hesaplar guncel durumda',
+            title: t('accounts.overdue'),
+            description: t('common.no_data'),
           )
         else
           ...top5.map((item) => _overdueCard(item)),
@@ -375,7 +377,7 @@ class _AccountSummaryDashboardScreenState
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        isCustomer ? 'MUSTERI' : 'TEDARIKCI',
+                        isCustomer ? 'MÜŞTERİ' : 'TEDARİKÇİ', // TODO: i18n
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,

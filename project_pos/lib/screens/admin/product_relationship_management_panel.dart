@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 /// Admin: Ürün İlişkileri Yönetim Paneli
 ///
@@ -30,6 +31,8 @@ class ProductRelationshipManagementPanel extends ConsumerStatefulWidget {
 
 class _ProductRelationshipManagementPanelState
     extends ConsumerState<ProductRelationshipManagementPanel> {
+  String Function(String) get t => i18nOf(ref);
+
   late List<Map<String, dynamic>> relationships = [];
   bool isLoading = false;
   String? selectedRelationType = 'SIMILAR';
@@ -53,7 +56,7 @@ class _ProductRelationshipManagementPanelState
     } catch (e) {
       setState(() => isLoading = false);
       if (mounted) {
-        AppToast.error(context, 'İlişkiler yüklenemedi: $e');
+        AppToast.error(context, '${t('common.error')}: $e'); // TODO: i18n relationships_load_failed
       }
     }
   }
@@ -70,13 +73,13 @@ class _ProductRelationshipManagementPanelState
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
-          title: const Text('Benzer Ürün Ekle'),
+          title: Text(t('common.add')), // TODO: i18n add_related_product
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // İlişki Tipi
-              const Text('İlişki Tipi:', style: TextStyle(fontWeight: FontWeight.w600)),
+              Text(t('bulk_import.relation_type'), style: const TextStyle(fontWeight: FontWeight.w600)), // TODO: i18n
               const SizedBox(height: 8),
               DropdownButton<String>(
                 value: relationType,
@@ -89,7 +92,7 @@ class _ProductRelationshipManagementPanelState
                         Icon(Icons.check_circle_outline,
                             size: 16, color: const Color(0xFF6C63FF)),
                         const SizedBox(width: 8),
-                        const Text('Benzer Ürün'),
+                        Text(t('bulk_import.similar_product')), // TODO: i18n
                       ],
                     ),
                   ),
@@ -100,7 +103,7 @@ class _ProductRelationshipManagementPanelState
                         Icon(Icons.swap_horiz,
                             size: 16, color: const Color(0xFFFF9F43)),
                         const SizedBox(width: 8),
-                        const Text('Alternatif'),
+                        Text(t('bulk_import.alternative')), // TODO: i18n
                       ],
                     ),
                   ),
@@ -111,7 +114,7 @@ class _ProductRelationshipManagementPanelState
                         Icon(Icons.extension,
                             size: 16, color: const Color(0xFF00D2D3)),
                         const SizedBox(width: 8),
-                        const Text('Tamamlayıcı'),
+                        Text(t('bulk_import.complementary')), // TODO: i18n
                       ],
                     ),
                   ),
@@ -123,7 +126,7 @@ class _ProductRelationshipManagementPanelState
               const SizedBox(height: 20),
 
               // Ürün Seçimi
-              const Text('Ürün Seç:', style: TextStyle(fontWeight: FontWeight.w600)),
+              Text(t('bulk_import.select_product'), style: const TextStyle(fontWeight: FontWeight.w600)), // TODO: i18n
               const SizedBox(height: 8),
               FutureBuilder<List<Map<String, dynamic>>>(
                 future: productService.getProducts(size: 100),
@@ -136,7 +139,7 @@ class _ProductRelationshipManagementPanelState
                   }
 
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Text('Ürün bulunamadı');
+                    return Text(t('common.no_data'));
                   }
 
                   final products = snapshot.data!
@@ -146,7 +149,7 @@ class _ProductRelationshipManagementPanelState
                   return DropdownButton<String>(
                     value: selectedProductId,
                     isExpanded: true,
-                    hint: const Text('Ürün seçiniz'),
+                    hint: Text(t('bulk_import.select_product_hint')), // TODO: i18n
                     items: products
                         .map((p) => DropdownMenuItem<String>(
                               value: p['id'].toString(),
@@ -166,7 +169,7 @@ class _ProductRelationshipManagementPanelState
               const SizedBox(height: 20),
 
               // Ağırlık (Priority)
-              const Text('Öncelik (1-10):', style: TextStyle(fontWeight: FontWeight.w600)),
+              Text(t('bulk_import.priority'), style: const TextStyle(fontWeight: FontWeight.w600)), // TODO: i18n
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -198,7 +201,7 @@ class _ProductRelationshipManagementPanelState
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('İptal'),
+              child: Text(t('common.cancel')),
             ),
             ElevatedButton(
               onPressed: selectedProductId == null
@@ -214,18 +217,18 @@ class _ProductRelationshipManagementPanelState
                         Navigator.pop(ctx);
                         _loadRelationships();
                         if (mounted) {
-                          AppToast.success(context, 'İlişki başarıyla eklendi');
+                          AppToast.success(context, t('common.saved')); // TODO: i18n relationship_added
                         }
                       } catch (e) {
                         if (mounted) {
-                          AppToast.error(context, 'Hata: $e');
+                          AppToast.error(context, '${t('common.error')}: $e');
                         }
                       }
                     },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
               ),
-              child: const Text('Ekle'),
+              child: Text(t('common.add')),
             ),
           ],
         ),
@@ -238,19 +241,19 @@ class _ProductRelationshipManagementPanelState
     final confirmed = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Sil'),
+            title: Text(t('common.delete')),
             content: Text(
-              '"$targetProductName" ile ilişkiyi silmek istiyor musunuz?',
+              '"$targetProductName" ile ilişkiyi silmek istiyor musunuz?', // TODO: i18n relationship_delete_confirm
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('İptal'),
+                child: Text(t('common.cancel')),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(ctx, true),
                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-                child: const Text('Sil'),
+                child: Text(t('common.delete')),
               ),
             ],
           ),
@@ -263,11 +266,11 @@ class _ProductRelationshipManagementPanelState
       await ref.read(recommendationServiceProvider).deleteRelationship(relationshipId);
       _loadRelationships();
       if (mounted) {
-        AppToast.success(context, 'İlişki silindi');
+        AppToast.success(context, t('common.saved')); // TODO: i18n relationship_deleted
       }
     } catch (e) {
       if (mounted) {
-        AppToast.error(context, 'Silinirken hata: $e');
+        AppToast.error(context, '${t('common.error')}: $e');
       }
     }
   }
@@ -297,16 +300,16 @@ class _ProductRelationshipManagementPanelState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Benzer/İlişkili Ürünler',
-                        style: TextStyle(
+                      Text(
+                        t('bulk_import.related_products'), // TODO: i18n
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
                         ),
                       ),
                       Text(
-                        '${widget.productName} için ${relationships.length} ilişki',
+                        '${widget.productName} için ${relationships.length} ilişki', // TODO: i18n relationship_count
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.textSecondary,
@@ -318,7 +321,7 @@ class _ProductRelationshipManagementPanelState
                 ElevatedButton.icon(
                   onPressed: _showAddRelationshipDialog,
                   icon: const Icon(Icons.add, size: 16),
-                  label: const Text('Ekle'),
+                  label: Text(t('common.add')),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -344,7 +347,7 @@ class _ProductRelationshipManagementPanelState
                     Icon(Icons.link_off, size: 48, color: AppColors.textMuted),
                     const SizedBox(height: 16),
                     Text(
-                      'Henüz ilişki eklenmemiş',
+                      t('common.no_data'), // TODO: i18n no_relationships_yet
                       style: TextStyle(
                         fontSize: 14,
                         color: AppColors.textMuted,
@@ -419,7 +422,7 @@ class _ProductRelationshipManagementPanelState
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          'Ağırlık: $weight',
+                          '${t('bulk_import.weight')}: $weight', // TODO: i18n
                           style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
                         ),
                       ),

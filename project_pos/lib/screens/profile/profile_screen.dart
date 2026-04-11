@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/widgets/widgets.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
     final authState = ref.watch(authProvider);
     final user = authState.user;
 
@@ -41,7 +43,7 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      user?.displayName ?? user?.username ?? 'Kullanıcı',
+                      user?.displayName ?? user?.username ?? t('profile.title'),
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -176,7 +178,7 @@ class ProfileScreen extends ConsumerWidget {
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 child: AppButton.danger(
-                  text: 'Çıkış Yap',
+                  text: t('settings.logout'),
                   icon: Icons.logout,
                   onPressed: () async {
                     await ref.read(authProvider.notifier).logout();

@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/widgets/common/base_entity_list_screen.dart';
 import '../../core/widgets/widgets.dart';
+import '../../core/utils/i18n_helper.dart';
 import '../../services/service_locator.dart';
 import 'add_supplier_screen.dart';
 
@@ -21,6 +22,8 @@ class SupplierListScreen extends ConsumerStatefulWidget {
 }
 
 class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   final _baseKey = GlobalKey<BaseEntityListScreenState<Map<String, dynamic>>>();
 
   // Stats icin filtresiz sayilar
@@ -29,9 +32,9 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
   int _passiveCount = 0;
 
   // Aktif durum filtresi (backend'e gonderilecek)
-  String _statusFilter = 'Tumu';
+  String _statusFilter = 'all';
 
-  static const _statusFilters = ['Tumu', 'Aktif', 'Pasif'];
+  static const _statusFilters = ['all', 'active', 'passive'];
 
   // -------------------------------------------------------------------------
   // Navigasyon
@@ -55,7 +58,7 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
 
   Future<void> _toggleStatus(Map<String, dynamic> supplier) async {
     final isActive = supplier['isActive'] == true;
-    final action = isActive ? 'Pasiflestir' : 'Aktivlestir';
+    final action = isActive ? t('common.deactivate') : t('common.activate');
     final actionColor = isActive ? AppColors.warning : AppColors.success;
     final actionIcon =
         isActive ? Icons.block_outlined : Icons.check_circle_outline;
@@ -64,8 +67,8 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
       context: context,
       title: '$action: ${supplier['name'] ?? ''}',
       message: isActive
-          ? 'Tedarikci pasiflestirilecek. Kayitlar korunur.'
-          : 'Tedarikci aktiflestirilecek. Yeniden siparis verilebilir.',
+          ? t('suppliers.deactivate_message')
+          : t('suppliers.activate_message'),
       itemName: supplier['name'] as String?,
       icon: actionIcon,
       iconColor: actionColor,
@@ -81,11 +84,11 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
       final name = supplier['name'] ?? '';
       if (mounted) {
         AppToast.success(context,
-            '$name ${isActive ? 'pasiflestirildi' : 'aktiflestirildi'}');
+            '$name ${isActive ? t('common.deactivated') : t('common.activated')}');
       }
       _baseKey.currentState?.load();
     } catch (e) {
-      if (mounted) AppToast.error(context, 'Hata: $e');
+      if (mounted) AppToast.error(context, '${t('common.error')}: $e');
     }
   }
 
@@ -93,12 +96,11 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
     if (selectedIds.isEmpty) return;
     final confirmed = await AppConfirmationDialog.show(
       context: context,
-      title: 'Toplu Pasiflestirme',
-      message:
-          '${selectedIds.length} tedarikciyi pasiflestirmek istediginize emin misiniz?',
+      title: t('suppliers.bulk_deactivate'),
+      message: t('suppliers.bulk_deactivate_confirm').replaceAll('{count}', selectedIds.length.toString()),
       icon: Icons.block_outlined,
       iconColor: AppColors.warning,
-      confirmText: 'Pasiflestir',
+      confirmText: t('common.deactivate'),
       confirmColor: AppColors.warning,
     );
     if (!confirmed || !mounted) return;
@@ -110,10 +112,10 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
       }
       if (mounted) {
         AppToast.success(
-            context, '${selectedIds.length} tedarikci pasiflestirildi');
+            context, '${selectedIds.length} ${t('suppliers.bulk_deactivated')}');
       }
     } catch (e) {
-      if (mounted) AppToast.error(context, 'Hata: $e');
+      if (mounted) AppToast.error(context, '${t('common.error')}: $e');
     }
   }
 
@@ -122,25 +124,25 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
   Widget build(BuildContext context) {
     return BaseEntityListScreen<Map<String, dynamic>>(
       key: _baseKey,
-      title: 'Tedarikci Yonetimi',
-      searchHint: 'Firma adi, kod, iletisim veya telefon ara...',
+      title: t('suppliers.title'),
+      searchHint: t('suppliers.search_hint'),
       icon: Icons.business_outlined,
       accentColor: AppColors.primary,
-      fabLabel: 'Yeni Tedarikci',
+      fabLabel: t('suppliers.add'),
       fabIcon: Icons.add_business,
-      emptyTitle: 'Henuz tedarikci yok',
-      emptyDescription: 'Baslamak icin yeni bir tedarikci ekleyin',
-      emptyActionText: 'Tedarikci Ekle',
+      emptyTitle: t('suppliers.empty_title'),
+      emptyDescription: t('suppliers.empty_description'),
+      emptyActionText: t('suppliers.add'),
       bulkActionIcon: Icons.block_outlined,
-      bulkActionTooltip: 'Toplu Pasiflestir',
+      bulkActionTooltip: t('suppliers.bulk_deactivate'),
       onAdd: _openAdd,
       onBulkAction: _bulkDeactivate,
       idExtractor: (s) => s['id']?.toString() ?? '',
       serverSideSearch: true,
       fetchItems: (ref, {String? search}) async {
-        final status = _statusFilter == 'Aktif'
+        final status = _statusFilter == 'active'
             ? 'ACTIVE'
-            : _statusFilter == 'Pasif'
+            : _statusFilter == 'passive'
                 ? 'INACTIVE'
                 : null;
 
@@ -162,10 +164,14 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
       },
       filterOptions: () => _statusFilters
           .map((s) => FilterChipData(
-                label: s,
-                color: s == 'Aktif'
+                label: s == 'all'
+                    ? t('common.all')
+                    : s == 'active'
+                        ? t('common.active')
+                        : t('common.passive'),
+                color: s == 'active'
                     ? AppColors.success
-                    : s == 'Pasif'
+                    : s == 'passive'
                         ? AppColors.danger
                         : AppColors.primary,
               ))
@@ -173,23 +179,23 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
       filterMatcher: (item, filter) {
         // Server-side search: filtre degistiginde _statusFilter'i guncelle
         // ve load() cagirilir. filterMatcher burada sadece local fallback.
-        if (filter == 'Tumu') {
-          _statusFilter = 'Tumu';
+        if (filter == t('common.all')) {
+          _statusFilter = 'all';
           return true;
         }
-        if (filter == 'Aktif') {
-          _statusFilter = 'Aktif';
+        if (filter == t('common.active')) {
+          _statusFilter = 'active';
           return item['isActive'] == true;
         }
-        if (filter == 'Pasif') {
-          _statusFilter = 'Pasif';
+        if (filter == t('common.passive')) {
+          _statusFilter = 'passive';
           return item['isActive'] != true;
         }
         return true;
       },
       statsBuilder: (items) {
         final isUnfiltered =
-            _statusFilter == 'Tumu' &&
+            _statusFilter == 'all' &&
             (_baseKey.currentState?.searchCtrl.text.isEmpty ?? true);
         final total = isUnfiltered ? items.length : _totalCount;
         final active = isUnfiltered
@@ -202,25 +208,25 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
         return [
           StatPill(
             value: '$total',
-            label: 'Toplam',
+            label: t('common.total'),
             icon: Icons.business_outlined,
             color: AppColors.primary,
           ),
           StatPill(
             value: '$active',
-            label: 'Aktif',
+            label: t('common.active'),
             icon: Icons.check_circle_outline,
             color: AppColors.success,
           ),
           StatPill(
             value: '$passive',
-            label: 'Pasif',
+            label: t('common.passive'),
             icon: Icons.cancel_outlined,
             color: AppColors.textMuted,
           ),
           StatPill(
             value: '$filtered',
-            label: 'Goruntulenen',
+            label: t('common.displayed'),
             icon: Icons.filter_list,
             color: AppColors.info,
           ),
@@ -243,7 +249,7 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
     final id = s['id']?.toString() ?? '';
     final isActive = s['isActive'] == true;
     final statusColor = isActive ? AppColors.success : AppColors.textSecondary;
-    final statusLabel = isActive ? 'Aktif' : 'Pasif';
+    final statusLabel = isActive ? t('common.active') : t('common.passive');
     final selMode = _baseKey.currentState?.selectionMode ?? false;
 
     return AppCard(
@@ -337,7 +343,7 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
                   Row(
                     children: [
                       _balancePill(
-                        'Bakiye',
+                        t('suppliers.balance'),
                         (s['balance'] as num?)?.toDouble() ?? 0,
                       ),
                       const SizedBox(width: 8),
@@ -351,14 +357,14 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
                             color: AppColors.primary.withValues(alpha: 0.08),
                             borderRadius: AppConstants.borderRadiusSmall,
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.account_balance_wallet_outlined,
+                              const Icon(Icons.account_balance_wallet_outlined,
                                   size: 12, color: AppColors.primary),
-                              SizedBox(width: 4),
-                              Text('Cari Hesap',
-                                  style: TextStyle(
+                              const SizedBox(width: 4),
+                              Text(t('suppliers.account'),
+                                  style: const TextStyle(
                                       fontSize: 11,
                                       color: AppColors.primary,
                                       fontWeight: FontWeight.w600)),
@@ -388,23 +394,23 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
                 }
               },
               itemBuilder: (_) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'account',
                   child: MenuRow(Icons.account_balance_wallet_outlined,
-                      'Cari Hesap', AppColors.success),
+                      t('suppliers.account'), AppColors.success),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'edit',
                   child: MenuRow(
-                      Icons.edit_outlined, 'Duzenle', AppColors.primary),
+                      Icons.edit_outlined, t('common.edit'), AppColors.primary),
                 ),
                 PopupMenuItem(
                   value: 'toggle',
                   child: isActive
-                      ? const MenuRow(Icons.block_outlined,
-                          'Pasiflestir', AppColors.warning)
-                      : const MenuRow(Icons.check_circle_outline,
-                          'Aktivlestir', AppColors.success),
+                      ? MenuRow(Icons.block_outlined,
+                          t('common.deactivate'), AppColors.warning)
+                      : MenuRow(Icons.check_circle_outline,
+                          t('common.activate'), AppColors.success),
                 ),
               ],
             ),
@@ -421,9 +427,9 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
             ? AppColors.success
             : AppColors.textMuted;
     final prefix = isDebt
-        ? 'Borc: '
+        ? '${t('suppliers.debt')}: '
         : amount < 0
-            ? 'Alacak: '
+            ? '${t('suppliers.credit')}: '
             : '';
     final display = amount.abs();
 

@@ -6,6 +6,7 @@ import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../core/utils/i18n_helper.dart';
 import 'theme_settings_drawer_advanced.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -17,6 +18,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen>
     with SingleTickerProviderStateMixin {
+  String Function(String) get t => i18nOf(ref);
   late TabController _tabController;
 
   @override
@@ -36,18 +38,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     final isMobile = MediaQuery.of(context).size.width < 600;
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Ayarlar',
+        title: t('settings.title'),
         bottom: TabBar(
           controller: _tabController,
           isScrollable: isMobile,
           indicatorColor: Colors.white,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white60,
-          tabs: const [
-            Tab(icon: Icon(Icons.person_outline), text: 'Profil'),
-            Tab(icon: Icon(Icons.palette_outlined), text: 'Görünüm'),
-            Tab(icon: Icon(Icons.store_outlined), text: 'İşletme'),
-            Tab(icon: Icon(Icons.settings_outlined), text: 'Sistem'),
+          tabs: [
+            Tab(icon: const Icon(Icons.person_outline), text: t('profile.title')),
+            Tab(icon: const Icon(Icons.palette_outlined), text: t('settings.theme')),
+            Tab(icon: const Icon(Icons.store_outlined), text: t('settings.company')),
+            Tab(icon: const Icon(Icons.settings_outlined), text: t('settings.title')),
           ],
         ),
       ),
@@ -108,7 +110,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                         ),
                         child: IconButton(
                           icon: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
-                          onPressed: () => AppToast.info(context, 'Fotoğraf değiştirme yakında!'),
+                          onPressed: () => AppToast.info(context, t('common.coming_soon')), // TODO: i18n
                         ),
                       ),
                     ),
@@ -138,24 +140,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             ),
           ),
           const SizedBox(height: 16),
-          _section('Kişisel Bilgiler', [
-            _item(Icons.person_outline, 'Ad Soyad', displayName,
-                onTap: () => _showEditDialog('İsim', displayName)),
-            _item(Icons.email_outlined, 'E-posta', email,
-                onTap: () => _showEditDialog('E-posta', email)),
-            _item(Icons.badge_outlined, 'Kullanıcı Adı', user?.username ?? '-'),
+          _section(t('profile.title'), [
+            _item(Icons.person_outline, t('common.full_name'), displayName, // TODO: i18n key common.full_name
+                onTap: () => _showEditDialog(t('common.full_name'), displayName)),
+            _item(Icons.email_outlined, t('auth.email'), email, // TODO: i18n key auth.email
+                onTap: () => _showEditDialog(t('auth.email'), email)),
+            _item(Icons.badge_outlined, t('auth.username'), user?.username ?? '-'),
             if (user?.selectedCompanyCode != null)
-              _item(Icons.business_outlined, 'Şirket Kodu', user!.selectedCompanyCode),
+              _item(Icons.business_outlined, t('auth.company_code'), user!.selectedCompanyCode),
             if (user?.storeId != null)
-              _item(Icons.store_outlined, 'Mağaza ID', user!.storeId!),
+              _item(Icons.store_outlined, 'Mağaza ID', user!.storeId!), // TODO: i18n
           ]),
           const SizedBox(height: 16),
-          _section('Güvenlik', [
-            _item(Icons.lock_outline, 'Şifre Değiştir', 'Son değiştirme: 30 gün önce',
+          _section('Güvenlik', [ // TODO: i18n
+            _item(Icons.lock_outline, 'Şifre Değiştir', 'Son değiştirme: 30 gün önce', // TODO: i18n
                 onTap: _showPasswordDialog),
-            _item(Icons.security, 'İki Faktörlü Doğrulama', 'Kapalı',
+            _item(Icons.security, 'İki Faktörlü Doğrulama', 'Kapalı', // TODO: i18n
                 trailing: Switch(value: false, onChanged: (v) =>
-                    AppToast.info(context, '2FA yakında!'))),
+                    AppToast.info(context, '2FA yakında!'))), // TODO: i18n
           ]),
         ],
       ),
@@ -181,37 +183,37 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           const SizedBox(height: 20),
 
           // ── Mod Seçimi ──────────────────────────────────
-          _sectionTitle('Tema Modu'),
+          _sectionTitle(t('settings.theme')), // TODO: i18n theme_mode key
           const SizedBox(height: 10),
           _buildModeSelector(s, notifier, isDark),
           const SizedBox(height: 20),
 
           // ── Renk Teması ─────────────────────────────────
-          _sectionTitle('Renk Teması'),
+          _sectionTitle('Renk Teması'), // TODO: i18n color_theme key
           const SizedBox(height: 10),
           _buildColorPalette(s, notifier, isDark),
           const SizedBox(height: 20),
 
           // ── Yazı Boyutu ─────────────────────────────────
-          _sectionTitle('Yazı Boyutu'),
+          _sectionTitle('Yazı Boyutu'), // TODO: i18n
           const SizedBox(height: 10),
           _buildFontScale(s, notifier, isDark),
           const SizedBox(height: 20),
 
           // ── Düzen Modu ──────────────────────────────────
-          _sectionTitle('Düzen Modu'),
+          _sectionTitle('Düzen Modu'), // TODO: i18n
           const SizedBox(height: 10),
           _buildLayoutMode(s, notifier, isDark),
           const SizedBox(height: 20),
 
           // ── Renk Çubuğu ─────────────────────────────────
-          _sectionTitle('Kenar Çubuğu & Üst Çubuk'),
+          _sectionTitle('Kenar Çubuğu & Üst Çubuk'), // TODO: i18n
           const SizedBox(height: 10),
           _buildBarAppearance(s, notifier, isDark),
           const SizedBox(height: 20),
 
           // ── Gelişmiş ────────────────────────────────────
-          _sectionTitle('Gelişmiş'),
+          _sectionTitle('Gelişmiş'), // TODO: i18n
           const SizedBox(height: 10),
           AppCard(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -776,47 +778,47 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       padding: AppConstants.pagePadding,
       child: Column(
         children: [
-          _section('Şirket Bilgileri', [
-            _item(Icons.business, 'Şirket Adı', 'E-Kasa Teknoloji A.Ş.',
+          _section(t('settings.company'), [
+            _item(Icons.business, 'Şirket Adı', 'E-Kasa Teknoloji A.Ş.', // TODO: i18n
                 onTap: () => _showEditDialog('Şirket Adı', 'E-Kasa Teknoloji A.Ş.')),
-            _item(Icons.numbers, 'Vergi No', '1234567890',
+            _item(Icons.numbers, 'Vergi No', '1234567890', // TODO: i18n
                 onTap: () => _showEditDialog('Vergi No', '1234567890')),
-            _item(Icons.location_on_outlined, 'Adres', 'İstanbul, Türkiye',
+            _item(Icons.location_on_outlined, 'Adres', 'İstanbul, Türkiye', // TODO: i18n
                 onTap: () => _showEditDialog('Adres', 'İstanbul, Türkiye')),
           ]),
           const SizedBox(height: 16),
-          _section('Mağaza Ayarları', [
-            _item(Icons.store, 'Varsayılan Mağaza', 'Merkez Mağaza',
+          _section('Mağaza Ayarları', [ // TODO: i18n
+            _item(Icons.store, 'Varsayılan Mağaza', 'Merkez Mağaza', // TODO: i18n
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => AppToast.info(context, 'Mağaza seçimi yakında!')),
-            _item(Icons.warehouse, 'Varsayılan Depo', 'Ana Depo',
+            _item(Icons.warehouse, 'Varsayılan Depo', 'Ana Depo', // TODO: i18n
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => AppToast.info(context, 'Depo seçimi yakında!')),
-            _item(Icons.receipt_long, 'Fatura Öneki', 'INV-',
+            _item(Icons.receipt_long, 'Fatura Öneki', 'INV-', // TODO: i18n
                 onTap: () => _showEditDialog('Fatura Öneki', 'INV-')),
           ]),
           const SizedBox(height: 16),
-          _section('Yönetim', [
-            _item(Icons.people_outline, 'Kullanıcı Yönetimi',
-                'Kullanıcıları ve rolleri yönet',
+          _section('Yönetim', [ // TODO: i18n
+            _item(Icons.people_outline, t('settings.users'),
+                'Kullanıcıları ve rolleri yönet', // TODO: i18n
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push('/settings/users')),
-            _item(Icons.business_center_outlined, 'Firma Ayarları',
-                'Firma bilgileri ve fatura ayarları',
+            _item(Icons.business_center_outlined, t('settings.company'),
+                'Firma bilgileri ve fatura ayarları', // TODO: i18n
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push('/settings/company')),
-            _item(Icons.category_outlined, 'Sektör Ayarları',
-                'Ürün formu alanlarını özelleştirin',
+            _item(Icons.category_outlined, t('settings.sector'),
+                'Ürün formu alanlarını özelleştirin', // TODO: i18n
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push('/settings/sector')),
           ]),
           const SizedBox(height: 16),
-          _section('Bildirimler', [
-            _item(Icons.email_outlined, 'E-posta Bildirimleri', 'Günlük raporlar',
+          _section('Bildirimler', [ // TODO: i18n
+            _item(Icons.email_outlined, 'E-posta Bildirimleri', 'Günlük raporlar', // TODO: i18n
                 trailing: Switch(value: true, onChanged: (v) {})),
-            _item(Icons.inventory_outlined, 'Stok Uyarıları', 'Düşük stok bildir',
+            _item(Icons.inventory_outlined, 'Stok Uyarıları', 'Düşük stok bildir', // TODO: i18n
                 trailing: Switch(value: true, onChanged: (v) {})),
-            _item(Icons.trending_down, 'Satış Uyarıları', 'Satış düşüşlerini bildir',
+            _item(Icons.trending_down, 'Satış Uyarıları', 'Satış düşüşlerini bildir', // TODO: i18n
                 trailing: Switch(value: false, onChanged: (v) {})),
           ]),
         ],
@@ -850,14 +852,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             }),
           ]),
           const SizedBox(height: 16),
-          _section('Hakkında', [
-            _item(Icons.info_outline, 'Versiyon', '1.0.0 (Build 100)'),
-            _item(Icons.description_outlined, 'Gizlilik Politikası', '',
+          _section('Hakkında', [ // TODO: i18n
+            _item(Icons.info_outline, 'Versiyon', '1.0.0 (Build 100)'), // TODO: i18n
+            _item(Icons.description_outlined, 'Gizlilik Politikası', '', // TODO: i18n
                 trailing: const Icon(Icons.open_in_new),
-                onTap: () => AppToast.info(context, 'Yakında!')),
-            _item(Icons.article_outlined, 'Kullanım Koşulları', '',
+                onTap: () => AppToast.info(context, 'Yakında!')), // TODO: i18n
+            _item(Icons.article_outlined, 'Kullanım Koşulları', '', // TODO: i18n
                 trailing: const Icon(Icons.open_in_new),
-                onTap: () => AppToast.info(context, 'Yakında!')),
+                onTap: () => AppToast.info(context, 'Yakında!')), // TODO: i18n
           ]),
           const SizedBox(height: 16),
           AppCard(
@@ -865,21 +867,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Tehlikeli Alan',
+                const Text('Tehlikeli Alan', // TODO: i18n
                     style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: AppColors.danger,
                         fontSize: 15)),
                 const SizedBox(height: 12),
-                _item(Icons.logout, 'Çıkış Yap', '',
+                _item(Icons.logout, t('settings.logout'), '',
                     textColor: AppColors.danger,
                     onTap: () async {
                   final ok = await AppConfirmationDialog.show(
                     context: context,
-                    title: 'Çıkış Yap',
-                    message: 'Çıkış yapmak istediğinizden emin misiniz?',
+                    title: t('settings.logout'),
+                    message: 'Çıkış yapmak istediğinizden emin misiniz?', // TODO: i18n
                     icon: Icons.logout,
-                    confirmText: 'Çıkış Yap',
+                    confirmText: t('settings.logout'),
                     confirmColor: AppColors.danger,
                   );
                   if (ok && mounted) ref.read(authProvider.notifier).logout();

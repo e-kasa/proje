@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/models/bulk_import_models.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 
 /// Stok Güncelleme Modal - CONFLICT durumu için
-class UpdateStockModal extends StatefulWidget {
+class UpdateStockModal extends ConsumerStatefulWidget {
   final AnalyzedProduct product;
   final Function(UserDecision) onDecision;
 
@@ -15,10 +17,11 @@ class UpdateStockModal extends StatefulWidget {
   });
 
   @override
-  State<UpdateStockModal> createState() => _UpdateStockModalState();
+  ConsumerState<UpdateStockModal> createState() => _UpdateStockModalState();
 }
 
-class _UpdateStockModalState extends State<UpdateStockModal> {
+class _UpdateStockModalState extends ConsumerState<UpdateStockModal> {
+  String Function(String) get t => i18nOf(ref);
   StockUpdateMode _updateMode = StockUpdateMode.ADD;
   late TextEditingController _stockController;
 
@@ -38,7 +41,7 @@ class _UpdateStockModalState extends State<UpdateStockModal> {
     final stockValue = int.tryParse(_stockController.text) ?? 0;
 
     if (stockValue <= 0) {
-      AppToast.warning(context, 'Lütfen geçerli bir stok miktarı girin');
+      AppToast.warning(context, 'Lütfen geçerli bir stok miktarı girin'); // TODO: i18n bulk_import.invalid_stock_amount
       return;
     }
 
@@ -85,7 +88,7 @@ class _UpdateStockModalState extends State<UpdateStockModal> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Stok Güncelle',
+                        'Stok Güncelle', // TODO: i18n bulk_import.update_stock_title
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 4),
@@ -114,7 +117,7 @@ class _UpdateStockModalState extends State<UpdateStockModal> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Mevcut Ürün:', style: TextStyle(fontWeight: FontWeight.w600)),
+                  const Text('Mevcut Ürün:', style: TextStyle(fontWeight: FontWeight.w600)), // TODO: i18n bulk_import.existing_product
                   const SizedBox(height: 8),
                   Text('İsim: ${matched.name}', style: const TextStyle(fontSize: 13)),
                   Text('SKU: ${matched.sku}', style: const TextStyle(fontSize: 13)),
@@ -128,7 +131,7 @@ class _UpdateStockModalState extends State<UpdateStockModal> {
             const SizedBox(height: 24),
 
             // Update Mode Selection
-            const Text('Güncelleme Modu:', style: TextStyle(fontWeight: FontWeight.w600)),
+            const Text('Güncelleme Modu:', style: TextStyle(fontWeight: FontWeight.w600)), // TODO: i18n bulk_import.update_mode
             const SizedBox(height: 12),
 
             SegmentedButton<StockUpdateMode>(
@@ -154,7 +157,7 @@ class _UpdateStockModalState extends State<UpdateStockModal> {
             const SizedBox(height: 24),
 
             // Stock Input
-            const Text('Stok Miktarı:', style: TextStyle(fontWeight: FontWeight.w600)),
+            const Text('Stok Miktarı:', style: TextStyle(fontWeight: FontWeight.w600)), // TODO: i18n bulk_import.stock_amount
             const SizedBox(height: 12),
 
             TextField(
@@ -193,7 +196,7 @@ class _UpdateStockModalState extends State<UpdateStockModal> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Sonuç Önizleme:', style: TextStyle(fontWeight: FontWeight.w600)),
+                        const Text('Sonuç Önizleme:', style: TextStyle(fontWeight: FontWeight.w600)), // TODO: i18n bulk_import.result_preview
                         const SizedBox(height: 4),
                         Text(
                           _updateMode == StockUpdateMode.ADD
@@ -215,12 +218,12 @@ class _UpdateStockModalState extends State<UpdateStockModal> {
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('İptal'),
+                  child: const Text('İptal'), // TODO: i18n common.cancel
                 ),
                 const SizedBox(width: 12),
                 AppButton.success(
 
-                  text: 'Güncelle',
+                  text: 'Güncelle', // TODO: i18n common.update
 
                   icon: Icons.save,
                   onPressed: _confirm,

@@ -5,12 +5,14 @@ import '../../core/theme/app_theme.dart';
 import '../../widgets/common/stat_card.dart';
 import '../../widgets/common/section_header.dart';
 import '../../core/widgets/widgets.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class SalesScreen extends ConsumerWidget {
   const SalesScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
     return AppScaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -20,9 +22,9 @@ class SalesScreen extends ConsumerWidget {
             children: [
               // Header
               FadeInDown(
-                child: const SectionHeader(
-                  title: 'Sales',
-                  subtitle: 'Manage your sales and orders',
+                child: SectionHeader(
+                  title: t('sales.title'),
+                  subtitle: t('sales.subtitle'), // TODO: i18n key: sales.subtitle
                 ),
               ),
               const SizedBox(height: 24),
@@ -37,9 +39,9 @@ class SalesScreen extends ConsumerWidget {
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
                   childAspectRatio: 1.5,
-                  children: const [
+                  children: [
                     StatCard(
-                      title: 'Today Sales',
+                      title: t('sales.today_sales'), // TODO: i18n key: sales.today_sales
                       value: '\$12,345',
                       change: '+15.3%',
                       isPositive: true,
@@ -47,7 +49,7 @@ class SalesScreen extends ConsumerWidget {
                       color: AppTheme.successColor,
                     ),
                     StatCard(
-                      title: 'Orders',
+                      title: t('sales.orders'), // TODO: i18n key: sales.orders
                       value: '234',
                       change: '+8.1%',
                       isPositive: true,
@@ -55,7 +57,7 @@ class SalesScreen extends ConsumerWidget {
                       color: AppTheme.primaryColor,
                     ),
                     StatCard(
-                      title: 'Pending',
+                      title: t('sales.pending'), // TODO: i18n key: sales.pending
                       value: '12',
                       change: '-5.2%',
                       isPositive: false,
@@ -79,19 +81,19 @@ class SalesScreen extends ConsumerWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Recent Sales',
+                              t('sales.recent_sales'), // TODO: i18n key: sales.recent_sales
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
                             Row(
                               children: [
                                 AppButton.outline(
-                                  text: 'Filter',
+                                  text: t('common.filter'),
                                   icon: Icons.filter_list,
                                   onPressed: () {},
                                 ),
                                 const SizedBox(width: 12),
                                 AppButton.primary(
-                                  text: 'New Sale',
+                                  text: t('sales.new_sale'), // TODO: i18n key: sales.new_sale
                                   icon: Icons.add,
                                   size: ButtonSize.small,
                                   onPressed: () {},
@@ -101,7 +103,7 @@ class SalesScreen extends ConsumerWidget {
                           ],
                         ),
                         const SizedBox(height: 20),
-                        _buildSalesTable(context),
+                        _buildSalesTable(context, t),
                       ],
                     ),
                 ),
@@ -113,20 +115,20 @@ class SalesScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSalesTable(BuildContext context) {
+  Widget _buildSalesTable(BuildContext context, String Function(String) t) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
         headingRowColor: MaterialStateProperty.all(
           AppTheme.backgroundColor,
         ),
-        columns: const [
-          DataColumn(label: Text('Order ID')),
-          DataColumn(label: Text('Customer')),
-          DataColumn(label: Text('Date')),
-          DataColumn(label: Text('Amount')),
-          DataColumn(label: Text('Status')),
-          DataColumn(label: Text('Actions')),
+        columns: [
+          DataColumn(label: Text(t('sales.order_id'))), // TODO: i18n key: sales.order_id
+          DataColumn(label: Text(t('sales.customer'))),
+          DataColumn(label: Text(t('sales.date'))),
+          DataColumn(label: Text(t('sales.amount'))), // TODO: i18n key: sales.amount
+          DataColumn(label: Text(t('sales.status'))), // TODO: i18n key: sales.status
+          DataColumn(label: Text(t('common.actions'))), // TODO: i18n key: common.actions
         ],
         rows: List.generate(
           10,
@@ -145,7 +147,7 @@ class SalesScreen extends ConsumerWidget {
                 ),
               ),
               DataCell(
-                _buildStatusChip(index % 3 == 0 ? 'Completed' : 'Pending'),
+                _buildStatusChip(index % 3 == 0 ? t('sales.completed') : t('sales.pending_status'), t), // TODO: i18n keys: sales.completed, sales.pending_status
               ),
               DataCell(
                 Row(
@@ -153,12 +155,12 @@ class SalesScreen extends ConsumerWidget {
                     IconButton(
                       icon: const Icon(Icons.visibility_outlined, size: 18),
                       onPressed: () {},
-                      tooltip: 'View',
+                      tooltip: t('common.view'), // TODO: i18n key: common.view
                     ),
                     IconButton(
                       icon: const Icon(Icons.edit_outlined, size: 18),
                       onPressed: () {},
-                      tooltip: 'Edit',
+                      tooltip: t('common.edit'),
                     ),
                   ],
                 ),
@@ -170,8 +172,9 @@ class SalesScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatusChip(String status) {
-    final isCompleted = status == 'Completed';
+  Widget _buildStatusChip(String status, String Function(String) t) {
+    final completedLabel = t('sales.completed'); // TODO: i18n key: sales.completed
+    final isCompleted = status == completedLabel;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(

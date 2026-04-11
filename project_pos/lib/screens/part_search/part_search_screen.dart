@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class PartSearchScreen extends ConsumerStatefulWidget {
   const PartSearchScreen({super.key});
@@ -13,6 +14,7 @@ class PartSearchScreen extends ConsumerStatefulWidget {
 }
 
 class _PartSearchScreenState extends ConsumerState<PartSearchScreen> {
+  String Function(String) get t => i18nOf(ref);
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounce;
 
@@ -94,7 +96,7 @@ class _PartSearchScreenState extends ConsumerState<PartSearchScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        AppToast.error(context, 'Arama hatasi: $e');
+        AppToast.error(context, t('common.error'));
       }
     }
   }
@@ -124,7 +126,7 @@ class _PartSearchScreenState extends ConsumerState<PartSearchScreen> {
                   controller: _searchController,
                   onChanged: _onSearchChanged,
                   decoration: InputDecoration(
-                    hintText: 'Parca adi, OEM no, capraz referans, barkod...',
+                    hintText: t('common.search'), // TODO: i18n part_search hint key
                     prefixIcon: const Icon(Icons.search, size: 24),
                     suffixIcon: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -286,7 +288,8 @@ class _PartSearchScreenState extends ConsumerState<PartSearchScreen> {
         children: [
           Icon(Icons.search, size: 80, color: AppColors.textMuted.withValues(alpha: 0.3)),
           const SizedBox(height: 16),
-          const Text('Parca Arama', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+          Text('Parca Arama', // TODO: i18n part_search key
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
           const SizedBox(height: 8),
           const Text(
             'OEM numarasi, capraz referans, parca adi\nveya barkod ile arama yapabilirsiniz',
@@ -310,7 +313,7 @@ class _PartSearchScreenState extends ConsumerState<PartSearchScreen> {
         children: [
           Icon(Icons.search_off, size: 80, color: AppColors.textMuted.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
-          const Text('Sonuc bulunamadi', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
+          Text(t('common.no_data'), style: const TextStyle(fontSize: 16, color: AppColors.textSecondary)), // TODO: i18n no_results key
           const SizedBox(height: 8),
           const Text('Farkli anahtar kelime deneyin', style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
         ],

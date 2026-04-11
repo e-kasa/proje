@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class PurchaseDetailScreen extends ConsumerStatefulWidget {
   final String purchaseId;
@@ -17,6 +18,8 @@ class PurchaseDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   bool _isLoading = true;
   bool _isSaving = false;
   String? _error;
@@ -110,13 +113,13 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
           _isEditing = false;
           _isSaving = false;
         });
-        AppToast.success(context, 'Satın alma güncellendi');
+        AppToast.success(context, t('purchases.updated_success'));
         _load();
       }
     } catch (e) {
       setState(() => _isSaving = false);
       if (mounted) {
-        AppToast.error(context, 'Güncelleme hatası: $e');
+        AppToast.error(context, '${t('common.error')}: $e');
       }
     }
   }
@@ -128,7 +131,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
 
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: _isEditing ? 'Satın Alma Düzenle' : 'Satın Alma Detayı',
+        title: _isEditing ? t('purchases.edit') : t('purchases.detail'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -157,7 +160,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
                                   _populateEditFields();
                                 });
                               },
-                        child: const Text('Vazgeç'),
+                        child: Text(t('common.cancel')),
                       ),
                       TextButton.icon(
                         onPressed: _isSaving ? null : _save,
@@ -168,7 +171,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
                                 child: CircularProgressIndicator(strokeWidth: 2),
                               )
                             : const Icon(Icons.check, size: 18),
-                        label: const Text('Kaydet'),
+                        label: Text(t('common.save')),
                       ),
                     ],
                   )
@@ -178,7 +181,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
                       IconButton(
                         icon: const Icon(Icons.edit_outlined),
                         onPressed: () => setState(() => _isEditing = true),
-                        tooltip: 'Düzenle',
+                        tooltip: t('common.edit'),
                       ),
                       IconButton(
                         icon: const Icon(Icons.assignment_return_outlined,
@@ -190,14 +193,14 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
                             if (result == true && mounted) _load();
                           });
                         },
-                        tooltip: 'İade',
+                        tooltip: t('purchases.return'),
                       ),
                     ],
                   ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _load,
-            tooltip: 'Yenile',
+            tooltip: t('common.refresh'),
           ),
         ],
       ),
@@ -236,9 +239,9 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
 
   Widget _buildError() {
     return AppEmptyState.error(
-      title: 'Veri yüklenirken hata oluştu',
-      description: _error ?? 'Bilinmeyen hata',
-      actionText: 'Tekrar Dene',
+      title: t('common.load_error'),
+      description: _error ?? t('common.unknown_error'),
+      actionText: t('common.retry'),
       onAction: _load,
     );
   }
@@ -260,7 +263,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
             const Icon(Icons.cancel_outlined, color: Colors.red, size: 20),
             const SizedBox(width: 10),
             Text(
-              'Bu satın alma iptal edilmiştir',
+              t('purchases.purchase_cancelled'),
               style: theme.textTheme.bodyMedium
                   ?.copyWith(color: Colors.red, fontWeight: FontWeight.w600),
             ),
@@ -286,7 +289,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'Kalan borç: ${_fmt.format(remaining)}',
+                '${t('purchases.remaining_debt')}: ${_fmt.format(remaining)}',
                 style: theme.textTheme.bodyMedium?.copyWith(
                     color: Colors.orange[800], fontWeight: FontWeight.w600),
               ),
@@ -309,7 +312,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
           const Icon(Icons.check_circle_outline, color: Colors.green, size: 20),
           const SizedBox(width: 10),
           Text(
-            'Ödeme tamamlandı',
+            t('purchases.payment_complete'),
             style: theme.textTheme.bodyMedium
                 ?.copyWith(color: Colors.green, fontWeight: FontWeight.w600),
           ),
@@ -361,13 +364,13 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _purchase['supplierName'] ?? 'Tedarikçi',
+                    _purchase['supplierName'] ?? t('purchases.supplier'),
                     style: theme.textTheme.titleMedium
                         ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Tedarikçi',
+                    t('purchases.supplier'),
                     style: theme.textTheme.bodySmall
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
@@ -379,13 +382,13 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
         const SizedBox(height: 16),
         const Divider(height: 1),
         const SizedBox(height: 16),
-        _infoRow(Icons.description_outlined, 'Fatura No',
+        _infoRow(Icons.description_outlined, t('purchases.invoice_number'),
             _purchase['invoiceNumber'] ?? '-', theme),
         const SizedBox(height: 10),
-        _infoRow(Icons.local_shipping_outlined, 'İrsaliye No',
+        _infoRow(Icons.local_shipping_outlined, t('purchases.delivery_note'),
             _purchase['deliveryNoteNumber'] ?? '-', theme),
         const SizedBox(height: 10),
-        _infoRow(Icons.calendar_today_outlined, 'Tarih', dateDisplay, theme),
+        _infoRow(Icons.calendar_today_outlined, t('purchases.date'), dateDisplay, theme),
       ],
     );
   }
@@ -399,7 +402,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
             const Icon(Icons.edit_outlined, color: AppColors.primary, size: 20),
             const SizedBox(width: 8),
             Text(
-              'Belge Bilgileri',
+              t('purchases.document_info'),
               style: theme.textTheme.titleSmall
                   ?.copyWith(fontWeight: FontWeight.bold, color: AppColors.primary),
             ),
@@ -409,7 +412,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
         TextField(
           controller: _invoiceCtrl,
           decoration: InputDecoration(
-            labelText: 'Fatura No',
+            labelText: t('purchases.invoice_number'),
             prefixIcon: const Icon(Icons.description_outlined, size: 20),
             border:
                 OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -421,7 +424,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
         TextField(
           controller: _deliveryNoteCtrl,
           decoration: InputDecoration(
-            labelText: 'İrsaliye No',
+            labelText: t('purchases.delivery_note'),
             prefixIcon:
                 const Icon(Icons.local_shipping_outlined, size: 20),
             border:
@@ -443,7 +446,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
           },
           child: InputDecorator(
             decoration: InputDecoration(
-              labelText: 'Tarih',
+              labelText: t('purchases.date'),
               prefixIcon:
                   const Icon(Icons.calendar_today_outlined, size: 20),
               border:
@@ -454,7 +457,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
             child: Text(
               _selectedDate != null
                   ? _dateFmt.format(_selectedDate!)
-                  : 'Tarih seçin',
+                  : t('purchases.select_date'),
               style: theme.textTheme.bodyMedium,
             ),
           ),
@@ -516,7 +519,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
                   color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
               Text(
-                'Tutar Bilgileri',
+                t('purchases.amount_info'),
                 style: theme.textTheme.titleSmall
                     ?.copyWith(fontWeight: FontWeight.bold),
               ),
@@ -527,15 +530,15 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
             children: [
               Expanded(
                 child: _amountTile(
-                    'Toplam', total, AppColors.primary, theme),
+                    t('purchases.total'), total, AppColors.primary, theme),
               ),
               Expanded(
                 child:
-                    _amountTile('Ödenen', paid, Colors.green, theme),
+                    _amountTile(t('purchases.paid'), paid, Colors.green, theme),
               ),
               Expanded(
                 child: _amountTile(
-                    'Kalan', remaining, Colors.orange, theme),
+                    t('purchases.remaining'), remaining, Colors.orange, theme),
               ),
             ],
           ),
@@ -554,7 +557,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
           const SizedBox(height: 6),
           Text(
             total > 0
-                ? '%${((paid / total) * 100).toStringAsFixed(0)} ödendi'
+                ? '%${((paid / total) * 100).toStringAsFixed(0)} ${t('purchases.paid_percent')}'
                 : '',
             style: theme.textTheme.bodySmall
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
@@ -595,7 +598,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
                 size: 20, color: AppColors.primary),
             const SizedBox(width: 8),
             Text(
-              'Kalemler',
+              t('purchases.items_section'),
               style: theme.textTheme.titleSmall
                   ?.copyWith(fontWeight: FontWeight.bold),
             ),
@@ -608,7 +611,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                '${_items.length} kalem',
+                '${_items.length} ${t('purchases.items')}',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -621,8 +624,8 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
         const SizedBox(height: 12),
         if (_items.isEmpty)
           AppEmptyState.noData(
-            title: 'Kalem bilgisi bulunamadı',
-            description: 'Bu satın almada ürün kalemi bulunmuyor',
+            title: t('purchases.no_items_title'),
+            description: t('purchases.no_items_description'),
           )
         else
           ..._items.asMap().entries.map((entry) {
@@ -712,7 +715,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _itemTag('$qty adet', Icons.inventory_2_outlined,
+                    _itemTag('$qty ${t('purchases.unit')}', Icons.inventory_2_outlined,
                         AppColors.primary, theme),
                     const SizedBox(width: 8),
                     _itemTag('${_fmt.format(unitPrice)} /br',
@@ -735,7 +738,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
               ),
               const SizedBox(height: 2),
               Text(
-                'Toplam',
+                t('purchases.total'),
                 style: theme.textTheme.bodySmall
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontSize: 11),
               ),
@@ -788,7 +791,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
               const Icon(Icons.notes_outlined, size: 18, color: AppColors.primary),
               const SizedBox(width: 8),
               Text(
-                'Notlar',
+                t('purchases.notes'),
                 style: theme.textTheme.titleSmall
                     ?.copyWith(fontWeight: FontWeight.bold),
               ),
@@ -800,14 +803,14 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
                   controller: _notesCtrl,
                   maxLines: 4,
                   decoration: InputDecoration(
-                    hintText: 'Not ekleyin...',
+                    hintText: t('purchases.add_note'),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                 )
               : Text(
-                  _notesCtrl.text.isEmpty ? '(boş)' : _notesCtrl.text,
+                  _notesCtrl.text.isEmpty ? t('common.empty') : _notesCtrl.text,
                   style: theme.textTheme.bodySmall,
                 ),
         ],

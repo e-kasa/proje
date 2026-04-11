@@ -7,6 +7,7 @@ import '../../services/finance_service.dart';
 import '../../core/api/api_client.dart';
 import '../../core/widgets/widgets.dart';
 import '../../core/theme/app_constants.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class DailySummaryScreen extends ConsumerStatefulWidget {
   const DailySummaryScreen({super.key});
@@ -16,6 +17,8 @@ class DailySummaryScreen extends ConsumerStatefulWidget {
 }
 
 class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
   Map<String, dynamic> _stats = {};
@@ -84,7 +87,7 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Gunluk Ozet',
+        title: t('reports.daily_summary'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
@@ -138,8 +141,8 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
                         fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                   if (isToday)
-                    const Text('Bugun',
-                        style: TextStyle(
+                    Text(t('reports.today'), // TODO: i18n key: reports.today
+                        style: const TextStyle(
                             fontSize: 12, color: AppColors.success)),
                 ],
               ),
@@ -164,24 +167,24 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
     return Column(children: [
       Row(children: [
         Expanded(
-            child: _summaryCard('Toplam Satis', totalSales.toInt().toString(),
+            child: _summaryCard(t('reports.total_sales'), totalSales.toInt().toString(), // TODO: i18n key: reports.total_sales
                 AppColors.primary, Icons.shopping_cart,
                 isCount: true)),
         const SizedBox(width: 10),
         Expanded(
-            child: _summaryCard('Toplam Gelir',
+            child: _summaryCard(t('reports.total_income'), // TODO: i18n key: reports.total_income
                 _currencyFormat.format(totalRevenue), AppColors.success,
                 Icons.trending_up)),
       ]),
       const SizedBox(height: 10),
       Row(children: [
         Expanded(
-            child: _summaryCard('Ort. Siparis',
+            child: _summaryCard(t('reports.avg_order'), // TODO: i18n key: reports.avg_order
                 _currencyFormat.format(avgOrder), AppColors.info,
                 Icons.analytics)),
         const SizedBox(width: 10),
         Expanded(
-            child: _summaryCard('Net Kar',
+            child: _summaryCard(t('reports.net_profit'), // TODO: i18n key: reports.net_profit
                 _currencyFormat.format(netProfit), AppColors.warning,
                 Icons.account_balance_wallet)),
       ]),
@@ -230,14 +233,14 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
     }
 
     final methods = {
-      'cash': {'label': 'Nakit', 'icon': Icons.money, 'color': AppColors.success},
+      'cash': {'label': t('reports.payment_cash'), 'icon': Icons.money, 'color': AppColors.success}, // TODO: i18n key: reports.payment_cash
       'credit_card': {
-        'label': 'Kart',
+        'label': t('reports.payment_card'), // TODO: i18n key: reports.payment_card
         'icon': Icons.credit_card,
         'color': AppColors.info
       },
       'bank_transfer': {
-        'label': 'Havale',
+        'label': t('reports.payment_transfer'), // TODO: i18n key: reports.payment_transfer
         'icon': Icons.account_balance,
         'color': AppColors.warning
       },
@@ -247,8 +250,8 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
       child: Padding(
         padding: AppConstants.pagePadding,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Odeme Yontemleri',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          Text(t('reports.payment_methods'), // TODO: i18n key: reports.payment_methods
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           ...methods.entries.map((e) {
             final count = methodCounts[e.key] ?? 0;
@@ -274,7 +277,7 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
                         Text(info['label'] as String,
                             style: const TextStyle(
                                 fontSize: 13, fontWeight: FontWeight.w600)),
-                        Text('$count islem',
+                        Text('$count ${t('reports.transaction')}', // TODO: i18n key: reports.transaction
                             style: const TextStyle(
                                 fontSize: 11, color: AppColors.textMuted)),
                       ]),
@@ -318,11 +321,11 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
       child: Padding(
         padding: AppConstants.pagePadding,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('En Cok Satan Urunler',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          Text(t('reports.top_selling_products'), // TODO: i18n key: reports.top_selling_products
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           if (top5.isEmpty)
-            AppEmptyState.noData(description: 'Veri bulunamadi')
+            AppEmptyState.noData(description: t('common.no_data'))
           else
             ...top5.asMap().entries.map((e) {
               final idx = e.key;
@@ -354,7 +357,7 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
                           style: const TextStyle(fontSize: 13),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis)),
-                  Text('${entry.value.toInt()} adet',
+                  Text('${entry.value.toInt()} ${t('reports.units')}', // TODO: i18n key: reports.units
                       style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -376,11 +379,11 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
       child: Padding(
         padding: AppConstants.pagePadding,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Son Islemler',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          Text(t('reports.recent_transactions'), // TODO: i18n key: reports.recent_transactions
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           if (recentSales.isEmpty)
-            AppEmptyState.noData(description: 'Bugun islem yapilmamis')
+            AppEmptyState.noData(description: t('reports.no_transactions_today')) // TODO: i18n key: reports.no_transactions_today
           else
             ...recentSales.map((sale) {
               final id = sale['id']?.toString() ?? '-';
@@ -408,7 +411,7 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Satis #$id',
+                          Text('${t('sales.title')} #$id',
                               style: const TextStyle(
                                   fontSize: 13, fontWeight: FontWeight.w500)),
                           Row(children: [

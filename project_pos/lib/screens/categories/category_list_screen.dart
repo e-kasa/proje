@@ -5,6 +5,7 @@ import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
 import 'add_category_screen.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 class CategoryListScreen extends ConsumerStatefulWidget {
   const CategoryListScreen({super.key});
@@ -14,6 +15,8 @@ class CategoryListScreen extends ConsumerStatefulWidget {
 }
 
 class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   final _searchController = TextEditingController();
 
   /// Hiyerarşik sırayla düzenlenmiş tam liste
@@ -24,11 +27,15 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
 
   Set<String> _selectedCategoryIds = {};
 
-  String _selectedStatus = 'Tümü';
+  String _selectedStatus = 'ALL'; // ALL | ACTIVE | INACTIVE
   bool _isLoading = true;
   bool _isSelectionMode = false;
 
-  final List<String> _statusFilters = ['Tümü', 'Aktif', 'Pasif'];
+  final List<Map<String, String>> _statusFilters = [
+    {'key': 'ALL'},
+    {'key': 'ACTIVE'},
+    {'key': 'INACTIVE'},
+  ];
 
   @override
   void initState() {
@@ -57,7 +64,7 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        AppToast.error(context, 'Hata: $e');
+        AppToast.error(context, '${t('common.error')}: $e');
       }
     }
   }
@@ -117,9 +124,9 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
       }).toList();
     }
 
-    if (_selectedStatus == 'Aktif') {
+    if (_selectedStatus == 'ACTIVE') {
       filtered = filtered.where((c) => c['status'] == 'ACTIVE').toList();
-    } else if (_selectedStatus == 'Pasif') {
+    } else if (_selectedStatus == 'INACTIVE') {
       filtered = filtered.where((c) => c['status'] != 'ACTIVE').toList();
     }
 
@@ -130,17 +137,14 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Kategoriyi Sil'),
-        content: const Text(
-          'Bu kategoriyi silmek istediğinize emin misiniz?\n\n'
-          'Alt kategorileri olan bir kategori silinemez.',
-        ),
+        title: Text(t('common.delete')),
+        content: Text(t('common.are_you_sure')),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('İptal')),
+              child: Text(t('common.cancel'))),
           AppButton.danger(
-            text: 'Sil',
+            text: t('common.delete'),
             onPressed: () => Navigator.pop(ctx, true),
           ),
         ],
@@ -152,11 +156,11 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
         await ref.read(categoryServiceProvider).deleteCategory(id);
         _loadCategories();
         if (mounted) {
-          AppToast.success(context, 'Kategori başarıyla silindi');
+          AppToast.success(context, t('common.deleted'));
         }
       } catch (e) {
         if (mounted) {
-          AppToast.error(context, 'Silinemedi: $e');
+          AppToast.error(context, '${t('common.error')}: $e');
         }
       }
     }
@@ -166,15 +170,14 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Toplu Silme'),
-        content: Text(
-            '${_selectedCategoryIds.length} kategoriyi silmek istediğinize emin misiniz?'),
+        title: Text(t('common.delete')),
+        content: Text(t('common.are_you_sure')),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('İptal')),
+              child: Text(t('common.cancel'))),
           AppButton.danger(
-            text: 'Sil',
+            text: t('common.delete'),
             onPressed: () => Navigator.pop(ctx, true),
           ),
         ],
@@ -197,9 +200,9 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
       _loadCategories();
       if (mounted) {
         if (errors.isEmpty) {
-          AppToast.success(context, 'Kategoriler silindi');
+          AppToast.success(context, t('common.deleted'));
         } else {
-          AppToast.warning(context, '${errors.length} kategori silinemedi (alt kategorileri var)');
+          AppToast.warning(context, '${errors.length} ${t('categories.title')} ${t('common.error')}'); // TODO: i18n full message
         }
       }
     }
@@ -209,13 +212,13 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       appBar: AppAppBar.primary(
-        title: 'Kategoriler',
+        title: t('categories.title'),
         actions: [
           if (_isSelectionMode) ...[
             IconButton(
               icon: const Icon(Icons.delete_outline),
               onPressed: _selectedCategoryIds.isEmpty ? null : _bulkDelete,
-              tooltip: 'Seçilenleri Sil',
+              tooltip: t('common.delete'),
             ),
             IconButton(
               icon: const Icon(Icons.close),
@@ -223,18 +226,18 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
                 _isSelectionMode = false;
                 _selectedCategoryIds.clear();
               }),
-              tooltip: 'İptal',
+              tooltip: t('common.cancel'),
             ),
           ] else ...[
             IconButton(
               icon: const Icon(Icons.checklist),
               onPressed: () => setState(() => _isSelectionMode = true),
-              tooltip: 'Seçim Modu',
+              tooltip: t('common.filter'),
             ),
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: _loadCategories,
-              tooltip: 'Yenile',
+              tooltip: t('common.refresh'),
             ),
           ],
         ],
@@ -262,7 +265,7 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
         },
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add),
-        label: const Text('Yeni Kategori'),
+        label: Text(t('categories.add')),
       ),
     );
   }
@@ -276,7 +279,7 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
           TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Kategori ara...',
+              hintText: t('common.search'),
               prefixIcon:
                   const Icon(Icons.search, color: AppColors.primary),
               suffixIcon: _searchController.text.isNotEmpty
@@ -300,15 +303,17 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: _statusFilters.map((f) {
-                final sel = _selectedStatus == f;
+              children: _statusFilters.map((entry) {
+                final key = entry['key']!;
+                final label = key == 'ALL' ? t('common.all') : key == 'ACTIVE' ? t('common.active') : t('common.passive');
+                final sel = _selectedStatus == key;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
-                    label: Text(f),
+                    label: Text(label),
                     selected: sel,
                     onSelected: (_) {
-                      setState(() => _selectedStatus = f);
+                      setState(() => _selectedStatus = key);
                       _filterCategories();
                     },
                     selectedColor:
@@ -343,9 +348,9 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
           const SizedBox(height: 16),
           Text(
             _searchController.text.isNotEmpty ||
-                    _selectedStatus != 'Tümü'
-                ? 'Kategori bulunamadı'
-                : 'Henüz kategori eklenmedi',
+                    _selectedStatus != 'ALL'
+                ? t('common.no_records')
+                : t('common.no_data'),
             style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -354,9 +359,9 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
           const SizedBox(height: 8),
           Text(
             _searchController.text.isNotEmpty ||
-                    _selectedStatus != 'Tümü'
-                ? 'Farklı filtreler deneyin'
-                : 'Başlamak için yeni bir kategori ekleyin',
+                    _selectedStatus != 'ALL'
+                ? t('common.filter')
+                : t('common.no_records'),
             style: TextStyle(
                 fontSize: 14,
                 color: AppColors.textMuted.withValues(alpha: 0.8)),
@@ -585,7 +590,7 @@ class _CategoryTile extends StatelessWidget {
                             borderRadius: AppConstants.borderRadiusSmall,
                           ),
                           child: Text(
-                            isActive ? 'Aktif' : 'Pasif',
+                            isActive ? 'Aktif' : 'Pasif', // TODO: i18n common.active / common.passive
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
@@ -612,7 +617,7 @@ class _CategoryTile extends StatelessWidget {
                       child: Row(children: [
                         Icon(Icons.edit, size: 20),
                         SizedBox(width: 12),
-                        Text('Düzenle'),
+                        Text('Düzenle'), // TODO: i18n common.edit
                       ]),
                     ),
                     const PopupMenuItem(
@@ -621,7 +626,7 @@ class _CategoryTile extends StatelessWidget {
                         Icon(Icons.delete,
                             size: 20, color: AppColors.danger),
                         SizedBox(width: 12),
-                        Text('Sil',
+                        Text('Sil', // TODO: i18n common.delete
                             style: TextStyle(color: AppColors.danger)),
                       ]),
                     ),

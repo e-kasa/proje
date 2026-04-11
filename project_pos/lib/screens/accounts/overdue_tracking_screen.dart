@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 class OverdueTrackingScreen extends ConsumerStatefulWidget {
   const OverdueTrackingScreen({super.key});
@@ -15,6 +16,7 @@ class OverdueTrackingScreen extends ConsumerStatefulWidget {
 
 class _OverdueTrackingScreenState extends ConsumerState<OverdueTrackingScreen>
     with SingleTickerProviderStateMixin {
+  String Function(String) get t => i18nOf(ref);
   late TabController _tabController;
 
   List<Map<String, dynamic>> _customerOverdue = [];
@@ -94,15 +96,15 @@ class _OverdueTrackingScreenState extends ConsumerState<OverdueTrackingScreen>
   Widget build(BuildContext context) {
     return AppScaffold(
       appBar: AppAppBar.gradient(
-        title: 'Vadesi Gecmis Hesaplar',
+        title: t('accounts.overdue'),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
-          tabs: const [
-            Tab(text: 'Musteriler'),
-            Tab(text: 'Tedarikciler'),
+          tabs: [
+            Tab(text: t('menu.customers')),
+            Tab(text: 'Tedarikçiler'), // TODO: i18n menu.suppliers
           ],
         ),
       ),
@@ -140,18 +142,16 @@ class _OverdueTrackingScreenState extends ConsumerState<OverdueTrackingScreen>
     }
     if (error != null) {
       return AppEmptyState.error(
-        title: 'Veri yuklenirken hata olustu',
+        title: t('common.error'),
         description: error,
-        actionText: 'Tekrar Dene',
+        actionText: t('common.refresh'),
         onAction: onRefresh,
       );
     }
     if (items.isEmpty) {
       return AppEmptyState.noData(
-        title: isCustomer
-            ? 'Vadesi gecmis musteri hesabi yok'
-            : 'Vadesi gecmis tedarikci hesabi yok',
-        description: 'Tum hesaplar guncel durumda',
+        title: t('accounts.overdue'),
+        description: t('common.no_data'),
       );
     }
     return RefreshIndicator(

@@ -1,6 +1,8 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/i18n_helper.dart';
 import '../../core/widgets/widgets.dart';
 import '../../core/api/api_client.dart';
 import '../../models/bulk_import_models.dart';
@@ -11,7 +13,7 @@ import 'modals/manual_match_modal.dart';
 
 /// Toplu İçe Aktarma - Ürün İnceleme ve Karar Ekranı V2
 /// Gerçek backend modelleri ile çalışan production-ready versiyon
-class BulkImportReviewScreenV2 extends StatefulWidget {
+class BulkImportReviewScreenV2 extends ConsumerStatefulWidget {
   final String? importId;
   final String sector;
 
@@ -22,10 +24,11 @@ class BulkImportReviewScreenV2 extends StatefulWidget {
   });
 
   @override
-  State<BulkImportReviewScreenV2> createState() => _BulkImportReviewScreenV2State();
+  ConsumerState<BulkImportReviewScreenV2> createState() => _BulkImportReviewScreenV2State();
 }
 
-class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
+class _BulkImportReviewScreenV2State extends ConsumerState<BulkImportReviewScreenV2> {
+  String Function(String) get t => i18nOf(ref);
   late List<AnalyzedProduct> _products;
   late ImportStatistics _statistics;
   final Set<String> _selectedProducts = {};
@@ -276,7 +279,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
       }
     });
 
-    AppToast.success(context, 'Karar kaydedildi: ${decision.action.name}');
+    AppToast.success(context, 'Karar kaydedildi: ${decision.action.name}'); // TODO: i18n bulk_import.decision_saved
   }
 
   void _skipProduct(AnalyzedProduct product) {
@@ -327,7 +330,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
           children: [
             Icon(Icons.auto_awesome, color: AppColors.primary),
             const SizedBox(width: 12),
-            const Text('Önerilen Aksiyonları Uygula'),
+            const Text('Önerilen Aksiyonları Uygula'), // TODO: i18n bulk_import.apply_recommended
           ],
         ),
         content: Text(
@@ -393,7 +396,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
           children: [
             Icon(Icons.save, color: AppColors.success),
             const SizedBox(width: 12),
-            const Text('Yeni Ürünleri Kaydet'),
+            const Text('Yeni Ürünleri Kaydet'), // TODO: i18n bulk_import.save_new_products
           ],
         ),
         content: Text(
@@ -448,7 +451,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
           children: [
             Icon(Icons.inventory, color: AppColors.warning),
             const SizedBox(width: 12),
-            const Text('Stok Güncelle'),
+            const Text('Stok Güncelle'), // TODO: i18n bulk_import.update_stock_title
           ],
         ),
         content: Text(
@@ -500,7 +503,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
           children: [
             Icon(Icons.cancel, color: AppColors.textMuted),
             const SizedBox(width: 12),
-            const Text('Ürünleri Atla'),
+            const Text('Ürünleri Atla'), // TODO: i18n bulk_import.skip_products
           ],
         ),
         content: Text(
@@ -567,7 +570,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
           children: [
             Icon(Icons.copy_all, color: AppColors.info),
             const SizedBox(width: 12),
-            const Text('Benzer Ürünlere Uygula'),
+            const Text('Benzer Ürünlere Uygula'), // TODO: i18n bulk_import.apply_to_similar
           ],
         ),
         content: SizedBox(
@@ -673,7 +676,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
           children: [
             Icon(Icons.help_outline, color: AppColors.warning),
             const SizedBox(width: 12),
-            const Text('Onayla'),
+            const Text('Onayla'), // TODO: i18n common.confirm
           ],
         ),
         content: Text(
@@ -725,7 +728,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
           children: [
             Icon(Icons.help_outline, color: AppColors.warning),
             const SizedBox(width: 12),
-            const Text('Kararı Değiştir'),
+            const Text('Kararı Değiştir'), // TODO: i18n bulk_import.change_decision
           ],
         ),
         content: Text(
@@ -852,7 +855,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
           children: [
             Icon(Icons.warning, color: AppColors.warning),
             const SizedBox(width: 12),
-            const Text('Uyarı: Karar Verilmemiş Ürünler'),
+            const Text('Uyarı: Karar Verilmemiş Ürünler'), // TODO: i18n bulk_import.undecided_warning
           ],
         ),
         content: Text(
@@ -890,7 +893,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
           children: [
             Icon(Icons.preview, color: AppColors.primary),
             const SizedBox(width: 12),
-            const Text('Kayıt Önizleme'),
+            const Text('Kayıt Önizleme'), // TODO: i18n bulk_import.save_preview
           ],
         ),
         content: SizedBox(
@@ -952,7 +955,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
           ),
           ElevatedButton.icon(
             icon: const Icon(Icons.send),
-            label: const Text('Onayla ve Kaydet'),
+            label: const Text('Onayla ve Kaydet'), // TODO: i18n bulk_import.confirm_and_save
             onPressed: () {
               Navigator.pop(context);
               _processSaveWithProgress(decisions);
@@ -1129,7 +1132,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
           children: [
             Icon(Icons.check_circle, color: AppColors.success, size: 32),
             const SizedBox(width: 12),
-            const Text('Başarılı!'),
+            const Text('Başarılı!'), // TODO: i18n common.success
           ],
         ),
         content: Column(
@@ -1171,7 +1174,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
               backgroundColor: AppColors.success,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            child: const Text('Stok Ekranına Git'),
+            child: const Text('Stok Ekranına Git'), // TODO: i18n bulk_import.go_to_stock
           ),
         ],
       ),
@@ -1186,7 +1189,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
           children: [
             Icon(Icons.error, color: AppColors.danger, size: 32),
             const SizedBox(width: 12),
-            const Text('Hata!'),
+            const Text('Hata!'), // TODO: i18n common.error
           ],
         ),
         content: Column(
@@ -1225,7 +1228,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
   Widget build(BuildContext context) {
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Toplu Ürün Yükleme - İnceleme (${_sectorLabel})',
+        title: 'Toplu Ürün Yükleme - İnceleme (${_sectorLabel})', // TODO: i18n bulk_import.review_title
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline),
@@ -1282,11 +1285,11 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _buildStepItem(1, 'Dosya Yükle', false, true),
+          _buildStepItem(1, 'Dosya Yükle', false, true), // TODO: i18n bulk_import.step_upload
           _buildStepConnector(true),
-          _buildStepItem(2, 'İncele & Düzenle', true, false),
+          _buildStepItem(2, 'İncele & Düzenle', true, false), // TODO: i18n bulk_import.step_review
           _buildStepConnector(false),
-          _buildStepItem(3, 'Kaydet', false, false),
+          _buildStepItem(3, 'Kaydet', false, false), // TODO: i18n common.save
         ],
       ),
     );

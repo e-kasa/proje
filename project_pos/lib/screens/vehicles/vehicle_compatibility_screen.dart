@@ -4,6 +4,7 @@ import '../../core/widgets/widgets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
 import '../../services/service_locator.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class VehicleCompatibilityScreen extends ConsumerStatefulWidget {
   final String variantId;
@@ -20,6 +21,7 @@ class VehicleCompatibilityScreen extends ConsumerStatefulWidget {
 }
 
 class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilityScreen> {
+  String Function(String) get t => i18nOf(ref);
   List<Map<String, dynamic>> _compatibilities = [];
   bool _isLoading = false;
 
@@ -73,11 +75,11 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.add_circle, color: AppColors.primary),
-              SizedBox(width: 12),
-              Text('Arac Uyumlulugu Ekle'),
+              const Icon(Icons.add_circle, color: AppColors.primary),
+              const SizedBox(width: 12),
+              Text(t('vehicles.add')), // TODO: i18n add_compatibility key
             ],
           ),
           content: SizedBox(
@@ -180,9 +182,9 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Iptal')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t('common.cancel'))),
             AppButton.primary(
-              text: '${selectedVehicleIds.length} Arac Ekle',
+              text: '${selectedVehicleIds.length} Arac Ekle', // TODO: i18n
               icon: Icons.save,
               onPressed: selectedVehicleIds.isEmpty
                   ? null
@@ -195,12 +197,12 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
                           'vehicleIds': selectedVehicleIds.toList(),
                         });
                         if (mounted) {
-                          AppToast.success(context, '${selectedVehicleIds.length} arac uyumlulugu eklendi');
+                          AppToast.success(context, t('common.saved'));
                         }
                         _loadCompatibilities();
                       } catch (e) {
                         if (mounted) {
-                          AppToast.error(context, 'Hata: $e');
+                          AppToast.error(context, t('common.error'));
                         }
                       }
                     },
@@ -216,12 +218,12 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
       final apiClient = ref.read(apiClientProvider);
       await apiClient.delete('product/api/vehicle-compatibility/${compat['id']}');
       if (mounted) {
-        AppToast.success(context, 'Uyumluluk kaldirildi');
+        AppToast.success(context, t('common.saved'));
       }
       _loadCompatibilities();
     } catch (e) {
       if (mounted) {
-        AppToast.error(context, 'Hata: $e');
+        AppToast.error(context, t('common.error'));
       }
     }
   }
@@ -230,7 +232,7 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
   Widget build(BuildContext context) {
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Arac Uyumlulugu',
+        title: t('vehicles.compatibility'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
@@ -251,10 +253,10 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
                     children: [
                       Icon(Icons.link_off, size: 80, color: AppColors.textMuted.withValues(alpha: 0.5)),
                       const SizedBox(height: 16),
-                      const Text('Henuz arac uyumlulugu eklenmemis', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
+                      Text(t('common.no_data'), style: const TextStyle(fontSize: 16, color: AppColors.textSecondary)), // TODO: i18n no_compatibility key
                       const SizedBox(height: 16),
                       AppButton.primary(
-                        text: 'Arac Ekle',
+                        text: t('vehicles.add'),
                         icon: Icons.add,
                         onPressed: _showAddCompatibilityDialog,
                       ),

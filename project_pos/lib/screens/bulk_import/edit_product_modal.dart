@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 /// Reference data helpers for product edit form dropdowns.
 class _ReferenceData {
@@ -49,6 +50,7 @@ class EditProductModal extends ConsumerStatefulWidget {
 }
 
 class _EditProductModalState extends ConsumerState<EditProductModal> {
+  String Function(String) get t => i18nOf(ref);
   final _formKey = GlobalKey<FormState>();
 
   late TextEditingController _nameController;
@@ -133,7 +135,7 @@ class _EditProductModalState extends ConsumerState<EditProductModal> {
   void _saveProduct() {
     if (_resolutionMode == 'match') {
       if (_selectedExistingProductId == null) {
-        AppToast.warning(context, 'Lütfen eşleştirilecek ürünü seçin');
+        AppToast.warning(context, t('bulk_import.select_product_to_match')); // TODO: i18n
         return;
       }
 
@@ -192,7 +194,7 @@ class _EditProductModalState extends ConsumerState<EditProductModal> {
         constraints: const BoxConstraints(maxHeight: 720),
         child: Scaffold(
           appBar: AppAppBar.primary(
-            title: 'Ürün Düzenle / Eşleştir',
+            title: t('bulk_import.edit_match_product'), // TODO: i18n
             automaticallyImplyLeading: false,
             actions: [
               IconButton(
@@ -211,16 +213,16 @@ class _EditProductModalState extends ConsumerState<EditProductModal> {
                     children: [
                       Expanded(
                         child: SegmentedButton<String>(
-                          segments: const [
+                          segments: [
                             ButtonSegment(
                               value: 'match',
-                              label: Text('Mevcut Ürünle Eşleştir'),
-                              icon: Icon(Icons.link),
+                              label: Text(t('bulk_import.match_existing')), // TODO: i18n
+                              icon: const Icon(Icons.link),
                             ),
                             ButtonSegment(
                               value: 'edit',
-                              label: Text('Bilgileri Düzenle'),
-                              icon: Icon(Icons.edit),
+                              label: Text(t('common.edit')),
+                              icon: const Icon(Icons.edit),
                             ),
                           ],
                           selected: {_resolutionMode},
@@ -252,11 +254,11 @@ class _EditProductModalState extends ConsumerState<EditProductModal> {
                   children: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('İptal'),
+                      child: Text(t('common.cancel')),
                     ),
                     const SizedBox(width: 12),
                     AppButton.success(
-                      text: _resolutionMode == 'match' ? 'Eşleştir' : 'Kaydet',
+                      text: _resolutionMode == 'match' ? t('common.match') : t('common.save'),
                       icon: Icons.save,
                       onPressed: _saveProduct,
                     ),
@@ -289,7 +291,7 @@ class _EditProductModalState extends ConsumerState<EditProductModal> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Bu ürünü sistemdeki mevcut bir ürünle eşleştirin. Seçilen ürün güncellenecektir.',
+                  t('bulk_import.match_info'), // TODO: i18n
                   style: TextStyle(color: AppColors.info),
                 ),
               ),
@@ -297,22 +299,22 @@ class _EditProductModalState extends ConsumerState<EditProductModal> {
           ),
         ),
         const SizedBox(height: 24),
-        const Text(
-          'İçe Aktarılan Ürün:',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        Text(
+          t('bulk_import.imported_product'), // TODO: i18n
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         _buildProductInfoCard(widget.product, AppColors.primary),
         const SizedBox(height: 24),
-        const Text(
-          'Eşleştirilecek Mevcut Ürün:',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        Text(
+          t('bulk_import.existing_product_to_match'), // TODO: i18n
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         if (widget.product['existingProduct'] != null) ...[
-          const Text(
-            'Sistem Önerisi (Otomatik Tespit):',
-            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+          Text(
+            t('bulk_import.system_suggestion'), // TODO: i18n
+            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
           ),
           const SizedBox(height: 8),
           _buildSelectableProductCard(
@@ -327,9 +329,9 @@ class _EditProductModalState extends ConsumerState<EditProductModal> {
           const SizedBox(height: 16),
         ],
         if (hasExistingProducts) ...[
-          const Text(
-            'Diğer Mevcut Ürünler:',
-            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+          Text(
+            t('bulk_import.other_existing_products'), // TODO: i18n
+            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
           ),
           const SizedBox(height: 8),
           ...widget.existingProducts!.map((product) {
@@ -371,13 +373,13 @@ class _EditProductModalState extends ConsumerState<EditProductModal> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.warning, color: AppColors.danger),
+                      const Icon(Icons.warning, color: AppColors.danger),
                       const SizedBox(width: 12),
-                      const Text(
-                        'Aşağıdaki hataları düzeltin:',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      Text(
+                        t('bulk_import.fix_errors_below'), // TODO: i18n
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -392,7 +394,7 @@ class _EditProductModalState extends ConsumerState<EditProductModal> {
             ),
             const SizedBox(height: 24),
           ],
-          const Text('Temel Bilgiler', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(t('bulk_import.basic_info'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)), // TODO: i18n
           const SizedBox(height: 16),
           TextFormField(
             controller: _nameController,
@@ -420,7 +422,7 @@ class _EditProductModalState extends ConsumerState<EditProductModal> {
             ],
           ),
           const SizedBox(height: 24),
-          const Text('Kategori ve Marka', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(t('bulk_import.category_brand'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)), // TODO: i18n
           const SizedBox(height: 16),
           Row(
             children: [
@@ -444,7 +446,7 @@ class _EditProductModalState extends ConsumerState<EditProductModal> {
             ],
           ),
           const SizedBox(height: 24),
-          const Text('Fiyatlandırma', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(t('bulk_import.pricing'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)), // TODO: i18n
           const SizedBox(height: 16),
           Row(
             children: [
@@ -490,7 +492,7 @@ class _EditProductModalState extends ConsumerState<EditProductModal> {
             ],
           ),
           const SizedBox(height: 24),
-          const Text('Stok Bilgisi', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(t('bulk_import.stock_info'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)), // TODO: i18n
           const SizedBox(height: 16),
           TextFormField(
             controller: _stockController,
@@ -498,7 +500,7 @@ class _EditProductModalState extends ConsumerState<EditProductModal> {
             keyboardType: TextInputType.number,
           ),
           const SizedBox(height: 24),
-          const Text('Açıklama', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(t('bulk_import.description'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)), // TODO: i18n
           const SizedBox(height: 16),
           TextFormField(
             controller: _descriptionController,

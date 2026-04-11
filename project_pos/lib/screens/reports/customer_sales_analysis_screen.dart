@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class CustomerSalesAnalysisScreen extends ConsumerStatefulWidget {
   const CustomerSalesAnalysisScreen({super.key});
@@ -15,6 +16,8 @@ class CustomerSalesAnalysisScreen extends ConsumerStatefulWidget {
 
 class _CustomerSalesAnalysisScreenState
     extends ConsumerState<CustomerSalesAnalysisScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
   DateTime _endDate = DateTime.now();
   bool _isLoading = false;
@@ -88,7 +91,7 @@ class _CustomerSalesAnalysisScreenState
   Widget build(BuildContext context) {
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Musteri Satis Analizi',
+        title: t('reports.customer_analysis'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -116,7 +119,7 @@ class _CustomerSalesAnalysisScreenState
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '${_customers.length} musteri',
+                  '${_customers.length} ${t('reports.customer')}', // TODO: i18n key: reports.customer
                   style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.textMuted,
@@ -137,8 +140,8 @@ class _CustomerSalesAnalysisScreenState
                       )
                     : _customers.isEmpty
                         ? AppEmptyState.noData(
-                            title: 'Musteri Bulunamadi',
-                            description: 'Musteri verisi bulunamadi',
+                            title: t('common.no_records'),
+                            description: t('common.no_data'),
                           )
                         : RefreshIndicator(
                             onRefresh: _loadData,
@@ -176,15 +179,15 @@ class _CustomerSalesAnalysisScreenState
         break;
       case 'wholesale':
         typeColor = AppColors.purple;
-        typeLabel = 'Toptan';
+        typeLabel = t('reports.wholesale'); // TODO: i18n key: reports.wholesale
         break;
       case 'retail':
         typeColor = AppColors.info;
-        typeLabel = 'Perakende';
+        typeLabel = t('reports.retail'); // TODO: i18n key: reports.retail
         break;
       default:
         typeColor = AppColors.textMuted;
-        typeLabel = customerType.isNotEmpty ? customerType : 'Standart';
+        typeLabel = customerType.isNotEmpty ? customerType : t('reports.standard'); // TODO: i18n key: reports.standard
     }
 
     return GestureDetector(
@@ -261,7 +264,7 @@ class _CustomerSalesAnalysisScreenState
                       children: [
                         _buildInfoItem(
                           Icons.shopping_cart,
-                          '$totalPurchases alis',
+                          '$totalPurchases ${t('reports.purchase')}', // TODO: i18n key: reports.purchase
                           AppColors.primary,
                         ),
                         const SizedBox(width: 16),
@@ -277,7 +280,7 @@ class _CustomerSalesAnalysisScreenState
                       children: [
                         _buildInfoItem(
                           Icons.analytics,
-                          'Ort: ${_formatCurrency(averageOrderValue)}',
+                          '${t('reports.avg')}: ${_formatCurrency(averageOrderValue)}', // TODO: i18n key: reports.avg
                           AppColors.info,
                         ),
                         const SizedBox(width: 16),

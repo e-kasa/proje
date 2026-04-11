@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_gradients.dart';
 import '../../core/widgets/widgets.dart';
 import '../../providers/auth_provider.dart';
+import '../../core/utils/i18n_helper.dart';
 
 /// Şirket sektörünü manuel olarak ayarlama ekranı.
 /// Backend'den otomatik gelmeyen durumlarda veya demo/test için kullanılır.
@@ -28,19 +29,21 @@ class SectorSettingsScreen extends ConsumerWidget {
     }
 
     if (context.mounted) {
-      AppToast.success(context, 'Sektör "${type.displayName}" olarak ayarlandı');
+      final t = i18nOf(ref);
+      AppToast.success(context, '${t('settings.sector')}: ${type.displayName}'); // TODO: i18n better message key
     }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
     final user = ref.watch(authProvider).user;
     final currentSector =
         SectorTypeExt.fromApi(user?.sectorType);
 
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Sektör Ayarları',
+        title: t('settings.sector'),
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -76,9 +79,9 @@ class SectorSettingsScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Sektör Seçin',
-              style: TextStyle(
+            Text(
+              t('settings.sector'),
+              style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,

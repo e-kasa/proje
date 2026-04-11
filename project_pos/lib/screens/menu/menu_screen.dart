@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:animate_do/animate_do.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/menu_provider.dart';
-import '../../providers/i18n_provider.dart';
 import '../../core/utils/responsive.dart';
+import '../../core/utils/i18n_helper.dart';
 import '../../core/widgets/widgets.dart';
 
 class MenuScreen extends ConsumerStatefulWidget {
@@ -16,6 +16,7 @@ class MenuScreen extends ConsumerStatefulWidget {
 }
 
 class _MenuScreenState extends ConsumerState<MenuScreen> {
+  String Function(String) get t => i18nOf(ref);
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
@@ -31,7 +32,6 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
 
     // Dinamik menü — backend'den gelen verilere göre oluşturulur
     final menuState = ref.watch(menuProvider);
-    final i18n = ref.watch(i18nProvider);
 
     // Kategori renk paleti
     const categoryColors = [AppColors.success, AppColors.primary, Colors.brown, AppColors.info, Colors.purple, Colors.teal, Colors.deepOrange, Colors.indigo];
@@ -73,9 +73,6 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
         _MenuAction('Ayarlar', Icons.settings, '/settings', 'Sistem yapılandırma'),
       ]),
     ];
-
-    // Bundle kodunu çevir
-    String t(String code) => i18n.isLoaded ? i18n.bundle(code) : code;
 
     // Backend'den menü geldiyse dinamik oluştur, yoksa fallback kullan
     final List<_CategoryData> categories = menuState.categories.isNotEmpty
@@ -158,11 +155,11 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('UYGULAMA BAŞLATICI', 
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.primary, letterSpacing: 2)),
+                  Text('UYGULAMA BAŞLATICI', // TODO: i18n menu_launcher key
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.primary, letterSpacing: 2)),
                   const SizedBox(height: 4),
-                  const Text('İşlem Seçin', 
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                  Text(t('menu.dashboard'), // TODO: i18n select_action key
+                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                 ],
               ),
               if (isDesktop) _buildUserBadge(),
@@ -189,7 +186,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
         onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
         style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
         decoration: InputDecoration(
-          hintText: 'Hızlıca modül veya işlem arayın...',
+          hintText: t('common.search'), // TODO: i18n search_module key
           hintStyle: const TextStyle(color: AppColors.textMuted),
           prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary, size: 24),
           suffixIcon: _searchQuery.isNotEmpty 
@@ -263,8 +260,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
 
   Widget _buildEmptyState() {
     return AppEmptyState.search(
-      title: 'Sonuç Bulunamadı',
-      description: 'Aradığınız kelimeye uygun bir modül bulunamadı.',
+      title: t('common.no_data'), // TODO: i18n no_results key
+      description: 'Aradığınız kelimeye uygun bir modül bulunamadı.', // TODO: i18n
     );
   }
 }

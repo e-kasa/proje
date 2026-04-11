@@ -1,10 +1,12 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/utils/app_logger.dart';
+import '../../core/utils/i18n_helper.dart';
 import '../../models/supplier_upload_models.dart';
 import '../../core/widgets/widgets.dart';
 
 /// Basitleştirilmiş Wizard - Her ürün için 3 seçenek
-class SupplierUploadWizardScreen extends StatefulWidget {
+class SupplierUploadWizardScreen extends ConsumerStatefulWidget {
   final SupplierUploadResponse uploadResponse;
 
   const SupplierUploadWizardScreen({
@@ -13,12 +15,13 @@ class SupplierUploadWizardScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<SupplierUploadWizardScreen> createState() =>
+  ConsumerState<SupplierUploadWizardScreen> createState() =>
       _SupplierUploadWizardScreenState();
 }
 
 class _SupplierUploadWizardScreenState
-    extends State<SupplierUploadWizardScreen> {
+    extends ConsumerState<SupplierUploadWizardScreen> {
+  String Function(String) get t => i18nOf(ref);
   int currentProductIndex = 0;
   Map<int, ProductDecision> decisions = {};
   bool showSummary = false;
@@ -43,7 +46,7 @@ class _SupplierUploadWizardScreenState
 
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Tedarikçi Dosyası - Ürün Kararları',
+        title: 'Tedarikçi Dosyası - Ürün Kararları', // TODO: i18n supplier_upload.product_decisions_title
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: _buildProgressIndicator(),
@@ -164,8 +167,8 @@ class _SupplierUploadWizardScreenState
 
         // Option 1: Yeni Ürün Oluştur
         _buildOptionCard(
-          title: 'YENI ÜRÜN OLUŞTUR',
-          subtitle: 'Sistemde hiç olmayan yeni bir ürün ekle',
+          title: 'YENI ÜRÜN OLUŞTUR', // TODO: i18n bulk_import.create_new_product
+          subtitle: 'Sistemde hiç olmayan yeni bir ürün ekle', // TODO: i18n
           icon: Icons.add_circle_outline,
           color: Colors.green,
           isSelected: decision?.action == DecisionAction.createNew,
@@ -186,7 +189,7 @@ class _SupplierUploadWizardScreenState
 
         // Option 2: Mevcut Ürüne Eşle
         _buildOptionCard(
-          title: 'MEVCUT ÜRÜNE EŞLE',
+          title: 'MEVCUT ÜRÜNE EŞLE', // TODO: i18n bulk_import.match_existing
           subtitle: currentProduct.similarProducts.isEmpty
               ? 'Benzer ürün bulunamadı'
               : '${currentProduct.similarProducts.length} benzer ürün bulundu',
@@ -212,7 +215,7 @@ class _SupplierUploadWizardScreenState
 
         // Option 3: Mevcut Ürüne Yeni Varyant Ekle
         _buildOptionCard(
-          title: 'MEVCUT ÜRÜNE YENİ VARYANT EKLE',
+          title: 'MEVCUT ÜRÜNE YENİ VARYANT EKLE', // TODO: i18n bulk_import.add_variant_to_existing
           subtitle: currentProduct.similarProducts.isEmpty
               ? 'Benzer ürün bulunamadı'
               : 'Var olan bir ürüne yeni varyant ekle',
@@ -402,7 +405,7 @@ class _SupplierUploadWizardScreenState
   Widget _buildSummaryScreen() {
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Özet - Kararlarınızı Gözden Geçirin',
+        title: 'Özet - Kararlarınızı Gözden Geçirin', // TODO: i18n bulk_import.review_decisions_title
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -562,7 +565,7 @@ class _SupplierUploadWizardScreenState
                       ),
                     )
                   : const Icon(Icons.save),
-              label: Text(_isLoading ? 'Kaydediliyor...' : 'KAYDET VE TAMAMLA'),
+              label: Text(_isLoading ? 'Kaydediliyor...' : 'KAYDET VE TAMAMLA'), // TODO: i18n bulk_import.save_and_complete / bulk_import.saving
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 backgroundColor: Colors.green,
@@ -916,7 +919,7 @@ class _SuccessScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             const Text(
-              'İşlem Başarıyla Tamamlandı!',
+              'İşlem Başarıyla Tamamlandı!', // TODO: i18n bulk_import.operation_completed
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -925,7 +928,7 @@ class _SuccessScreen extends StatelessWidget {
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Geri Dön'),
+              child: const Text('Geri Dön'), // TODO: i18n common.back
             ),
           ],
         ),

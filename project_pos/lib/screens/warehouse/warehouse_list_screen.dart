@@ -6,6 +6,7 @@ import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/warehouse_service.dart';
 import '../../core/api/api_client.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class WarehouseListScreen extends ConsumerStatefulWidget {
   const WarehouseListScreen({super.key});
@@ -15,6 +16,8 @@ class WarehouseListScreen extends ConsumerStatefulWidget {
 }
 
 class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   final _searchController = TextEditingController();
   late WarehouseService _warehouseService;
 
@@ -24,11 +27,12 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
   String? _selectedType;
   bool? _selectedStatus;
 
-  final List<String> _types = ['Tümü', 'Ana Depo', 'Bölge Deposu', 'Yedek Depo'];
-  final Map<String, String> _typeMap = {
-    'Ana Depo': 'main',
-    'Bölge Deposu': 'regional',
-    'Yedek Depo': 'backup',
+  // Language-neutral type keys; labels are translated in build()
+  final List<String> _typeKeys = ['all', 'main', 'regional', 'backup'];
+  final Map<String, String> _backendTypeMap = {
+    'main': 'main',
+    'regional': 'regional',
+    'backup': 'backup',
   };
 
   @override
@@ -59,7 +63,7 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        AppToast.error(context, 'Depolar yüklenirken hata oluştu');
+        AppToast.error(context, t('warehouses.load_error'));
       }
     }
   }
@@ -87,21 +91,21 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: AppColors.warning),
-            SizedBox(width: 12),
-            Text('Depo Sil'),
+            const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
+            const SizedBox(width: 12),
+            Text(t('warehouses.delete_title')),
           ],
         ),
-        content: Text('$name deposunu silmek istediğinize emin misiniz?'),
+        content: Text(t('warehouses.delete_confirm').replaceAll('{name}', name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('İptal'),
+            child: Text(t('common.cancel')),
           ),
           AppButton.danger(
-            text: 'Sil',
+            text: t('common.delete'),
             onPressed: () => Navigator.pop(context, true),
           ),
         ],
@@ -112,12 +116,12 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
       try {
         await _warehouseService.deleteWarehouse(id);
         if (mounted) {
-          AppToast.success(context, 'Depo başarıyla silindi');
+          AppToast.success(context, t('warehouses.deleted_success'));
           _loadWarehouses();
         }
       } catch (e) {
         if (mounted) {
-          AppToast.error(context, 'Depo silinirken hata oluştu');
+          AppToast.error(context, t('warehouses.delete_error'));
         }
       }
     }
@@ -127,12 +131,12 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
     try {
       await _warehouseService.toggleWarehouseStatus(id);
       if (mounted) {
-        AppToast.success(context, 'Durum güncellendi');
+        AppToast.success(context, t('common.status_updated'));
         _loadWarehouses();
       }
     } catch (e) {
       if (mounted) {
-        AppToast.error(context, 'Durum güncellenirken hata oluştu');
+        AppToast.error(context, t('common.status_update_error'));
       }
     }
   }
@@ -143,12 +147,12 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
 
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Depo Yönetimi',
+        title: t('warehouses.title'),
         actions: [
           IconButton(
             onPressed: _loadWarehouses,
             icon: const Icon(Icons.refresh),
-            tooltip: 'Yenile',
+            tooltip: t('common.refresh'),
           ),
         ],
       ),
@@ -171,7 +175,7 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
                         controller: _searchController,
                         onChanged: _filterWarehouses,
                         decoration: InputDecoration(
-                          hintText: 'Depo ara...',
+                          hintText: t('warehouses.search_hint'),
                           prefixIcon: const Icon(Icons.search),
                           suffixIcon: _searchController.text.isNotEmpty
                               ? IconButton(
@@ -196,23 +200,32 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
                         scrollDirection: Axis.horizontal,
                         child: Row(
                           children: [
-                            ..._types.map((type) => Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: FilterChip(
-                                label: Text(type),
-                                selected: type == 'Tümü' ? _selectedType == null : _selectedType == _typeMap[type],
-                                onSelected: (selected) {
-                                  setState(() {
-                                    _selectedType = type == 'Tümü' ? null : _typeMap[type];
-                                  });
-                                  _loadWarehouses();
-                                },
-                                selectedColor: AppColors.primary.withValues(alpha: 0.2),
-                              ),
-                            )),
+                            ..._typeKeys.map((key) {
+                              final label = key == 'all'
+                                  ? t('common.all')
+                                  : key == 'main'
+                                      ? t('warehouses.type_main')
+                                      : key == 'regional'
+                                          ? t('warehouses.type_regional')
+                                          : t('warehouses.type_backup');
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: FilterChip(
+                                  label: Text(label),
+                                  selected: key == 'all' ? _selectedType == null : _selectedType == _backendTypeMap[key],
+                                  onSelected: (selected) {
+                                    setState(() {
+                                      _selectedType = key == 'all' ? null : _backendTypeMap[key];
+                                    });
+                                    _loadWarehouses();
+                                  },
+                                  selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                                ),
+                              );
+                            }),
                             const SizedBox(width: 8),
                             FilterChip(
-                              label: const Text('Sadece Aktif'),
+                              label: Text(t('warehouses.active_only')),
                               selected: _selectedStatus == true,
                               onSelected: (selected) {
                                 setState(() {
@@ -236,8 +249,8 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
                   child: _filteredWarehouses.isEmpty
                       ? AppEmptyState(
                           icon: Icons.warehouse,
-                          title: 'Depo bulunamadı',
-                          actionText: 'Yeni Depo Ekle',
+                          title: t('warehouses.empty_title'),
+                          actionText: t('warehouses.add'),
                           onAction: () => context.push('/warehouses/add'),
                         )
                       : ListView.builder(
@@ -255,7 +268,7 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
         
         onPressed: () => context.push('/warehouses/add'),
         icon: const Icon(Icons.add),
-        label: const Text('Yeni Depo'),
+        label: Text(t('warehouses.add')),
         backgroundColor: AppColors.primary,
       ),
     );
@@ -272,27 +285,27 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
       children: [
         Expanded(
           child: _buildStatCard(
-            '📦 Toplam',
+            t('warehouses.stat_total'),
             totalWarehouses.toString(),
-            'Depo',
+            t('warehouses.warehouse_suffix'),
             AppColors.primary,
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _buildStatCard(
-            '✅ Aktif',
+            t('warehouses.stat_active'),
             activeWarehouses.toString(),
-            'Depo',
+            t('warehouses.warehouse_suffix'),
             AppColors.success,
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _buildStatCard(
-            '📊 Doluluk',
+            t('warehouses.stat_utilization'),
             '$utilizationRate%',
-            'Oran',
+            t('warehouses.utilization_suffix'),
             AppColors.warning,
           ),
         ),
@@ -356,9 +369,9 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
     final utilizationRate = capacity > 0 ? (currentStock / capacity * 100) : 0.0;
 
     final typeLabels = {
-      'main': '🏢 Ana Depo',
-      'regional': '🏪 Bölge Deposu',
-      'backup': '📦 Yedek Depo',
+      'main': t('warehouses.type_main'),
+      'regional': t('warehouses.type_regional'),
+      'backup': t('warehouses.type_backup'),
     };
 
     return Card(
@@ -405,7 +418,7 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
                               ),
                             ),
                             AppBadge(
-                              text: isActive ? 'Aktif' : 'Pasif',
+                              text: isActive ? t('common.active') : t('common.passive'),
                               variant: isActive ? BadgeVariant.success : BadgeVariant.danger,
                             ),
                           ],
@@ -484,7 +497,7 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Kapasite Kullanımı',
+                        t('warehouses.capacity_usage'),
                         style: TextStyle(
                           fontSize: 12,
                           color: AppColors.textSecondary,
@@ -523,7 +536,7 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '$currentStock / $capacity birim',
+                    '$currentStock / $capacity ${t('warehouses.unit')}',
                     style: const TextStyle(
                       fontSize: 11,
                       color: AppColors.textSecondary,
@@ -538,7 +551,7 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
                 children: [
                   Expanded(
                     child: AppButton.outline(
-                      text: 'Düzenle',
+                      text: t('common.edit'),
                       icon: Icons.edit,
                       onPressed: () => context.push('/warehouses/edit/${warehouse['id']}'),
                     ),
@@ -548,14 +561,14 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
                     icon: isActive ? Icons.toggle_on : Icons.toggle_off,
                     variant: isActive ? ButtonVariant.success : ButtonVariant.secondary,
                     onPressed: () => _toggleStatus(warehouse['id']),
-                    tooltip: isActive ? 'Pasifleştir' : 'Aktifleştir',
+                    tooltip: isActive ? t('common.deactivate') : t('common.activate'),
                   ),
                   const SizedBox(width: 8),
                   AppIconButton(
                     icon: Icons.delete,
                     variant: ButtonVariant.danger,
                     onPressed: () => _deleteWarehouse(warehouse['id'], warehouse['name']),
-                    tooltip: 'Sil',
+                    tooltip: t('common.delete'),
                   ),
                 ],
               ),

@@ -5,6 +5,7 @@ import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/providers/auth_provider.dart';
 import 'package:project_pos/services/service_locator.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 class CompanyRegistrationScreen extends ConsumerStatefulWidget {
   const CompanyRegistrationScreen({super.key});
@@ -16,6 +17,7 @@ class CompanyRegistrationScreen extends ConsumerStatefulWidget {
 
 class _CompanyRegistrationScreenState
     extends ConsumerState<CompanyRegistrationScreen> {
+  String Function(String) get t => i18nOf(ref);
   int _currentStep = 0;
   bool _isLoading = false;
 
@@ -61,7 +63,7 @@ class _CompanyRegistrationScreenState
   void _nextStep() {
     if (_currentStep == 1) {
       if (_selectedSector == null) {
-        AppToast.error(context, 'Lütfen bir sektör seçin');
+        AppToast.error(context, 'Lütfen bir sektör seçin'); // TODO: i18n
         return;
       }
       setState(() => _currentStep++);
@@ -103,7 +105,7 @@ class _CompanyRegistrationScreenState
       if (mounted) context.go('/dashboard');
     } catch (e) {
       if (!mounted) return;
-      AppToast.error(context, 'Kayıt başarısız: ${e.toString().replaceAll('Exception: ', '')}');
+      AppToast.error(context, t('common.error')); // TODO: i18n registration_failed key
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -163,9 +165,9 @@ class _CompanyRegistrationScreenState
                     onPressed: _currentStep > 0 ? _prevStep : () => context.go('/login'),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
-                    'Şirket Kaydı',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                  Text(
+                    t('auth.register'), // TODO: i18n company_registration key
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                 ],
               ),

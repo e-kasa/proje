@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class CompanySettingsScreen extends ConsumerStatefulWidget {
   const CompanySettingsScreen({super.key});
@@ -12,6 +13,7 @@ class CompanySettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _CompanySettingsScreenState extends ConsumerState<CompanySettingsScreen> {
+  String Function(String) get t => i18nOf(ref);
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = true;
   bool _isSaving = false;
@@ -77,7 +79,7 @@ class _CompanySettingsScreenState extends ConsumerState<CompanySettingsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        AppToast.error(context, 'Ayarlar yuklenemedi: $e');
+        AppToast.error(context, '${t('common.error')}: $e');
       }
     }
   }
@@ -100,11 +102,11 @@ class _CompanySettingsScreenState extends ConsumerState<CompanySettingsScreen> {
         'currency': _selectedCurrency,
       });
       if (mounted) {
-        AppToast.success(context, 'Firma ayarlari kaydedildi');
+        AppToast.success(context, t('common.saved'));
       }
     } catch (e) {
       if (mounted) {
-        AppToast.error(context, 'Kaydedilemedi: $e');
+        AppToast.error(context, '${t('common.error')}: $e');
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -115,7 +117,7 @@ class _CompanySettingsScreenState extends ConsumerState<CompanySettingsScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Firma Ayarlari',
+        title: t('settings.company'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),
@@ -128,7 +130,7 @@ class _CompanySettingsScreenState extends ConsumerState<CompanySettingsScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
                   : const Icon(Icons.save),
-              label: const Text('Kaydet'),
+              label: Text(t('common.save')),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primary,
               ),
@@ -146,14 +148,14 @@ class _CompanySettingsScreenState extends ConsumerState<CompanySettingsScreen> {
                   children: [
                     // ─── Firma Bilgileri ────────────────────────────
                     _buildSectionCard(
-                      title: 'Firma Bilgileri',
+                      title: t('settings.company'),
                       icon: Icons.business,
                       children: [
                         _buildTextField(
                           controller: _companyNameController,
-                          label: 'Firma Adi',
+                          label: 'Firma Adı', // TODO: i18n
                           icon: Icons.business,
-                          validator: (v) => (v == null || v.trim().isEmpty) ? 'Firma adi zorunlu' : null,
+                          validator: (v) => (v == null || v.trim().isEmpty) ? t('common.required') : null,
                         ),
                         const SizedBox(height: 16),
                         Row(
@@ -161,7 +163,7 @@ class _CompanySettingsScreenState extends ConsumerState<CompanySettingsScreen> {
                             Expanded(
                               child: _buildTextField(
                                 controller: _taxNumberController,
-                                label: 'Vergi No',
+                                label: 'Vergi No', // TODO: i18n
                                 icon: Icons.numbers,
                                 keyboardType: TextInputType.number,
                               ),
@@ -170,7 +172,7 @@ class _CompanySettingsScreenState extends ConsumerState<CompanySettingsScreen> {
                             Expanded(
                               child: _buildTextField(
                                 controller: _taxOfficeController,
-                                label: 'Vergi Dairesi',
+                                label: 'Vergi Dairesi', // TODO: i18n
                                 icon: Icons.account_balance,
                               ),
                             ),
@@ -182,7 +184,7 @@ class _CompanySettingsScreenState extends ConsumerState<CompanySettingsScreen> {
                             Expanded(
                               child: _buildTextField(
                                 controller: _phoneController,
-                                label: 'Telefon',
+                                label: 'Telefon', // TODO: i18n
                                 icon: Icons.phone_outlined,
                                 keyboardType: TextInputType.phone,
                               ),
@@ -191,7 +193,7 @@ class _CompanySettingsScreenState extends ConsumerState<CompanySettingsScreen> {
                             Expanded(
                               child: _buildTextField(
                                 controller: _emailController,
-                                label: 'E-posta',
+                                label: 'E-posta', // TODO: i18n
                                 icon: Icons.email_outlined,
                                 keyboardType: TextInputType.emailAddress,
                               ),
@@ -201,7 +203,7 @@ class _CompanySettingsScreenState extends ConsumerState<CompanySettingsScreen> {
                         const SizedBox(height: 16),
                         _buildTextField(
                           controller: _addressController,
-                          label: 'Adres',
+                          label: 'Adres', // TODO: i18n
                           icon: Icons.location_on_outlined,
                           maxLines: 3,
                         ),
@@ -210,9 +212,9 @@ class _CompanySettingsScreenState extends ConsumerState<CompanySettingsScreen> {
 
                     const SizedBox(height: 16),
 
-                    // ─── Fatura Ayarlari ────────────────────────────
+                    // ─── Fatura Ayarları ────────────────────────────
                     _buildSectionCard(
-                      title: 'Fatura Ayarlari',
+                      title: 'Fatura Ayarları', // TODO: i18n
                       icon: Icons.receipt_long,
                       children: [
                         Row(
@@ -220,7 +222,7 @@ class _CompanySettingsScreenState extends ConsumerState<CompanySettingsScreen> {
                             Expanded(
                               child: _buildTextField(
                                 controller: _invoicePrefixController,
-                                label: 'Seri No Prefix',
+                                label: 'Seri No Prefix', // TODO: i18n
                                 icon: Icons.tag,
                                 hintText: 'Orn: INV-',
                               ),
@@ -229,7 +231,7 @@ class _CompanySettingsScreenState extends ConsumerState<CompanySettingsScreen> {
                             Expanded(
                               child: _buildTextField(
                                 controller: _defaultVatRateController,
-                                label: 'Varsayilan KDV Orani (%)',
+                                label: 'Varsayılan KDV Oranı (%)', // TODO: i18n
                                 icon: Icons.percent,
                                 keyboardType: TextInputType.number,
                                 hintText: '18',
@@ -244,13 +246,13 @@ class _CompanySettingsScreenState extends ConsumerState<CompanySettingsScreen> {
 
                     // ─── Sistem ─────────────────────────────────────
                     _buildSectionCard(
-                      title: 'Sistem',
+                      title: 'Sistem', // TODO: i18n
                       icon: Icons.settings,
                       children: [
                         DropdownButtonFormField<String>(
                           initialValue: _selectedCurrency,
                           decoration: const InputDecoration(
-                            labelText: 'Varsayilan Para Birimi',
+                            labelText: 'Varsayılan Para Birimi', // TODO: i18n
                             prefixIcon: Icon(Icons.monetization_on_outlined),
                             border: OutlineInputBorder(),
                           ),
@@ -258,10 +260,10 @@ class _CompanySettingsScreenState extends ConsumerState<CompanySettingsScreen> {
                             String label;
                             switch (c) {
                               case 'TRY':
-                                label = 'TRY - Turk Lirasi';
+                                label = 'TRY - Türk Lirası'; // TODO: i18n
                                 break;
                               case 'USD':
-                                label = 'USD - Amerikan Dolari';
+                                label = 'USD - Amerikan Doları'; // TODO: i18n
                                 break;
                               case 'EUR':
                                 label = 'EUR - Euro';

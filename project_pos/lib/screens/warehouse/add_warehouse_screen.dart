@@ -7,6 +7,7 @@ import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/warehouse_service.dart';
 import '../../core/api/api_client.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class AddWarehouseScreen extends ConsumerStatefulWidget {
   final String? warehouseId;
@@ -18,6 +19,8 @@ class AddWarehouseScreen extends ConsumerStatefulWidget {
 }
 
 class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   final _formKey = GlobalKey<FormState>();
   late WarehouseService _warehouseService;
 
@@ -37,9 +40,9 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
   bool _isSaving = false;
 
   final List<Map<String, dynamic>> _warehouseTypes = [
-    {'value': 'main', 'label': '🏢 Ana Depo', 'icon': Icons.warehouse},
-    {'value': 'regional', 'label': '🏪 Bölge Deposu', 'icon': Icons.location_city},
-    {'value': 'backup', 'label': '📦 Yedek Depo', 'icon': Icons.inventory_2},
+    {'value': 'main', 'labelKey': 'warehouses.type_main', 'icon': Icons.warehouse},
+    {'value': 'regional', 'labelKey': 'warehouses.type_regional', 'icon': Icons.location_city},
+    {'value': 'backup', 'labelKey': 'warehouses.type_backup', 'icon': Icons.inventory_2},
   ];
 
   @override
@@ -85,7 +88,7 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        AppToast.error(context, 'Depo bilgileri yüklenirken hata oluştu');
+        AppToast.error(context, t('warehouses.load_error'));
       }
     }
   }
@@ -112,19 +115,19 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
       if (widget.warehouseId != null) {
         await _warehouseService.updateWarehouse(widget.warehouseId!, data);
         if (mounted) {
-          AppToast.success(context, 'Depo başarıyla güncellendi');
+          AppToast.success(context, t('warehouses.updated_success'));
           context.pop();
         }
       } else {
         await _warehouseService.createWarehouse(data);
         if (mounted) {
-          AppToast.success(context, 'Depo başarıyla oluşturuldu');
+          AppToast.success(context, t('warehouses.created_success'));
           context.pop();
         }
       }
     } catch (e) {
       if (mounted) {
-        AppToast.error(context, 'Depo kaydedilirken hata oluştu');
+        AppToast.error(context, t('warehouses.save_error'));
       }
     } finally {
       setState(() => _isSaving = false);
@@ -135,7 +138,7 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: widget.warehouseId != null ? 'Depo Düzenle' : 'Yeni Depo Ekle',
+        title: widget.warehouseId != null ? t('warehouses.edit') : t('warehouses.add'),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -148,7 +151,7 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
                   children: [
                     // Depo Tipi Seçimi
                     _buildSectionCard(
-                      title: 'Depo Tipi',
+                      title: t('warehouses.warehouse_type'),
                       icon: Icons.category,
                       children: _warehouseTypes.map((type) {
                         final isSelected = _selectedType == type['value'];
@@ -176,7 +179,7 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
-                                      type['label'],
+                                      t(type['labelKey'] as String),
                                       style: TextStyle(
                                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                                         color: isSelected ? AppColors.primary : AppColors.textPrimary,
@@ -197,7 +200,7 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
 
                     // Temel Bilgiler
                     _buildSectionCard(
-                      title: 'Temel Bilgiler',
+                      title: t('warehouses.basic_info'),
                       icon: Icons.info,
                       children: [
                         Row(
@@ -205,14 +208,14 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
                             Expanded(
                               child: TextFormField(
                                 controller: _codeController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Depo Kodu *',
+                                decoration: InputDecoration(
+                                  labelText: t('warehouses.code_required'),
                                   hintText: 'WH-001',
                                   prefixIcon: Icon(Icons.qr_code),
                                 ),
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
-                                    return 'Depo kodu gerekli';
+                                    return t('warehouses.code_required_msg');
                                   }
                                   return null;
                                 },
@@ -222,17 +225,17 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
                             Expanded(
                               child: TextFormField(
                                 controller: _capacityController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Kapasite *',
+                                decoration: InputDecoration(
+                                  labelText: t('warehouses.capacity_required'),
                                   hintText: '5000',
                                   prefixIcon: Icon(Icons.inventory),
-                                  suffixText: 'birim',
+                                  suffixText: t('warehouses.unit'),
                                 ),
                                 keyboardType: TextInputType.number,
                                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
-                                    return 'Kapasite gerekli';
+                                    return t('warehouses.capacity_required_msg');
                                   }
                                   return null;
                                 },
@@ -243,14 +246,14 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _nameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Depo Adı *',
-                            hintText: 'Ana Depo',
+                          decoration: InputDecoration(
+                            labelText: t('warehouses.name_required'),
+                            hintText: t('warehouses.name_hint'),
                             prefixIcon: Icon(Icons.warehouse),
                           ),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'Depo adı gerekli';
+                              return t('warehouses.name_required_msg');
                             }
                             return null;
                           },
@@ -258,14 +261,14 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _managerNameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Sorumlu Kişi *',
-                            hintText: 'Ahmet Yılmaz',
+                          decoration: InputDecoration(
+                            labelText: t('warehouses.manager_required'),
+                            hintText: t('warehouses.manager_hint'),
                             prefixIcon: Icon(Icons.person),
                           ),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'Sorumlu kişi gerekli';
+                              return t('warehouses.manager_required_msg');
                             }
                             return null;
                           },
@@ -277,7 +280,7 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
 
                     // Konum Bilgileri
                     _buildSectionCard(
-                      title: 'Konum Bilgileri',
+                      title: t('warehouses.location_info'),
                       icon: Icons.location_on,
                       children: [
                         Row(
@@ -285,14 +288,14 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
                             Expanded(
                               child: TextFormField(
                                 controller: _cityController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Şehir *',
-                                  hintText: 'İstanbul',
+                                decoration: InputDecoration(
+                                  labelText: t('warehouses.city_required'),
+                                  hintText: t('warehouses.city_hint'),
                                   prefixIcon: Icon(Icons.location_city),
                                 ),
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
-                                    return 'Şehir gerekli';
+                                    return t('warehouses.city_required_msg');
                                   }
                                   return null;
                                 },
@@ -302,14 +305,14 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
                             Expanded(
                               child: TextFormField(
                                 controller: _districtController,
-                                decoration: const InputDecoration(
-                                  labelText: 'İlçe *',
-                                  hintText: 'Esenyurt',
+                                decoration: InputDecoration(
+                                  labelText: t('warehouses.district_required'),
+                                  hintText: t('warehouses.district_hint'),
                                   prefixIcon: Icon(Icons.place),
                                 ),
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
-                                    return 'İlçe gerekli';
+                                    return t('warehouses.district_required_msg');
                                   }
                                   return null;
                                 },
@@ -320,15 +323,15 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _addressController,
-                          decoration: const InputDecoration(
-                            labelText: 'Adres *',
-                            hintText: 'Organize Sanayi Bölgesi, 1. Cadde No:15',
+                          decoration: InputDecoration(
+                            labelText: t('warehouses.address_required'),
+                            hintText: t('warehouses.address_hint'),
                             prefixIcon: Icon(Icons.home),
                           ),
                           maxLines: 2,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'Adres gerekli';
+                              return t('warehouses.address_required_msg');
                             }
                             return null;
                           },
@@ -340,20 +343,20 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
 
                     // İletişim Bilgileri
                     _buildSectionCard(
-                      title: 'İletişim Bilgileri',
+                      title: t('warehouses.contact_info'),
                       icon: Icons.phone,
                       children: [
                         TextFormField(
                           controller: _phoneController,
-                          decoration: const InputDecoration(
-                            labelText: 'Telefon *',
+                          decoration: InputDecoration(
+                            labelText: t('warehouses.phone_required'),
                             hintText: '+90 (212) 555-0101',
                             prefixIcon: Icon(Icons.phone_android),
                           ),
                           keyboardType: TextInputType.phone,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'Telefon gerekli';
+                              return t('warehouses.phone_required_msg');
                             }
                             return null;
                           },
@@ -365,15 +368,15 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
 
                     // Durum
                     _buildSectionCard(
-                      title: 'Durum',
+                      title: t('warehouses.status'),
                       icon: Icons.toggle_on,
                       children: [
                         SwitchListTile(
                           value: _isActive,
                           onChanged: (value) => setState(() => _isActive = value),
-                          title: const Text('Aktif'),
+                          title: Text(t('common.active')),
                           subtitle: Text(
-                            _isActive ? 'Depo şu anda aktif' : 'Depo şu anda pasif',
+                            _isActive ? t('warehouses.currently_active') : t('warehouses.currently_passive'),
                             style: const TextStyle(fontSize: 12),
                           ),
                           secondary: Icon(
@@ -391,10 +394,10 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
                       width: double.infinity,
                       child: AppButton.primary(
                         text: _isSaving
-                            ? 'Kaydediliyor...'
+                            ? t('common.saving')
                             : widget.warehouseId != null
-                                ? 'Güncelle'
-                                : 'Kaydet',
+                                ? t('common.update')
+                                : t('common.save'),
                         icon: _isSaving ? null : Icons.save,
                         onPressed: _isSaving ? null : _saveWarehouse,
                       ),

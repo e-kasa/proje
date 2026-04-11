@@ -5,6 +5,7 @@ import '../../core/widgets/widgets.dart';
 import '../../core/theme/app_constants.dart';
 import '../../services/service_locator.dart';
 import 'payment_record_modal.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 class AccountStatementScreen extends ConsumerStatefulWidget {
   final String? accountType;
@@ -25,6 +26,7 @@ class AccountStatementScreen extends ConsumerStatefulWidget {
 
 class _AccountStatementScreenState
     extends ConsumerState<AccountStatementScreen> {
+  String Function(String) get t => i18nOf(ref);
   String? _accountType;
   String? _accountId;
   String? _accountName;
@@ -129,12 +131,12 @@ class _AccountStatementScreenState
 
     return AppScaffold(
       appBar: AppAppBar.gradient(
-        title: hasAccount ? 'Hesap Ekstresi - ${_accountName ?? ''}' : 'Hesap Ekstresi',
+        title: hasAccount ? '${t('accounts.title')} - ${_accountName ?? ''}' : t('accounts.title'),
         actions: [
           if (hasAccount)
             IconButton(
               icon: const Icon(Icons.swap_horiz),
-              tooltip: 'Hesap Degistir',
+              tooltip: 'Hesap Değiştir', // TODO: i18n
               onPressed: _showAccountSelect,
             ),
         ],
@@ -145,9 +147,9 @@ class _AccountStatementScreenState
 
   Widget _buildEmptyState() {
     return AppEmptyState.noData(
-      title: 'Hesap seçilmedi',
-      description: 'Ekstre görüntülemek için bir hesap seçin',
-      actionText: 'Hesap Seç',
+      title: t('accounts.title'),
+      description: t('common.no_data'),
+      actionText: t('accounts.title'),
       onAction: _showAccountSelect,
     );
   }
@@ -165,9 +167,9 @@ class _AccountStatementScreenState
 
   Widget _buildError() {
     return AppEmptyState.error(
-      title: 'Veri yüklenirken hata oluştu',
+      title: t('common.error'),
       description: _error ?? '',
-      actionText: 'Tekrar Dene',
+      actionText: t('common.refresh'),
       onAction: _loadStatement,
     );
   }
@@ -257,7 +259,7 @@ class _AccountStatementScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Acilis Bakiyesi',
+                t('accounts.balance'), // TODO: i18n 'Açılış Bakiyesi'
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.85),
                   fontSize: 13,
@@ -288,7 +290,7 @@ class _AccountStatementScreenState
             children: [
               Icon(Icons.receipt_long, size: 40, color: AppColors.textMuted),
               const SizedBox(height: 8),
-              Text('Bu tarih araliginda hareket bulunamadi',
+              Text(t('common.no_records'),
                   style: TextStyle(color: AppColors.textMuted)),
             ],
           ),
@@ -316,12 +318,12 @@ class _AccountStatementScreenState
               fontSize: 12,
               color: AppColors.textPrimary,
             ),
-            columns: const [
-              DataColumn(label: Text('Tarih')),
-              DataColumn(label: Text('Aciklama')),
-              DataColumn(label: Text('Borc'), numeric: true),
-              DataColumn(label: Text('Alacak'), numeric: true),
-              DataColumn(label: Text('Bakiye'), numeric: true),
+            columns: [
+              const DataColumn(label: Text('Tarih')), // TODO: i18n
+              const DataColumn(label: Text('Açıklama')), // TODO: i18n
+              const DataColumn(label: Text('Borç'), numeric: true), // TODO: i18n
+              const DataColumn(label: Text('Alacak'), numeric: true), // TODO: i18n
+              DataColumn(label: Text(t('accounts.balance')), numeric: true),
             ],
             rows: transactions.map((tx) {
               final date = tx['transactionDate']?.toString() ?? '-';
@@ -385,21 +387,21 @@ class _AccountStatementScreenState
       child: Column(
         children: [
           _summaryRow(
-            'Toplam Borc',
+            'Toplam Borç', // TODO: i18n
             _formatCurrency(totalDebit),
             AppColors.danger,
             Icons.arrow_upward,
           ),
           const Divider(height: 20),
           _summaryRow(
-            'Toplam Alacak',
+            'Toplam Alacak', // TODO: i18n
             _formatCurrency(totalCredit),
             AppColors.success,
             Icons.arrow_downward,
           ),
           const Divider(height: 20),
           _summaryRow(
-            'Kapanis Bakiyesi',
+            t('accounts.balance'), // Kapanış Bakiyesi
             _formatCurrency(closingBalance),
             AppColors.primary,
             Icons.account_balance_wallet,

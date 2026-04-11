@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../services/service_locator.dart';
 import '../../core/widgets/widgets.dart';
 import '../../core/theme/app_constants.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
@@ -17,6 +18,8 @@ class ReportsScreen extends ConsumerStatefulWidget {
 
 class _ReportsScreenState extends ConsumerState<ReportsScreen>
     with SingleTickerProviderStateMixin {
+  String Function(String) get t => i18nOf(ref);
+
   late TabController _tabController;
   bool _isExporting = false;
 
@@ -154,20 +157,20 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     final format = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Rapor Dışa Aktar'),
+        title: Text(t('reports.export_title')), // TODO: i18n key: reports.export_title
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: const Icon(Icons.picture_as_pdf, color: AppColors.danger),
-              title: const Text('PDF olarak dışa aktar'),
+              title: Text(t('reports.export_pdf')), // TODO: i18n key: reports.export_pdf
               shape: RoundedRectangleBorder(borderRadius: AppConstants.borderRadiusSmall),
               onTap: () => Navigator.of(ctx).pop('pdf'),
             ),
             const SizedBox(height: 8),
             ListTile(
               leading: const Icon(Icons.table_chart, color: AppColors.success),
-              title: const Text('Excel olarak dışa aktar'),
+              title: Text(t('reports.export_excel')), // TODO: i18n key: reports.export_excel
               shape: RoundedRectangleBorder(borderRadius: AppConstants.borderRadiusSmall),
               onTap: () => Navigator.of(ctx).pop('excel'),
             ),
@@ -175,7 +178,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
         ),
         actions: [
           AppButton.outline(
-            text: 'İptal',
+            text: t('common.cancel'),
             onPressed: () => Navigator.of(ctx).pop(),
           ),
         ],
@@ -194,10 +197,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
         endDate: _endDate,
       );
       if (!mounted) return;
-      AppToast.success(context, 'Rapor dışa aktarıldı');
+      AppToast.success(context, t('reports.export_success')); // TODO: i18n key: reports.export_success
     } catch (e) {
       if (!mounted) return;
-      AppToast.error(context, 'Dışa aktarma hatası: $e');
+      AppToast.error(context, '${t('reports.export_error')}: $e'); // TODO: i18n key: reports.export_error
     } finally {
       if (mounted) setState(() => _isExporting = false);
     }
@@ -207,12 +210,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   Widget build(BuildContext context) {
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Raporlar',
+        title: t('reports.title'),
         actions: [
           IconButton(
             icon: const Icon(Icons.date_range),
             onPressed: _selectDateRange,
-            tooltip: 'Tarih Aralığı Seç',
+            tooltip: t('reports.date_range'),
           ),
           _isExporting
               ? const Padding(
@@ -226,15 +229,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
               : IconButton(
                   icon: const Icon(Icons.file_download),
                   onPressed: _showExportDialog,
-                  tooltip: 'Raporu İndir',
+                  tooltip: t('reports.download'), // TODO: i18n key: reports.download
                 ),
         ],
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'Satışlar', icon: Icon(Icons.shopping_cart)),
-            Tab(text: 'Müşteriler', icon: Icon(Icons.people)),
-            Tab(text: 'Envanter', icon: Icon(Icons.inventory_2)),
+          tabs: [
+            Tab(text: t('menu.sales'), icon: const Icon(Icons.shopping_cart)),
+            Tab(text: t('reports.customers'), icon: const Icon(Icons.people)), // TODO: i18n key: reports.customers
+            Tab(text: t('reports.inventory'), icon: const Icon(Icons.inventory_2)), // TODO: i18n key: reports.inventory
           ],
         ),
       ),
@@ -242,7 +245,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? AppEmptyState.error(
-                  description: 'Veri yüklenemedi',
+                  description: t('common.error'),
                   onAction: _loadReportData,
                 )
               : Column(
@@ -283,10 +286,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
 
   Widget _buildAdvancedReportLinks() {
     final links = [
-      _ReportLink('Satış Özeti',    Icons.show_chart,          AppColors.info,      '/reports/sales-summary'),
-      _ReportLink('Ürün Analizi',   Icons.bar_chart_rounded,   AppColors.success,   '/reports/product-analysis'),
-      _ReportLink('Müşteri Analizi',Icons.people_alt_outlined,  AppColors.secondary, '/reports/customer-analysis'),
-      _ReportLink('Kar Analizi',    Icons.trending_up_rounded,  AppColors.teal,      '/reports/profit-overview'),
+      _ReportLink(t('reports.sales_summary'),    Icons.show_chart,          AppColors.info,      '/reports/sales-summary'),
+      _ReportLink(t('reports.product_analysis'), Icons.bar_chart_rounded,   AppColors.success,   '/reports/product-analysis'),
+      _ReportLink(t('reports.customer_analysis'),Icons.people_alt_outlined,  AppColors.secondary, '/reports/customer-analysis'),
+      _ReportLink(t('reports.profit_overview'),  Icons.trending_up_rounded,  AppColors.teal,      '/reports/profit-overview'),
     ];
 
     return Container(
@@ -300,9 +303,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
               children: [
                 const Icon(Icons.analytics_outlined, size: 15, color: AppColors.textMuted),
                 const SizedBox(width: 6),
-                const Text(
-                  'Detaylı Analizler',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                Text(
+                  t('reports.detailed_analyses'), // TODO: i18n key: reports.detailed_analyses
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
                       color: AppColors.textMuted, letterSpacing: 0.3),
                 ),
               ],
@@ -359,19 +362,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       children: [
         Row(
           children: [
-            Expanded(child: _buildStatCard('Toplam Satış', _totalSalesCount.toString(), Icons.receipt_long, AppColors.primary)),
+            Expanded(child: _buildStatCard(t('reports.total_sales'), _totalSalesCount.toString(), Icons.receipt_long, AppColors.primary)), // TODO: i18n key: reports.total_sales
             const SizedBox(width: 12),
-            Expanded(child: _buildStatCard('Toplam Tutar', '₺${_totalSalesAmount.toStringAsFixed(0)}', Icons.attach_money, AppColors.success)),
+            Expanded(child: _buildStatCard(t('sales.total'), '₺${_totalSalesAmount.toStringAsFixed(0)}', Icons.attach_money, AppColors.success)),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _buildStatCard('Ortalama', '₺${_averageSaleAmount.toStringAsFixed(0)}', Icons.analytics, AppColors.warning)),
+            Expanded(child: _buildStatCard(t('reports.average'), '₺${_averageSaleAmount.toStringAsFixed(0)}', Icons.analytics, AppColors.warning)), // TODO: i18n key: reports.average
             const SizedBox(width: 12),
             Expanded(
               child: _buildStatCard(
-                'Bugün',
+                t('reports.today'), // TODO: i18n key: reports.today
                 _sales.where((s) {
                   final d = DateTime.tryParse(s['saleDate']?.toString() ?? '');
                   if (d == null) return false;
@@ -389,10 +392,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(padding: EdgeInsets.all(16), child: Text('Son Satışlar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+              Padding(padding: const EdgeInsets.all(16), child: Text(t('reports.recent_sales'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))), // TODO: i18n key: reports.recent_sales
               const Divider(height: 1),
               if (_sales.isEmpty)
-                AppEmptyState.noData(description: 'Satış kaydı yok')
+                AppEmptyState.noData(description: t('common.no_data'))
               else
                 ListView.separated(
                   shrinkWrap: true,
@@ -438,9 +441,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       children: [
         Row(
           children: [
-            Expanded(child: _buildStatCard('Toplam Müşteri', _totalCustomers.toString(), Icons.people, AppColors.primary)),
+            Expanded(child: _buildStatCard(t('reports.total_customers'), _totalCustomers.toString(), Icons.people, AppColors.primary)), // TODO: i18n key: reports.total_customers
             const SizedBox(width: 12),
-            Expanded(child: _buildStatCard('Aktif', _activeCustomers.toString(), Icons.person_outline, AppColors.success)),
+            Expanded(child: _buildStatCard(t('common.active'), _activeCustomers.toString(), Icons.person_outline, AppColors.success)), // TODO: i18n key: common.active
             const SizedBox(width: 12),
             Expanded(child: _buildStatCard('VIP', _topCustomers.where((c) => c['customerType'] == 'vip').length.toString(), Icons.star, AppColors.warning)),
           ],
@@ -450,10 +453,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(padding: EdgeInsets.all(16), child: Text('En İyi Müşteriler', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+              Padding(padding: const EdgeInsets.all(16), child: Text(t('reports.top_customers'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))), // TODO: i18n key: reports.top_customers
               const Divider(height: 1),
               if (_topCustomers.isEmpty)
-                AppEmptyState.noData(description: 'Müşteri kaydı yok')
+                AppEmptyState.noData(description: t('common.no_data'))
               else
                 ListView.separated(
                   shrinkWrap: true,
@@ -493,17 +496,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       children: [
         Row(
           children: [
-            Expanded(child: _buildStatCard('Toplam Ürün', _totalProducts.toString(), Icons.inventory_2, AppColors.primary)),
+            Expanded(child: _buildStatCard(t('reports.total_products'), _totalProducts.toString(), Icons.inventory_2, AppColors.primary)), // TODO: i18n key: reports.total_products
             const SizedBox(width: 12),
-            Expanded(child: _buildStatCard('Düşük Stok', _lowStockProducts.toString(), Icons.warning, AppColors.warning)),
+            Expanded(child: _buildStatCard(t('reports.low_stock'), _lowStockProducts.toString(), Icons.warning, AppColors.warning)), // TODO: i18n key: reports.low_stock
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _buildStatCard('Tükenen', _outOfStockProducts.toString(), Icons.error, AppColors.danger)),
+            Expanded(child: _buildStatCard(t('reports.out_of_stock'), _outOfStockProducts.toString(), Icons.error, AppColors.danger)), // TODO: i18n key: reports.out_of_stock
             const SizedBox(width: 12),
-            Expanded(child: _buildStatCard('Toplam Değer', '₺${_totalInventoryValue.toStringAsFixed(0)}', Icons.attach_money, AppColors.success)),
+            Expanded(child: _buildStatCard(t('reports.total_value'), '₺${_totalInventoryValue.toStringAsFixed(0)}', Icons.attach_money, AppColors.success)), // TODO: i18n key: reports.total_value
           ],
         ),
         const SizedBox(height: 24),
@@ -513,16 +516,16 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Stok Durumu', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text(t('reports.stock_status'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)), // TODO: i18n key: reports.stock_status
                 const SizedBox(height: 16),
                 SizedBox(
                   height: 250,
                   child: PieChart(
                     PieChartData(
                       sections: [
-                        PieChartSectionData(value: (_totalProducts - _lowStockProducts - _outOfStockProducts).toDouble(), title: 'Normal', color: AppColors.success, radius: 80),
-                        PieChartSectionData(value: _lowStockProducts.toDouble(), title: 'Düşük', color: AppColors.warning, radius: 80),
-                        PieChartSectionData(value: _outOfStockProducts.toDouble(), title: 'Yok', color: AppColors.danger, radius: 80),
+                        PieChartSectionData(value: (_totalProducts - _lowStockProducts - _outOfStockProducts).toDouble(), title: t('reports.normal'), color: AppColors.success, radius: 80), // TODO: i18n key: reports.normal
+                        PieChartSectionData(value: _lowStockProducts.toDouble(), title: t('reports.low'), color: AppColors.warning, radius: 80), // TODO: i18n key: reports.low
+                        PieChartSectionData(value: _outOfStockProducts.toDouble(), title: t('reports.none'), color: AppColors.danger, radius: 80), // TODO: i18n key: reports.none
                       ],
                       sectionsSpace: 2,
                       centerSpaceRadius: 40,

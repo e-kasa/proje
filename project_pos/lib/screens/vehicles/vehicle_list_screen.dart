@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../services/service_locator.dart';
 import '../../core/widgets/widgets.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class VehicleListScreen extends ConsumerStatefulWidget {
   const VehicleListScreen({super.key});
@@ -12,6 +13,7 @@ class VehicleListScreen extends ConsumerStatefulWidget {
 }
 
 class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
+  String Function(String) get t => i18nOf(ref);
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _vehicles = [];
   List<Map<String, dynamic>> _filteredVehicles = [];
@@ -41,7 +43,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        AppToast.error(context, 'Araclar yuklenirken hata: $e');
+        AppToast.error(context, t('common.error'));
       }
     }
   }
@@ -82,7 +84,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
             children: [
               Icon(isEdit ? Icons.edit : Icons.directions_car, color: isEdit ? AppColors.info : AppColors.primary),
               const SizedBox(width: 12),
-              Text(isEdit ? 'Arac Duzenle' : 'Yeni Arac Ekle'),
+              Text(isEdit ? t('common.edit') : t('vehicles.add')),
             ],
           ),
           content: SingleChildScrollView(
@@ -197,7 +199,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Iptal')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t('common.cancel'))),
             ElevatedButton.icon(
               onPressed: () async {
                 final make = makeCtl.text.trim();
@@ -223,17 +225,17 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
                     await ref.read(vehicleServiceProvider).createVehicle(data);
                   }
                   if (mounted) {
-                    AppToast.success(context, isEdit ? 'Arac guncellendi' : '$make $model eklendi');
+                    AppToast.success(context, t('common.saved'));
                   }
                   _loadVehicles();
                 } catch (e) {
                   if (mounted) {
-                    AppToast.error(context, 'Hata: $e');
+                    AppToast.error(context, t('common.error'));
                   }
                 }
               },
               icon: Icon(isEdit ? Icons.save : Icons.add),
-              label: Text(isEdit ? 'Guncelle' : 'Kaydet'),
+              label: Text(isEdit ? t('common.save') : t('common.save')),
               style: ElevatedButton.styleFrom(
                 backgroundColor: isEdit ? AppColors.info : AppColors.primary,
                 foregroundColor: Colors.white,
@@ -249,33 +251,33 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.warning, color: AppColors.danger),
-            SizedBox(width: 12),
-            Text('Araci Sil'),
+            const Icon(Icons.warning, color: AppColors.danger),
+            const SizedBox(width: 12),
+            Text(t('common.delete')), // TODO: i18n delete_vehicle key
           ],
         ),
-        content: Text('${vehicle['make']} ${vehicle['model']} aracini silmek istediginizden emin misiniz?'),
+        content: Text('${vehicle['make']} ${vehicle['model']} aracini silmek istediginizden emin misiniz?'), // TODO: i18n
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Iptal')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t('common.cancel'))),
           ElevatedButton.icon(
             onPressed: () async {
               Navigator.pop(ctx);
               try {
                 await ref.read(vehicleServiceProvider).deleteVehicle(vehicle['id']);
                 if (mounted) {
-                  AppToast.success(context, 'Arac silindi');
+                  AppToast.success(context, t('common.saved'));
                 }
                 _loadVehicles();
               } catch (e) {
                 if (mounted) {
-                  AppToast.error(context, 'Hata: $e');
+                  AppToast.error(context, t('common.error'));
                 }
               }
             },
             icon: const Icon(Icons.delete),
-            label: const Text('Sil'),
+            label: Text(t('common.delete')),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger, foregroundColor: Colors.white),
           ),
         ],
@@ -301,7 +303,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
                         controller: _searchController,
                         onChanged: _filterVehicles,
                         decoration: InputDecoration(
-                          hintText: 'Arac ara (marka, model, platform)...',
+                          hintText: t('common.search'), // TODO: i18n vehicle search hint
                           prefixIcon: const Icon(Icons.search, size: 20),
                           filled: true,
                           fillColor: AppColors.bgLight,
@@ -314,7 +316,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
                     ElevatedButton.icon(
                       onPressed: () => _showAddEditDialog(),
                       icon: const Icon(Icons.add, size: 20),
-                      label: const Text('Yeni Arac'),
+                      label: Text(t('vehicles.add')),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -334,9 +336,9 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildStatItem('Toplam', '${_vehicles.length}', Icons.directions_car),
+                      _buildStatItem('Toplam', '${_vehicles.length}', Icons.directions_car), // TODO: i18n
                       Container(width: 1, height: 30, color: AppColors.border),
-                      _buildStatItem('Aktif', '${_vehicles.where((v) => v['isActive'] == true).length}', Icons.check_circle),
+                      _buildStatItem('Aktif', '${_vehicles.where((v) => v['isActive'] == true).length}', Icons.check_circle), // TODO: i18n
                     ],
                   ),
                 ),
@@ -355,7 +357,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
                           children: [
                             Icon(Icons.directions_car_outlined, size: 80, color: AppColors.textMuted.withValues(alpha: 0.5)),
                             const SizedBox(height: 16),
-                            const Text('Henuz arac eklenmemis', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
+                            Text(t('common.no_data'), style: const TextStyle(fontSize: 16, color: AppColors.textSecondary)), // TODO: i18n no_vehicles key
                           ],
                         ),
                       )
@@ -459,11 +461,11 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
                     if (value == 'delete') _showDeleteDialog(vehicle);
                   },
                   itemBuilder: (ctx) => [
-                    const PopupMenuItem(value: 'edit', child: Row(children: [
-                      Icon(Icons.edit, size: 18, color: AppColors.info), SizedBox(width: 12), Text('Duzenle'),
+                    PopupMenuItem(value: 'edit', child: Row(children: [
+                      const Icon(Icons.edit, size: 18, color: AppColors.info), const SizedBox(width: 12), Text(t('common.edit')),
                     ])),
-                    const PopupMenuItem(value: 'delete', child: Row(children: [
-                      Icon(Icons.delete, size: 18, color: AppColors.danger), SizedBox(width: 12), Text('Sil'),
+                    PopupMenuItem(value: 'delete', child: Row(children: [
+                      const Icon(Icons.delete, size: 18, color: AppColors.danger), const SizedBox(width: 12), Text(t('common.delete')),
                     ])),
                   ],
                 ),

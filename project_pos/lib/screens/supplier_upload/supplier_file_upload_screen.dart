@@ -1,19 +1,22 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
+import '../../core/utils/i18n_helper.dart';
 import '../../core/widgets/widgets.dart';
 
 /// EKRAN 1: Dosya Yükle
 /// Kullanıcı tedarikçi seçer ve Excel/CSV dosyası yükler
-class SupplierFileUploadScreen extends StatefulWidget {
+class SupplierFileUploadScreen extends ConsumerStatefulWidget {
   const SupplierFileUploadScreen({super.key});
 
   @override
-  State<SupplierFileUploadScreen> createState() =>
+  ConsumerState<SupplierFileUploadScreen> createState() =>
       _SupplierFileUploadScreenState();
 }
 
-class _SupplierFileUploadScreenState extends State<SupplierFileUploadScreen> {
+class _SupplierFileUploadScreenState extends ConsumerState<SupplierFileUploadScreen> {
+  String Function(String) get t => i18nOf(ref);
   final _formKey = GlobalKey<FormState>();
 
   // Form state
@@ -113,7 +116,7 @@ class _SupplierFileUploadScreenState extends State<SupplierFileUploadScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: '📦 Tedarikçi Dosyası Yükle',
+        title: 'Tedarikçi Dosyası Yükle', // TODO: i18n supplier_upload.upload_title
         elevation: 0,
       ),
       body: Center(
@@ -131,7 +134,7 @@ class _SupplierFileUploadScreenState extends State<SupplierFileUploadScreen> {
                 children: [
                   // Başlık
                   Text(
-                    'Tedarikçi Dosyası Yükle',
+                    'Tedarikçi Dosyası Yükle', // TODO: i18n supplier_upload.upload_title
                     style: Theme.of(context).textTheme.headlineSmall,
                     textAlign: TextAlign.center,
                   ),
@@ -149,7 +152,7 @@ class _SupplierFileUploadScreenState extends State<SupplierFileUploadScreen> {
                   DropdownButtonFormField<int>(
                     value: _selectedSupplierId,
                     decoration: const InputDecoration(
-                      labelText: 'Tedarikçi Seçin',
+                      labelText: 'Tedarikçi Seçin', // TODO: i18n supplier_upload.select_supplier
                       prefixIcon: Icon(Icons.business),
                       border: OutlineInputBorder(),
                     ),
@@ -259,7 +262,7 @@ class _SupplierFileUploadScreenState extends State<SupplierFileUploadScreen> {
                             ? null
                             : () => Navigator.pop(context),
                         icon: const Icon(Icons.close),
-                        label: const Text('İptal'),
+                        label: const Text('İptal'), // TODO: i18n common.cancel
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 24,
@@ -282,7 +285,7 @@ class _SupplierFileUploadScreenState extends State<SupplierFileUploadScreen> {
                               )
                             : const Icon(Icons.upload),
                         label: Text(
-                          _isUploading ? 'Yükleniyor...' : 'Yükle ve Devam Et',
+                          _isUploading ? 'Yükleniyor...' : 'Yükle ve Devam Et', // TODO: i18n supplier_upload.upload_and_continue / common.uploading
                         ),
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(

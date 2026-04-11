@@ -5,6 +5,7 @@ import '../../services/company_category_service.dart';
 import '../../services/service_locator.dart';
 import '../../providers/navigation_provider.dart';
 import '../../core/widgets/widgets.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 // ============================================================
 // Provider
@@ -188,6 +189,8 @@ class CompanyCategoryScreen extends ConsumerStatefulWidget {
 }
 
 class _CompanyCategoryScreenState extends ConsumerState<CompanyCategoryScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   final _searchController = TextEditingController();
 
   @override
@@ -230,7 +233,7 @@ class _CompanyCategoryScreenState extends ConsumerState<CompanyCategoryScreen> {
   // ----------------------------------------------------------
   AppBar _buildAppBar(CompanyCategoryState state, CompanyCategoryNotifier notifier) {
     return AppBar(
-      title: const Text('Kategori Tanımla', style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
+      title: Text(t('categories.title'), style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
       foregroundColor: Colors.white,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
@@ -247,12 +250,12 @@ class _CompanyCategoryScreenState extends ConsumerState<CompanyCategoryScreen> {
           TextButton.icon(
             onPressed: () => notifier.toggleAll(true),
             icon: const Icon(Icons.select_all, color: Colors.white, size: 18),
-            label: const Text('Tümünü Seç', style: TextStyle(color: Colors.white, fontSize: 12)),
+            label: Text(t('common.all'), style: const TextStyle(color: Colors.white, fontSize: 12)),
           ),
           TextButton.icon(
             onPressed: () => notifier.toggleAll(false),
             icon: const Icon(Icons.deselect, color: Colors.white70, size: 18),
-            label: const Text('Temizle', style: TextStyle(color: Colors.white70, fontSize: 12)),
+            label: const Text('Temizle', style: TextStyle(color: Colors.white70, fontSize: 12)), // TODO: i18n
           ),
           const SizedBox(width: 8),
         ],
@@ -265,13 +268,13 @@ class _CompanyCategoryScreenState extends ConsumerState<CompanyCategoryScreen> {
   // ----------------------------------------------------------
   Widget _buildBody(CompanyCategoryState state, CompanyCategoryNotifier notifier) {
     if (state.isLoading) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(color: AppColors.primary),
-            SizedBox(height: 16),
-            Text('Kategoriler yükleniyor...', style: TextStyle(color: AppColors.textSecondary)),
+            const CircularProgressIndicator(color: AppColors.primary),
+            const SizedBox(height: 16),
+            Text(t('common.loading'), style: const TextStyle(color: AppColors.textSecondary)),
           ],
         ),
       );
@@ -288,7 +291,7 @@ class _CompanyCategoryScreenState extends ConsumerState<CompanyCategoryScreen> {
             const SizedBox(height: 16),
             AppButton.primary(
 
-              text: 'Tekrar Dene',
+              text: t('common.refresh'),
 
               icon: Icons.refresh,
 
@@ -323,9 +326,9 @@ class _CompanyCategoryScreenState extends ConsumerState<CompanyCategoryScreen> {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Row(
         children: [
-          _statChip(Icons.category_outlined, 'Toplam', '$totalCount', Colors.white70),
+          _statChip(Icons.category_outlined, 'Toplam', '$totalCount', Colors.white70), // TODO: i18n
           const SizedBox(width: 12),
-          _statChip(Icons.check_circle_outline, 'Seçili', '$selectedCount', Colors.white),
+          _statChip(Icons.check_circle_outline, 'Seçili', '$selectedCount', Colors.white), // TODO: i18n
           const Spacer(),
           if (totalCount > 0)
             Text(
@@ -370,7 +373,7 @@ class _CompanyCategoryScreenState extends ConsumerState<CompanyCategoryScreen> {
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: 'Kategori ara...',
+          hintText: t('common.search'),
           prefixIcon: const Icon(Icons.search, color: AppColors.textMuted),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
@@ -417,8 +420,8 @@ class _CompanyCategoryScreenState extends ConsumerState<CompanyCategoryScreen> {
             const SizedBox(height: 12),
             Text(
               state.searchQuery.isNotEmpty
-                  ? '"${state.searchQuery}" için sonuç bulunamadı'
-                  : 'Henüz kategori tanımlanmamış',
+                  ? t('common.no_records')
+                  : t('common.no_data'),
               style: const TextStyle(color: AppColors.textSecondary),
             ),
           ],
@@ -477,8 +480,8 @@ class _CompanyCategoryScreenState extends ConsumerState<CompanyCategoryScreen> {
           height: 50,
           child: AppButton.success(
             text: state.isSaving
-                  ? 'Kaydediliyor...'
-                  : '${state.selectedIds.length} Kategori Seçimini Kaydet',
+                  ? t('common.loading')
+                  : '${state.selectedIds.length} ${t('categories.title')} ${t('common.save')}',
             icon: Icons.check,
             onPressed: state.isSaving ? null : () {},
           ),

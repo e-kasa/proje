@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class ProductSalesAnalysisScreen extends ConsumerStatefulWidget {
   const ProductSalesAnalysisScreen({super.key});
@@ -15,6 +16,8 @@ class ProductSalesAnalysisScreen extends ConsumerStatefulWidget {
 
 class _ProductSalesAnalysisScreenState
     extends ConsumerState<ProductSalesAnalysisScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
   DateTime _endDate = DateTime.now();
   bool _isLoading = false;
@@ -38,7 +41,7 @@ class _ProductSalesAnalysisScreenState
         startDate: _startDate.toIso8601String(),
         endDate: _endDate.toIso8601String(),
       );
-      if (result.isEmpty) throw Exception('Veri bulunamadi');
+      if (result.isEmpty) throw Exception(t('common.no_data'));
       final sorted = List<Map<String, dynamic>>.from(result);
       sorted.sort((a, b) {
         final ra = (a['totalRevenue'] ?? 0).toDouble();
@@ -55,7 +58,7 @@ class _ProductSalesAnalysisScreenState
         _isLoading = false;
       });
       if (mounted) {
-        AppToast.error(context, 'Veri yuklenemedi');
+        AppToast.error(context, t('common.error'));
       }
     }
   }
@@ -102,11 +105,11 @@ class _ProductSalesAnalysisScreenState
 
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Urun Satis Analizi',
+        title: t('reports.product_analysis'),
         actions: [
           IconButton(
             icon: const Icon(Icons.date_range),
-            tooltip: 'Tarih Araligi Sec',
+            tooltip: t('reports.date_range'),
             onPressed: _pickDateRange,
           ),
           IconButton(
@@ -154,14 +157,14 @@ class _ProductSalesAnalysisScreenState
                     child: Row(
                       children: [
                         _buildSummaryItem(
-                          'Toplam Urun',
+                          t('reports.total_products'), // TODO: i18n key: reports.total_products
                           totalProducts.toString(),
                           AppColors.primary,
                           Icons.inventory_2,
                         ),
                         _buildSummaryDivider(),
                         _buildSummaryItem(
-                          'Toplam Satis',
+                          t('reports.total_sales'), // TODO: i18n key: reports.total_sales
                           NumberFormat.compact(locale: 'tr_TR')
                               .format(totalQuantity),
                           AppColors.info,
@@ -169,7 +172,7 @@ class _ProductSalesAnalysisScreenState
                         ),
                         _buildSummaryDivider(),
                         _buildSummaryItem(
-                          'Toplam Ciro',
+                          t('reports.total_revenue'), // TODO: i18n key: reports.total_revenue
                           _currencyFormat.format(totalRevenue),
                           AppColors.success,
                           Icons.trending_up,
@@ -314,11 +317,11 @@ class _ProductSalesAnalysisScreenState
                     spacing: 12,
                     children: [
                       _buildStatItem(
-                        label: 'Satışlar',
+                        label: t('menu.sales'),
                         value: _currencyFormat.format(totalRevenue),
                       ),
                       _buildStatItem(
-                        label: 'Kar Marjı',
+                        label: t('reports.profit_margin'), // TODO: i18n key: reports.profit_margin
                         value: '$profitMargin%',
                       ),
                     ],

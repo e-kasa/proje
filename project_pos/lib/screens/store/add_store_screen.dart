@@ -7,6 +7,7 @@ import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/store_service.dart';
 import '../../core/api/api_client.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class AddStoreScreen extends ConsumerStatefulWidget {
   final String? storeId;
@@ -18,6 +19,8 @@ class AddStoreScreen extends ConsumerStatefulWidget {
 }
 
 class _AddStoreScreenState extends ConsumerState<AddStoreScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   final _formKey = GlobalKey<FormState>();
   late StoreService _storeService;
 
@@ -42,9 +45,9 @@ class _AddStoreScreenState extends ConsumerState<AddStoreScreen> {
   bool _isSaving = false;
 
   final List<Map<String, dynamic>> _storeTypes = [
-    {'value': 'flagship', 'label': '🏢 Merkez Mağaza', 'icon': Icons.store},
-    {'value': 'branch', 'label': '🏪 Şube', 'icon': Icons.storefront},
-    {'value': 'outlet', 'label': '🏬 Outlet', 'icon': Icons.local_mall},
+    {'value': 'flagship', 'labelKey': 'stores.type_flagship', 'icon': Icons.store},
+    {'value': 'branch', 'labelKey': 'stores.type_branch', 'icon': Icons.storefront},
+    {'value': 'outlet', 'labelKey': 'stores.type_outlet', 'icon': Icons.local_mall},
   ];
 
   @override
@@ -95,7 +98,7 @@ class _AddStoreScreenState extends ConsumerState<AddStoreScreen> {
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      if (mounted) AppToast.error(context, 'Mağaza bilgileri yüklenirken hata oluştu');
+      if (mounted) AppToast.error(context, t('stores.load_error'));
     }
   }
 
@@ -126,18 +129,18 @@ class _AddStoreScreenState extends ConsumerState<AddStoreScreen> {
       if (widget.storeId != null) {
         await _storeService.updateStore(widget.storeId!, data);
         if (mounted) {
-          AppToast.success(context, 'Mağaza başarıyla güncellendi');
+          AppToast.success(context, t('stores.updated_success'));
           context.pop();
         }
       } else {
         await _storeService.createStore(data);
         if (mounted) {
-          AppToast.success(context, 'Mağaza başarıyla oluşturuldu');
+          AppToast.success(context, t('stores.created_success'));
           context.pop();
         }
       }
     } catch (e) {
-      if (mounted) AppToast.error(context, 'Mağaza kaydedilirken hata oluştu');
+      if (mounted) AppToast.error(context, t('stores.save_error'));
     } finally {
       setState(() => _isSaving = false);
     }
@@ -147,7 +150,7 @@ class _AddStoreScreenState extends ConsumerState<AddStoreScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: widget.storeId != null ? 'Mağaza Düzenle' : 'Yeni Mağaza Ekle',
+        title: widget.storeId != null ? t('stores.edit') : t('stores.add'),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -158,7 +161,7 @@ class _AddStoreScreenState extends ConsumerState<AddStoreScreen> {
                 child: Column(
                   children: [
                     AppSectionCard(
-                      title: 'Mağaza Tipi',
+                      title: t('stores.store_type'),
                       icon: Icons.category,
                       children: _storeTypes.map((type) {
                         final isSelected = _selectedType == type['value'];
@@ -178,7 +181,7 @@ class _AddStoreScreenState extends ConsumerState<AddStoreScreen> {
                                 children: [
                                   Icon(type['icon'], color: isSelected ? AppColors.primary : AppColors.textMuted),
                                   const SizedBox(width: 12),
-                                  Expanded(child: Text(type['label'], style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? AppColors.primary : AppColors.textPrimary))),
+                                  Expanded(child: Text(t(type['labelKey'] as String), style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? AppColors.primary : AppColors.textPrimary))),
                                   if (isSelected) const Icon(Icons.check_circle, color: AppColors.primary),
                                 ],
                               ),
@@ -189,76 +192,76 @@ class _AddStoreScreenState extends ConsumerState<AddStoreScreen> {
                     ),
                     const SizedBox(height: 16),
                     AppSectionCard(
-                      title: 'Temel Bilgiler',
+                      title: t('stores.basic_info'),
                       icon: Icons.info,
                       children: [
                         Row(
                           children: [
-                            Expanded(child: TextFormField(controller: _codeController, decoration: const InputDecoration(labelText: 'Mağaza Kodu *', hintText: 'STR-001', prefixIcon: Icon(Icons.qr_code)), validator: (v) => v == null || v.trim().isEmpty ? 'Mağaza kodu gerekli' : null)),
+                            Expanded(child: TextFormField(controller: _codeController, decoration: InputDecoration(labelText: t('stores.code_required'), hintText: 'STR-001', prefixIcon: const Icon(Icons.qr_code)), validator: (v) => v == null || v.trim().isEmpty ? t('stores.code_required_msg') : null)),
                             const SizedBox(width: 12),
-                            Expanded(child: TextFormField(controller: _employeeCountController, decoration: const InputDecoration(labelText: 'Çalışan Sayısı *', prefixIcon: Icon(Icons.people), suffixText: 'kişi'), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly], validator: (v) => v == null || v.trim().isEmpty ? 'Çalışan sayısı gerekli' : null)),
+                            Expanded(child: TextFormField(controller: _employeeCountController, decoration: InputDecoration(labelText: t('stores.employee_count_required'), prefixIcon: const Icon(Icons.people), suffixText: t('stores.person_suffix')), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly], validator: (v) => v == null || v.trim().isEmpty ? t('stores.employee_count_required_msg') : null)),
                           ],
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(controller: _nameController, decoration: const InputDecoration(labelText: 'Mağaza Adı *', hintText: 'Merkez Mağaza', prefixIcon: Icon(Icons.store)), validator: (v) => v == null || v.trim().isEmpty ? 'Mağaza adı gerekli' : null),
+                        TextFormField(controller: _nameController, decoration: InputDecoration(labelText: t('stores.name_required'), hintText: t('stores.name_hint'), prefixIcon: const Icon(Icons.store)), validator: (v) => v == null || v.trim().isEmpty ? t('stores.name_required_msg') : null),
                         const SizedBox(height: 16),
-                        TextFormField(controller: _managerController, decoration: const InputDecoration(labelText: 'Mağaza Müdürü *', hintText: 'Zeynep Arslan', prefixIcon: Icon(Icons.person)), validator: (v) => v == null || v.trim().isEmpty ? 'Mağaza müdürü gerekli' : null),
+                        TextFormField(controller: _managerController, decoration: InputDecoration(labelText: t('stores.manager_required'), hintText: t('stores.manager_hint'), prefixIcon: const Icon(Icons.person)), validator: (v) => v == null || v.trim().isEmpty ? t('stores.manager_required_msg') : null),
                         const SizedBox(height: 16),
-                        TextFormField(controller: _openingHoursController, decoration: const InputDecoration(labelText: 'Çalışma Saatleri *', hintText: '09:00 - 22:00', prefixIcon: Icon(Icons.access_time)), validator: (v) => v == null || v.trim().isEmpty ? 'Çalışma saatleri gerekli' : null),
+                        TextFormField(controller: _openingHoursController, decoration: InputDecoration(labelText: t('stores.opening_hours_required'), hintText: '09:00 - 22:00', prefixIcon: const Icon(Icons.access_time)), validator: (v) => v == null || v.trim().isEmpty ? t('stores.opening_hours_required_msg') : null),
                       ],
                     ),
                     const SizedBox(height: 16),
                     AppSectionCard(
-                      title: 'Konum Bilgileri',
+                      title: t('stores.location_info'),
                       icon: Icons.location_on,
                       children: [
                         Row(
                           children: [
-                            Expanded(child: TextFormField(controller: _cityController, decoration: const InputDecoration(labelText: 'Şehir *', hintText: 'İstanbul', prefixIcon: Icon(Icons.location_city)), validator: (v) => v == null || v.trim().isEmpty ? 'Şehir gerekli' : null)),
+                            Expanded(child: TextFormField(controller: _cityController, decoration: InputDecoration(labelText: t('stores.city_required'), hintText: t('stores.city_hint'), prefixIcon: const Icon(Icons.location_city)), validator: (v) => v == null || v.trim().isEmpty ? t('stores.city_required_msg') : null)),
                             const SizedBox(width: 12),
-                            Expanded(child: TextFormField(controller: _districtController, decoration: const InputDecoration(labelText: 'İlçe *', hintText: 'Kadıköy', prefixIcon: Icon(Icons.place)), validator: (v) => v == null || v.trim().isEmpty ? 'İlçe gerekli' : null)),
+                            Expanded(child: TextFormField(controller: _districtController, decoration: InputDecoration(labelText: t('stores.district_required'), hintText: t('stores.district_hint'), prefixIcon: const Icon(Icons.place)), validator: (v) => v == null || v.trim().isEmpty ? t('stores.district_required_msg') : null)),
                           ],
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(controller: _addressController, decoration: const InputDecoration(labelText: 'Adres *', hintText: 'Bağdat Caddesi No:142/A', prefixIcon: Icon(Icons.home)), maxLines: 2, validator: (v) => v == null || v.trim().isEmpty ? 'Adres gerekli' : null),
+                        TextFormField(controller: _addressController, decoration: InputDecoration(labelText: t('stores.address_required'), hintText: t('stores.address_hint'), prefixIcon: const Icon(Icons.home)), maxLines: 2, validator: (v) => v == null || v.trim().isEmpty ? t('stores.address_required_msg') : null),
                       ],
                     ),
                     const SizedBox(height: 16),
                     AppSectionCard(
-                      title: 'İletişim',
+                      title: t('stores.contact_info'),
                       icon: Icons.phone,
                       children: [
-                        TextFormField(controller: _phoneController, decoration: const InputDecoration(labelText: 'Telefon *', hintText: '+90 (216) 555-0201', prefixIcon: Icon(Icons.phone_android)), keyboardType: TextInputType.phone, validator: (v) => v == null || v.trim().isEmpty ? 'Telefon gerekli' : null),
+                        TextFormField(controller: _phoneController, decoration: InputDecoration(labelText: t('stores.phone_required'), hintText: '+90 (216) 555-0201', prefixIcon: const Icon(Icons.phone_android)), keyboardType: TextInputType.phone, validator: (v) => v == null || v.trim().isEmpty ? t('stores.phone_required_msg') : null),
                         const SizedBox(height: 16),
-                        TextFormField(controller: _emailController, decoration: const InputDecoration(labelText: 'E-posta', hintText: 'merkez@magaza.com', prefixIcon: Icon(Icons.email)), keyboardType: TextInputType.emailAddress),
+                        TextFormField(controller: _emailController, decoration: InputDecoration(labelText: t('stores.email'), hintText: 'merkez@magaza.com', prefixIcon: const Icon(Icons.email)), keyboardType: TextInputType.emailAddress),
                       ],
                     ),
                     const SizedBox(height: 16),
                     AppSectionCard(
-                      title: 'Alan Bilgileri',
+                      title: t('stores.area_info'),
                       icon: Icons.square_foot,
                       children: [
                         Row(
                           children: [
-                            Expanded(child: TextFormField(controller: _totalAreaController, decoration: const InputDecoration(labelText: 'Toplam Alan', prefixIcon: Icon(Icons.aspect_ratio), suffixText: 'm²'), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+                            Expanded(child: TextFormField(controller: _totalAreaController, decoration: InputDecoration(labelText: t('stores.total_area'), prefixIcon: const Icon(Icons.aspect_ratio), suffixText: 'm²'), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
                             const SizedBox(width: 12),
-                            Expanded(child: TextFormField(controller: _salesAreaController, decoration: const InputDecoration(labelText: 'Satış Alanı', prefixIcon: Icon(Icons.shopping_cart), suffixText: 'm²'), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+                            Expanded(child: TextFormField(controller: _salesAreaController, decoration: InputDecoration(labelText: t('stores.sales_area'), prefixIcon: const Icon(Icons.shopping_cart), suffixText: 'm²'), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
                           ],
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
                     AppSectionCard(
-                      title: 'Özellikler',
+                      title: t('stores.features'),
                       icon: Icons.settings,
                       children: [
-                        SwitchListTile(value: _hasWarehouse, onChanged: (v) => setState(() => _hasWarehouse = v), title: const Text('Deposu Var'), subtitle: Text(_hasWarehouse ? 'Mağazanın deposu var' : 'Mağazanın deposu yok', style: const TextStyle(fontSize: 12)), secondary: Icon(_hasWarehouse ? Icons.warehouse : Icons.store, color: _hasWarehouse ? AppColors.success : AppColors.textMuted)),
+                        SwitchListTile(value: _hasWarehouse, onChanged: (v) => setState(() => _hasWarehouse = v), title: Text(t('stores.has_warehouse')), subtitle: Text(_hasWarehouse ? t('stores.has_warehouse_yes') : t('stores.has_warehouse_no'), style: const TextStyle(fontSize: 12)), secondary: Icon(_hasWarehouse ? Icons.warehouse : Icons.store, color: _hasWarehouse ? AppColors.success : AppColors.textMuted)),
                         const Divider(),
-                        SwitchListTile(value: _isActive, onChanged: (v) => setState(() => _isActive = v), title: const Text('Aktif'), subtitle: Text(_isActive ? 'Mağaza şu anda aktif' : 'Mağaza şu anda pasif', style: const TextStyle(fontSize: 12)), secondary: Icon(_isActive ? Icons.check_circle : Icons.cancel, color: _isActive ? AppColors.success : AppColors.danger)),
+                        SwitchListTile(value: _isActive, onChanged: (v) => setState(() => _isActive = v), title: Text(t('common.active')), subtitle: Text(_isActive ? t('stores.currently_active') : t('stores.currently_passive'), style: const TextStyle(fontSize: 12)), secondary: Icon(_isActive ? Icons.check_circle : Icons.cancel, color: _isActive ? AppColors.success : AppColors.danger)),
                       ],
                     ),
                     const SizedBox(height: 24),
-                    SizedBox(width: double.infinity, child: AppButton.primary(text: _isSaving ? 'Kaydediliyor...' : widget.storeId != null ? 'Güncelle' : 'Kaydet', icon: _isSaving ? null : Icons.save, onPressed: _isSaving ? null : _saveStore)),
+                    SizedBox(width: double.infinity, child: AppButton.primary(text: _isSaving ? t('common.saving') : widget.storeId != null ? t('common.update') : t('common.save'), icon: _isSaving ? null : Icons.save, onPressed: _isSaving ? null : _saveStore)),
                   ],
                 ),
               ),

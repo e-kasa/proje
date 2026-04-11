@@ -1,9 +1,11 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/utils/i18n_helper.dart';
 import '../../core/widgets/widgets.dart';
 
 /// EKRAN 4: Karar Ver (Ana Ekran - Tablo Görünümü)
 /// Kullanıcı her ürün için karar verir: Stok Ekle, Varyant Ekle, Yeni Ürün, Atla
-class DecisionTableScreen extends StatefulWidget {
+class DecisionTableScreen extends ConsumerStatefulWidget {
   final String uploadId;
   final String supplierName;
   final List<ProductDecisionItem> products;
@@ -16,10 +18,11 @@ class DecisionTableScreen extends StatefulWidget {
   });
 
   @override
-  State<DecisionTableScreen> createState() => _DecisionTableScreenState();
+  ConsumerState<DecisionTableScreen> createState() => _DecisionTableScreenState();
 }
 
-class _DecisionTableScreenState extends State<DecisionTableScreen> {
+class _DecisionTableScreenState extends ConsumerState<DecisionTableScreen> {
+  String Function(String) get t => i18nOf(ref);
   late List<ProductDecisionItem> _products;
   bool _isSaving = false;
 
@@ -138,18 +141,18 @@ class _DecisionTableScreenState extends State<DecisionTableScreen> {
       final confirm = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Eksik Kararlar'),
+          title: const Text('Eksik Kararlar'), // TODO: i18n bulk_import.missing_decisions
           content: Text(
-            '${undecided.length} ürün için karar verilmedi. Devam etmek istiyor musunuz? (Bu ürünler atlanacak)',
+            '${undecided.length} ürün için karar verilmedi. Devam etmek istiyor musunuz? (Bu ürünler atlanacak)', // TODO: i18n
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('İptal'),
+              child: const Text('İptal'), // TODO: i18n common.cancel
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Devam Et'),
+              child: const Text('Devam Et'), // TODO: i18n common.continue
             ),
           ],
         ),
@@ -184,7 +187,7 @@ class _DecisionTableScreenState extends State<DecisionTableScreen> {
       await Future.delayed(const Duration(seconds: 1));
 
       if (mounted) {
-        AppToast.success(context, 'Kararlar basariyla kaydedildi!');
+        AppToast.success(context, 'Kararlar basariyla kaydedildi!'); // TODO: i18n bulk_import.decisions_saved
       }
     } catch (e) {
       if (mounted) {
@@ -203,7 +206,7 @@ class _DecisionTableScreenState extends State<DecisionTableScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: '📋 Tedarikçi: ${widget.supplierName}',
+        title: 'Tedarikçi: ${widget.supplierName}', // TODO: i18n supplier_upload.supplier_review_title
         elevation: 0,
       ),
       body: Column(
@@ -248,7 +251,7 @@ class _DecisionTableScreenState extends State<DecisionTableScreen> {
                           ),
                         )
                       : const Icon(Icons.save),
-                  label: Text(_isSaving ? 'Kaydediliyor...' : 'Tümünü Kaydet'),
+                  label: Text(_isSaving ? 'Kaydediliyor...' : 'Tümünü Kaydet'), // TODO: i18n bulk_import.save_all / bulk_import.saving
                 ),
               ],
             ),
@@ -291,7 +294,7 @@ class _DecisionTableScreenState extends State<DecisionTableScreen> {
                 OutlinedButton.icon(
                   onPressed: _isSaving ? null : () => Navigator.pop(context),
                   icon: const Icon(Icons.close),
-                  label: const Text('İptal'),
+                  label: const Text('İptal'), // TODO: i18n common.cancel
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
@@ -302,7 +305,7 @@ class _DecisionTableScreenState extends State<DecisionTableScreen> {
                 ElevatedButton.icon(
                   onPressed: _isSaving ? null : _saveDecisions,
                   icon: const Icon(Icons.check),
-                  label: const Text('Kararları Kaydet'),
+                  label: const Text('Kararları Kaydet'), // TODO: i18n bulk_import.save_decisions
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
@@ -552,7 +555,7 @@ class _ProductDecisionCard extends StatelessWidget {
 }
 
 /// Create New Product Dialog
-class CreateNewProductDialog extends StatefulWidget {
+class CreateNewProductDialog extends ConsumerStatefulWidget {
   final String productName;
   final double quantity;
   final double costPrice;
@@ -567,10 +570,10 @@ class CreateNewProductDialog extends StatefulWidget {
   });
 
   @override
-  State<CreateNewProductDialog> createState() => _CreateNewProductDialogState();
+  ConsumerState<CreateNewProductDialog> createState() => _CreateNewProductDialogState();
 }
 
-class _CreateNewProductDialogState extends State<CreateNewProductDialog> {
+class _CreateNewProductDialogState extends ConsumerState<CreateNewProductDialog> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _categoryController;

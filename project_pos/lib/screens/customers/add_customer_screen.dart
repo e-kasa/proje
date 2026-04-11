@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/widgets/widgets.dart';
 import '../../core/theme/app_constants.dart';
 import '../../services/service_locator.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 // CustomerType backend enum değerleri
 const _customerTypes = [
@@ -23,6 +24,8 @@ class AddCustomerScreen extends ConsumerStatefulWidget {
 }
 
 class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   final _formKey = GlobalKey<FormState>();
 
   late TextEditingController _nameController;
@@ -87,7 +90,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
       }
     } catch (e) {
       if (mounted) {
-        AppToast.error(context, 'Müşteri yüklenemedi: $e');
+        AppToast.error(context, '${t('customers.title')} ${t('common.error')}: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -118,19 +121,19 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
         final id = (widget.customer?['id'] ?? widget.customerId).toString();
         await svc.updateCustomer(id, data);
         if (mounted) {
-          AppToast.success(context, 'Müşteri güncellendi');
+          AppToast.success(context, t('common.saved'));
         }
       } else {
         await svc.createCustomer(data);
         if (mounted) {
-          AppToast.success(context, 'Müşteri oluşturuldu');
+          AppToast.success(context, t('common.saved'));
         }
       }
 
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
-        AppToast.error(context, 'Hata: $e');
+        AppToast.error(context, '${t('common.error')}: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -155,7 +158,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
     final isEdit = widget.customer != null || widget.customerId != null;
 
     return AppScaffold(
-      appBar: AppAppBar.primary(title: isEdit ? 'Müşteri Düzenle' : 'Yeni Müşteri'),
+      appBar: AppAppBar.primary(title: isEdit ? t('customers.edit') : t('customers.add')),
       body: _isLoading && isEdit && widget.customer == null
           ? const Center(child: CircularProgressIndicator())
           : Form(
@@ -167,7 +170,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
                     child: AppSectionCard(
-                      title: 'Müşteri Tipi',
+                      title: t('customers.type'),
                       icon: Icons.category_outlined,
                       children: [
                         Wrap(
@@ -212,22 +215,22 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
                     child: AppSectionCard(
-                      title: 'Temel Bilgiler',
+                      title: t('customers.name'), // TODO: i18n key for 'Temel Bilgiler'
                       icon: Icons.person_outline,
                       children: [
                         Padding(
                           padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
                           child: AppInput(
-                            label: 'Ad Soyad *',
+                            label: '${t('customers.name')} *',
                             controller: _nameController,
                             prefixIcon: Icons.person_outline,
-                            validator: (v) => (v == null || v.trim().isEmpty) ? 'Ad Soyad zorunludur' : null,
+                            validator: (v) => (v == null || v.trim().isEmpty) ? t('customers.name') : null,
                           ),
                         ),
                         Padding(
                           padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
                           child: AppInput(
-                            label: 'Telefon',
+                            label: t('customers.phone'),
                             controller: _phoneController,
                             prefixIcon: Icons.phone_outlined,
                             keyboardType: TextInputType.phone,
@@ -236,14 +239,14 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                         Padding(
                           padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
                           child: AppInput(
-                            label: 'E-posta',
+                            label: t('customers.email'),
                             controller: _emailController,
                             prefixIcon: Icons.email_outlined,
                             keyboardType: TextInputType.emailAddress,
                             validator: (v) {
                               if (v != null && v.trim().isNotEmpty &&
                                   !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(v)) {
-                                return 'Geçerli bir e-posta adresi girin';
+                                return t('customers.email'); // TODO: i18n 'Geçerli bir e-posta adresi girin'
                               }
                               return null;
                             },
@@ -252,7 +255,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                         Padding(
                           padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
                           child: AppInput(
-                            label: 'Adres',
+                            label: 'Adres', // TODO: i18n
                             controller: _addressController,
                             prefixIcon: Icons.location_on_outlined,
                             maxLines: 2,
@@ -267,13 +270,13 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
                       child: AppSectionCard(
-                        title: 'Kurumsal Bilgiler',
+                        title: 'Kurumsal Bilgiler', // TODO: i18n
                         icon: Icons.receipt_long_outlined,
                         children: [
                           Padding(
                             padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
                             child: AppInput(
-                              label: 'Vergi Numarası',
+                              label: 'Vergi Numarası', // TODO: i18n
                               controller: _taxNumberController,
                               prefixIcon: Icons.numbers_outlined,
                               keyboardType: TextInputType.number,
@@ -282,7 +285,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                           Padding(
                             padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
                             child: AppInput(
-                              label: 'Vergi Dairesi',
+                              label: 'Vergi Dairesi', // TODO: i18n
                               controller: _taxOfficeController,
                               prefixIcon: Icons.account_balance_outlined,
                             ),
@@ -295,13 +298,13 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
                     child: AppSectionCard(
-                      title: 'Notlar',
+                      title: 'Notlar', // TODO: i18n
                       icon: Icons.note_outlined,
                       children: [
                         Padding(
                           padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
                           child: AppInput(
-                            label: 'Notlar (opsiyonel)',
+                            label: 'Notlar (opsiyonel)', // TODO: i18n
                             controller: _notesController,
                             prefixIcon: Icons.edit_note_outlined,
                             maxLines: 3,
@@ -321,7 +324,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
 
                   // ── Kaydet ────────────────────────────────────────
                   AppButton.primary(
-                    text: isEdit ? 'Güncelle' : 'Kaydet',
+                    text: isEdit ? t('common.edit') : t('common.save'),
                     icon: Icons.save,
                     onPressed: _isLoading ? null : _saveCustomer,
                     isLoading: _isLoading,
@@ -359,12 +362,12 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Müşteri Durumu',
+                  Text('Müşteri Durumu', // TODO: i18n
                       style: Theme.of(context).textTheme.titleSmall),
                   const SizedBox(height: 2),
                   Text(
-                    _isActive ? 'Aktif — satış ve işlemlerde kullanılabilir'
-                              : 'Pasif — işlemlerde görünmez',
+                    _isActive ? 'Aktif — satış ve işlemlerde kullanılabilir' // TODO: i18n
+                              : 'Pasif — işlemlerde görünmez', // TODO: i18n
                     style: TextStyle(fontSize: 12,
                         color: _isActive ? const Color(0xFF10B981) : Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey),
                   ),
@@ -375,9 +378,9 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _statusBtn('Aktif',  _isActive,  const Color(0xFF10B981), () => setState(() => _isActive = true)),
+                _statusBtn(t('common.active'),  _isActive,  const Color(0xFF10B981), () => setState(() => _isActive = true)),
                 const SizedBox(width: 6),
-                _statusBtn('Pasif', !_isActive, const Color(0xFFEF4444),  () => setState(() => _isActive = false)),
+                _statusBtn(t('common.passive'), !_isActive, const Color(0xFFEF4444),  () => setState(() => _isActive = false)),
               ],
             ),
           ],

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/models/bulk_import_models.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 
 /// Manuel Eşleştirme Modal - NEW durumu için
 /// Kullanıcı sistemdeki tüm ürünleri görebilir ve istediğiyle eşleştirebilir
-class ManualMatchModal extends StatefulWidget {
+class ManualMatchModal extends ConsumerStatefulWidget {
   final AnalyzedProduct product;
   final List<MatchedProduct> availableProducts; // Sistemdeki tüm ürünler
   final Function(UserDecision) onDecision;
@@ -18,10 +20,11 @@ class ManualMatchModal extends StatefulWidget {
   });
 
   @override
-  State<ManualMatchModal> createState() => _ManualMatchModalState();
+  ConsumerState<ManualMatchModal> createState() => _ManualMatchModalState();
 }
 
-class _ManualMatchModalState extends State<ManualMatchModal> {
+class _ManualMatchModalState extends ConsumerState<ManualMatchModal> {
+  String Function(String) get t => i18nOf(ref);
   String _searchQuery = '';
   MatchedProduct? _selectedProduct;
   MergeStrategy _mergeStrategy = MergeStrategy.UPDATE_STOCK;
@@ -44,7 +47,7 @@ class _ManualMatchModalState extends State<ManualMatchModal> {
 
   void _confirm() {
     if (_selectedProduct == null) {
-      AppToast.warning(context, 'Lütfen eşleştirilecek bir ürün seçin');
+      AppToast.warning(context, 'Lütfen eşleştirilecek bir ürün seçin'); // TODO: i18n bulk_import.select_product_to_match
       return;
     }
 
@@ -126,7 +129,7 @@ class _ManualMatchModalState extends State<ManualMatchModal> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Manuel Ürün Eşleştirme',
+                          'Manuel Ürün Eşleştirme', // TODO: i18n bulk_import.manual_match_title
                           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 4),
@@ -159,8 +162,8 @@ class _ManualMatchModalState extends State<ManualMatchModal> {
                           padding: const EdgeInsets.all(16),
                           child: TextField(
                             decoration: const InputDecoration(
-                              labelText: 'Ürün Ara',
-                              hintText: 'İsim, SKU veya Barkod',
+                              labelText: 'Ürün Ara', // TODO: i18n bulk_import.search_product
+                              hintText: 'İsim, SKU veya Barkod', // TODO: i18n bulk_import.search_product_hint
                               border: OutlineInputBorder(),
                               prefixIcon: Icon(Icons.search),
                             ),
@@ -265,7 +268,7 @@ class _ManualMatchModalState extends State<ManualMatchModal> {
                                 Icon(Icons.arrow_back, size: 48, color: AppColors.textMuted),
                                 const SizedBox(height: 16),
                                 Text(
-                                  'Eşleştirilecek ürünü\nsoldan seçin',
+                                  'Eşleştirilecek ürünü\nsoldan seçin', // TODO: i18n bulk_import.select_product_from_left
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontSize: 16,
@@ -282,7 +285,7 @@ class _ManualMatchModalState extends State<ManualMatchModal> {
                               children: [
                                 // Selected product info
                                 const Text(
-                                  'Seçilen Ürün:',
+                                  'Seçilen Ürün:', // TODO: i18n bulk_import.selected_product
                                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(height: 12),
@@ -322,13 +325,13 @@ class _ManualMatchModalState extends State<ManualMatchModal> {
 
                                 // Merge strategy
                                 const Text(
-                                  'Birleştirme Seçenekleri:',
+                                  'Birleştirme Seçenekleri:', // TODO: i18n bulk_import.merge_options
                                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(height: 12),
 
                                 CheckboxListTile(
-                                  title: const Text('Stok Güncelle'),
+                                  title: const Text('Stok Güncelle'), // TODO: i18n bulk_import.update_stock
                                   subtitle: Text(
                                     _stockMode == StockUpdateMode.ADD
                                         ? '${_selectedProduct!.currentStock} + ${widget.product.stock} = ${_selectedProduct!.currentStock + widget.product.stock}'
@@ -368,7 +371,7 @@ class _ManualMatchModalState extends State<ManualMatchModal> {
                                   ),
 
                                 CheckboxListTile(
-                                  title: const Text('Fiyat Güncelle'),
+                                  title: const Text('Fiyat Güncelle'), // TODO: i18n bulk_import.update_price
                                   subtitle: Text(
                                     'Alış: ₺${widget.product.buyPrice}, Satış: ₺${widget.product.sellPrice}',
                                   ),
@@ -401,12 +404,12 @@ class _ManualMatchModalState extends State<ManualMatchModal> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('İptal'),
+                    child: const Text('İptal'), // TODO: i18n common.cancel
                   ),
                   const SizedBox(width: 12),
                   AppButton.primary(
 
-                    text: 'Eşleştir',
+                    text: 'Eşleştir', // TODO: i18n common.match
 
                     icon: Icons.link,
                     onPressed: _selectedProduct != null ? _confirm : null,

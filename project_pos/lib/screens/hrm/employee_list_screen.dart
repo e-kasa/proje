@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/hrm_service.dart';
 import '../../core/api/api_client.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class EmployeeListScreen extends ConsumerStatefulWidget {
   const EmployeeListScreen({super.key});
@@ -15,6 +16,7 @@ class EmployeeListScreen extends ConsumerStatefulWidget {
 }
 
 class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
+  String Function(String) get t => i18nOf(ref);
   late HrmService _hrmService;
   List<Map<String, dynamic>> _employees = [];
   List<String> _departments = [];
@@ -24,9 +26,9 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
   String _searchQuery = '';
 
   final _statusOptions = [
-    {'value': null, 'label': 'Tümü'},
-    {'value': 'active', 'label': 'Aktif'},
-    {'value': 'inactive', 'label': 'Pasif'},
+    {'value': null, 'label': 'Tümü'}, // TODO: i18n
+    {'value': 'active', 'label': 'Aktif'}, // TODO: i18n
+    {'value': 'inactive', 'label': 'Pasif'}, // TODO: i18n
   ];
 
   @override
@@ -52,7 +54,7 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        AppToast.error(context, 'Çalışanlar yüklenirken hata oluştu');
+        AppToast.error(context, t('common.error'));
       }
     }
   }
@@ -69,19 +71,18 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
   Future<void> _toggleStatus(Map<String, dynamic> employee) async {
     try {
       await _hrmService.toggleEmployeeStatus(employee['id']);
-      AppToast.success(context, 'Durum güncellendi');
+      AppToast.success(context, t('common.saved'));
       _loadEmployees();
     } catch (e) {
-      AppToast.error(context, 'Durum güncellenemedi');
+      AppToast.error(context, t('common.error'));
     }
   }
 
   Future<void> _deleteEmployee(Map<String, dynamic> employee) async {
     final confirmed = await AppConfirmationDialog.showDelete(
-      
       context: context,
-      title: 'Çalışanı Sil',
-      message: 'Bu çalışanı silmek istediğinizden emin misiniz?',
+      title: t('hrm.title'), // TODO: i18n delete_employee key
+      message: 'Bu çalışanı silmek istediğinizden emin misiniz?', // TODO: i18n
       itemName: '${employee['firstName']} ${employee['lastName']}',
     );
 
@@ -89,10 +90,10 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
 
     try {
       await _hrmService.deleteEmployee(employee['id']);
-      AppToast.success(context, 'Çalışan silindi');
+      AppToast.success(context, t('common.saved'));
       _loadEmployees();
     } catch (e) {
-      AppToast.error(context, 'Çalışan silinemedi');
+      AppToast.error(context, t('common.error'));
     }
   }
 
@@ -102,7 +103,7 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
 
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Çalışanlar',
+        title: t('hrm.employees'),
         actions: [
           IconButton(
             onPressed: _loadEmployees,
@@ -123,10 +124,10 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
                 // Employee List
                 Expanded(
                   child: _employees.isEmpty
-                      ? const AppEmptyState(
+                      ? AppEmptyState(
                           icon: Icons.people_outline,
-                          title: 'Çalışan Bulunamadı',
-                          actionText: 'Henüz hiç çalışan kaydı yok',
+                          title: t('hrm.employees'), // TODO: i18n no_employees key
+                          actionText: 'Henüz hiç çalışan kaydı yok', // TODO: i18n
                         )
                       : ListView.separated(
                           padding: const EdgeInsets.all(16),
@@ -145,7 +146,7 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
         
         onPressed: () => context.go('/hrm/employees/add'),
         icon: const Icon(Icons.person_add),
-        label: const Text('Yeni Çalışan'),
+        label: Text(t('hrm.add_employee')),
         backgroundColor: AppColors.primary,
       ),
     );
@@ -161,11 +162,11 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
       color: Colors.white,
       child: Row(
         children: [
-          _buildStatCard('👥 Toplam', total.toString(), 'Çalışan', AppColors.primary),
+          _buildStatCard('👥 Toplam', total.toString(), t('hrm.employees'), AppColors.primary), // TODO: i18n total key
           const SizedBox(width: 12),
-          _buildStatCard('✅ Aktif', active.toString(), 'Çalışan', AppColors.success),
+          _buildStatCard('✅ Aktif', active.toString(), t('hrm.employees'), AppColors.success), // TODO: i18n active key
           const SizedBox(width: 12),
-          _buildStatCard('⏸️ Pasif', inactive.toString(), 'Çalışan', AppColors.warning),
+          _buildStatCard('⏸️ Pasif', inactive.toString(), t('hrm.employees'), AppColors.warning), // TODO: i18n inactive key
         ],
       ),
     );
@@ -214,7 +215,7 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
               _loadEmployees();
             },
             decoration: InputDecoration(
-              hintText: 'Çalışan ara...',
+              hintText: t('common.search'),
               prefixIcon: const Icon(Icons.search),
               filled: true,
               fillColor: AppColors.bgLight,
@@ -326,7 +327,7 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
                           ),
                         ),
                         AppBadge(
-                          text: isActive ? 'Aktif' : 'Pasif',
+                          text: isActive ? 'Aktif' : 'Pasif', // TODO: i18n active/inactive keys
                           variant: isActive ? BadgeVariant.success : BadgeVariant.warning,
                         ),
                       ],
@@ -394,12 +395,12 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
                       color: isActive ? AppColors.warning : AppColors.success,
                     ),
                     onPressed: () => _toggleStatus(employee),
-                    tooltip: isActive ? 'Pasif Yap' : 'Aktif Yap',
+                    tooltip: isActive ? 'Pasif Yap' : 'Aktif Yap', // TODO: i18n
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete_outline, color: AppColors.danger),
                     onPressed: () => _deleteEmployee(employee),
-                    tooltip: 'Sil',
+                    tooltip: t('common.delete'),
                   ),
                 ],
               ),

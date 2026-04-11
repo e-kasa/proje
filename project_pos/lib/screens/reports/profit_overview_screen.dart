@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
+import '../../core/utils/i18n_helper.dart';
 
 class ProfitOverviewScreen extends ConsumerStatefulWidget {
   const ProfitOverviewScreen({super.key});
@@ -15,6 +16,8 @@ class ProfitOverviewScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   DateTime _startDate = DateTime.now().subtract(const Duration(days: 180));
   DateTime _endDate = DateTime.now();
 
@@ -42,7 +45,7 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
         endDate: _endDate.toIso8601String(),
       );
 
-      if (result == null) throw Exception('Veri bulunamadi');
+      if (result == null) throw Exception(t('common.no_data'));
 
       setState(() {
         _data = result;
@@ -55,7 +58,7 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
       });
 
       if (mounted) {
-        AppToast.error(context, 'Veri yuklenemedi');
+        AppToast.error(context, t('common.error'));
       }
     }
   }
@@ -85,11 +88,11 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
 
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: 'Kar/Zarar Ozeti',
+        title: t('reports.profit_overview'),
         actions: [
           IconButton(
             icon: const Icon(Icons.date_range),
-            tooltip: 'Tarih Araligi Sec',
+            tooltip: t('reports.date_range'),
             onPressed: _pickDateRange,
           ),
           IconButton(
@@ -101,7 +104,7 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _data == null
-          ? AppEmptyState.noData(description: 'Veri bulunamadi')
+          ? AppEmptyState.noData(description: t('common.no_data'))
           : RefreshIndicator(
         onRefresh: _loadData,
         child: _buildContent(),
@@ -149,7 +152,7 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
           children: [
             Expanded(
               child: _buildTopCard(
-                'Toplam Gelir',
+                t('finance.income'),
                 _currencyFormat.format(totalRevenue),
                 Icons.trending_up,
                 AppColors.success,
@@ -159,7 +162,7 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: _buildTopCard(
-                'Toplam Gider',
+                t('finance.expenses'),
                 _currencyFormat.format(totalCost),
                 Icons.trending_down,
                 AppColors.danger,
@@ -169,7 +172,7 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: _buildTopCard(
-                'Net Kar',
+                t('reports.net_profit'), // TODO: i18n key: reports.net_profit
                 _currencyFormat.format(profit),
                 isPositive ? Icons.thumb_up : Icons.thumb_down,
                 AppColors.primary,
@@ -200,10 +203,10 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
                 ),
               ),
               const SizedBox(width: 14),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Kar Marji',
-                  style: TextStyle(
+                  t('reports.profit_margin'), // TODO: i18n key: reports.profit_margin
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textPrimary,

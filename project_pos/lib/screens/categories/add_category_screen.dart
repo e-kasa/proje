@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/service_locator.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 /// Yeni kategori ekleme / mevcut kategori düzenleme ekranı.
 /// Backend API ile çalışır (SQLite yok).
@@ -20,6 +21,8 @@ class AddCategoryScreen extends ConsumerStatefulWidget {
 }
 
 class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
+  String Function(String) get t => i18nOf(ref);
+
   final _formKey = GlobalKey<FormState>();
 
   late TextEditingController _nameController;
@@ -128,14 +131,12 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
       }
 
       if (mounted) {
-        AppToast.success(context, editId != null
-            ? 'Kategori güncellendi'
-            : 'Kategori oluşturuldu');
+        AppToast.success(context, t('common.saved'));
         Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
-        AppToast.error(context, 'Hata: $e');
+        AppToast.error(context, '${t('common.error')}: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -155,7 +156,7 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
 
     return AppScaffold(
       appBar: AppAppBar.primary(
-        title: isEdit ? 'Kategori Düzenle' : 'Yeni Kategori',
+        title: isEdit ? t('categories.edit') : t('categories.add'),
         actions: [
           if (_isLoading)
             const Center(
@@ -178,26 +179,26 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
           children: [
             // ── Temel Bilgiler ──────────────────────────────────────
             _buildCard(
-              title: 'Temel Bilgiler',
+              title: 'Temel Bilgiler', // TODO: i18n
               icon: Icons.info_outline,
               children: [
                 TextFormField(
                   controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Kategori Adı *',
-                    hintText: 'Örn: Elektronik, Giyim',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: '${t('categories.title')} *',
+                    hintText: 'Örn: Elektronik, Giyim', // TODO: i18n
+                    border: const OutlineInputBorder(),
                   ),
                   validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Kategori adı zorunludur' : null,
+                      (v == null || v.trim().isEmpty) ? t('categories.title') : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Açıklama (Opsiyonel)',
-                    hintText: 'Kategori açıklaması',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: 'Açıklama (Opsiyonel)', // TODO: i18n
+                    hintText: 'Kategori açıklaması', // TODO: i18n
+                    border: const OutlineInputBorder(),
                   ),
                   maxLines: 3,
                 ),
@@ -208,7 +209,7 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
 
             // ── İkon Seçimi ──────────────────────────────────────────
             _buildCard(
-              title: 'İkon Seçimi',
+              title: 'İkon Seçimi', // TODO: i18n
               icon: Icons.widgets_outlined,
               children: [
                 Wrap(
@@ -262,7 +263,7 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
 
             // ── Gelişmiş Ayarlar ─────────────────────────────────────
             _buildCard(
-              title: 'Gelişmiş Ayarlar',
+              title: 'Gelişmiş Ayarlar', // TODO: i18n
               icon: Icons.settings_outlined,
               children: [
                 // Üst Kategori seçimi
@@ -275,10 +276,10 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
                       )
                     : DropdownButtonFormField<String?>(
                         value: _parentId,
-                        decoration: const InputDecoration(
-                          labelText: 'Üst Kategori (Opsiyonel)',
-                          hintText: 'Seçin — boş bırakırsanız kök kategori olur',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: 'Üst Kategori (Opsiyonel)', // TODO: i18n
+                          hintText: 'Seçin — boş bırakırsanız kök kategori olur', // TODO: i18n
+                          border: const OutlineInputBorder(),
                         ),
                         items: [
                           const DropdownMenuItem<String?>(
@@ -304,10 +305,10 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
                 TextFormField(
                   controller: _sortOrderController,
                   decoration: const InputDecoration(
-                    labelText: 'Sıra Numarası',
+                    labelText: 'Sıra Numarası', // TODO: i18n
                     hintText: '0',
                     border: OutlineInputBorder(),
-                    helperText: 'Düşük numara önce gösterilir',
+                    helperText: 'Düşük numara önce gösterilir', // TODO: i18n
                   ),
                   keyboardType: TextInputType.number,
                 ),
@@ -316,9 +317,9 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
 
                 // Durum toggle
                 SwitchListTile(
-                  title: const Text('Kategori Durumu'),
+                  title: const Text('Kategori Durumu'), // TODO: i18n
                   subtitle: Text(
-                    _isActive ? 'Aktif — Ürün aramalarında görünür' : 'Pasif — Gizli',
+                    _isActive ? t('common.active') : t('common.passive'),
                     style: TextStyle(
                       color: _isActive ? AppColors.success : AppColors.danger,
                       fontSize: 12,
@@ -343,7 +344,7 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
             SizedBox(
               height: 50,
               child: AppButton.primary(
-                text: isEdit ? 'Güncelle' : 'Oluştur',
+                text: isEdit ? t('common.edit') : t('common.save'),
                 onPressed: _isLoading ? null : _saveCategory,
                 isLoading: _isLoading,
                 fullWidth: true,

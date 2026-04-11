@@ -1,9 +1,11 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/utils/i18n_helper.dart';
 import '../../core/widgets/widgets.dart';
 
 /// EKRAN 2: Önizleme
 /// Kullanıcı yüklenen dosyanın ilk 5-10 satırını görür ve doğrular
-class FilePreviewScreen extends StatefulWidget {
+class FilePreviewScreen extends ConsumerStatefulWidget {
   final String fileName;
   final List<Map<String, dynamic>> previewRows;
 
@@ -14,10 +16,11 @@ class FilePreviewScreen extends StatefulWidget {
   });
 
   @override
-  State<FilePreviewScreen> createState() => _FilePreviewScreenState();
+  ConsumerState<FilePreviewScreen> createState() => _FilePreviewScreenState();
 }
 
-class _FilePreviewScreenState extends State<FilePreviewScreen> {
+class _FilePreviewScreenState extends ConsumerState<FilePreviewScreen> {
+  String Function(String) get t => i18nOf(ref);
   bool _isProcessing = false;
 
   Future<void> _confirmAndProceed() async {
@@ -56,7 +59,7 @@ class _FilePreviewScreenState extends State<FilePreviewScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       appBar: AppAppBar.standard(
-        title: '👁️ Dosya Önizleme',
+        title: 'Dosya Önizleme', // TODO: i18n supplier_upload.file_preview
         elevation: 0,
       ),
       body: Column(
@@ -145,33 +148,33 @@ class _FilePreviewScreenState extends State<FilePreviewScreen> {
                       ),
                       DataColumn(
                         label: Text(
-                          'Ürün Adı',
+                          'Ürün Adı', // TODO: i18n supplier_upload.col_product_name
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                       DataColumn(
                         label: Text(
-                          'Barkod',
+                          'Barkod', // TODO: i18n supplier_upload.col_barcode
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                       DataColumn(
                         label: Text(
-                          'Adet',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        numeric: true,
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Alış ₺',
+                          'Adet', // TODO: i18n supplier_upload.col_quantity
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         numeric: true,
                       ),
                       DataColumn(
                         label: Text(
-                          'Satış ₺',
+                          'Alış ₺', // TODO: i18n supplier_upload.col_buy_price
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        numeric: true,
+                      ),
+                      DataColumn(
+                        label: Text(
+                          'Satış ₺', // TODO: i18n supplier_upload.col_sell_price
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         numeric: true,
@@ -231,7 +234,7 @@ class _FilePreviewScreenState extends State<FilePreviewScreen> {
                 OutlinedButton.icon(
                   onPressed: _isProcessing ? null : () => Navigator.pop(context),
                   icon: const Icon(Icons.arrow_back),
-                  label: const Text('Geri'),
+                  label: const Text('Geri'), // TODO: i18n common.back
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
@@ -240,7 +243,7 @@ class _FilePreviewScreenState extends State<FilePreviewScreen> {
                   ),
                 ),
                 AppButton.primary(
-                  text: _isProcessing ? 'İşleniyor...' : 'Doğru, Devam Et',
+                  text: _isProcessing ? 'İşleniyor...' : 'Doğru, Devam Et', // TODO: i18n supplier_upload.confirm_proceed / common.processing
                   icon: Icons.check,
                   onPressed: _isProcessing ? null : _confirmAndProceed,
                 ),

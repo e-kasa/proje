@@ -1,6 +1,7 @@
 package com.sedcore.sales.entity;
 
 import com.towpen.base.db.model.TOpenSimpleCompanyEntity;
+import com.sedcore.product.entity.ProductVariant;
 import jakarta.persistence.*;
 import lombok.*;
 

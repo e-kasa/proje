@@ -1,6 +1,9 @@
 package com.sedcore.product.model;
 
 import java.util.List;
+import com.sedcore.autoparts.model.OemNumberRequest;
+import com.sedcore.autoparts.model.CrossReferenceRequest;
+import com.sedcore.purchase.model.PurchaseRequest;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import com.sedcore.inventory.model.InitialStocksRequest;
 import java.util.Map;
 
 /**

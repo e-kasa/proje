@@ -5,6 +5,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.towpen.base.db.model.TOpenSimpleCompanyEntity;
+import com.sedcore.supplier.entity.Supplier;
+import com.sedcore.inventory.entity.StockMovement;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

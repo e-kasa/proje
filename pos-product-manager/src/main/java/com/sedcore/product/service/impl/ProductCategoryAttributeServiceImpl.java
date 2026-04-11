@@ -35,7 +35,7 @@ public class ProductCategoryAttributeServiceImpl
 
     @Override
     public Class<?> getDTOClassForService() {
-        return com.sedcore.model.ProductCategoryAttributeResponse.class;
+        return com.sedcore.product.model.ProductCategoryAttributeResponse.class;
     }
 
     @Override

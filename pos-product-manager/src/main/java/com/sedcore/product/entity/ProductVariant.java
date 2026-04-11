@@ -9,6 +9,10 @@ import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import com.sedcore.inventory.entity.StockMovement;
+import com.sedcore.autoparts.entity.OemNumber;
+import com.sedcore.autoparts.entity.CrossReference;
+import com.sedcore.autoparts.entity.VehicleCompatibility;
 
 @Entity
 @Table(name = "product_variants")

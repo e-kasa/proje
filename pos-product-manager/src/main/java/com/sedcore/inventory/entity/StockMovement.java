@@ -1,6 +1,9 @@
 package com.sedcore.inventory.entity;
 
 import com.sedcore.common.enums.StockMovementType;
+import com.sedcore.product.entity.ProductVariant;
+import com.sedcore.purchase.entity.Purchase;
+import com.sedcore.sales.entity.Sale;
 import com.towpen.base.db.model.TOpenSimpleCompanyEntity;
 
 import jakarta.persistence.Column;

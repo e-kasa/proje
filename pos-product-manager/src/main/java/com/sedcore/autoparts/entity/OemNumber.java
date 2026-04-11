@@ -3,6 +3,7 @@ package com.sedcore.autoparts.entity;
 import com.towpen.base.db.model.TOpenSimpleCompanyEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import com.sedcore.product.entity.ProductVariant;
 
 @Entity
 @Table(name = "oem_numbers", indexes = {

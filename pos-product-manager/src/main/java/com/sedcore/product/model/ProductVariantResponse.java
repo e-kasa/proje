@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.List;
+import com.sedcore.inventory.model.InventoryResponse;
 import java.util.Map;
 
 /**

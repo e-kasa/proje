@@ -4,6 +4,7 @@ import com.sedcore.product.entity.Product;
 import com.sedcore.product.entity.ProductVariant;
 import com.sedcore.product.entity.Barcode;
 import com.sedcore.product.entity.Brand;
+import com.sedcore.product.entity.VariantPricing;
 import com.sedcore.autoparts.entity.CrossReference;
 import com.sedcore.autoparts.entity.OemNumber;
 import com.sedcore.autoparts.entity.Vehicle;

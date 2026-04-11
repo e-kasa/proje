@@ -1,6 +1,11 @@
 package com.sedcore.finance.entity;
 
 import com.sedcore.common.enums.TransactionType;
+import com.sedcore.customer.entity.Customer;
+import com.sedcore.supplier.entity.Supplier;
+import com.sedcore.sales.entity.Sale;
+import com.sedcore.purchase.entity.Purchase;
+import com.sedcore.finance.entity.Payment;
 import com.towpen.base.db.model.TOpenSimpleCompanyEntity;
 import jakarta.persistence.*;
 import lombok.*;

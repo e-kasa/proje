@@ -26,7 +26,7 @@ import java.util.Optional;
 @Slf4j
 @Transactional(readOnly = true)
 public class InventoryService extends BaseDbServiceImp<InventoryRepository, InventoryView>
-        implements com.sedcore.service.InventoryService {
+        implements com.sedcore.inventory.service.InventoryService {
 
     @Override
     public Class<?> getDTOClassForService() {

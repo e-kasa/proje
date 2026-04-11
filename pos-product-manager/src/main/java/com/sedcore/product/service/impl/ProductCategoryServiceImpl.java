@@ -21,7 +21,7 @@ public class ProductCategoryServiceImpl extends BaseDbServiceImp<ProductCategory
 
     @Override
     public Class<?> getDTOClassForService() {
-        return com.sedcore.model.ProductCategoryResponse.class;
+        return com.sedcore.product.model.ProductCategoryResponse.class;
     }
 
     @Override

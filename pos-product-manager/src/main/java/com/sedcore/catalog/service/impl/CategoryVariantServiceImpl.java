@@ -49,7 +49,7 @@ public class CategoryVariantServiceImpl extends BaseDbServiceImp<CategoryVariant
             throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
 
-        Optional<com.sedcore.entity.Category> category = Optional.ofNullable(categoryService.findById(categoryId).orElseThrow(
+        Optional<com.sedcore.catalog.entity.Category> category = Optional.ofNullable(categoryService.findById(categoryId).orElseThrow(
             () -> new RuntimeException("Üst kategori bulunamadı: " )
         ));
 

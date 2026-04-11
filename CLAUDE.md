@@ -4,6 +4,18 @@ Bu dosya tüm alt projeleri kapsar. **Yeni oturumda ilk oku.**
 
 ---
 
+# 0. ÇALIŞMA TARZI — ZORUNLU
+
+**Onay isteme, doğrudan yap.**
+
+- Dosya taşıma, yeniden adlandırma, silme, refactoring gibi işlemlerde onay sorma.
+- Kodu yaz, değişikliği uygula, sonucu raporla.
+- "Yapalım mı?", "Emin misiniz?", "Devam edeyim mi?" gibi sorular sorma.
+- Yıkıcı ve geri alınamaz işlemlerde bile (branch silme, force push, reset --hard gibi) önce niyetini açıkça belirt ve hemen uygula — sor değil.
+- Kullanıcı bir şey istedi → yap → sonucu bildir.
+
+---
+
 # 1. PROJE YAPISI
 
 ```

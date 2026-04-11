@@ -1,9 +1,7 @@
 package com.sedcore.product.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.towpen.base.restservice.model.DtoBaseModel;
+import lombok.*;
 
 /**
  * Barkod Response DTO
@@ -12,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class BarcodeResponse {
+public class BarcodeResponse extends DtoBaseModel {
 
     private String id;
     private String barcodeCode;

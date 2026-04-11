@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -31,7 +30,7 @@ public class UnitServiceImpl extends BaseDbServiceImp<UnitRepository, Unit> impl
     public List<UnitResponse> getActiveUnits() {
         return dao.findByIsActiveTrueOrderByNameAsc().stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -39,7 +38,7 @@ public class UnitServiceImpl extends BaseDbServiceImp<UnitRepository, Unit> impl
     public List<UnitResponse> getAllUnits() {
         return dao.findAllByOrderByNameAsc().stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -89,14 +88,6 @@ public class UnitServiceImpl extends BaseDbServiceImp<UnitRepository, Unit> impl
     }
 
     private UnitResponse toResponse(Unit unit) {
-        return UnitResponse.builder()
-                .id(unit.getId())
-                .companyCode(unit.getCompanyCode())
-                .code(unit.getCode())
-                .name(unit.getName())
-                .symbol(unit.getSymbol())
-                .type(unit.getType())
-                .isActive(unit.getIsActive())
-                .build();
+        return toDTO(unit);
     }
 }

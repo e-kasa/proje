@@ -5,11 +5,19 @@ import com.towpen.base.db.repository.BaseDaoRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UserDefRepository extends BaseDaoRepository<UserDef> {
-    @Query("select n from UserDef n where n.userName =:userName")
+
+    @Query("SELECT u FROM UserDef u WHERE u.userName = :userName")
     Optional<UserDef> findByUserDefName(@Param("userName") String userName);
+
+    /** Şirketin tüm kullanıcılarını isme göre sıralı listele */
+    List<UserDef> findAllByCompanyCodeOrderByUserDisplayNameAsc(String companyCode);
+
+    /** Şirketteki aktif kullanıcılar */
+    List<UserDef> findAllByCompanyCodeAndIsActiveTrueOrderByUserDisplayNameAsc(String companyCode);
 
     /**
      * Hibernate company filter'ı bypass ederek kullanıcı adını tüm şirketlerde arar.

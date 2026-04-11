@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -31,7 +30,7 @@ public class BrandServiceImpl extends BaseDbServiceImp<BrandRepository, Brand> i
     public List<BrandResponse> getActiveBrands() {
         return dao.findByIsActiveTrueOrderByNameAsc().stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -39,7 +38,7 @@ public class BrandServiceImpl extends BaseDbServiceImp<BrandRepository, Brand> i
     public List<BrandResponse> getAllBrands() {
         return dao.findAllByOrderByNameAsc().stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -87,13 +86,6 @@ public class BrandServiceImpl extends BaseDbServiceImp<BrandRepository, Brand> i
     }
 
     private BrandResponse toResponse(Brand brand) {
-        return BrandResponse.builder()
-                .id(brand.getId())
-                .companyCode(brand.getCompanyCode())
-                .name(brand.getName())
-                .code(brand.getCode())
-                .description(brand.getDescription())
-                .isActive(brand.getIsActive())
-                .build();
+        return toDTO(brand);
     }
 }

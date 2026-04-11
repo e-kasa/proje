@@ -18,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -38,7 +37,7 @@ public class CrossReferenceServiceImpl extends BaseDbServiceImp<CrossReferenceRe
     public List<CrossReferenceResponse> getByVariantId(String variantId) {
         return dao.findByVariantIdOrderByCrossRefBrandAsc(variantId).stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -87,16 +86,13 @@ public class CrossReferenceServiceImpl extends BaseDbServiceImp<CrossReferenceRe
     public List<CrossReferenceResponse> searchByCrossRefNumber(String q) {
         return dao.searchByCrossRefNumber(q).stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private CrossReferenceResponse toResponse(CrossReference cr) {
-        return CrossReferenceResponse.builder()
-                .id(cr.getId())
-                .variantId(cr.getVariant().getId())
-                .crossRefNumber(cr.getCrossRefNumber())
-                .crossRefBrand(cr.getCrossRefBrand())
-                .notes(cr.getNotes())
-                .build();
+        CrossReferenceResponse dto = toDTO(cr);
+        // variantId FK ilişkisinden gelir — BeanUtils doğrudan kopyalamaz
+        dto.setVariantId(cr.getVariant().getId());
+        return dto;
     }
 }

@@ -18,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -38,7 +37,7 @@ public class OemNumberServiceImpl extends BaseDbServiceImp<OemNumberRepository, 
     public List<OemNumberResponse> getByVariantId(String variantId) {
         return dao.findByVariantIdOrderByIsPrimaryDesc(variantId).stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -87,16 +86,13 @@ public class OemNumberServiceImpl extends BaseDbServiceImp<OemNumberRepository, 
     public List<OemNumberResponse> searchByOemNumber(String q) {
         return dao.searchByOemNumber(q).stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private OemNumberResponse toResponse(OemNumber oem) {
-        return OemNumberResponse.builder()
-                .id(oem.getId())
-                .variantId(oem.getVariant().getId())
-                .oemNumber(oem.getOemNumber())
-                .manufacturer(oem.getManufacturer())
-                .isPrimary(oem.getIsPrimary())
-                .build();
+        OemNumberResponse dto = toDTO(oem);
+        // variantId FK ilişkisinden gelir — BeanUtils doğrudan kopyalamaz
+        dto.setVariantId(oem.getVariant().getId());
+        return dto;
     }
 }

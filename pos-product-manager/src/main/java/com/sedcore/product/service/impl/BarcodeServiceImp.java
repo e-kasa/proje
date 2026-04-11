@@ -23,25 +23,17 @@ public class BarcodeServiceImp extends BaseDbServiceImp<BarcodeRepository, Barco
 
     /**
      * Barcode Entity → BarcodeResponse mapping
+     * barcodeType enum→String dönüşümü toDTO() sonrası manuel eklenir.
      */
     public BarcodeResponse mapToResponse(Barcode barcode) {
-        return BarcodeResponse.builder()
-                .id(barcode.getId())
-                .barcodeCode(barcode.getBarcodeCode())
-                .barcodeType(barcode.getBarcodeType() != null ? barcode.getBarcodeType().name() : null)
-                .isPrimary(barcode.getIsPrimary())
-                .isActive(barcode.getIsActive())
-                .usageCount(barcode.getUsageCount())
-                .build();
+        BarcodeResponse dto = toDTO(barcode);
+        // BarcodeType enum → String (BeanUtils enum→String kopyalamaz)
+        dto.setBarcodeType(barcode.getBarcodeType() != null ? barcode.getBarcodeType().name() : null);
+        return dto;
     }
 
-    /**
-     * Barkod kodu ile barkod bul
-
     @Transactional(readOnly = true)
-    public Optional<BarcodeResponse> findByBarcodeCode(String code) {
-       dao.findByBarcodeCode(code)
-                .map(this::mapToResponse);
-       return to
-    } */
+    public java.util.Optional<BarcodeResponse> findByBarcodeCode(String code) {
+        return dao.findByBarcodeCode(code).map(this::mapToResponse);
+    }
 }

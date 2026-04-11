@@ -12,7 +12,7 @@ import java.util.Optional;
 public class UserDefAccessServiceImpl extends BaseDbServiceImp<UserDefAccessRepository,UserDefAccess> implements IUserDefAccessService {
     @Override
     public Optional<UserDefAccess> findByUserDef(UserDef userDef) {
-        return Optional.empty();
+        return dao.findByUserDef(userDef);
     }
 
     @Override

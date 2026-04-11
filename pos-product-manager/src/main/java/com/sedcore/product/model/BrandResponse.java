@@ -1,12 +1,13 @@
 package com.sedcore.product.model;
 
+import com.towpen.base.restservice.model.DtoBaseModel;
 import lombok.*;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class BrandResponse {
+public class BrandResponse extends DtoBaseModel {
 
     private String id;
     private String companyCode;

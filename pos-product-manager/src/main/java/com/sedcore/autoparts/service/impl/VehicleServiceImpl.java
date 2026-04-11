@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -31,7 +30,7 @@ public class VehicleServiceImpl extends BaseDbServiceImp<VehicleRepository, Vehi
     public List<VehicleResponse> getActiveVehicles() {
         return dao.findByIsActiveTrueOrderByMakeAscModelAsc().stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -39,7 +38,7 @@ public class VehicleServiceImpl extends BaseDbServiceImp<VehicleRepository, Vehi
     public List<VehicleResponse> getAllVehicles() {
         return dao.findAllByOrderByMakeAscModelAsc().stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -104,22 +103,10 @@ public class VehicleServiceImpl extends BaseDbServiceImp<VehicleRepository, Vehi
     public List<VehicleResponse> searchVehicles(String make, String model, Integer year) {
         return dao.searchVehicles(make, model, year).stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private VehicleResponse toResponse(Vehicle vehicle) {
-        return VehicleResponse.builder()
-                .id(vehicle.getId())
-                .companyCode(vehicle.getCompanyCode())
-                .make(vehicle.getMake())
-                .model(vehicle.getModel())
-                .yearStart(vehicle.getYearStart())
-                .yearEnd(vehicle.getYearEnd())
-                .engineType(vehicle.getEngineType())
-                .fuelType(vehicle.getFuelType())
-                .bodyType(vehicle.getBodyType())
-                .platformCode(vehicle.getPlatformCode())
-                .isActive(vehicle.getIsActive())
-                .build();
+        return toDTO(vehicle);
     }
 }

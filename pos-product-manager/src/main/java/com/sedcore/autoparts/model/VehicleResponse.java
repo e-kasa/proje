@@ -1,12 +1,13 @@
 package com.sedcore.autoparts.model;
 
+import com.towpen.base.restservice.model.DtoBaseModel;
 import lombok.*;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class VehicleResponse {
+public class VehicleResponse extends DtoBaseModel {
 
     private String id;
     private String companyCode;

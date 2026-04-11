@@ -51,7 +51,8 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
           _loading = false;
         });
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('BatchHeaderForm veri yüklenemedi: $e');
       if (mounted) setState(() => _loading = false);
     }
   }

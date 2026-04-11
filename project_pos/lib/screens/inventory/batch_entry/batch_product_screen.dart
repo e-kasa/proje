@@ -12,6 +12,9 @@ import 'providers/batch_entry_provider.dart';
 import 'models/batch_entry_models.dart';
 import 'widgets/batch_header_form.dart';
 
+// KDV seçenekleri
+const _vatOptions = [0.0, 1.0, 8.0, 10.0, 18.0, 20.0];
+
 class BatchProductScreen extends ConsumerStatefulWidget {
   const BatchProductScreen({super.key});
 
@@ -552,7 +555,6 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
   late final TextEditingController _oemCtrl;
   late final TextEditingController _purchaseCtrl;
   late final TextEditingController _saleCtrl;
-  late final TextEditingController _categoryCtrl;
   late final TextEditingController _brandCtrl;
   late final TextEditingController _shelfCtrl;
 
@@ -567,7 +569,6 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
         text: r.purchasePrice > 0 ? r.purchasePrice.toString() : '');
     _saleCtrl = TextEditingController(
         text: r.salePrice > 0 ? r.salePrice.toString() : '');
-    _categoryCtrl = TextEditingController(text: r.categoryName ?? '');
     _brandCtrl = TextEditingController(text: r.brandName ?? '');
     _shelfCtrl = TextEditingController(text: r.shelfLocation ?? '');
   }
@@ -576,7 +577,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
   void dispose() {
     for (final c in [
       _nameCtrl, _barcodeCtrl, _oemCtrl, _purchaseCtrl,
-      _saleCtrl, _categoryCtrl, _brandCtrl, _shelfCtrl
+      _saleCtrl, _brandCtrl, _shelfCtrl
     ]) {
       c.dispose();
     }
@@ -590,10 +591,13 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
     double? purchasePrice,
     double? salePrice,
     int? quantity,
+    String? categoryId,
     String? categoryName,
     String? brandName,
     String? shelfLocation,
     bool? isExpanded,
+    double? vatRate,
+    bool? vatIncluded,
   }) {
     ref.read(batchEntryProvider.notifier).updateRow(
           widget.row.id,
@@ -603,10 +607,13 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
           purchasePrice: purchasePrice,
           salePrice: salePrice,
           quantity: quantity,
+          categoryId: categoryId,
           categoryName: categoryName,
           brandName: brandName,
           shelfLocation: shelfLocation,
           isExpanded: isExpanded,
+          vatRate: vatRate,
+          vatIncluded: vatIncluded,
         );
   }
 
@@ -867,6 +874,27 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                     ),
                   ]),
                   const SizedBox(height: 10),
+                  // Row 2b: KDV oranı + KDV dahil mi
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _VatDropdown(
+                          label: t('batch.vat'),
+                          value: widget.row.vatRate,
+                          onChanged: (v) => _update(vatRate: v),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _VatIncludedSwitch(
+                          label: t('batch.vat_included'),
+                          value: widget.row.vatIncluded,
+                          onChanged: (v) => _update(vatIncluded: v),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
                   // Row 3: OEM (sektöre göre) + Raf
                   _FormRow(children: [
                     if (widget.cfg.fields.showOem)
@@ -895,15 +923,11 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                   const SizedBox(height: 10),
                   // Row 4: Kategori + Marka
                   _FormRow(children: [
-                    _Field(
-                      label: widget.cfg.labels.categoryName,
-                      ctrl: _categoryCtrl,
-                      onChanged: (v) => _update(categoryName: v),
-                      hint: widget.cfg.type == SectorType.autoParts
-                          ? t('batch.hint_auto_category')
-                          : widget.cfg.type == SectorType.footwear
-                              ? t('batch.hint_footwear_category')
-                              : t('batch.hint_category'),
+                    _CategoryDropdown(
+                      label: '${widget.cfg.labels.categoryName} *',
+                      selectedId: widget.row.categoryId,
+                      onSelected: (id, name) =>
+                          _update(categoryId: id, categoryName: name),
                     ),
                     if (widget.cfg.fields.showBrand)
                       _Field(
@@ -918,12 +942,14 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                     else
                       const SizedBox.shrink(),
                   ]),
-                  // Row 5: Sektöre özel ekstra alanlar
-                  if (widget.cfg.fields.showVariantSize ||
-                      widget.cfg.fields.showVariantColor ||
-                      widget.cfg.fields.showWarranty) ...[
+                  // Row 5: Varyant Özellikleri (yeni ürünler için)
+                  if (row.isNew) ...[
                     const SizedBox(height: 10),
-                    _SectorExtraFields(cfg: widget.cfg, row: widget.row, onUpdate: _update, t: t),
+                    _BatchAttributesSection(
+                      attributes: row.attributes,
+                      cfg: widget.cfg,
+                      onChanged: (attrs) => _update(attributes: attrs),
+                    ),
                   ],
                   const SizedBox(height: 14),
                   // Actions
@@ -1136,6 +1162,223 @@ class _Field extends StatelessWidget {
                     color: AppColors.primary, width: 1.5),
               ),
             ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── CATEGORY DROPDOWN ─────────────────────────────────────────────────────────
+class _CategoryDropdown extends ConsumerWidget {
+  final String label;
+  final String? selectedId;
+  final void Function(String id, String name) onSelected;
+
+  const _CategoryDropdown({
+    required this.label,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncCats = ref.watch(batchCategoriesProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        asyncCats.when(
+          loading: () => const SizedBox(
+            height: 40,
+            child: LinearProgressIndicator(minHeight: 2),
+          ),
+          error: (_, __) => const SizedBox(height: 40),
+          data: (cats) {
+            final safeValue = cats.any(
+                    (c) => c['id']?.toString() == selectedId)
+                ? selectedId
+                : null;
+            return SizedBox(
+              height: 40,
+              child: DropdownButtonFormField<String>(
+                value: safeValue,
+                isExpanded: true,
+                hint: const Text(
+                  '— Seçin —',
+                  style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                ),
+                style: const TextStyle(
+                    fontSize: 13, color: AppColors.textPrimary),
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 8),
+                  filled: true,
+                  fillColor: const Color(0xFFF7F8FC),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(9),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(9),
+                    borderSide: const BorderSide(color: Color(0xFFE8E9F0)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(9),
+                    borderSide: const BorderSide(
+                        color: AppColors.primary, width: 1.5),
+                  ),
+                ),
+                items: cats.map((c) {
+                  final id = c['id']?.toString() ?? '';
+                  final name = c['name']?.toString() ?? '';
+                  return DropdownMenuItem<String>(
+                    value: id,
+                    child: Text(name, overflow: TextOverflow.ellipsis),
+                  );
+                }).toList(),
+                onChanged: (id) {
+                  if (id == null) return;
+                  final cat = cats.firstWhere(
+                      (c) => c['id']?.toString() == id,
+                      orElse: () => {});
+                  onSelected(id, cat['name']?.toString() ?? '');
+                },
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+// ── VAT DROPDOWN ──────────────────────────────────────────────────────────────
+class _VatDropdown extends StatelessWidget {
+  final String label;
+  final double value;
+  final ValueChanged<double> onChanged;
+
+  const _VatDropdown({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final safeValue =
+        _vatOptions.contains(value) ? value : _vatOptions.last;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$label %',
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        SizedBox(
+          height: 40,
+          child: DropdownButtonFormField<double>(
+            value: safeValue,
+            isExpanded: true,
+            style: const TextStyle(
+                fontSize: 13, color: AppColors.textPrimary),
+            decoration: InputDecoration(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              filled: true,
+              fillColor: const Color(0xFFF7F8FC),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(9),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(9),
+                borderSide: const BorderSide(color: Color(0xFFE8E9F0)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(9),
+                borderSide: const BorderSide(
+                    color: AppColors.primary, width: 1.5),
+              ),
+            ),
+            items: _vatOptions
+                .map((v) => DropdownMenuItem<double>(
+                      value: v,
+                      child: Text('%${v.toInt()}'),
+                    ))
+                .toList(),
+            onChanged: (v) {
+              if (v != null) onChanged(v);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── VAT INCLUDED SWITCH ────────────────────────────────────────────────────────
+class _VatIncludedSwitch extends StatelessWidget {
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _VatIncludedSwitch({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        SizedBox(
+          height: 40,
+          child: Row(
+            children: [
+              Switch.adaptive(
+                value: value,
+                onChanged: onChanged,
+                activeThumbColor: Colors.white,
+                activeTrackColor: AppColors.primary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                value ? 'Dahil' : 'Hariç',
+                style: TextStyle(
+                  fontSize: 12,
+                  color:
+                      value ? AppColors.success : AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -1516,6 +1759,383 @@ class _ResultStat extends StatelessWidget {
                 fontSize: 11, color: AppColors.textMuted)),
       ],
     );
+  }
+}
+
+// ── BATCH ATTRIBUTES SECTION ─────────────────────────────────────────────────
+
+class _AttrPreset {
+  final String name;
+  final IconData icon;
+  const _AttrPreset(this.name, this.icon);
+}
+
+class _BatchAttributesSection extends StatelessWidget {
+  final Map<String, String> attributes;
+  final SectorConfig cfg;
+  final void Function(Map<String, String>) onChanged;
+
+  const _BatchAttributesSection({
+    required this.attributes,
+    required this.cfg,
+    required this.onChanged,
+  });
+
+  static const _attrColors = [
+    Color(0xFF5C6BC0),
+    Color(0xFFEF5350),
+    Color(0xFF26A69A),
+    Color(0xFFFF7043),
+    Color(0xFF42A5F5),
+    Color(0xFFAB47BC),
+  ];
+
+  static const Map<SectorType, List<_AttrPreset>> _presets = {
+    SectorType.autoParts: [
+      _AttrPreset('Marka', Icons.business_rounded),
+      _AttrPreset('Model', Icons.category_rounded),
+      _AttrPreset('Araç Grubu', Icons.directions_car_rounded),
+      _AttrPreset('Renk', Icons.palette_rounded),
+    ],
+    SectorType.footwear: [
+      _AttrPreset('Renk', Icons.palette_rounded),
+      _AttrPreset('Numara', Icons.straighten_rounded),
+      _AttrPreset('Materyal', Icons.texture_rounded),
+      _AttrPreset('Sezon', Icons.sunny_rounded),
+    ],
+    SectorType.technology: [
+      _AttrPreset('Renk', Icons.palette_rounded),
+      _AttrPreset('RAM', Icons.memory_rounded),
+      _AttrPreset('Depolama', Icons.storage_rounded),
+      _AttrPreset('Garanti (ay)', Icons.verified_rounded),
+    ],
+    SectorType.general: [
+      _AttrPreset('Renk', Icons.palette_rounded),
+      _AttrPreset('Boyut', Icons.straighten_rounded),
+      _AttrPreset('Materyal', Icons.texture_rounded),
+      _AttrPreset('Ağırlık', Icons.scale_rounded),
+    ],
+  };
+
+  Color _colorForKey(String key) {
+    final keys = attributes.keys.toList();
+    final idx = keys.indexOf(key);
+    return _attrColors[(idx < 0 ? 0 : idx) % _attrColors.length];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final presets =
+        _presets[cfg.type] ?? _presets[SectorType.general]!;
+    final unusedPresets =
+        presets.where((p) => !attributes.containsKey(p.name)).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Row(
+          children: [
+            const Icon(Icons.tune_rounded,
+                size: 13, color: AppColors.primary),
+            const SizedBox(width: 6),
+            const Text(
+              'Varyant Özellikleri',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
+                letterSpacing: 0.3,
+              ),
+            ),
+            const Spacer(),
+            // Custom attribute button
+            GestureDetector(
+              onTap: () => _showAddDialog(context, null),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.25)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_rounded,
+                        size: 12, color: AppColors.primary),
+                    SizedBox(width: 4),
+                    Text(
+                      'Özel',
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+
+        // Existing attributes as chips
+        if (attributes.isNotEmpty) ...[
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: attributes.entries.mapIndexed((idx, e) {
+              final color = _attrColors[idx % _attrColors.length];
+              return Container(
+                padding: const EdgeInsets.fromLTRB(8, 4, 4, 4),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                      color: color.withValues(alpha: 0.35)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      e.key,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: color,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Text(' : ',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textMuted)),
+                    Text(
+                      e.value,
+                      style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: () {
+                        final newMap =
+                            Map<String, String>.from(attributes)
+                              ..remove(e.key);
+                        onChanged(newMap);
+                      },
+                      child: Icon(Icons.close_rounded,
+                          size: 13, color: color),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 8),
+        ],
+
+        // Preset suggestion chips
+        if (unusedPresets.isNotEmpty)
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: unusedPresets
+                .map((p) => GestureDetector(
+                      onTap: () => _showAddDialog(context, p),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0F2F8),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                              color: AppColors.border),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(p.icon,
+                                size: 12,
+                                color: AppColors.textMuted),
+                            const SizedBox(width: 5),
+                            Text(
+                              '+ ${p.name}',
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ))
+                .toList(),
+          ),
+      ],
+    );
+  }
+
+  void _showAddDialog(BuildContext context, _AttrPreset? preset) {
+    showDialog(
+      context: context,
+      builder: (_) => _AddAttributeDialog(
+        presetName: preset?.name,
+        presetIcon: preset?.icon,
+        existingKeys: attributes.keys.toSet(),
+        onAdd: (key, value) {
+          final newMap = Map<String, String>.from(attributes);
+          newMap[key] = value;
+          onChanged(newMap);
+        },
+      ),
+    );
+  }
+}
+
+// ── ADD ATTRIBUTE DIALOG ──────────────────────────────────────────────────────
+class _AddAttributeDialog extends StatefulWidget {
+  final String? presetName;
+  final IconData? presetIcon;
+  final Set<String> existingKeys;
+  final void Function(String key, String value) onAdd;
+
+  const _AddAttributeDialog({
+    required this.presetName,
+    required this.presetIcon,
+    required this.existingKeys,
+    required this.onAdd,
+  });
+
+  @override
+  State<_AddAttributeDialog> createState() =>
+      _AddAttributeDialogState();
+}
+
+class _AddAttributeDialogState extends State<_AddAttributeDialog> {
+  late final TextEditingController _keyCtrl;
+  late final TextEditingController _valueCtrl;
+  String? _keyError;
+
+  @override
+  void initState() {
+    super.initState();
+    _keyCtrl =
+        TextEditingController(text: widget.presetName ?? '');
+    _valueCtrl = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _keyCtrl.dispose();
+    _valueCtrl.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final key = _keyCtrl.text.trim();
+    final value = _valueCtrl.text.trim();
+    if (key.isEmpty) {
+      setState(() => _keyError = 'Özellik adı zorunludur');
+      return;
+    }
+    if (widget.existingKeys.contains(key)) {
+      setState(() => _keyError = '$key zaten eklenmiş');
+      return;
+    }
+    if (value.isEmpty) return;
+    widget.onAdd(key, value);
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20)),
+      title: Row(
+        children: [
+          Icon(widget.presetIcon ?? Icons.tune_rounded,
+              color: AppColors.primary, size: 22),
+          const SizedBox(width: 10),
+          const Text('Özellik Ekle',
+              style: TextStyle(fontSize: 16)),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _keyCtrl,
+            autofocus: widget.presetName == null,
+            readOnly: widget.presetName != null,
+            decoration: InputDecoration(
+              labelText: 'Özellik Adı',
+              hintText: 'ör: Renk, Beden, Malzeme',
+              errorText: _keyError,
+              border: const OutlineInputBorder(),
+              prefixIcon: Icon(widget.presetIcon ?? Icons.label_outline,
+                  size: 18),
+            ),
+            onChanged: (_) {
+              if (_keyError != null) {
+                setState(() => _keyError = null);
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _valueCtrl,
+            autofocus: widget.presetName != null,
+            decoration: InputDecoration(
+              labelText: 'Değer',
+              hintText: _valueHint,
+              border: const OutlineInputBorder(),
+              prefixIcon:
+                  const Icon(Icons.edit_rounded, size: 18),
+            ),
+            onSubmitted: (_) => _submit(),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('İptal'),
+        ),
+        ElevatedButton.icon(
+          onPressed: _submit,
+          icon: const Icon(Icons.check_rounded, size: 16),
+          label: const Text('Ekle'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String get _valueHint {
+    final key = (_keyCtrl.text.trim()).toLowerCase();
+    if (key.contains('renk') || key.contains('color')) {
+      return 'ör: Kırmızı, Mavi, Siyah';
+    }
+    if (key.contains('beden') || key.contains('numara') ||
+        key.contains('size')) {
+      return 'ör: S, M, L, XL veya 40, 41, 42';
+    }
+    if (key.contains('ram')) return 'ör: 8GB, 16GB';
+    if (key.contains('depolama') || key.contains('storage')) {
+      return 'ör: 256GB, 512GB';
+    }
+    if (key.contains('garanti')) return 'ör: 12, 24, 36';
+    return 'Değer girin';
   }
 }
 

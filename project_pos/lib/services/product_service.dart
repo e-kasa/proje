@@ -64,6 +64,7 @@ class ProductService {
       'description': raw['description'],
       'brand': raw['brand'],
       'categoryId': raw['categoryId'],
+      'categoryName': raw['categoryName'],
 
       // Varyant bilgileri -- satis/stok islemleri icin gerekli
       'variantId': firstVariant['id'],          // backend variantId (tek varyantlı için)
@@ -73,6 +74,7 @@ class ProductService {
       'basePrice': raw['basePrice'],
       'sellingPrice': raw['basePrice'],   // ekran uyumu icin alias
       'price': raw['basePrice'],
+      'purchasePrice': (firstVariant['purchasePrice'] as num?)?.toDouble(),
 
       // Durum
       'status': raw['status'],

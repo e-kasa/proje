@@ -32,6 +32,8 @@ class BatchEntryRow {
   String? description;
   String? shelfLocation;
   int minStockLevel;
+  bool vatIncluded;
+  Map<String, String> attributes;
   List<Map<String, String>> oemList;
   List<Map<String, String>> crossRefList;
 
@@ -58,9 +60,12 @@ class BatchEntryRow {
     this.description,
     this.shelfLocation,
     this.minStockLevel = 10,
+    this.vatIncluded = false,
+    Map<String, String>? attributes,
     List<Map<String, String>>? oemList,
     List<Map<String, String>>? crossRefList,
   })  : id = id ?? _generateId(),
+        attributes = attributes ?? {},
         oemList = oemList ?? [],
         crossRefList = crossRefList ?? [];
 
@@ -98,6 +103,10 @@ class BatchEntryRow {
     String? description,
     String? shelfLocation,
     int? minStockLevel,
+    bool? vatIncluded,
+    Map<String, String>? attributes,
+    List<Map<String, String>>? oemList,
+    List<Map<String, String>>? crossRefList,
   }) {
     return BatchEntryRow(
       id: id,
@@ -122,8 +131,10 @@ class BatchEntryRow {
       description: description ?? this.description,
       shelfLocation: shelfLocation ?? this.shelfLocation,
       minStockLevel: minStockLevel ?? this.minStockLevel,
-      oemList: oemList,
-      crossRefList: crossRefList,
+      vatIncluded: vatIncluded ?? this.vatIncluded,
+      attributes: attributes ?? this.attributes,
+      oemList: oemList ?? this.oemList,
+      crossRefList: crossRefList ?? this.crossRefList,
     );
   }
 }

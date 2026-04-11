@@ -4,6 +4,8 @@ import '../../../../services/purchase_service.dart';
 import '../../../../services/oem_service.dart';
 import '../../../../services/service_locator.dart';
 import '../../../../core/utils/app_logger.dart';
+import '../../../../core/config/sector_config.dart';
+import '../../../../providers/sector_provider.dart';
 import '../models/batch_entry_models.dart';
 import 'package:intl/intl.dart';
 
@@ -12,11 +14,13 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
   final PurchaseService _purchaseService;
   // ignore: unused_field
   final OemService _oemService;
+  final SectorConfig _sectorConfig;
 
   BatchEntryNotifier(
     this._productService,
     this._purchaseService,
     this._oemService,
+    this._sectorConfig,
   ) : super(BatchEntryState());
 
   // --- Barkod/Arama ile Urun Ekle -------------------------------------------
@@ -48,10 +52,13 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
           productName: p['name']?.toString() ?? '',
           brandName: p['brand']?.toString(),
           categoryId: p['categoryId']?.toString(),
-          purchasePrice: (p['basePrice'] as num?)?.toDouble() ?? 0,
+          categoryName: p['categoryName']?.toString(),
+          purchasePrice: (p['purchasePrice'] as num?)?.toDouble() ??
+              (p['basePrice'] as num?)?.toDouble() ?? 0,
           salePrice: (p['sellingPrice'] as num?)?.toDouble() ??
               (p['basePrice'] as num?)?.toDouble() ??
               0,
+          vatRate: (p['taxRate'] as num?)?.toDouble() ?? 20.0,
           quantity: 1,
           status: RowStatus.existing,
           existingProductId: p['id']?.toString(),
@@ -103,6 +110,10 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
     String? description,
     String? shelfLocation,
     int? minStockLevel,
+    bool? vatIncluded,
+    Map<String, String>? attributes,
+    List<Map<String, String>>? oemList,
+    List<Map<String, String>>? crossRefList,
   }) {
     final rows = state.rows.map((r) {
       if (r.id != rowId) return r;
@@ -123,6 +134,10 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
         description: description,
         shelfLocation: shelfLocation,
         minStockLevel: minStockLevel,
+        vatIncluded: vatIncluded,
+        attributes: attributes,
+        oemList: oemList,
+        crossRefList: crossRefList,
       );
     }).toList();
     state = state.copyWith(rows: rows);
@@ -169,20 +184,19 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
   }
 
   void applyCategoryToAll(String categoryId, String categoryName) {
-    final rows = state.rows
-        .where((r) => r.isNew)
-        .map((r) =>
-            r.copyWith(categoryId: categoryId, categoryName: categoryName));
-    final existing = state.rows.where((r) => !r.isNew);
-    state = state.copyWith(rows: [...rows, ...existing]);
+    final rows = state.rows.map((r) {
+      if (!r.isNew) return r;
+      return r.copyWith(categoryId: categoryId, categoryName: categoryName);
+    }).toList();
+    state = state.copyWith(rows: rows);
   }
 
   void applyBrandToAll(String brandId, String brandName) {
-    final rows = state.rows
-        .where((r) => r.isNew)
-        .map((r) => r.copyWith(brandId: brandId, brandName: brandName));
-    final existing = state.rows.where((r) => !r.isNew);
-    state = state.copyWith(rows: [...rows, ...existing]);
+    final rows = state.rows.map((r) {
+      if (!r.isNew) return r;
+      return r.copyWith(brandId: brandId, brandName: brandName);
+    }).toList();
+    state = state.copyWith(rows: rows);
   }
 
   void applyPriceToAll({double? purchasePrice, double? salePrice}) {
@@ -304,17 +318,38 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
             'brand': row.brandName ?? '',
             'unit': row.unitId ?? 'pcs',
             'description': row.description ?? '',
+            'sector': _sectorConfig.type.apiValue,
+            'metadata': _buildMetadata(row),
           },
+          'oemNumbers': row.oemList
+              .where((o) => (o['oemNumber'] ?? '').isNotEmpty)
+              .map((o) => {
+                    'oemNumber': o['oemNumber'],
+                    'manufacturer': o['manufacturer'] ?? '',
+                    'isPrimary': row.oemList.isNotEmpty && o == row.oemList.first,
+                  })
+              .toList(),
+          'crossReferences': row.crossRefList
+              .where((c) => (c['crossRefNumber'] ?? '').isNotEmpty)
+              .map((c) => {
+                    'crossRefNumber': c['crossRefNumber'],
+                    'crossRefBrand': c['crossRefBrand'] ?? '',
+                  })
+              .toList(),
           'variants': [
             {
               'sku': sku,
               'name': row.productName,
               'shelfLocationCode': row.shelfLocation,
+              'attributes': row.attributes,
               'pricing': {
                 'purchasePrice': row.purchasePrice,
                 'salePrice': row.salePrice,
                 'vatRate': row.vatRate,
-                'vatIncluded': true,
+                'vatIncluded': row.vatIncluded,
+                'taxExempt': false,
+                'specialTaxRate': null,
+                'withholdingTaxRate': null,
               },
               'initialStocks': [
                 {
@@ -343,13 +378,11 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
             'storeId': state.storeId,
             'warehouseId': state.warehouseId,
             'deliveryNoteNumber': state.deliveryNoteNumber,
+            'notes': null,
           },
         };
 
         await _productService.createProduct(payload);
-
-        // OEM varsa ekle
-        // (Skip for now — product create should return variantId for this)
 
         _updateRowStatus(row.id, RowStatus.saved);
         newCreated++;
@@ -381,6 +414,23 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
     state = state.copyWith(rows: rows);
   }
 
+  Map<String, dynamic>? _buildMetadata(BatchEntryRow row) {
+    final meta = <String, dynamic>{};
+    switch (_sectorConfig.type) {
+      case SectorType.autoParts:
+        if (row.shelfLocation != null) meta['shelfLocation'] = row.shelfLocation;
+        if (row.oemList.isNotEmpty) meta['oemCount'] = row.oemList.length;
+      case SectorType.technology:
+        if (row.shelfLocation != null) meta['imeiSerial'] = row.shelfLocation;
+      case SectorType.footwear:
+        // fabric, season fields can be added here in future
+        break;
+      case SectorType.general:
+        if (row.shelfLocation != null) meta['shelfLocation'] = row.shelfLocation;
+    }
+    return meta.isEmpty ? null : meta;
+  }
+
   // --- Temizle ---------------------------------------------------------------
   void clearAll() {
     state = state.copyWith(rows: []);
@@ -399,5 +449,12 @@ final batchEntryProvider =
     ref.read(productServiceProvider),
     ref.read(purchaseServiceProvider),
     ref.read(oemServiceProvider),
+    ref.read(sectorConfigProvider),
   ),
+);
+
+/// Kategori listesi — kart içindeki dropdown için paylaşımlı cache
+final batchCategoriesProvider =
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>(
+  (ref) => ref.read(companyCategoryServiceProvider).getMyCategoryList(),
 );

@@ -65,15 +65,15 @@ class _QuickProductDialogState extends State<QuickProductDialog> {
 
     _oemControllers = row.oemList
         .map((m) => _PairControllers(
-              first: TextEditingController(text: m['number'] ?? ''),
+              first: TextEditingController(text: m['oemNumber'] ?? ''),
               second: TextEditingController(text: m['manufacturer'] ?? ''),
             ))
         .toList();
 
     _crossRefControllers = row.crossRefList
         .map((m) => _PairControllers(
-              first: TextEditingController(text: m['code'] ?? ''),
-              second: TextEditingController(text: m['brand'] ?? ''),
+              first: TextEditingController(text: m['crossRefNumber'] ?? ''),
+              second: TextEditingController(text: m['crossRefBrand'] ?? ''),
             ))
         .toList();
   }
@@ -304,18 +304,18 @@ class _QuickProductDialogState extends State<QuickProductDialog> {
   void _onSave() {
     final oemList = _oemControllers
         .map((c) => {
-              'number': c.first.text.trim(),
+              'oemNumber': c.first.text.trim(),
               'manufacturer': c.second.text.trim(),
             })
-        .where((m) => m['number']!.isNotEmpty)
+        .where((m) => m['oemNumber']!.isNotEmpty)
         .toList();
 
     final crossRefList = _crossRefControllers
         .map((c) => {
-              'code': c.first.text.trim(),
-              'brand': c.second.text.trim(),
+              'crossRefNumber': c.first.text.trim(),
+              'crossRefBrand': c.second.text.trim(),
             })
-        .where((m) => m['code']!.isNotEmpty)
+        .where((m) => m['crossRefNumber']!.isNotEmpty)
         .toList();
 
     final updated = widget.row.copyWith(
@@ -323,9 +323,9 @@ class _QuickProductDialogState extends State<QuickProductDialog> {
       description: _descriptionCtrl.text.trim(),
       shelfLocation: _shelfCtrl.text.trim(),
       minStockLevel: int.tryParse(_minStockCtrl.text) ?? 10,
-    )
-      ..oemList = oemList
-      ..crossRefList = crossRefList;
+      oemList: oemList,
+      crossRefList: crossRefList,
+    );
 
     widget.onSave(updated);
   }

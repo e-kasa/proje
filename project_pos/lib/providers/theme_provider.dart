@@ -5,10 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/utils/app_logger.dart';
 
-/// Theme Mode (Light/Dark)
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
 enum AppThemeMode { light, dark, system }
 
-/// Layout Mode
 enum LayoutMode {
   default_('Varsayılan'),
   compact('Kompakt'),
@@ -18,7 +18,6 @@ enum LayoutMode {
   const LayoutMode(this.label);
 }
 
-/// Width Mode
 enum WidthMode {
   fluid('Akışkan'),
   boxed('Kutulu');
@@ -27,7 +26,6 @@ enum WidthMode {
   const WidthMode(this.label);
 }
 
-/// Sidebar Appearance
 enum SidebarAppearance {
   light('Açık'),
   dark('Koyu'),
@@ -37,7 +35,6 @@ enum SidebarAppearance {
   const SidebarAppearance(this.label);
 }
 
-/// Topbar Appearance
 enum TopbarAppearance {
   light('Açık'),
   dark('Koyu'),
@@ -47,56 +44,63 @@ enum TopbarAppearance {
   const TopbarAppearance(this.label);
 }
 
-/// Primary Color Options
+/// Renk presetleri — her preset bir gradient çifti tanımlar.
+/// [color] gradient başlangıcı / primary renk
+/// [endColor] gradient bitişi
 enum PrimaryColorOption {
-  blue('Mavi', Color(0xFF1976D2)),
-  green('Yeşil', Color(0xFF4CAF50)),
-  purple('Mor', Color(0xFF9C27B0)),
-  orange('Turuncu', Color(0xFFFF9800)),
-  red('Kırmızı', Color(0xFFF44336)),
-  teal('Turkuaz', Color(0xFF009688)),
-  pink('Pembe', Color(0xFFE91E63)),
-  indigo('Lacivert', Color(0xFF3F51B5));
+  sedcore('Sedcore',       Color(0xFF667eea), Color(0xFF764ba2)),
+  ocean('Okyanus',         Color(0xFF0ea5e9), Color(0xFF2563eb)),
+  emerald('Zümrüt',        Color(0xFF10b981), Color(0xFF059669)),
+  sunset('Gün Batımı',     Color(0xFFf59e0b), Color(0xFFef4444)),
+  rose('Gül',              Color(0xFFec4899), Color(0xFFa855f7)),
+  midnight('Gece Yarısı',  Color(0xFF374151), Color(0xFF1e293b)),
+  coral('Mercan',          Color(0xFFf97316), Color(0xFFec4899)),
+  forest('Orman',          Color(0xFF22c55e), Color(0xFF14b8a6));
 
   final String label;
-  final Color color;
-  const PrimaryColorOption(this.label, this.color);
+  final Color color;     // gradient start / primary
+  final Color endColor;  // gradient end
+  const PrimaryColorOption(this.label, this.color, this.endColor);
+
+  /// Gradient oluştur
+  LinearGradient get gradient => LinearGradient(
+        colors: [color, endColor],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
 }
 
-/// Tema ayarları durum nesnesi.
-///
-/// Tema modu, ana renk, layout, sidebar/topbar görünümü gibi
-/// tüm UI konfigürasyonlarını tutar. JSON serialize/deserialize destekler.
+// ─── ThemeSettings ────────────────────────────────────────────────────────────
+
 class ThemeSettings {
-  // Basic
   final AppThemeMode themeMode;
   final PrimaryColorOption primaryColor;
-
-  // Layout
   final LayoutMode layoutMode;
   final WidthMode widthMode;
-
-  // Appearance
   final SidebarAppearance sidebarAppearance;
   final TopbarAppearance topbarAppearance;
-
-  // Advanced
   final bool useMaterialYou;
   final bool isRTL;
   final Color? customSidebarColor;
   final Color? customTopbarColor;
+  /// Özel birincil renk (preset dışında). Null ise primaryColor.color kullanılır.
+  final Color? customPrimaryColor;
+  /// Yazı boyutu çarpanı: 0.85 (küçük) – 1.0 (normal) – 1.15 (büyük)
+  final double fontScale;
 
   const ThemeSettings({
     this.themeMode = AppThemeMode.light,
-    this.primaryColor = PrimaryColorOption.blue,
+    this.primaryColor = PrimaryColorOption.sedcore,
     this.layoutMode = LayoutMode.default_,
     this.widthMode = WidthMode.fluid,
     this.sidebarAppearance = SidebarAppearance.light,
     this.topbarAppearance = TopbarAppearance.colored,
-    this.useMaterialYou = true,
+    this.useMaterialYou = false,
     this.isRTL = false,
     this.customSidebarColor,
     this.customTopbarColor,
+    this.customPrimaryColor,
+    this.fontScale = 1.0,
   });
 
   ThemeSettings copyWith({
@@ -110,6 +114,9 @@ class ThemeSettings {
     bool? isRTL,
     Color? customSidebarColor,
     Color? customTopbarColor,
+    Color? customPrimaryColor,
+    double? fontScale,
+    bool clearCustomPrimary = false,
   }) {
     return ThemeSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -122,23 +129,40 @@ class ThemeSettings {
       isRTL: isRTL ?? this.isRTL,
       customSidebarColor: customSidebarColor ?? this.customSidebarColor,
       customTopbarColor: customTopbarColor ?? this.customTopbarColor,
+      customPrimaryColor: clearCustomPrimary ? null : (customPrimaryColor ?? this.customPrimaryColor),
+      fontScale: fontScale ?? this.fontScale,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'themeMode': themeMode.name,
-      'primaryColor': primaryColor.name,
-      'layoutMode': layoutMode.name,
-      'widthMode': widthMode.name,
-      'sidebarAppearance': sidebarAppearance.name,
-      'topbarAppearance': topbarAppearance.name,
-      'useMaterialYou': useMaterialYou,
-      'isRTL': isRTL,
-      'customSidebarColor': customSidebarColor?.value,
-      'customTopbarColor': customTopbarColor?.value,
-    };
-  }
+  /// Çözümlenmiş birincil renk (custom varsa custom, yoksa preset)
+  Color get resolvedPrimary => customPrimaryColor ?? primaryColor.color;
+
+  /// Çözümlenmiş gradient sonu
+  Color get resolvedEnd => customPrimaryColor != null
+      ? _darken(customPrimaryColor!, 0.15)
+      : primaryColor.endColor;
+
+  /// Çözümlenmiş gradient
+  LinearGradient get resolvedGradient => LinearGradient(
+        colors: [resolvedPrimary, resolvedEnd],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'themeMode': themeMode.name,
+        'primaryColor': primaryColor.name,
+        'layoutMode': layoutMode.name,
+        'widthMode': widthMode.name,
+        'sidebarAppearance': sidebarAppearance.name,
+        'topbarAppearance': topbarAppearance.name,
+        'useMaterialYou': useMaterialYou,
+        'isRTL': isRTL,
+        'customSidebarColor': customSidebarColor?.value,
+        'customTopbarColor': customTopbarColor?.value,
+        'customPrimaryColor': customPrimaryColor?.value,
+        'fontScale': fontScale,
+      };
 
   factory ThemeSettings.fromJson(Map<String, dynamic> json) {
     return ThemeSettings(
@@ -148,7 +172,7 @@ class ThemeSettings {
       ),
       primaryColor: PrimaryColorOption.values.firstWhere(
         (e) => e.name == json['primaryColor'],
-        orElse: () => PrimaryColorOption.blue,
+        orElse: () => PrimaryColorOption.sedcore,
       ),
       layoutMode: LayoutMode.values.firstWhere(
         (e) => e.name == json['layoutMode'],
@@ -166,7 +190,7 @@ class ThemeSettings {
         (e) => e.name == json['topbarAppearance'],
         orElse: () => TopbarAppearance.colored,
       ),
-      useMaterialYou: json['useMaterialYou'] ?? true,
+      useMaterialYou: json['useMaterialYou'] ?? false,
       isRTL: json['isRTL'] ?? false,
       customSidebarColor: json['customSidebarColor'] != null
           ? Color(json['customSidebarColor'])
@@ -174,89 +198,42 @@ class ThemeSettings {
       customTopbarColor: json['customTopbarColor'] != null
           ? Color(json['customTopbarColor'])
           : null,
+      customPrimaryColor: json['customPrimaryColor'] != null
+          ? Color(json['customPrimaryColor'])
+          : null,
+      fontScale: (json['fontScale'] as num?)?.toDouble() ?? 1.0,
     );
   }
 }
 
-/// Tema ayarları yöneticisi — dark/light mod, renkler ve layout tercihlerini yönetir.
-///
-/// Ayarlar [SharedPreferences] üzerinde JSON formatında saklanır.
-/// Eski pipe-delimited (`|`) formattan JSON'a otomatik migrasyon destekler.
-/// Her değişiklikte kalıcı depoya kaydeder.
+// ─── ThemeNotifier ────────────────────────────────────────────────────────────
+
 class ThemeNotifier extends StateNotifier<ThemeSettings> {
   ThemeNotifier() : super(const ThemeSettings()) {
     _loadSettings();
   }
 
-  static const String _storageKey = 'theme_settings_v2';
+  static const String _storageKey = 'theme_settings_v3';
 
   Future<void> _loadSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_storageKey);
+      final raw = prefs.getString(_storageKey)
+          ?? prefs.getString('theme_settings_v2'); // migration
       if (raw == null) return;
-
-      // Try JSON first
       try {
         final json = jsonDecode(raw) as Map<String, dynamic>;
         state = ThemeSettings.fromJson(json);
-        return;
       } catch (_) {}
-
-      // Fallback: try pipe-delimited (migration from old format)
-      try {
-        final parts = raw.split('|');
-        if (parts.length >= 8) {
-          state = ThemeSettings(
-            themeMode: AppThemeMode.values.firstWhere(
-              (e) => e.name == parts[0],
-              orElse: () => AppThemeMode.light,
-            ),
-            primaryColor: PrimaryColorOption.values.firstWhere(
-              (e) => e.name == parts[1],
-              orElse: () => PrimaryColorOption.blue,
-            ),
-            layoutMode: LayoutMode.values.firstWhere(
-              (e) => e.name == parts[2],
-              orElse: () => LayoutMode.default_,
-            ),
-            widthMode: WidthMode.values.firstWhere(
-              (e) => e.name == parts[3],
-              orElse: () => WidthMode.fluid,
-            ),
-            sidebarAppearance: SidebarAppearance.values.firstWhere(
-              (e) => e.name == parts[4],
-              orElse: () => SidebarAppearance.light,
-            ),
-            topbarAppearance: TopbarAppearance.values.firstWhere(
-              (e) => e.name == parts[5],
-              orElse: () => TopbarAppearance.colored,
-            ),
-            useMaterialYou: parts[6] == 'true',
-            isRTL: parts[7] == 'true',
-            customSidebarColor: parts.length > 8 && parts[8] != 'null'
-                ? Color(int.parse(parts[8]))
-                : null,
-            customTopbarColor: parts.length > 9 && parts[9] != 'null'
-                ? Color(int.parse(parts[9]))
-                : null,
-          );
-          // Re-save as JSON for migration
-          _saveSettings();
-        }
-      } catch (e) {
-        AppLogger.warning('Tema ayarları okunamadı, varsayılana dönülüyor', tag: 'ThemeProvider');
-      }
     } catch (e) {
       AppLogger.error('Tema ayarları yüklenemedi', tag: 'Theme', error: e);
     }
   }
 
-  Future<void> _saveSettings() async {
+  Future<void> _save() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final jsonString = jsonEncode(state.toJson());
-      await prefs.setString(_storageKey, jsonString);
+      await prefs.setString(_storageKey, jsonEncode(state.toJson()));
     } catch (e) {
       AppLogger.error('Tema ayarları kaydedilemedi', tag: 'Theme', error: e);
     }
@@ -264,162 +241,203 @@ class ThemeNotifier extends StateNotifier<ThemeSettings> {
 
   void setThemeMode(AppThemeMode mode) {
     state = state.copyWith(themeMode: mode);
-    _saveSettings();
+    _save();
   }
 
   void setPrimaryColor(PrimaryColorOption color) {
-    state = state.copyWith(primaryColor: color);
-    _saveSettings();
+    state = state.copyWith(primaryColor: color, clearCustomPrimary: true);
+    _save();
+  }
+
+  void setCustomPrimaryColor(Color color) {
+    state = state.copyWith(customPrimaryColor: color);
+    _save();
+  }
+
+  void clearCustomPrimaryColor() {
+    state = state.copyWith(clearCustomPrimary: true);
+    _save();
   }
 
   void setLayoutMode(LayoutMode mode) {
     state = state.copyWith(layoutMode: mode);
-    _saveSettings();
+    _save();
   }
 
   void setWidthMode(WidthMode mode) {
     state = state.copyWith(widthMode: mode);
-    _saveSettings();
+    _save();
   }
 
-  void setSidebarAppearance(SidebarAppearance appearance) {
-    state = state.copyWith(sidebarAppearance: appearance);
-    _saveSettings();
+  void setSidebarAppearance(SidebarAppearance a) {
+    state = state.copyWith(sidebarAppearance: a);
+    _save();
   }
 
-  void setTopbarAppearance(TopbarAppearance appearance) {
-    state = state.copyWith(topbarAppearance: appearance);
-    _saveSettings();
+  void setTopbarAppearance(TopbarAppearance a) {
+    state = state.copyWith(topbarAppearance: a);
+    _save();
   }
 
   void toggleMaterialYou() {
     state = state.copyWith(useMaterialYou: !state.useMaterialYou);
-    _saveSettings();
+    _save();
   }
 
   void toggleRTL() {
     state = state.copyWith(isRTL: !state.isRTL);
-    _saveSettings();
+    _save();
   }
 
   void setCustomSidebarColor(Color color) {
     state = state.copyWith(customSidebarColor: color);
-    _saveSettings();
+    _save();
   }
 
   void setCustomTopbarColor(Color color) {
     state = state.copyWith(customTopbarColor: color);
-    _saveSettings();
+    _save();
+  }
+
+  void setFontScale(double scale) {
+    state = state.copyWith(fontScale: scale.clamp(0.8, 1.3));
+    _save();
   }
 
   void reset() {
     state = const ThemeSettings();
-    _saveSettings();
+    _save();
   }
 }
 
-/// Theme Provider
-final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeSettings>((ref) {
-  return ThemeNotifier();
+// ─── Providers ────────────────────────────────────────────────────────────────
+
+final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeSettings>(
+  (ref) => ThemeNotifier(),
+);
+
+/// Çözümlenmiş birincil renk
+final resolvedPrimaryColorProvider = Provider<Color>((ref) {
+  return ref.watch(themeProvider).resolvedPrimary;
 });
 
-/// Computed ThemeMode
+/// Çözümlenmiş gradient
+final resolvedGradientProvider = Provider<LinearGradient>((ref) {
+  return ref.watch(themeProvider).resolvedGradient;
+});
+
+/// ThemeMode (Material)
 final themeModeProvider = Provider<ThemeMode>((ref) {
-  final settings = ref.watch(themeProvider);
-  switch (settings.themeMode) {
-    case AppThemeMode.light:
-      return ThemeMode.light;
-    case AppThemeMode.dark:
-      return ThemeMode.dark;
-    case AppThemeMode.system:
-      return ThemeMode.system;
+  switch (ref.watch(themeProvider).themeMode) {
+    case AppThemeMode.light:  return ThemeMode.light;
+    case AppThemeMode.dark:   return ThemeMode.dark;
+    case AppThemeMode.system: return ThemeMode.system;
   }
 });
 
-/// Light Theme Data
+/// Light ThemeData
 final lightThemeProvider = Provider<ThemeData>((ref) {
-  final settings = ref.watch(themeProvider);
+  final s = ref.watch(themeProvider);
+  final primary = s.resolvedPrimary;
 
   return ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: settings.primaryColor.color,
+      seedColor: primary,
+      primary: primary,
       brightness: Brightness.light,
     ),
     appBarTheme: AppBarTheme(
-      backgroundColor: _getTopbarColor(settings, Brightness.light),
-      foregroundColor: _getTopbarForeground(settings, Brightness.light),
+      backgroundColor: _topbarColor(s, Brightness.light),
+      foregroundColor: _topbarForeground(s, Brightness.light),
       elevation: 0,
+      surfaceTintColor: Colors.transparent,
     ),
     drawerTheme: DrawerThemeData(
-      backgroundColor: _getSidebarColor(settings, Brightness.light),
+      backgroundColor: _sidebarColor(s, Brightness.light),
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
-      backgroundColor: settings.primaryColor.color,
+      backgroundColor: primary,
+      foregroundColor: Colors.white,
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: primary,
+        foregroundColor: Colors.white,
+      ),
+    ),
+    segmentedButtonTheme: SegmentedButtonThemeData(
+      style: SegmentedButton.styleFrom(
+        selectedBackgroundColor: primary,
+        selectedForegroundColor: Colors.white,
+      ),
     ),
   );
 });
 
-/// Dark Theme Data
+/// Dark ThemeData
 final darkThemeProvider = Provider<ThemeData>((ref) {
-  final settings = ref.watch(themeProvider);
+  final s = ref.watch(themeProvider);
+  final primary = s.resolvedPrimary;
 
   return ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: settings.primaryColor.color,
+      seedColor: primary,
+      primary: primary,
       brightness: Brightness.dark,
     ),
+    scaffoldBackgroundColor: const Color(0xFF0f0f23),
+    cardColor: const Color(0xFF1a1a2e),
     appBarTheme: AppBarTheme(
-      backgroundColor: _getTopbarColor(settings, Brightness.dark),
-      foregroundColor: _getTopbarForeground(settings, Brightness.dark),
+      backgroundColor: _topbarColor(s, Brightness.dark),
+      foregroundColor: _topbarForeground(s, Brightness.dark),
       elevation: 0,
+      surfaceTintColor: Colors.transparent,
     ),
     drawerTheme: DrawerThemeData(
-      backgroundColor: _getSidebarColor(settings, Brightness.dark),
+      backgroundColor: _sidebarColor(s, Brightness.dark),
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
-      backgroundColor: settings.primaryColor.color,
+      backgroundColor: primary,
+      foregroundColor: Colors.white,
     ),
   );
 });
 
-// Helper functions
-Color _getSidebarColor(ThemeSettings settings, Brightness brightness) {
-  switch (settings.sidebarAppearance) {
-    case SidebarAppearance.light:
-      return Colors.white;
-    case SidebarAppearance.dark:
-      return const Color(0xFF1E1E1E);
-    case SidebarAppearance.colored:
-      return settings.customSidebarColor ?? settings.primaryColor.color;
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+Color _sidebarColor(ThemeSettings s, Brightness brightness) {
+  switch (s.sidebarAppearance) {
+    case SidebarAppearance.light:   return Colors.white;
+    case SidebarAppearance.dark:    return const Color(0xFF1E1E2E);
+    case SidebarAppearance.colored: return s.customSidebarColor ?? s.resolvedPrimary;
   }
 }
 
-Color _getTopbarColor(ThemeSettings settings, Brightness brightness) {
-  switch (settings.topbarAppearance) {
-    case TopbarAppearance.light:
-      return Colors.white;
-    case TopbarAppearance.dark:
-      return const Color(0xFF1E1E1E);
-    case TopbarAppearance.colored:
-      return settings.customTopbarColor ?? settings.primaryColor.color;
+Color _topbarColor(ThemeSettings s, Brightness brightness) {
+  switch (s.topbarAppearance) {
+    case TopbarAppearance.light:   return Colors.white;
+    case TopbarAppearance.dark:    return const Color(0xFF1E1E2E);
+    case TopbarAppearance.colored: return s.customTopbarColor ?? s.resolvedPrimary;
   }
 }
 
-Color _getTopbarForeground(ThemeSettings settings, Brightness brightness) {
-  switch (settings.topbarAppearance) {
-    case TopbarAppearance.light:
-      return Colors.black87;
-    case TopbarAppearance.dark:
-      return Colors.white;
+Color _topbarForeground(ThemeSettings s, Brightness brightness) {
+  switch (s.topbarAppearance) {
+    case TopbarAppearance.light: return Colors.black87;
+    case TopbarAppearance.dark:  return Colors.white;
     case TopbarAppearance.colored:
-      // Use light or dark text based on background color brightness
-      final bgColor = settings.customTopbarColor ?? settings.primaryColor.color;
-      return ThemeData.estimateBrightnessForColor(bgColor) == Brightness.light
+      final bg = s.customTopbarColor ?? s.resolvedPrimary;
+      return ThemeData.estimateBrightnessForColor(bg) == Brightness.light
           ? Colors.black87
           : Colors.white;
   }
+}
+
+Color _darken(Color color, double amount) {
+  final hsl = HSLColor.fromColor(color);
+  return hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0)).toColor();
 }

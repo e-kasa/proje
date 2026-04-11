@@ -36,6 +36,7 @@ class MyApp extends ConsumerWidget {
     final lightTheme = ref.watch(lightThemeProvider);
     final darkTheme = ref.watch(darkThemeProvider);
     final router = ref.watch(routerProvider);
+    final fontScale = ref.watch(themeProvider.select((s) => s.fontScale));
 
     return MaterialApp.router(
       title: 'Admin Dashboard',
@@ -51,6 +52,12 @@ class MyApp extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          textScaler: TextScaler.linear(fontScale),
+        ),
+        child: child!,
+      ),
     );
   }
 }

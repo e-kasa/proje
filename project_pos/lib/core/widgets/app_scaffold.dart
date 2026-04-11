@@ -1,21 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/theme_provider.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_gradients.dart';
 
-/// Tüm ekranlar için ortak Scaffold wrapper.
+/// Tüm ekranlar için ortak Scaffold — gradient arka plan + beyaz kart body.
 ///
-/// - Scaffold arka planı gradient (AppBar ile aynı renk)
-/// - Body içeriği beyaz kart içinde, üst köşeleri yuvarlatılmış
-///
-/// Kullanım:
-/// ```dart
-/// AppScaffold(
-///   appBar: AppAppBar.standard(title: 'Başlık'),
-///   body: MyContent(),
-/// )
-/// ```
-class AppScaffold extends StatelessWidget {
+/// AppScaffold, `resolvedGradientProvider` ile tema değişikliklerini dinler;
+/// kullanıcı farklı bir renk teması seçtiğinde tüm ekranlarda gradient otomatik güncellenir.
+class AppScaffold extends ConsumerWidget {
   final PreferredSizeWidget? appBar;
   final Widget body;
   final Widget? floatingActionButton;
@@ -42,14 +35,18 @@ class AppScaffold extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final gradient = ref.watch(resolvedGradientProvider);
+    final primary = gradient.colors.first;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light,
       ),
       child: Scaffold(
-        backgroundColor: const Color(0xFF667eea),
+        backgroundColor: primary,
         extendBody: extendBody,
         extendBodyBehindAppBar: extendBodyBehindAppBar,
         appBar: appBar,
@@ -62,7 +59,7 @@ class AppScaffold extends StatelessWidget {
         body: ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
           child: Container(
-            color: AppColors.bgLight,
+            color: isDark ? const Color(0xFF0f0f23) : AppColors.bgLight,
             child: body,
           ),
         ),

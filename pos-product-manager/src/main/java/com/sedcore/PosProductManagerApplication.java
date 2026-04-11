@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 @SpringBootApplication(scanBasePackages = {"com.sedcore", "com.towpen.base"})
-@EntityScan(basePackages = {"com.towpen.base", "com.sedcore.entity"})
+@EntityScan(basePackages = {"com.towpen.base", "com.sedcore"})
 @EnableJpaAuditing
 public class PosProductManagerApplication {
     public static void main(String[] args) {

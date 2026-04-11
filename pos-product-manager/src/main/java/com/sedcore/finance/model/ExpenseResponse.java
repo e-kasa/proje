@@ -1,0 +1,23 @@
+package com.sedcore.finance.model;
+
+import lombok.Builder;
+import lombok.Data;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Date;
+
+@Data
+@Builder
+public class ExpenseResponse {
+    private String id;
+    private String title;
+    private String description;
+    private BigDecimal amount;
+    private String category;
+    private LocalDateTime expenseDate;
+    private String paymentMethod;
+    private String referenceNumber;
+    private String status;
+    private Date createTime;
+}

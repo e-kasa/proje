@@ -77,11 +77,19 @@ class RecommendationPanel extends ConsumerWidget {
                 itemCount: posState.recommendations.length,
                 itemBuilder: (ctx, idx) {
                   final rec = posState.recommendations[idx];
+                  final stockVal = (rec['stock'] as num?)?.toInt() ?? 0;
+                  final isOutOfStock = rec['stockStatus'] == 'OUT_OF_STOCK' || stockVal <= 0;
                   return _RecommendationCard(
                     recommendation: rec,
                     addLabel: t('pos.add_to_cart'),
-                    onAddToCart: () {
-                      posNotifier.addToCart(rec);
+                    isOutOfStock: isOutOfStock,
+                    onAddToCart: isOutOfStock ? null : () {
+                      final recForCart = <String, dynamic>{
+                        ...rec,
+                        'myStoreStock': stockVal,
+                        'variantId': rec['variantId'] ?? rec['id'],
+                      };
+                      posNotifier.addToCart(recForCart);
                       // Eklendi feedback
                       ScaffoldMessenger.of(context).hideCurrentSnackBar();
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -122,12 +130,14 @@ class RecommendationPanel extends ConsumerWidget {
 class _RecommendationCard extends StatelessWidget {
   final Map<String, dynamic> recommendation;
   final String addLabel;
-  final VoidCallback onAddToCart;
+  final VoidCallback? onAddToCart;
+  final bool isOutOfStock;
 
   const _RecommendationCard({
     required this.recommendation,
     required this.addLabel,
     required this.onAddToCart,
+    this.isOutOfStock = false,
   });
 
   @override
@@ -153,11 +163,13 @@ class _RecommendationCard extends StatelessWidget {
       padding: const EdgeInsets.only(right: 10),
       child: GestureDetector(
         onTap: onAddToCart,
-        child: Container(
+        child: Opacity(
+          opacity: isOutOfStock ? 0.55 : 1.0,
+          child: Container(
           width: 160,
           decoration: BoxDecoration(
             color: Colors.white,
-            border: Border.all(color: (badge.color).withOpacity(0.3), width: 1.5),
+            border: Border.all(color: isOutOfStock ? AppColors.border : (badge.color).withOpacity(0.3), width: 1.5),
             borderRadius: BorderRadius.circular(10),
             boxShadow: [
               BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2)),
@@ -283,12 +295,12 @@ class _RecommendationCard extends StatelessWidget {
                 ),
               ),
 
-              // Sepete Ekle Butonu
+              // Sepete Ekle / Stokta Yok Butonu
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 5),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
+                  color: isOutOfStock ? AppColors.border.withOpacity(0.5) : AppColors.success.withOpacity(0.1),
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(9),
                     bottomRight: Radius.circular(9),
@@ -298,16 +310,25 @@ class _RecommendationCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.add_shopping_cart, size: 13, color: AppColors.success),
+                    Icon(
+                      isOutOfStock ? Icons.remove_shopping_cart : Icons.add_shopping_cart,
+                      size: 13,
+                      color: isOutOfStock ? AppColors.textMuted : AppColors.success,
+                    ),
                     const SizedBox(width: 4),
                     Text(
-                      addLabel,
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.success),
+                      isOutOfStock ? 'Stokta Yok' : addLabel,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: isOutOfStock ? AppColors.textMuted : AppColors.success,
+                      ),
                     ),
                   ],
                 ),
               ),
             ],
+          ),
           ),
         ),
       ),

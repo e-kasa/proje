@@ -35,23 +35,14 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final service = ref.read(reportServiceProvider);
+      final service = ref.read(salesReportServiceProvider);
 
-      final result = await service.getProfitLossReport(
-        startDate: _startDate,
-        endDate: _endDate,
+      final result = await service.getProfitOverview(
+        startDate: _startDate.toIso8601String(),
+        endDate: _endDate.toIso8601String(),
       );
 
-      result['totalCost'] ??=
-          (result['totalRevenue'] as num? ?? 0).toDouble() * 0.6;
-
-      result['profit'] ??=
-          (result['totalRevenue'] as num? ?? 0).toDouble() -
-              (result['totalCost'] as num? ?? 0).toDouble();
-
-      result['profitMargin'] ??= 0;
-      result['monthlyBreakdown'] ??= [];
-      result['categoryBreakdown'] ??= [];
+      if (result == null) throw Exception('Veri bulunamadi');
 
       setState(() {
         _data = result;

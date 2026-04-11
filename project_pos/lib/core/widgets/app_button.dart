@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/theme_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_constants.dart';
 
@@ -6,8 +8,9 @@ enum ButtonVariant { primary, secondary, success, danger, warning, outline, ghos
 
 enum ButtonSize { small, medium, large }
 
-/// Merkezi Buton Widget - React benzeri kullanım
-class AppButton extends StatelessWidget {
+/// Merkezi Buton Widget — tema değişikliklerine tam duyarlı.
+/// ConsumerWidget olduğundan resolvedPrimaryColorProvider'ı dinler.
+class AppButton extends ConsumerWidget {
   final String text;
   final VoidCallback? onPressed;
   final ButtonVariant variant;
@@ -29,7 +32,6 @@ class AppButton extends StatelessWidget {
     this.iconRight = false,
   });
 
-  // Primary button
   factory AppButton.primary({
     required String text,
     VoidCallback? onPressed,
@@ -37,19 +39,12 @@ class AppButton extends StatelessWidget {
     ButtonSize size = ButtonSize.medium,
     bool isLoading = false,
     bool fullWidth = false,
-  }) {
-    return AppButton(
-      text: text,
-      onPressed: onPressed,
-      variant: ButtonVariant.primary,
-      size: size,
-      icon: icon,
-      isLoading: isLoading,
-      fullWidth: fullWidth,
-    );
-  }
+  }) =>
+      AppButton(
+        text: text, onPressed: onPressed, variant: ButtonVariant.primary,
+        size: size, icon: icon, isLoading: isLoading, fullWidth: fullWidth,
+      );
 
-  // Success button
   factory AppButton.success({
     required String text,
     VoidCallback? onPressed,
@@ -57,19 +52,12 @@ class AppButton extends StatelessWidget {
     ButtonSize size = ButtonSize.medium,
     bool isLoading = false,
     bool fullWidth = false,
-  }) {
-    return AppButton(
-      text: text,
-      onPressed: onPressed,
-      variant: ButtonVariant.success,
-      size: size,
-      icon: icon,
-      isLoading: isLoading,
-      fullWidth: fullWidth,
-    );
-  }
+  }) =>
+      AppButton(
+        text: text, onPressed: onPressed, variant: ButtonVariant.success,
+        size: size, icon: icon, isLoading: isLoading, fullWidth: fullWidth,
+      );
 
-  // Danger button
   factory AppButton.danger({
     required String text,
     VoidCallback? onPressed,
@@ -77,19 +65,12 @@ class AppButton extends StatelessWidget {
     ButtonSize size = ButtonSize.medium,
     bool isLoading = false,
     bool fullWidth = false,
-  }) {
-    return AppButton(
-      text: text,
-      onPressed: onPressed,
-      variant: ButtonVariant.danger,
-      size: size,
-      icon: icon,
-      isLoading: isLoading,
-      fullWidth: fullWidth,
-    );
-  }
+  }) =>
+      AppButton(
+        text: text, onPressed: onPressed, variant: ButtonVariant.danger,
+        size: size, icon: icon, isLoading: isLoading, fullWidth: fullWidth,
+      );
 
-  // Outline button
   factory AppButton.outline({
     required String text,
     VoidCallback? onPressed,
@@ -97,31 +78,27 @@ class AppButton extends StatelessWidget {
     ButtonSize size = ButtonSize.medium,
     bool isLoading = false,
     bool fullWidth = false,
-  }) {
-    return AppButton(
-      text: text,
-      onPressed: onPressed,
-      variant: ButtonVariant.outline,
-      size: size,
-      icon: icon,
-      isLoading: isLoading,
-      fullWidth: fullWidth,
-    );
-  }
+  }) =>
+      AppButton(
+        text: text, onPressed: onPressed, variant: ButtonVariant.outline,
+        size: size, icon: icon, isLoading: isLoading, fullWidth: fullWidth,
+      );
 
   @override
-  Widget build(BuildContext context) {
-    final buttonStyle = _getButtonStyle();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final primary = ref.watch(resolvedPrimaryColorProvider);
     final height = _getHeight();
     final padding = _getPadding();
+    final textColor = _getTextColor(primary);
+    final buttonStyle = _getButtonStyle(primary);
 
     Widget content = isLoading
         ? SizedBox(
-            width: 20,
-            height: 20,
+            width: 18,
+            height: 18,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              color: _getTextColor(),
+              color: textColor,
             ),
           )
         : Row(
@@ -129,7 +106,7 @@ class AppButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (icon != null && !iconRight) ...[
-                Icon(icon, size: _getIconSize(), color: _getTextColor()),
+                Icon(icon, size: _getIconSize(), color: textColor),
                 const SizedBox(width: AppConstants.spacing8),
               ],
               Text(
@@ -137,12 +114,12 @@ class AppButton extends StatelessWidget {
                 style: TextStyle(
                   fontSize: _getFontSize(),
                   fontWeight: FontWeight.w600,
-                  color: _getTextColor(),
+                  color: textColor,
                 ),
               ),
               if (icon != null && iconRight) ...[
                 const SizedBox(width: AppConstants.spacing8),
-                Icon(icon, size: _getIconSize(), color: _getTextColor()),
+                Icon(icon, size: _getIconSize(), color: textColor),
               ],
             ],
           );
@@ -170,114 +147,113 @@ class AppButton extends StatelessWidget {
     );
   }
 
-  ButtonStyle _getButtonStyle() {
-    final baseStyle = ElevatedButton.styleFrom(
-      elevation: 0,
-      padding: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppConstants.borderRadiusMedium,
-      ),
-    );
-
-    switch (variant) {
-      case ButtonVariant.primary:
-        return baseStyle.copyWith(
-          backgroundColor: WidgetStateProperty.all(AppColors.primary),
-          foregroundColor: WidgetStateProperty.all(Colors.white),
-        );
-      case ButtonVariant.secondary:
-        return baseStyle.copyWith(
-          backgroundColor: WidgetStateProperty.all(AppColors.textSecondary),
-          foregroundColor: WidgetStateProperty.all(Colors.white),
-        );
-      case ButtonVariant.success:
-        return baseStyle.copyWith(
-          backgroundColor: WidgetStateProperty.all(AppColors.success),
-          foregroundColor: WidgetStateProperty.all(Colors.white),
-        );
-      case ButtonVariant.danger:
-        return baseStyle.copyWith(
-          backgroundColor: WidgetStateProperty.all(AppColors.danger),
-          foregroundColor: WidgetStateProperty.all(Colors.white),
-        );
-      case ButtonVariant.warning:
-        return baseStyle.copyWith(
-          backgroundColor: WidgetStateProperty.all(AppColors.warning),
-          foregroundColor: WidgetStateProperty.all(Colors.white),
-        );
-      case ButtonVariant.outline:
-        return OutlinedButton.styleFrom(
-          padding: EdgeInsets.zero,
-          side: const BorderSide(color: AppColors.primary, width: 1.5),
-          shape: RoundedRectangleBorder(
-            borderRadius: AppConstants.borderRadiusMedium,
-          ),
-        );
-      case ButtonVariant.ghost:
-        return OutlinedButton.styleFrom(
-          padding: EdgeInsets.zero,
-          side: BorderSide.none,
-          shape: RoundedRectangleBorder(
-            borderRadius: AppConstants.borderRadiusMedium,
-          ),
-        );
-    }
-  }
-
-  Color _getTextColor() {
+  Color _getTextColor(Color primary) {
     if (variant == ButtonVariant.outline || variant == ButtonVariant.ghost) {
-      return AppColors.primary;
+      return primary;
     }
     return Colors.white;
   }
 
+  ButtonStyle _getButtonStyle(Color primary) {
+    final shape = RoundedRectangleBorder(
+      borderRadius: AppConstants.borderRadiusMedium,
+    );
+
+    switch (variant) {
+      case ButtonVariant.primary:
+        return ElevatedButton.styleFrom(
+          backgroundColor: primary,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: AppColors.border,
+          elevation: 0,
+          padding: EdgeInsets.zero,
+          shape: shape,
+        );
+      case ButtonVariant.secondary:
+        return ElevatedButton.styleFrom(
+          backgroundColor: AppColors.textSecondary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: EdgeInsets.zero,
+          shape: shape,
+        );
+      case ButtonVariant.success:
+        return ElevatedButton.styleFrom(
+          backgroundColor: AppColors.success,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: EdgeInsets.zero,
+          shape: shape,
+        );
+      case ButtonVariant.danger:
+        return ElevatedButton.styleFrom(
+          backgroundColor: AppColors.danger,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: EdgeInsets.zero,
+          shape: shape,
+        );
+      case ButtonVariant.warning:
+        return ElevatedButton.styleFrom(
+          backgroundColor: AppColors.warning,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: EdgeInsets.zero,
+          shape: shape,
+        );
+      case ButtonVariant.outline:
+        return OutlinedButton.styleFrom(
+          foregroundColor: primary,
+          side: BorderSide(color: primary, width: 1.5),
+          padding: EdgeInsets.zero,
+          shape: shape,
+        );
+      case ButtonVariant.ghost:
+        return OutlinedButton.styleFrom(
+          foregroundColor: primary,
+          side: BorderSide.none,
+          padding: EdgeInsets.zero,
+          shape: shape,
+        );
+    }
+  }
+
   double _getHeight() {
     switch (size) {
-      case ButtonSize.small:
-        return AppConstants.buttonHeightSmall;
-      case ButtonSize.medium:
-        return AppConstants.buttonHeightMedium;
-      case ButtonSize.large:
-        return AppConstants.buttonHeightLarge;
+      case ButtonSize.small:  return AppConstants.buttonHeightSmall;
+      case ButtonSize.medium: return AppConstants.buttonHeightMedium;
+      case ButtonSize.large:  return AppConstants.buttonHeightLarge;
     }
   }
 
   EdgeInsets _getPadding() {
     switch (size) {
-      case ButtonSize.small:
-        return const EdgeInsets.symmetric(horizontal: 12, vertical: 6);
-      case ButtonSize.medium:
-        return const EdgeInsets.symmetric(horizontal: 16, vertical: 10);
-      case ButtonSize.large:
-        return const EdgeInsets.symmetric(horizontal: 24, vertical: 14);
+      case ButtonSize.small:  return const EdgeInsets.symmetric(horizontal: 12, vertical: 6);
+      case ButtonSize.medium: return const EdgeInsets.symmetric(horizontal: 16, vertical: 10);
+      case ButtonSize.large:  return const EdgeInsets.symmetric(horizontal: 24, vertical: 14);
     }
   }
 
   double _getFontSize() {
     switch (size) {
-      case ButtonSize.small:
-        return 12;
-      case ButtonSize.medium:
-        return 14;
-      case ButtonSize.large:
-        return 16;
+      case ButtonSize.small:  return 12;
+      case ButtonSize.medium: return 14;
+      case ButtonSize.large:  return 16;
     }
   }
 
   double _getIconSize() {
     switch (size) {
-      case ButtonSize.small:
-        return AppConstants.iconSmall;
-      case ButtonSize.medium:
-        return AppConstants.iconMedium;
-      case ButtonSize.large:
-        return AppConstants.iconLarge;
+      case ButtonSize.small:  return AppConstants.iconSmall;
+      case ButtonSize.medium: return AppConstants.iconMedium;
+      case ButtonSize.large:  return AppConstants.iconLarge;
     }
   }
 }
 
-/// Icon-only button
-class AppIconButton extends StatelessWidget {
+// ─── AppIconButton ────────────────────────────────────────────────────────────
+
+class AppIconButton extends ConsumerWidget {
   final IconData icon;
   final VoidCallback? onPressed;
   final ButtonVariant variant;
@@ -294,7 +270,8 @@ class AppIconButton extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final primary = ref.watch(resolvedPrimaryColorProvider);
     final iconSize = size == ButtonSize.small
         ? AppConstants.iconSmall
         : size == ButtonSize.medium
@@ -302,46 +279,39 @@ class AppIconButton extends StatelessWidget {
             : AppConstants.iconLarge;
 
     final bgColor = variant == ButtonVariant.primary
-        ? AppColors.primary
+        ? primary
         : variant == ButtonVariant.success
             ? AppColors.success
             : variant == ButtonVariant.danger
                 ? AppColors.danger
                 : AppColors.textSecondary;
 
+    final isOutline = variant == ButtonVariant.outline;
+
     final button = Container(
       width: _getSize(),
       height: _getSize(),
       decoration: BoxDecoration(
-        color: variant == ButtonVariant.outline ? Colors.transparent : bgColor,
+        color: isOutline ? Colors.transparent : bgColor,
         borderRadius: AppConstants.borderRadiusMedium,
-        border: variant == ButtonVariant.outline
-            ? Border.all(color: AppColors.primary, width: 1.5)
-            : null,
+        border: isOutline ? Border.all(color: primary, width: 1.5) : null,
       ),
       child: IconButton(
         icon: Icon(icon, size: iconSize),
         onPressed: onPressed,
-        color: variant == ButtonVariant.outline ? AppColors.primary : Colors.white,
+        color: isOutline ? primary : Colors.white,
         padding: EdgeInsets.zero,
       ),
     );
 
-    if (tooltip != null) {
-      return Tooltip(message: tooltip!, child: button);
-    }
-
-    return button;
+    return tooltip != null ? Tooltip(message: tooltip!, child: button) : button;
   }
 
   double _getSize() {
     switch (size) {
-      case ButtonSize.small:
-        return 32;
-      case ButtonSize.medium:
-        return 40;
-      case ButtonSize.large:
-        return 48;
+      case ButtonSize.small:  return 32;
+      case ButtonSize.medium: return 40;
+      case ButtonSize.large:  return 48;
     }
   }
 }

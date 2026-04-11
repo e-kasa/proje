@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../services/service_locator.dart';
+import '../../services/finance_service.dart';
+import '../../core/api/api_client.dart';
 import '../../core/widgets/widgets.dart';
 import '../../core/theme/app_constants.dart';
 
@@ -18,6 +20,8 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
   bool _isLoading = false;
   Map<String, dynamic> _stats = {};
   List<Map<String, dynamic>> _dailySales = [];
+  double _totalExpense = 0.0;
+  late final FinanceService _financeService;
 
   final _currencyFormat =
       NumberFormat.currency(locale: 'tr_TR', symbol: '\u20BA');
@@ -25,6 +29,7 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
   @override
   void initState() {
     super.initState();
+    _financeService = FinanceService(ApiClient());
     _loadData();
   }
 
@@ -41,11 +46,19 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
       final results = await Future.wait([
         salesSvc.getSalesStats(startDate: startOfDay, endDate: endOfDay),
         salesSvc.getDailySalesReport(date: _selectedDate),
+        _financeService.getExpenses(startDate: startOfDay, endDate: endOfDay),
       ]);
+
+      final expenses = results[2] as List<Map<String, dynamic>>;
+      final expenseTotal = expenses.fold<double>(
+        0.0,
+        (sum, e) => sum + ((e['amount'] as num?)?.toDouble() ?? 0.0),
+      );
 
       setState(() {
         _stats = results[0] as Map<String, dynamic>;
         _dailySales = (results[1] as List<Map<String, dynamic>>?) ?? [];
+        _totalExpense = expenseTotal;
         _isLoading = false;
       });
     } catch (e) {
@@ -145,8 +158,7 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
     final totalRevenue = _toD(_stats['totalRevenue']);
     final avgOrder = _toD(_stats['averageOrderValue']);
 
-    // Estimate expense and profit from available data
-    final totalExpense = totalRevenue * 0.0; // placeholder
+    final totalExpense = _totalExpense;
     final netProfit = totalRevenue - totalExpense;
 
     return Column(children: [

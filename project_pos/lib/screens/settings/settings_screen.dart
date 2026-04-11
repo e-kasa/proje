@@ -6,6 +6,7 @@ import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/auth_provider.dart';
+import 'theme_settings_drawer_advanced.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -33,8 +34,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
-    final primary = Theme.of(context).colorScheme.primary;
-
     return AppScaffold(
       appBar: AppAppBar.standard(
         title: 'Ayarlar',
@@ -70,6 +69,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
   Widget _buildProfileTab() {
     final primary = Theme.of(context).colorScheme.primary;
+    final user = ref.watch(authProvider).user;
+    final displayName = user?.displayName ?? user?.username ?? '-';
+    final email = user?.email ?? '-';
+    final initials = displayName.isNotEmpty
+        ? displayName.trim().split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase()
+        : '?';
+
     return SingleChildScrollView(
       padding: AppConstants.pagePadding,
       child: Column(
@@ -81,8 +87,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   children: [
                     CircleAvatar(
                       radius: 50,
-                      backgroundColor: primary.withValues(alpha: 0.1),
-                      child: Icon(Icons.person, size: 50, color: primary),
+                      backgroundColor: primary.withValues(alpha: 0.15),
+                      child: Text(
+                        initials,
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: primary,
+                        ),
+                      ),
                     ),
                     Positioned(
                       bottom: 0,
@@ -102,22 +115,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   ],
                 ),
                 const SizedBox(height: 16),
-                const Text('Admin Kullanıcı',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(displayName,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
-                Text('admin@example.com',
-                    style: TextStyle(color: AppColors.textMuted)),
+                Text(email, style: const TextStyle(color: AppColors.textMuted)),
+                if (user?.roles.isNotEmpty == true) ...[
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    children: user!.roles.map((r) => Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(r,
+                          style: TextStyle(fontSize: 11, color: primary, fontWeight: FontWeight.w600)),
+                    )).toList(),
+                  ),
+                ],
               ],
             ),
           ),
           const SizedBox(height: 16),
           _section('Kişisel Bilgiler', [
-            _item(Icons.person_outline, 'Ad Soyad', 'Admin Kullanıcı',
-                onTap: () => _showEditDialog('İsim', 'Admin Kullanıcı')),
-            _item(Icons.email_outlined, 'E-posta', 'admin@example.com',
-                onTap: () => _showEditDialog('E-posta', 'admin@example.com')),
-            _item(Icons.phone_outlined, 'Telefon', '+90 555 123 4567',
-                onTap: () => _showEditDialog('Telefon', '+90 555 123 4567')),
+            _item(Icons.person_outline, 'Ad Soyad', displayName,
+                onTap: () => _showEditDialog('İsim', displayName)),
+            _item(Icons.email_outlined, 'E-posta', email,
+                onTap: () => _showEditDialog('E-posta', email)),
+            _item(Icons.badge_outlined, 'Kullanıcı Adı', user?.username ?? '-'),
+            if (user?.selectedCompanyCode != null)
+              _item(Icons.business_outlined, 'Şirket Kodu', user!.selectedCompanyCode),
+            if (user?.storeId != null)
+              _item(Icons.store_outlined, 'Mağaza ID', user!.storeId!),
           ]),
           const SizedBox(height: 16),
           _section('Güvenlik', [
@@ -139,6 +169,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   Widget _buildAppearanceTab() {
     final s = ref.watch(themeProvider);
     final notifier = ref.read(themeProvider.notifier);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SingleChildScrollView(
       padding: AppConstants.pagePadding,
@@ -152,25 +183,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           // ── Mod Seçimi ──────────────────────────────────
           _sectionTitle('Tema Modu'),
           const SizedBox(height: 10),
-          _buildModeSelector(s, notifier),
+          _buildModeSelector(s, notifier, isDark),
           const SizedBox(height: 20),
 
           // ── Renk Teması ─────────────────────────────────
           _sectionTitle('Renk Teması'),
           const SizedBox(height: 10),
-          _buildColorPalette(s, notifier),
+          _buildColorPalette(s, notifier, isDark),
           const SizedBox(height: 20),
 
           // ── Yazı Boyutu ─────────────────────────────────
           _sectionTitle('Yazı Boyutu'),
           const SizedBox(height: 10),
-          _buildFontScale(s, notifier),
+          _buildFontScale(s, notifier, isDark),
           const SizedBox(height: 20),
 
           // ── Düzen Modu ──────────────────────────────────
           _sectionTitle('Düzen Modu'),
           const SizedBox(height: 10),
-          _buildLayoutMode(s, notifier),
+          _buildLayoutMode(s, notifier, isDark),
+          const SizedBox(height: 20),
+
+          // ── Renk Çubuğu ─────────────────────────────────
+          _sectionTitle('Kenar Çubuğu & Üst Çubuk'),
+          const SizedBox(height: 10),
+          _buildBarAppearance(s, notifier, isDark),
           const SizedBox(height: 20),
 
           // ── Gelişmiş ────────────────────────────────────
@@ -187,7 +224,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                       style: TextStyle(fontWeight: FontWeight.w500)),
                   subtitle: const Text('Sistem renklerini kullan'),
                   secondary: Icon(Icons.auto_awesome,
-                      color: Theme.of(context).colorScheme.primary),
+                      color: s.resolvedPrimary),
                   contentPadding: EdgeInsets.zero,
                 ),
                 const Divider(height: 1),
@@ -198,13 +235,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                       style: TextStyle(fontWeight: FontWeight.w500)),
                   subtitle: const Text('Arapça/İbranice için'),
                   secondary: Icon(Icons.format_textdirection_r_to_l,
-                      color: Theme.of(context).colorScheme.primary),
+                      color: s.resolvedPrimary),
                   contentPadding: EdgeInsets.zero,
                 ),
               ],
             ),
           ),
           const SizedBox(height: 16),
+
+          // ── Gelişmiş Tema Özelleştirici ─────────────────
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              icon: Icon(Icons.tune, color: s.resolvedPrimary),
+              label: Text('Gelişmiş Özelleştirici',
+                  style: TextStyle(color: s.resolvedPrimary)),
+              onPressed: () => AppBottomSheet.show(
+                context: context,
+                child: const ThemeSettingsDrawerAdvanced(),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: s.resolvedPrimary.withValues(alpha: 0.5)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
 
           // ── Sıfırla ─────────────────────────────────────
           SizedBox(
@@ -238,326 +296,475 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     );
   }
 
-  // Canlı Önizleme Kartı
+  // ─── Canlı Önizleme ─────────────────────────────────────────────────────────
   Widget _buildThemePreview(ThemeSettings s) {
     final gradient = s.resolvedGradient;
-    final primary = s.resolvedPrimary;
-    final isDark = s.themeMode == AppThemeMode.dark ||
-        (s.themeMode == AppThemeMode.system &&
-            MediaQuery.of(context).platformBrightness == Brightness.dark);
+    final primary  = s.resolvedPrimary;
+    final isDark   = Theme.of(context).brightness == Brightness.dark;
+    final bg       = isDark ? const Color(0xFF0f0f23) : AppColors.bgLight;
+    final cardBg   = isDark ? const Color(0xFF1a1a2e) : Colors.white;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Mini AppBar
+          // AppBar
           Container(
-            height: 48,
+            height: 44,
             decoration: BoxDecoration(gradient: gradient),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                const Icon(Icons.menu, color: Colors.white, size: 20),
-                const SizedBox(width: 12),
-                const Text('Önizleme',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14)),
-                const Spacer(),
-                Container(
-                  width: 28, height: 28,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Row(children: [
+              const Icon(Icons.menu, color: Colors.white, size: 18),
+              const SizedBox(width: 10),
+              const Expanded(child: Text('Önizleme',
+                  style: TextStyle(color: Colors.white,
+                      fontWeight: FontWeight.w600, fontSize: 13))),
+              Container(width: 26, height: 26,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.person, color: Colors.white, size: 16),
-                ),
-              ],
-            ),
+                      color: Colors.white.withValues(alpha: 0.2),
+                      shape: BoxShape.circle),
+                  child: const Icon(Icons.notifications_none,
+                      color: Colors.white, size: 15)),
+              const SizedBox(width: 6),
+              Container(width: 26, height: 26,
+                  decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      shape: BoxShape.circle),
+                  child: const Icon(Icons.person, color: Colors.white, size: 15)),
+            ]),
           ),
-          // Mini içerik
+          // Body
           Container(
-            color: isDark ? const Color(0xFF1a1a2e) : Colors.white,
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                // Mini kart
-                Expanded(
-                  child: Container(
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF252540)
-                          : AppColors.bgLight,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: const EdgeInsets.all(10),
-                    child: Column(
+            color: bg,
+            padding: const EdgeInsets.all(10),
+            child: Column(children: [
+              // KPI row
+              Row(children: [
+                _previewCard(cardBg, primary, '₺12,4K', 'Satış', Icons.trending_up),
+                const SizedBox(width: 8),
+                _previewCard(cardBg, primary, '48', 'Sipariş', Icons.receipt_outlined),
+                const SizedBox(width: 8),
+                _previewCard(cardBg, primary, '%4.2', 'İade', Icons.keyboard_return),
+              ]),
+              const SizedBox(height: 8),
+              // List item row
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                    color: cardBg, borderRadius: BorderRadius.circular(8)),
+                child: Row(children: [
+                  Container(width: 28, height: 28,
+                      decoration: BoxDecoration(
+                          gradient: gradient,
+                          borderRadius: BorderRadius.circular(6))),
+                  const SizedBox(width: 8),
+                  Expanded(child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(height: 8, width: 60,
+                        Container(height: 7, width: 80,
                             decoration: BoxDecoration(
                                 color: primary.withValues(alpha: 0.3),
                                 borderRadius: BorderRadius.circular(4))),
-                        const SizedBox(height: 6),
-                        Container(height: 6, width: 40,
+                        const SizedBox(height: 4),
+                        Container(height: 5, width: 50,
                             decoration: BoxDecoration(
-                                color: AppColors.textMuted.withValues(alpha: 0.4),
+                                color: AppColors.textMuted.withValues(alpha: 0.3),
                                 borderRadius: BorderRadius.circular(4))),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                // Mini buton
-                Container(
-                  height: 60,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  decoration: BoxDecoration(
-                    gradient: gradient,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Center(
-                    child: Text(
-                      s.primaryColor.label,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+                      ])),
+                  Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                          gradient: gradient,
+                          borderRadius: BorderRadius.circular(6)),
+                      child: const Text('Ekle',
+                          style: TextStyle(color: Colors.white,
+                              fontSize: 9, fontWeight: FontWeight.w600))),
+                ]),
+              ),
+            ]),
           ),
         ],
       ),
     );
   }
 
-  // Tema Modu Seçici
-  Widget _buildModeSelector(ThemeSettings s, ThemeNotifier notifier) {
+  Widget _previewCard(Color bg, Color primary, String value, String label,
+      IconData icon) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+            color: bg, borderRadius: BorderRadius.circular(8)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(icon, size: 12, color: primary),
+          const SizedBox(height: 3),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 11, fontWeight: FontWeight.w700, color: primary)),
+          Text(label,
+              style: const TextStyle(fontSize: 8, color: AppColors.textMuted)),
+        ]),
+      ),
+    );
+  }
+
+  // ─── Mod Seçici ─────────────────────────────────────────────────────────────
+  Widget _buildModeSelector(
+      ThemeSettings s, ThemeNotifier notifier, bool isDark) {
+    final primary = s.resolvedPrimary;
+    final unselBg = isDark ? const Color(0xFF1E1E2E) : Colors.white;
+    final unselBorder = isDark ? const Color(0xFF2E2E3E) : AppColors.border;
+
     final options = [
-      (AppThemeMode.light, Icons.light_mode_outlined, 'Açık'),
-      (AppThemeMode.dark,  Icons.dark_mode_outlined,  'Koyu'),
-      (AppThemeMode.system, Icons.brightness_auto,    'Sistem'),
+      (AppThemeMode.light,  Icons.light_mode_outlined,  'Açık'),
+      (AppThemeMode.dark,   Icons.dark_mode_outlined,   'Koyu'),
+      (AppThemeMode.system, Icons.brightness_auto,      'Sistem'),
     ];
     return Row(
-      children: options.map((opt) {
+      children: options.asMap().entries.map((entry) {
+        final i   = entry.key;
+        final opt = entry.value;
         final selected = s.themeMode == opt.$1;
-        final primary = s.resolvedPrimary;
         return Expanded(
           child: Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: EdgeInsets.only(right: i < options.length - 1 ? 8 : 0),
             child: GestureDetector(
               onTap: () => notifier.setThemeMode(opt.$1),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  color: selected ? primary.withValues(alpha: 0.1) : Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: selected ? primary : AppColors.border,
-                    width: selected ? 2 : 1,
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(opt.$2,
-                        color: selected ? primary : AppColors.textMuted,
-                        size: 22),
-                    const SizedBox(height: 6),
-                    Text(opt.$3,
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: selected
-                                ? FontWeight.w600
-                                : FontWeight.w400,
-                            color: selected ? primary : AppColors.textSecondary)),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  // Renk Paleti Seçici
-  Widget _buildColorPalette(ThemeSettings s, ThemeNotifier notifier) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-        childAspectRatio: 1.55,
-      ),
-      itemCount: PrimaryColorOption.values.length,
-      itemBuilder: (_, i) {
-        final option = PrimaryColorOption.values[i];
-        final isSelected = s.primaryColor == option && s.customPrimaryColor == null;
-        return GestureDetector(
-          onTap: () => notifier.setPrimaryColor(option),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            decoration: BoxDecoration(
-              gradient: option.gradient,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: isSelected ? Colors.white : Colors.transparent,
-                width: 2.5,
-              ),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: option.color.withValues(alpha: 0.45),
-                        blurRadius: 8,
-                        spreadRadius: 1,
-                      )
-                    ]
-                  : [],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (isSelected)
-                  Container(
-                    width: 18, height: 18,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.3),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.check, color: Colors.white, size: 11),
-                  )
-                else
-                  const SizedBox(height: 18),
-                const SizedBox(height: 3),
-                Text(
-                  option.label,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w600,
-                    shadows: [Shadow(blurRadius: 3, color: Colors.black38)],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  // Yazı Boyutu Slider
-  Widget _buildFontScale(ThemeSettings s, ThemeNotifier notifier) {
-    final primary = s.resolvedPrimary;
-    final labels = {0.8: 'XS', 0.9: 'S', 1.0: 'M', 1.1: 'L', 1.2: 'XL', 1.3: 'XXL'};
-    return AppCard(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('A', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
-              Text(
-                labels[s.fontScale] ??
-                    '${(s.fontScale * 100).round()}%',
-                style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: primary),
-              ),
-              const Text('A', style: TextStyle(fontSize: 20, color: AppColors.textMuted)),
-            ],
-          ),
-          Slider(
-            value: s.fontScale,
-            min: 0.8, max: 1.3,
-            divisions: 5,
-            activeColor: primary,
-            label: labels[s.fontScale] ?? '${(s.fontScale * 100).round()}%',
-            onChanged: (v) => notifier.setFontScale(v),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: labels.entries.map((e) => Text(
-              e.value,
-              style: TextStyle(
-                  fontSize: 10,
-                  color: (s.fontScale - e.key).abs() < 0.01
-                      ? primary
-                      : AppColors.textMuted,
-                  fontWeight: (s.fontScale - e.key).abs() < 0.01
-                      ? FontWeight.w700
-                      : FontWeight.w400),
-            )).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Düzen Modu Seçici
-  Widget _buildLayoutMode(ThemeSettings s, ThemeNotifier notifier) {
-    final primary = s.resolvedPrimary;
-    final options = [
-      (LayoutMode.default_, Icons.view_agenda_outlined, 'Varsayılan'),
-      (LayoutMode.compact,  Icons.density_small,        'Kompakt'),
-      (LayoutMode.modern,   Icons.auto_awesome_mosaic,  'Modern'),
-    ];
-    return Row(
-      children: options.map((opt) {
-        final selected = s.layoutMode == opt.$1;
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
-              onTap: () => notifier.setLayoutMode(opt.$1),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: selected ? primary.withValues(alpha: 0.1) : Colors.white,
+                  color: selected
+                      ? primary.withValues(alpha: isDark ? 0.2 : 0.08)
+                      : unselBg,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: selected ? primary : AppColors.border,
+                    color: selected ? primary : unselBorder,
                     width: selected ? 2 : 1,
                   ),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(opt.$2,
-                        color: selected ? primary : AppColors.textMuted,
-                        size: 22),
-                    const SizedBox(height: 6),
-                    Text(opt.$3,
-                        style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: selected
-                                ? FontWeight.w600
-                                : FontWeight.w400,
-                            color: selected ? primary : AppColors.textSecondary)),
-                  ],
-                ),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(opt.$2,
+                      color: selected ? primary : AppColors.textMuted,
+                      size: 20),
+                  const SizedBox(height: 5),
+                  Text(opt.$3,
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: selected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                          color: selected
+                              ? primary
+                              : AppColors.textSecondary)),
+                ]),
               ),
             ),
           ),
         );
       }).toList(),
     );
+  }
+
+  // ─── Renk Paleti ────────────────────────────────────────────────────────────
+  Widget _buildColorPalette(
+      ThemeSettings s, ThemeNotifier notifier, bool isDark) {
+    final cardBg   = isDark ? const Color(0xFF1E1E2E) : Colors.white;
+    final borderC  = isDark ? const Color(0xFF2E2E3E) : AppColors.border;
+    final items    = PrimaryColorOption.values;
+
+    Widget chip(PrimaryColorOption opt) {
+      final isSel = s.primaryColor == opt && s.customPrimaryColor == null;
+      return Expanded(
+        child: GestureDetector(
+          onTap: () => notifier.setPrimaryColor(opt),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            height: 46,
+            decoration: BoxDecoration(
+              color: isSel
+                  ? opt.color.withValues(alpha: isDark ? 0.22 : 0.08)
+                  : cardBg,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isSel ? opt.color : borderC,
+                width: isSel ? 1.5 : 1,
+              ),
+            ),
+            child: Row(children: [
+              const SizedBox(width: 10),
+              Container(
+                width: 26, height: 26,
+                decoration: BoxDecoration(
+                  gradient: opt.gradient,
+                  shape: BoxShape.circle,
+                  boxShadow: isSel
+                      ? [BoxShadow(
+                          color: opt.color.withValues(alpha: 0.4),
+                          blurRadius: 6)]
+                      : [],
+                ),
+                child: isSel
+                    ? const Icon(Icons.check, color: Colors.white, size: 13)
+                    : null,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(opt.label,
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: isSel ? FontWeight.w600 : FontWeight.w400,
+                        color: isSel
+                            ? opt.color
+                            : (isDark ? Colors.white70 : AppColors.textPrimary))),
+              ),
+              Container(
+                width: 3, height: 20,
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  gradient: opt.gradient,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      );
+    }
+
+    // 2 sütun, 4 satır — manuel Row/Column (shrinkWrap sorununu önler)
+    final rows = <Widget>[];
+    for (var i = 0; i < items.length; i += 2) {
+      rows.add(Row(children: [
+        chip(items[i]),
+        const SizedBox(width: 8),
+        if (i + 1 < items.length) chip(items[i + 1])
+        else const Expanded(child: SizedBox()),
+      ]));
+      if (i + 2 < items.length) rows.add(const SizedBox(height: 8));
+    }
+    return Column(children: rows);
+  }
+
+  // ─── Yazı Boyutu ────────────────────────────────────────────────────────────
+  Widget _buildFontScale(
+      ThemeSettings s, ThemeNotifier notifier, bool isDark) {
+    final primary = s.resolvedPrimary;
+    final steps = [
+      (0.8, 'XS'), (0.9, 'S'), (1.0, 'M'),
+      (1.1, 'L'),  (1.2, 'XL'), (1.3, 'XXL'),
+    ];
+    final current = steps.firstWhere(
+        (e) => (s.fontScale - e.$1).abs() < 0.01,
+        orElse: () => (s.fontScale, '${(s.fontScale * 100).round()}%'));
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+      child: Column(children: [
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Text('A',
+              style: TextStyle(fontSize: 12,
+                  color: isDark ? Colors.white38 : AppColors.textMuted)),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+            decoration: BoxDecoration(
+              color: primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(current.$2,
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: primary)),
+          ),
+          Text('A',
+              style: TextStyle(fontSize: 20,
+                  color: isDark ? Colors.white38 : AppColors.textMuted)),
+        ]),
+        Slider(
+          value: s.fontScale,
+          min: 0.8, max: 1.3,
+          divisions: 5,
+          activeColor: primary,
+          inactiveColor: primary.withValues(alpha: 0.2),
+          onChanged: (v) => notifier.setFontScale(v),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: steps.map((e) {
+            final active = (s.fontScale - e.$1).abs() < 0.01;
+            return Text(e.$2,
+                style: TextStyle(
+                    fontSize: 10,
+                    color: active ? primary : AppColors.textMuted,
+                    fontWeight: active
+                        ? FontWeight.w700
+                        : FontWeight.w400));
+          }).toList(),
+        ),
+      ]),
+    );
+  }
+
+  // ─── Düzen Modu ─────────────────────────────────────────────────────────────
+  Widget _buildLayoutMode(
+      ThemeSettings s, ThemeNotifier notifier, bool isDark) {
+    final primary    = s.resolvedPrimary;
+    final unselBg    = isDark ? const Color(0xFF1E1E2E) : Colors.white;
+    final unselBorder = isDark ? const Color(0xFF2E2E3E) : AppColors.border;
+    final options = [
+      (LayoutMode.default_, Icons.view_agenda_outlined, 'Varsayılan', 'Geniş boşluk'),
+      (LayoutMode.compact,  Icons.density_small,        'Kompakt',    'Daha fazla içerik'),
+      (LayoutMode.modern,   Icons.auto_awesome_mosaic,  'Modern',     'Kart görünüm'),
+    ];
+    return Column(
+      children: options.map((opt) {
+        final selected = s.layoutMode == opt.$1;
+        return GestureDetector(
+          onTap: () => notifier.setLayoutMode(opt.$1),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: selected
+                  ? primary.withValues(alpha: isDark ? 0.2 : 0.07)
+                  : unselBg,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: selected ? primary : unselBorder,
+                width: selected ? 1.5 : 1,
+              ),
+            ),
+            child: Row(children: [
+              Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: selected
+                      ? primary.withValues(alpha: 0.15)
+                      : (isDark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : AppColors.bgLight),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(opt.$2,
+                    size: 18,
+                    color: selected ? primary : AppColors.textMuted),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(opt.$3,
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: selected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                            color: selected
+                                ? primary
+                                : (isDark
+                                    ? Colors.white70
+                                    : AppColors.textPrimary))),
+                    const SizedBox(height: 2),
+                    Text(opt.$4,
+                        style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textMuted)),
+                  ])),
+              if (selected)
+                Icon(Icons.check_circle, color: primary, size: 18),
+            ]),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // ─── Kenar & Üst Çubuk Görünümü ─────────────────────────────────────────────
+  Widget _buildBarAppearance(
+      ThemeSettings s, ThemeNotifier notifier, bool isDark) {
+    final primary    = s.resolvedPrimary;
+    final cardBg     = isDark ? const Color(0xFF1E1E2E) : Colors.white;
+
+    Widget appearanceRow(
+      String label,
+      IconData icon,
+      List<(String, IconData, bool)> opts,
+      Function(int) onSelect,
+    ) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? const Color(0xFF2E2E3E) : AppColors.border),
+        ),
+        child: Row(children: [
+          Icon(icon, size: 18, color: AppColors.textMuted),
+          const SizedBox(width: 10),
+          Expanded(child: Text(label,
+              style: TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white70 : AppColors.textPrimary))),
+          Row(
+            children: opts.asMap().entries.map((oe) { final o = oe.value; return GestureDetector(
+              onTap: () => onSelect(oe.key),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                margin: const EdgeInsets.only(left: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: o.$3
+                      ? primary.withValues(alpha: 0.12)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                      color: o.$3 ? primary : AppColors.border),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(o.$2, size: 12,
+                      color: o.$3 ? primary : AppColors.textMuted),
+                  const SizedBox(width: 4),
+                  Text(o.$1,
+                      style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: o.$3
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                          color: o.$3 ? primary : AppColors.textMuted)),
+                ]),
+              ),
+            );}).toList(),
+          ),
+        ]),
+      );
+    }
+
+    return Column(children: [
+      appearanceRow(
+        'Kenar Çubuğu',
+        Icons.vertical_split_outlined,
+        [
+          ('Açık', Icons.light_mode, s.sidebarAppearance == SidebarAppearance.light),
+          ('Koyu', Icons.dark_mode,  s.sidebarAppearance == SidebarAppearance.dark),
+          ('Renkli', Icons.palette,  s.sidebarAppearance == SidebarAppearance.colored),
+        ],
+        (i) => notifier.setSidebarAppearance(SidebarAppearance.values[i]),
+      ),
+      const SizedBox(height: 8),
+      appearanceRow(
+        'Üst Çubuk',
+        Icons.horizontal_split_outlined,
+        [
+          ('Açık',  Icons.light_mode, s.topbarAppearance == TopbarAppearance.light),
+          ('Koyu',  Icons.dark_mode,  s.topbarAppearance == TopbarAppearance.dark),
+          ('Renkli',Icons.palette,    s.topbarAppearance == TopbarAppearance.colored),
+        ],
+        (i) => notifier.setTopbarAppearance(TopbarAppearance.values[i]),
+      ),
+    ]);
   }
 
   // ═══════════════════════════════════════════════════════

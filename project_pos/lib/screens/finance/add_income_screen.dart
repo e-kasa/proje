@@ -9,6 +9,7 @@ import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../../core/utils/validation_helper.dart';
 import '../../services/finance_service.dart';
 import '../../core/api/api_client.dart';
+import '../../providers/auth_provider.dart';
 
 class AddIncomeScreen extends ConsumerStatefulWidget {
   final int? incomeId;
@@ -82,7 +83,7 @@ class _AddIncomeScreenState extends ConsumerState<AddIncomeScreen> {
         'date': _dateController.text.trim(),
         'paymentMethod': _selectedPaymentMethod,
         'status': _selectedStatus,
-        'createdBy': 'Admin',
+        'createdBy': ref.read(authProvider).user?.username ?? 'system',
       };
 
       await _financeService.createRevenue(data);

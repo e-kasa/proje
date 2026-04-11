@@ -339,39 +339,293 @@ final themeModeProvider = Provider<ThemeMode>((ref) {
 final lightThemeProvider = Provider<ThemeData>((ref) {
   final s = ref.watch(themeProvider);
   final primary = s.resolvedPrimary;
+  final end = s.resolvedEnd;
+
+  const surface = Color(0xFFFFFFFF);
+  const bg = Color(0xFFF9FAFB);
+  const border = Color(0xFFE5E7EB);
+  const textPrimary = Color(0xFF111827);
+  const textSecondary = Color(0xFF6B7280);
+
+  final colorScheme = ColorScheme.fromSeed(
+    seedColor: primary,
+    primary: primary,
+    secondary: end,
+    surface: surface,
+    onSurface: textPrimary,
+    onPrimary: Colors.white,
+    brightness: Brightness.light,
+    outline: border,
+  );
 
   return ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: primary,
-      primary: primary,
-      brightness: Brightness.light,
-    ),
+    colorScheme: colorScheme,
+    scaffoldBackgroundColor: bg,
+    cardColor: surface,
+    canvasColor: bg,
+    dividerColor: border,
+    hintColor: textSecondary,
+
+    // ── AppBar ──────────────────────────────────────────────
     appBarTheme: AppBarTheme(
       backgroundColor: _topbarColor(s, Brightness.light),
       foregroundColor: _topbarForeground(s, Brightness.light),
       elevation: 0,
       surfaceTintColor: Colors.transparent,
+      iconTheme: const IconThemeData(color: Colors.white),
+      actionsIconTheme: const IconThemeData(color: Colors.white),
     ),
+
+    // ── Drawer ──────────────────────────────────────────────
     drawerTheme: DrawerThemeData(
       backgroundColor: _sidebarColor(s, Brightness.light),
     ),
+
+    // ── Card ────────────────────────────────────────────────
+    cardTheme: CardThemeData(
+      color: surface,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: border),
+      ),
+      margin: EdgeInsets.zero,
+    ),
+
+    // ── Buttons ─────────────────────────────────────────────
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ButtonStyle(
+        backgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return border;
+          }
+          return primary;
+        }),
+        foregroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return textSecondary;
+          }
+          return Colors.white;
+        }),
+        elevation: WidgetStateProperty.all(0),
+        shape: WidgetStateProperty.all(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+        padding: WidgetStateProperty.all(
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: ButtonStyle(
+        foregroundColor: WidgetStateProperty.all(primary),
+        side: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return const BorderSide(color: border);
+          }
+          return BorderSide(color: primary, width: 1.5);
+        }),
+        shape: WidgetStateProperty.all(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+        padding: WidgetStateProperty.all(
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: primary,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    ),
+
+    // ── FAB ─────────────────────────────────────────────────
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: primary,
       foregroundColor: Colors.white,
+      elevation: 3,
     ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: primary,
-        foregroundColor: Colors.white,
+
+    // ── Input ────────────────────────────────────────────────
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: surface,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: border),
       ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: primary, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFEF4444)),
+      ),
+      hintStyle: const TextStyle(color: textSecondary, fontSize: 14),
+      labelStyle: TextStyle(color: primary),
+      prefixIconColor: textSecondary,
+      suffixIconColor: textSecondary,
     ),
+
+    // ── Checkbox / Radio / Switch ────────────────────────────
+    checkboxTheme: CheckboxThemeData(
+      fillColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) return primary;
+        return Colors.transparent;
+      }),
+      checkColor: WidgetStateProperty.all(Colors.white),
+      side: BorderSide(color: primary, width: 1.5),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+    ),
+    radioTheme: RadioThemeData(
+      fillColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) return primary;
+        return textSecondary;
+      }),
+    ),
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) return Colors.white;
+        return Colors.white;
+      }),
+      trackColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) return primary;
+        return border;
+      }),
+      trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+    ),
+
+    // ── Chip ────────────────────────────────────────────────
+    chipTheme: ChipThemeData(
+      backgroundColor: bg,
+      selectedColor: primary.withValues(alpha: 0.15),
+      labelStyle: const TextStyle(fontSize: 13, color: textPrimary),
+      side: const BorderSide(color: border),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      checkmarkColor: primary,
+    ),
+
+    // ── Segmented Button ─────────────────────────────────────
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: SegmentedButton.styleFrom(
         selectedBackgroundColor: primary,
         selectedForegroundColor: Colors.white,
+        backgroundColor: surface,
+        foregroundColor: textSecondary,
+        side: const BorderSide(color: border),
       ),
+    ),
+
+    // ── TabBar ──────────────────────────────────────────────
+    tabBarTheme: TabBarThemeData(
+      labelColor: primary,
+      unselectedLabelColor: textSecondary,
+      indicator: UnderlineTabIndicator(
+        borderSide: BorderSide(color: primary, width: 2),
+      ),
+      dividerColor: border,
+      indicatorSize: TabBarIndicatorSize.label,
+    ),
+
+    // ── List Tile ────────────────────────────────────────────
+    listTileTheme: const ListTileThemeData(
+      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      titleTextStyle: TextStyle(
+          fontSize: 14, fontWeight: FontWeight.w500, color: textPrimary),
+      subtitleTextStyle: TextStyle(fontSize: 12, color: textSecondary),
+    ),
+
+    // ── Divider ──────────────────────────────────────────────
+    dividerTheme: const DividerThemeData(
+      color: border,
+      thickness: 1,
+      space: 1,
+    ),
+
+    // ── BottomSheet ──────────────────────────────────────────
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: surface,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+    ),
+
+    // ── Dialog ───────────────────────────────────────────────
+    dialogTheme: const DialogThemeData(
+      backgroundColor: surface,
+      surfaceTintColor: Colors.transparent,
+      elevation: 8,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(16)),
+      ),
+    ),
+
+    // ── SnackBar ─────────────────────────────────────────────
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: const Color(0xFF1F2937),
+      contentTextStyle: const TextStyle(color: Colors.white, fontSize: 13),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      behavior: SnackBarBehavior.floating,
+      actionTextColor: primary,
+    ),
+
+    // ── Progress ─────────────────────────────────────────────
+    progressIndicatorTheme: ProgressIndicatorThemeData(
+      color: primary,
+      linearTrackColor: border,
+    ),
+
+    // ── Slider ───────────────────────────────────────────────
+    sliderTheme: SliderThemeData(
+      activeTrackColor: primary,
+      thumbColor: primary,
+      overlayColor: primary.withValues(alpha: 0.12),
+      inactiveTrackColor: border,
+    ),
+
+    // ── Popup Menu ───────────────────────────────────────────
+    popupMenuTheme: const PopupMenuThemeData(
+      color: surface,
+      elevation: 8,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(10)),
+      ),
+    ),
+
+    // ── Text Selection ───────────────────────────────────────
+    textSelectionTheme: TextSelectionThemeData(
+      cursorColor: primary,
+      selectionColor: primary.withValues(alpha: 0.2),
+      selectionHandleColor: primary,
+    ),
+
+    // ── Icon ─────────────────────────────────────────────────
+    iconTheme: const IconThemeData(color: textSecondary, size: 20),
+    primaryIconTheme: const IconThemeData(color: Colors.white, size: 20),
+
+    // ── Text ─────────────────────────────────────────────────
+    textTheme: const TextTheme(
+      bodyLarge: TextStyle(color: textPrimary, fontSize: 14),
+      bodyMedium: TextStyle(color: textPrimary, fontSize: 13),
+      bodySmall: TextStyle(color: textSecondary, fontSize: 12),
+      titleLarge: TextStyle(color: textPrimary, fontSize: 20, fontWeight: FontWeight.w700),
+      titleMedium: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.w600),
+      titleSmall: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600),
+      labelLarge: TextStyle(color: textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
+      labelMedium: TextStyle(color: textSecondary, fontSize: 12),
+      labelSmall: TextStyle(color: textSecondary, fontSize: 11),
     ),
   );
 });
@@ -380,29 +634,291 @@ final lightThemeProvider = Provider<ThemeData>((ref) {
 final darkThemeProvider = Provider<ThemeData>((ref) {
   final s = ref.watch(themeProvider);
   final primary = s.resolvedPrimary;
+  final end = s.resolvedEnd;
+
+  const surface = Color(0xFF1A1A2E);
+  const surfaceHigh = Color(0xFF252540);
+  const bg = Color(0xFF0F0F23);
+  const border = Color(0xFF2D2D4A);
+  const textPrimary = Color(0xFFF1F5F9);
+  const textSecondary = Color(0xFF94A3B8);
+
+  final colorScheme = ColorScheme.fromSeed(
+    seedColor: primary,
+    primary: primary,
+    secondary: end,
+    surface: surface,
+    onSurface: textPrimary,
+    onPrimary: Colors.white,
+    brightness: Brightness.dark,
+    outline: border,
+  );
 
   return ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: primary,
-      primary: primary,
-      brightness: Brightness.dark,
-    ),
-    scaffoldBackgroundColor: const Color(0xFF0f0f23),
-    cardColor: const Color(0xFF1a1a2e),
+    colorScheme: colorScheme,
+    scaffoldBackgroundColor: bg,
+    cardColor: surface,
+    canvasColor: bg,
+    dividerColor: border,
+    hintColor: textSecondary,
+
+    // ── AppBar ──────────────────────────────────────────────
     appBarTheme: AppBarTheme(
       backgroundColor: _topbarColor(s, Brightness.dark),
       foregroundColor: _topbarForeground(s, Brightness.dark),
       elevation: 0,
       surfaceTintColor: Colors.transparent,
+      iconTheme: const IconThemeData(color: Colors.white),
+      actionsIconTheme: const IconThemeData(color: Colors.white),
     ),
+
+    // ── Drawer ──────────────────────────────────────────────
     drawerTheme: DrawerThemeData(
       backgroundColor: _sidebarColor(s, Brightness.dark),
     ),
+
+    // ── Card ────────────────────────────────────────────────
+    cardTheme: CardThemeData(
+      color: surface,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: border),
+      ),
+      margin: EdgeInsets.zero,
+    ),
+
+    // ── Buttons ─────────────────────────────────────────────
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ButtonStyle(
+        backgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) return border;
+          return primary;
+        }),
+        foregroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) return textSecondary;
+          return Colors.white;
+        }),
+        elevation: WidgetStateProperty.all(0),
+        shape: WidgetStateProperty.all(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+        padding: WidgetStateProperty.all(
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: ButtonStyle(
+        foregroundColor: WidgetStateProperty.all(primary),
+        side: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return const BorderSide(color: border);
+          }
+          return BorderSide(color: primary, width: 1.5);
+        }),
+        shape: WidgetStateProperty.all(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+        padding: WidgetStateProperty.all(
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: primary,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    ),
+
+    // ── FAB ─────────────────────────────────────────────────
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: primary,
       foregroundColor: Colors.white,
+      elevation: 3,
+    ),
+
+    // ── Input ────────────────────────────────────────────────
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: surfaceHigh,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: border),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: primary, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFEF4444)),
+      ),
+      hintStyle: const TextStyle(color: textSecondary, fontSize: 14),
+      labelStyle: TextStyle(color: primary),
+      prefixIconColor: textSecondary,
+      suffixIconColor: textSecondary,
+    ),
+
+    // ── Checkbox / Radio / Switch ────────────────────────────
+    checkboxTheme: CheckboxThemeData(
+      fillColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) return primary;
+        return Colors.transparent;
+      }),
+      checkColor: WidgetStateProperty.all(Colors.white),
+      side: BorderSide(color: primary, width: 1.5),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+    ),
+    radioTheme: RadioThemeData(
+      fillColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) return primary;
+        return textSecondary;
+      }),
+    ),
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) return Colors.white;
+        return textSecondary;
+      }),
+      trackColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) return primary;
+        return border;
+      }),
+      trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+    ),
+
+    // ── Chip ────────────────────────────────────────────────
+    chipTheme: ChipThemeData(
+      backgroundColor: surfaceHigh,
+      selectedColor: primary.withValues(alpha: 0.25),
+      labelStyle: const TextStyle(fontSize: 13, color: textPrimary),
+      side: const BorderSide(color: border),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      checkmarkColor: primary,
+    ),
+
+    // ── Segmented Button ─────────────────────────────────────
+    segmentedButtonTheme: SegmentedButtonThemeData(
+      style: SegmentedButton.styleFrom(
+        selectedBackgroundColor: primary,
+        selectedForegroundColor: Colors.white,
+        backgroundColor: surfaceHigh,
+        foregroundColor: textSecondary,
+        side: const BorderSide(color: border),
+      ),
+    ),
+
+    // ── TabBar ──────────────────────────────────────────────
+    tabBarTheme: TabBarThemeData(
+      labelColor: primary,
+      unselectedLabelColor: textSecondary,
+      indicator: UnderlineTabIndicator(
+        borderSide: BorderSide(color: primary, width: 2),
+      ),
+      dividerColor: border,
+      indicatorSize: TabBarIndicatorSize.label,
+    ),
+
+    // ── List Tile ────────────────────────────────────────────
+    listTileTheme: const ListTileThemeData(
+      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      tileColor: Colors.transparent,
+      titleTextStyle: TextStyle(
+          fontSize: 14, fontWeight: FontWeight.w500, color: textPrimary),
+      subtitleTextStyle: TextStyle(fontSize: 12, color: textSecondary),
+    ),
+
+    // ── Divider ──────────────────────────────────────────────
+    dividerTheme: const DividerThemeData(
+      color: border,
+      thickness: 1,
+      space: 1,
+    ),
+
+    // ── BottomSheet ──────────────────────────────────────────
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: surface,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+    ),
+
+    // ── Dialog ───────────────────────────────────────────────
+    dialogTheme: const DialogThemeData(
+      backgroundColor: surface,
+      surfaceTintColor: Colors.transparent,
+      elevation: 8,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(16)),
+      ),
+    ),
+
+    // ── SnackBar ─────────────────────────────────────────────
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: surfaceHigh,
+      contentTextStyle: const TextStyle(color: textPrimary, fontSize: 13),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      behavior: SnackBarBehavior.floating,
+      actionTextColor: primary,
+    ),
+
+    // ── Progress ─────────────────────────────────────────────
+    progressIndicatorTheme: ProgressIndicatorThemeData(
+      color: primary,
+      linearTrackColor: border,
+    ),
+
+    // ── Slider ───────────────────────────────────────────────
+    sliderTheme: SliderThemeData(
+      activeTrackColor: primary,
+      thumbColor: primary,
+      overlayColor: primary.withValues(alpha: 0.15),
+      inactiveTrackColor: border,
+    ),
+
+    // ── Popup Menu ───────────────────────────────────────────
+    popupMenuTheme: const PopupMenuThemeData(
+      color: surface,
+      elevation: 8,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(10)),
+      ),
+    ),
+
+    // ── Text Selection ───────────────────────────────────────
+    textSelectionTheme: TextSelectionThemeData(
+      cursorColor: primary,
+      selectionColor: primary.withValues(alpha: 0.25),
+      selectionHandleColor: primary,
+    ),
+
+    // ── Icon ─────────────────────────────────────────────────
+    iconTheme: const IconThemeData(color: textSecondary, size: 20),
+    primaryIconTheme: const IconThemeData(color: Colors.white, size: 20),
+
+    // ── Text ─────────────────────────────────────────────────
+    textTheme: const TextTheme(
+      bodyLarge: TextStyle(color: textPrimary, fontSize: 14),
+      bodyMedium: TextStyle(color: textPrimary, fontSize: 13),
+      bodySmall: TextStyle(color: textSecondary, fontSize: 12),
+      titleLarge: TextStyle(color: textPrimary, fontSize: 20, fontWeight: FontWeight.w700),
+      titleMedium: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.w600),
+      titleSmall: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600),
+      labelLarge: TextStyle(color: textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
+      labelMedium: TextStyle(color: textSecondary, fontSize: 12),
+      labelSmall: TextStyle(color: textSecondary, fontSize: 11),
     ),
   );
 });

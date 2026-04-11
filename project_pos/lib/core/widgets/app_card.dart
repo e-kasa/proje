@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/theme_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_constants.dart';
 
-/// Merkezi Card Widget - React benzeri
-class AppCard extends StatelessWidget {
+/// Merkezi Card Widget — tema ve dark mode uyumlu.
+class AppCard extends ConsumerWidget {
   final Widget child;
   final EdgeInsets? padding;
   final Color? color;
@@ -12,9 +14,7 @@ class AppCard extends StatelessWidget {
   final bool hasShadow;
   final bool hasBorder;
   final BorderRadius? borderRadius;
-  /// Override border color (örn. seçim modu için AppColors.primary)
   final Color? borderColor;
-  /// Override border width (örn. seçim modu için 2)
   final double? borderWidth;
 
   const AppCard({
@@ -32,20 +32,26 @@ class AppCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final effectiveBorderColor = borderColor ?? AppColors.border;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? const Color(0xFF1A1A2E) : Colors.white;
+    final effectiveBorderColor = borderColor ??
+        (isDark ? const Color(0xFF2D2D4A) : AppColors.border);
     final effectiveBorderWidth = borderWidth ?? 1.0;
     final effectiveRadius = borderRadius ?? AppConstants.borderRadiusMedium;
 
     final card = Container(
       padding: padding ?? AppConstants.paddingMedium,
       decoration: BoxDecoration(
-        color: color ?? Colors.white,
+        color: color ?? surfaceColor,
         borderRadius: effectiveRadius,
         border: hasBorder
-            ? Border.all(color: effectiveBorderColor, width: effectiveBorderWidth)
+            ? Border.all(
+                color: effectiveBorderColor, width: effectiveBorderWidth)
             : null,
-        boxShadow: hasShadow ? AppConstants.shadowSmall : null,
+        boxShadow: hasShadow
+            ? (isDark ? null : AppConstants.shadowSmall)
+            : null,
       ),
       child: child,
     );
@@ -66,8 +72,8 @@ class AppCard extends StatelessWidget {
   }
 }
 
-/// Stat Card - İstatistik gösterimi için
-class AppStatCard extends StatelessWidget {
+/// Stat Card — istatistik gösterimi için
+class AppStatCard extends ConsumerWidget {
   final String title;
   final String value;
   final IconData icon;
@@ -84,7 +90,8 @@ class AppStatCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AppCard(
       onTap: onTap,
       hasShadow: false,
@@ -95,7 +102,7 @@ class AppStatCard extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: isDark ? 0.15 : 0.1),
               borderRadius: AppConstants.borderRadiusMedium,
             ),
             child: Icon(icon, color: color, size: AppConstants.iconLarge),
@@ -112,9 +119,11 @@ class AppStatCard extends StatelessWidget {
           const SizedBox(height: AppConstants.spacing4),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppColors.textSecondary,
+              color: isDark
+                  ? const Color(0xFF94A3B8)
+                  : AppColors.textSecondary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -124,8 +133,8 @@ class AppStatCard extends StatelessWidget {
   }
 }
 
-/// Section Card - Başlıklı bölüm kartı
-class AppSectionCard extends StatelessWidget {
+/// Section Card — başlıklı bölüm kartı
+class AppSectionCard extends ConsumerWidget {
   final String title;
   final IconData? icon;
   final List<Widget> children;
@@ -140,12 +149,19 @@ class AppSectionCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = ref.watch(resolvedPrimaryColorProvider);
+    final surfaceColor = isDark ? const Color(0xFF1A1A2E) : Colors.white;
+    final borderC = isDark ? const Color(0xFF2D2D4A) : AppColors.border;
+    final titleColor =
+        isDark ? const Color(0xFFF1F5F9) : AppColors.textPrimary;
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: surfaceColor,
         borderRadius: AppConstants.borderRadiusMedium,
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: borderC),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,16 +171,16 @@ class AppSectionCard extends StatelessWidget {
             child: Row(
               children: [
                 if (icon != null) ...[
-                  Icon(icon, color: AppColors.primary, size: 20),
+                  Icon(icon, color: primary, size: 20),
                   const SizedBox(width: AppConstants.spacing8),
                 ],
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: titleColor,
                     ),
                   ),
                 ),
@@ -172,7 +188,7 @@ class AppSectionCard extends StatelessWidget {
               ],
             ),
           ),
-          const Divider(height: 1),
+          Divider(height: 1, color: borderC),
           Padding(
             padding: AppConstants.paddingMedium,
             child: Column(

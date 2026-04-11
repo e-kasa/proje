@@ -452,6 +452,6 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
 
     @Override
     public Class<?> getDTOClassForService() {
-        return null;
+        return ProductResponse.class;
     }
 }

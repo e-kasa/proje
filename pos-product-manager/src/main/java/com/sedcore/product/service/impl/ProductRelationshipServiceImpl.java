@@ -122,6 +122,6 @@ public class ProductRelationshipServiceImpl extends BaseDbServiceImp<ProductRela
 
     @Override
     public Class<?> getDTOClassForService() {
-        return null;
+        return ProductRelationship.class;
     }
 }

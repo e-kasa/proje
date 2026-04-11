@@ -4,7 +4,59 @@ Bu dosya tüm alt projeleri kapsar. **Yeni oturumda ilk oku.**
 
 ---
 
-# 0. ÇALIŞMA TARZI — ZORUNLU
+# 0. GELİŞTİRME AMACI — HER OTURUMDA HATIRLA
+
+**SEDCORE POS**, küçük/orta ölçekli perakende işletmelerinin (öncelikli hedef: yedek parçacılar) tüm ticari operasyonunu tek platformdan yönetmesini sağlayan çok kiracılı (multi-tenant) kurumsal bir yönetim sistemidir.
+
+Sistem **üç bileşenden** oluşur:
+1. **Flutter uygulaması** — Kasiyerin ve mağaza yöneticisinin kullandığı mobil/desktop POS
+2. **React admin paneli** — Back-office yönetimi (template/)
+3. **E-ticaret storefront** — Her müşteriye özel domain'de çalışan, tek template'ten sunulan online mağaza
+
+### Çözdüğü Problem
+
+Küçük yedek parçacılar bugün satışı elle, stoğu Excel'de, müşteri borcunu defterde takip eder. Raporlama olmadığı için karar veremez. SEDCORE bunu ortadan kaldırır.
+
+### Modül → Kullanıcı Kazanımı
+
+| Modül | Kazanım |
+|-------|---------|
+| POS / Satış | Barkodlu satış, ödeme alma, fiş — saniyeler içinde |
+| Stok | Gerçek zamanlı seviye, kritik alarm, depo transferi |
+| Satın Alma | Tedarikçiden alım → stok otomatik güncellenir |
+| Cari Hesap | Müşteri/tedarikçi borç-alacak, ödeme kaydı |
+| Raporlar | Günlük kapanış, satış trendi, en çok satanlar, kâr analizi |
+| Araç Uyumu | Hangi parça hangi arabaya uyar → OEM/çapraz referans |
+| Çok Kiracı | Aynı sistem farklı firma kodlarıyla izole çalışır |
+
+### Hedef Kullanıcı
+
+```
+Küçük işletme  → Tek mağaza, mobil veya tarayıcı
+Orta işletme   → Birden fazla mağaza + depo + rol
+Zincir         → Her şube izole, merkez konsolide rapor
+```
+
+**Roller:** Admin → Mağaza Admin → Kasiyer → Depo Personeli  
+**Sektörler:** Yedek Parça / Genel Perakende / Teknoloji / Tekstil (konfig bazlı)
+
+### Geliştirme Öncelikleri (Sırayla)
+
+1. **Doğruluk** — Stok, bakiye, satış tutarları tutarsız olmamalı
+2. **Hız** — POS ekranı kasiyerin en hızlı işi olmalı
+3. **Güvenilirlik** — Veri kaybolmamalı, işlem yarıda kalmamalı
+4. **Kullanılabilirlik** — Ekranda ne yapılacağı açık olmalı, eğitim gerektirmemeli
+5. **Raporlama** — İşletmeci sabah kalkınca dünü görmeli
+
+### Yeni Özellik Kararı
+
+Bir geliştirme yapmadan önce şu soruyu sor:  
+**"Bu, kasiyerin işini hızlandırır mı, işletmecinin kararını kolaylaştırır mı, ya da veri bütünlüğünü korur mu?"**  
+Yanıt üçünden biri değilse, önceliği düşük tut.
+
+---
+
+# 0.1 ÇALIŞMA TARZI — ZORUNLU
 
 **Onay isteme, doğrudan yap.**
 
@@ -16,28 +68,69 @@ Bu dosya tüm alt projeleri kapsar. **Yeni oturumda ilk oku.**
 
 ---
 
-# 1. PROJE YAPISI
+# 1.0 PROJE YAPISI
 
 ```
 proje/
 ├── project_pos/          # Flutter POS uygulaması (Android, iOS, Web, Desktop)
 ├── pos-product-manager/  # Spring Boot backend (Java 17, PostgreSQL)
 ├── security/             # Spring Boot güvenlik servisi (JWT auth)
+├── api-manager/          # Spring Cloud Gateway — tek giriş noktası (port 8080)
 ├── core/                 # Towpen base library (com.towpen:core:11.3.5)
-└── template/             # React/TS admin dashboard şablonu (referans)
+├── config-server/        # Spring Cloud Config Server
+├── document-manager/     # Döküman yönetimi servisi
+└── template/             # React/TS — Admin paneli + E-ticaret template (multi-tenant storefront)
 ```
 
 **Servis portları:**
-- `security` → 8000
-- `pos-product-manager` → 8001
-- Flutter → localhost (debug)
+| Servis | Port | Açıklama |
+|--------|------|----------|
+| `api-manager` | **8080** | Gateway — Flutter bu porta bağlanır |
+| `pos-product-manager` | 8001 | Ana backend |
+| `security` | **8002** | JWT auth (8000 DEĞİL) |
 
-**Build sırası:**
+**Request akışı:**
+```
+Flutter (baseUrl: localhost:8080)
+  └─ /security/**  → api-manager:8080 → security:8002
+  └─ /product/**   → api-manager:8080 → pos-product-manager:8001
+```
+
+**Build ve çalıştırma sırası:**
 ```bash
-cd core && mvn install -q          # 1. Önce core
-cd security && mvn spring-boot:run  # 2. Security (port 8000)
-cd pos-product-manager && mvn spring-boot:run  # 3. Backend (port 8001)
-# Flutter son
+cd core && mvn install -q                          # 1. Önce core (dependency)
+cd security && mvn spring-boot:run                 # 2. Security (port 8002)
+cd pos-product-manager && mvn spring-boot:run      # 3. Backend (port 8001)
+cd api-manager && mvn spring-boot:run              # 4. Gateway (port 8080) ← Flutter buraya bağlanır
+# 5. Flutter son
+flutter run -d chrome
+```
+
+**Flutter ortam ayarı (dev varsayılan):**
+```bash
+flutter run                                        # dev → localhost:8080
+flutter run --dart-define=ENV=staging              # staging API
+flutter run --dart-define=ENV=prod                 # prod API
+flutter run --dart-define=BASE_URL=http://x.x.x.x:8080/  # custom URL
+```
+
+**PostgreSQL:**
+```
+host: localhost:5432
+database / user / password: ekalem / ekalem / ekalem
+```
+
+**İlk kurulum (DB tabloları yok):**
+```bash
+# application.properties'te: spring.jpa.hibernate.ddl-auto=create
+cd pos-product-manager && mvn spring-boot:run   # tablolar oluşur + data.sql çalışır
+# Sonra tekrar: ddl-auto=update  ← production kalıcı ayarı
+```
+
+**JWT Secret (security ↔ api-manager paylaşımlı):**
+```
+Geliştirme: BuCokGizliVeUzunBirAnahtarOlmalidir12345!
+Production: JWT_SECRET env variable ile ez
 ```
 
 ---
@@ -625,9 +718,10 @@ registrationServiceProvider
 ## 2.13 API Path Özeti
 
 ```
-Base: AppConstants.baseUrl
+Base: AppConstants.baseUrl  (dev: http://localhost:8080/)
 Auth header: Bearer {token}
 Tenant header: X-Company-Code: {companyCode}
+Gateway routing: /security/** → :8002  |  /product/** → :8001
 
 product/api/v1/products              Ürünler
 product/api/v1/sales                 Satışlar
@@ -702,7 +796,7 @@ flutter test
 
 ```
 1. LoginScreen → authNotifier.login(username, password)
-2. POST security:8000/auth/login
+2. POST security:8002/auth/login  (gateway üzerinden: localhost:8080/security/auth/login)
    → Response: { payload: { accessToken, refreshToken, sessionId } }
 3. JWT decode: base64 → sessionInstance (JSON string) → userInformation
    → storeId: dynamicLoginParameters.storeId
@@ -2192,7 +2286,7 @@ mvn test
 
 # 4. GÜVENLİK SERVİSİ (`security/`)
 
-- **Port:** 8000
+- **Port:** 8002  (gateway üzerinden: 8080/security/**)
 - **JWT:** `sessionInstance` alanında `userInformation` + `roles` gömülü
 - **Roller:** `userRoleRepository.findByUserDef(userId)` ile yüklenir
 - **Menü:** `role_menu` tablosundan kullanıcı bazlı menü yapısı döner (`RoleMenuRepository.findMenuStructureByRole(userId)`)
@@ -2229,11 +2323,60 @@ User ID format: udef-{username}-0000-0000-0000-000000000001
        udef-depo-0000-0000-0000-000000000003   ← "depo0" DEĞİL "depo"
 ```
 
+### JWT Secret — Security ↔ API-Manager Paylaşımlı
+
+```
+# Geliştirme (application.yml içinde):
+jwt.secret: BuCokGizliVeUzunBirAnahtarOlmalidir12345!
+
+# Bu değer HER İKİ serviste (security/ ve api-manager/) aynı olmalı.
+# Production'da environment variable ile ez:
+export JWT_SECRET=cokDahaGucluBirUretimSifresi...
+```
+
+**❌ security port'unu 8000 sanma** → gerçek port **8002**, gateway (8080) üzerinden erişilir.
+
 ---
 
 # 5. TEMPLATE (`template/`)
 
-React 19 + TypeScript + Vite admin dashboard — SEDCORE backend'e bağlı yönetim paneli.
+React 19 + TypeScript + Vite — iki ayrı amaca hizmet eder:
+
+1. **Admin Paneli** — SEDCORE operatörlerinin sistemi yönettiği back-office
+2. **E-Ticaret Storefront** — Her müşteriye özel domain'de çalışan, tek template'ten sunulan alışveriş sitesi
+
+### Multi-Tenant E-Ticaret Mimarisi
+
+```
+sedcore.com/storefront  → template (SEDCORE'a özel tema/logo/renk)
+bertspot.com/storefront → template (BERTSPOT'a özel tema/logo/renk)
+yenimusteri.com         → template (aynı kod, farklı tenant config)
+```
+
+- Tenant ayrımı **domain bazlı** — API Gateway `X-Company-Code` ile yönlendirir
+- Her tenant için tema, logo, renk, ürün kataloğu ayrı
+- Tek deployment, sonsuz müşteri — yeni müşteri = yeni DNS + DB kaydı
+
+### Feature Modülleri
+
+```
+src/feature-module/
+├── dashboard/         # Yönetim özeti
+├── pos/               # POS işlemleri
+├── sales/             # Satış geçmişi
+├── purchases/         # Satın alma
+├── inventory/         # Ürün kataloğu
+├── stock/             # Stok yönetimi
+├── people/            # Müşteri & tedarikçi
+├── hrm/               # İnsan kaynakları
+├── finance-accounts/  # Cari hesaplar & finans
+├── reports/           # Raporlar
+├── ecommerce/         # E-ticaret yönetimi (ürün, sipariş, kargo)
+├── storefront/        # E-ticaret müşteri arayüzü (vitrin)
+├── coupons/           # Kupon & kampanya
+├── settings/          # Tenant ayarları
+└── super-admin/       # Platform yöneticisi (tüm tenant'lar)
+```
 
 ## Teknoloji Stack
 
@@ -2245,7 +2388,7 @@ React 19 + TypeScript + Vite admin dashboard — SEDCORE backend'e bağlı yöne
 ## API Bağlantısı
 
 ```
-security (auth)  → http://localhost:8000  → securityApi (axiosClient)
+security (auth)  → http://localhost:8002  → securityApi (axiosClient)
 product manager  → http://localhost:8001  → productApi  (axiosClient)
 ```
 
@@ -2320,7 +2463,7 @@ export const ProductService = {
 | Hata | Çözüm |
 |------|-------|
 | `api.post("security/authenticate")` | `securityApi.post(...)` kullan |
-| `axios.create({ baseURL: '...:8080' })` | `securityApi` (8000) veya `productApi` (8001) kullan |
+| `axios.create({ baseURL: '...:8080' })` | `securityApi` (8002) veya `productApi` (8001) kullan |
 | `X-Company-Code` eksik | Interceptor otomatik ekliyor, manuel ekleme |
 | Renk #FE9F43 (turuncu) | `$primary` SCSS değişkeni veya `#667eea` kullan |
 | `Colors.blue` direkt (React'ta) | Ant Design token veya `var(--primary)` CSS değişkeni |
@@ -2349,7 +2492,22 @@ export const ProductService = {
                             Hardcode metin YOK — tüm metinler t('key') ile (§2.26)
 10. router.dart           → GoRoute ekle
 11. Menü                  → menu_screen.dart bölüm ekle (+ rol filtresi)
+
+-- Özellik aynı zamanda storefront'a da yansıyacaksa: --
+12. template/feature-module/ecommerce veya storefront → React bileşeni
+13. template axiosClient → productApi üzerinden backend endpoint'i
 ```
+
+### Hangi Kanalda Geliştirme?
+
+| Özellik | Flutter | React Admin | Storefront |
+|---------|---------|-------------|------------|
+| POS satış | ✅ | ✅ | — |
+| Ürün yönetimi | ✅ | ✅ | görüntüle |
+| Sipariş alma | — | ✅ | ✅ |
+| Müşteri kaydı | ✅ | ✅ | ✅ |
+| Raporlar | ✅ | ✅ | — |
+| Tema/logo ayarı | — | ✅ | okur |
 
 ## Hata Yönetimi Zinciri
 

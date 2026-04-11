@@ -9,6 +9,6 @@ import org.springframework.stereotype.Service;
 public class ProductVariantAttributeValueServiceImpl extends BaseDbServiceImp<ProductVariantAttributeValueRepository, Site> implements ProductVariantAttributeValueService {
     @Override
     public Class<?> getDTOClassForService() {
-        return null;
+        return Site.class;
     }
 }

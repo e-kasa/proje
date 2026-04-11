@@ -284,7 +284,7 @@ class _CompanyCategoryScreenState extends ConsumerState<CompanyCategoryScreen> {
           children: [
             const Icon(Icons.error_outline, color: AppColors.danger, size: 48),
             const SizedBox(height: 12),
-            Text(state.error!, style: const TextStyle(color: AppColors.danger)),
+            Text(state.error!, style: const TextStyle(color: AppColors.bgDanger),
             const SizedBox(height: 16),
             AppButton.primary(
 
@@ -543,10 +543,10 @@ class _CategoryTreeItemState extends State<_CategoryTreeItem> {
         Container(
           margin: EdgeInsets.only(left: indent, bottom: 4),
           decoration: BoxDecoration(
-            color: isSelected ? levelColor.withOpacity(0.08) : Colors.white,
+            color: isSelected ? levelColor.withValues(alpha: 0.08) : Colors.white,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected ? levelColor.withOpacity(0.4) : AppColors.border,
+              color: isSelected ? levelColor.withValues(alpha: 0.4) : AppColors.border,
               width: isSelected ? 1.5 : 1,
             ),
           ),
@@ -581,7 +581,7 @@ class _CategoryTreeItemState extends State<_CategoryTreeItem> {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: levelColor.withOpacity(0.1),
+                      color: levelColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Center(
@@ -626,7 +626,7 @@ class _CategoryTreeItemState extends State<_CategoryTreeItem> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: levelColor.withOpacity(0.1),
+                        color: levelColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(

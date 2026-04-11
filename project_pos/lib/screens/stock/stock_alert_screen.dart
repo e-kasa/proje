@@ -88,7 +88,7 @@ class _StockAlertScreenState extends ConsumerState<StockAlertScreen> {
                         const SizedBox(height: 12),
                         Text(
                           _error!,
-                          style: const TextStyle(color: AppColors.danger),
+                          style: const TextStyle(color: AppColors.bgDanger,
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 16),
@@ -177,12 +177,12 @@ class _StockAlertScreenState extends ConsumerState<StockAlertScreen> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isOutOfStock
-                ? AppColors.danger.withOpacity(0.3)
+                ? AppColors.danger.withValues(alpha: 0.3)
                 : AppColors.border,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withValues(alpha: 0.03),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -199,7 +199,7 @@ class _StockAlertScreenState extends ConsumerState<StockAlertScreen> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: qtyColor.withOpacity(0.1),
+                    color: qtyColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(qtyIcon, color: qtyColor, size: 22),

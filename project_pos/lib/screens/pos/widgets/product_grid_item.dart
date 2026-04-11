@@ -47,19 +47,19 @@ class ProductGridItem extends StatelessWidget {
           duration: const Duration(milliseconds: 150),
           decoration: BoxDecoration(
             color: isOutOfStock
-                ? AppColors.bgLight.withOpacity(0.7)
+                ? AppColors.bgLight.withValues(alpha: 0.7)
                 : isTransferOnly
-                    ? AppColors.bgWarning.withOpacity(0.3)
+                    ? AppColors.bgWarning.withValues(alpha: 0.3)
                     : Colors.white,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isTransferOnly
-                  ? AppColors.warning.withOpacity(0.5)
+                  ? AppColors.warning.withValues(alpha: 0.5)
                   : AppColors.border,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -80,7 +80,7 @@ class ProductGridItem extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isOutOfStock
                           ? AppColors.bgLight
-                          : AppColors.primary.withOpacity(0.08),
+                          : AppColors.primary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(

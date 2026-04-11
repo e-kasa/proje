@@ -31,6 +31,10 @@ public class ProductVariantServiceImpl extends BaseDbServiceImp<ProductVariantRe
     }
 
     public ProductVariantResponse mapToResponse(ProductVariant variant) {
+        // toDTO(): id, sku, name, additionalPrice, status, imageUrl, attributes kopyalanır
+        ProductVariantResponse dto = toDTO(variant);
+
+        // barcodes — LAZY koleksiyon, BeanUtils kopyalamaz; enum→String dönüşümü de gerekir
         List<BarcodeResponse> barcodeResponses = new ArrayList<>();
         if (variant.getBarcodes() != null) {
             for (Barcode b : variant.getBarcodes()) {
@@ -46,23 +50,15 @@ public class ProductVariantServiceImpl extends BaseDbServiceImp<ProductVariantRe
                 }
             }
         }
+        dto.setBarcodes(barcodeResponses);
 
-        BigDecimal salePrice = null;
+        // salePrice — VariantPricing ilişkisinden hesaplanan alan
         if (variant.getVariantPricings() != null && !variant.getVariantPricings().isEmpty()) {
-            VariantPricing latest = variant.getVariantPricings().get(variant.getVariantPricings().size() - 1);
-            salePrice = latest.getSalePrice();
+            VariantPricing latest = variant.getVariantPricings().getLast();
+            dto.setSalePrice(latest.getSalePrice());
         }
 
-        return ProductVariantResponse.builder()
-                .id(variant.getId())
-                .sku(variant.getSku())
-                .name(variant.getName())
-                .additionalPrice(variant.getAdditionalPrice())
-                .salePrice(salePrice)
-                .attributes(variant.getAttributes())
-                .barcodes(barcodeResponses)
-                .inventory(null)
-                .build();
+        return dto;
     }
 
     @Transactional(readOnly = true)

@@ -251,7 +251,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
       builder: (ctx) => AlertDialog(
         title: const Row(
           children: [
-            Icon(Icons.warning, color: AppColors.danger),
+            Icon(Icons.warning, color: AppColors.bgDanger,
             SizedBox(width: 12),
             Text('Araci Sil'),
           ],
@@ -328,7 +328,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -353,7 +353,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.directions_car_outlined, size: 80, color: AppColors.textMuted.withOpacity(0.5)),
+                            Icon(Icons.directions_car_outlined, size: 80, color: AppColors.textMuted.withValues(alpha: 0.5)),
                             const SizedBox(height: 16),
                             const Text('Henuz arac eklenmemis', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
                           ],
@@ -414,7 +414,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
                 Container(
                   width: 56, height: 56,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Center(child: Icon(Icons.directions_car, color: AppColors.primary, size: 28)),
@@ -460,10 +460,10 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
                   },
                   itemBuilder: (ctx) => [
                     const PopupMenuItem(value: 'edit', child: Row(children: [
-                      Icon(Icons.edit, size: 18, color: AppColors.info), SizedBox(width: 12), Text('Duzenle'),
+                      Icon(Icons.edit, size: 18, color: AppColors.bgInfo, SizedBox(width: 12), Text('Duzenle'),
                     ])),
                     const PopupMenuItem(value: 'delete', child: Row(children: [
-                      Icon(Icons.delete, size: 18, color: AppColors.danger), SizedBox(width: 12), Text('Sil'),
+                      Icon(Icons.delete, size: 18, color: AppColors.bgDanger, SizedBox(width: 12), Text('Sil'),
                     ])),
                   ],
                 ),

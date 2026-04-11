@@ -179,13 +179,13 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
                     children: [
                       _buildFilterChip(t('common.all'), 'all', Icons.grid_view),
                       const SizedBox(width: 8),
-                      _buildFilterChip(t('stock.critical'), 'critical', Icons.warning_amber, AppColors.danger),
+                      _buildFilterChip(t('stock.critical'), 'critical', Icons.warning_amber, AppColors.bgDanger,
                       const SizedBox(width: 8),
-                      _buildFilterChip(t('stock.low_stock'), 'low', Icons.trending_down, AppColors.warning),
+                      _buildFilterChip(t('stock.low_stock'), 'low', Icons.trending_down, AppColors.bgWarning,
                       const SizedBox(width: 8),
-                      _buildFilterChip(t('stock.out_of_stock'), 'out', Icons.close, AppColors.danger),
+                      _buildFilterChip(t('stock.out_of_stock'), 'out', Icons.close, AppColors.bgDanger,
                       const SizedBox(width: 8),
-                      _buildFilterChip(t('stock.good'), 'good', Icons.check_circle, AppColors.success),
+                      _buildFilterChip(t('stock.good'), 'good', Icons.check_circle, AppColors.bgSuccess,
                     ],
                   ),
                 ),
@@ -202,7 +202,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
                 _buildStatCard(
                   t('common.total'),
                   '${stockState.totalCount}',
-                  Colors.blue,
+                  AppColors.info,
                   Icons.inventory_2,
                 ),
                 const SizedBox(width: 12),
@@ -231,11 +231,11 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildReportLink(t('stock.movement_history'), Icons.history, '/stock/movements', AppColors.info),
+                  _buildReportLink(t('stock.movement_history'), Icons.history, '/stock/movements', AppColors.bgInfo,
                   const SizedBox(width: 8),
-                  _buildReportLink(t('stock.alerts'), Icons.notifications_active, '/stock/alerts', AppColors.danger),
+                  _buildReportLink(t('stock.alerts'), Icons.notifications_active, '/stock/alerts', AppColors.bgDanger,
                   const SizedBox(width: 8),
-                  _buildReportLink(t('stock.value_report'), Icons.bar_chart, '/stock/value-report', AppColors.success),
+                  _buildReportLink(t('stock.value_report'), Icons.bar_chart, '/stock/value-report', AppColors.bgSuccess,
                 ],
               ),
             ),
@@ -289,8 +289,8 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
     return ActionChip(
       avatar: Icon(icon, size: 16, color: color),
       label: Text(label, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600)),
-      side: BorderSide(color: color.withOpacity(0.3)),
-      backgroundColor: color.withOpacity(0.05),
+      side: BorderSide(color: color.withValues(alpha: 0.3)),
+      backgroundColor: color.withValues(alpha: 0.05),
       onPressed: () => context.push(route),
     );
   }
@@ -325,9 +325,9 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
       child: Container(
         padding: AppConstants.paddingSmall,
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: AppConstants.borderRadiusMedium,
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
@@ -414,7 +414,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
                   width: 56,
                   height: 56,
                   decoration: BoxDecoration(
-                    color: stockColor.withOpacity(0.1),
+                    color: stockColor.withValues(alpha: 0.1),
                     borderRadius: AppConstants.borderRadiusMedium,
                   ),
                   child: Icon(Icons.inventory_2, color: stockColor, size: 28),

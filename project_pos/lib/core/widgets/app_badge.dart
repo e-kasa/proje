@@ -41,7 +41,7 @@ class AppBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = color != null
-        ? {'color': color!, 'bg': color!.withOpacity(0.12)}
+        ? {'color': color!, 'bg': color!.withValues(alpha: 0.12)}
         : _getColors();
 
     return Container(
@@ -77,7 +77,7 @@ class AppBadge extends StatelessWidget {
   Map<String, Color> _getColors() {
     switch (variant) {
       case BadgeVariant.primary:
-        return {'color': AppColors.primary, 'bg': AppColors.primary.withOpacity(0.1)};
+        return {'color': AppColors.primary, 'bg': AppColors.primary.withValues(alpha: 0.1)};
       case BadgeVariant.success:
         return {'color': AppColors.success, 'bg': AppColors.bgSuccess};
       case BadgeVariant.warning:

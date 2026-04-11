@@ -78,7 +78,7 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Row(
-          children: [Icon(Icons.warning_amber_rounded, color: AppColors.warning), SizedBox(width: 12), Text('Mağaza Sil')],
+          children: [Icon(Icons.warning_amber_rounded, color: AppColors.bgWarning, SizedBox(width: 12), Text('Mağaza Sil')],
         ),
         content: Text('$name mağazasını silmek istediğinize emin misiniz?'),
         actions: [
@@ -144,7 +144,7 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
                                 setState(() {_selectedType = type == 'Tümü' ? null : _typeMap[type];});
                                 _loadStores();
                               },
-                              selectedColor: AppColors.primary.withOpacity(0.2),
+                              selectedColor: AppColors.primary.withValues(alpha: 0.2),
                             ),
                           )).toList(),
                         ),
@@ -183,9 +183,9 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
       children: [
         Expanded(child: _buildStatCard('🏪 Toplam', total.toString(), 'Mağaza', AppColors.primary)),
         const SizedBox(width: 12),
-        Expanded(child: _buildStatCard('✅ Aktif', active.toString(), 'Mağaza', AppColors.success)),
+        Expanded(child: _buildStatCard('✅ Aktif', active.toString(), 'Mağaza', AppColors.bgSuccess),
         const SizedBox(width: 12),
-        Expanded(child: _buildStatCard('👥 Çalışan', totalEmployees.toString(), 'Kişi', AppColors.info)),
+        Expanded(child: _buildStatCard('👥 Çalışan', totalEmployees.toString(), 'Kişi', AppColors.bgInfo),
       ],
     );
   }
@@ -194,9 +194,9 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: AppConstants.borderRadiusMedium,
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,7 +208,7 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
             children: [
               Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
               const SizedBox(width: 4),
-              Padding(padding: const EdgeInsets.only(bottom: 2), child: Text(suffix, style: TextStyle(fontSize: 11, color: color.withOpacity(0.7)))),
+              Padding(padding: const EdgeInsets.only(bottom: 2), child: Text(suffix, style: TextStyle(fontSize: 11, color: color.withValues(alpha: 0.7)))),
             ],
           ),
         ],
@@ -237,7 +237,7 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: isActive ? AppColors.primary.withOpacity(0.1) : AppColors.textMuted.withOpacity(0.1),
+                      color: isActive ? AppColors.primary.withValues(alpha: 0.1) : AppColors.textMuted.withValues(alpha: 0.1),
                       borderRadius: AppConstants.borderRadiusMedium,
                     ),
                     child: Icon(Icons.store, color: isActive ? AppColors.primary : AppColors.textMuted, size: 24),
@@ -265,9 +265,9 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  _buildInfoChip(Icons.category, typeLabels[store['type']] ?? '', AppColors.info),
+                  _buildInfoChip(Icons.category, typeLabels[store['type']] ?? '', AppColors.bgInfo,
                   _buildInfoChip(Icons.person, store['managerName'] ?? '', AppColors.purple),
-                  _buildInfoChip(Icons.people, '${store['employeeCount']} Çalışan', AppColors.success),
+                  _buildInfoChip(Icons.people, '${store['employeeCount']} Çalışan', AppColors.bgSuccess,
                 ],
               ),
               const SizedBox(height: 12),
@@ -293,9 +293,9 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: AppConstants.borderRadiusSmall,
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

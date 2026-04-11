@@ -163,9 +163,9 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
         children: [
           _buildStatCard('👥 Toplam', total.toString(), 'Çalışan', AppColors.primary),
           const SizedBox(width: 12),
-          _buildStatCard('✅ Aktif', active.toString(), 'Çalışan', AppColors.success),
+          _buildStatCard('✅ Aktif', active.toString(), 'Çalışan', AppColors.bgSuccess,
           const SizedBox(width: 12),
-          _buildStatCard('⏸️ Pasif', inactive.toString(), 'Çalışan', AppColors.warning),
+          _buildStatCard('⏸️ Pasif', inactive.toString(), 'Çalışan', AppColors.bgWarning,
         ],
       ),
     );
@@ -299,7 +299,7 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
               // Avatar
               CircleAvatar(
                 radius: 30,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                 child: Text(
                   '${employee['firstName'][0]}${employee['lastName'][0]}',
                   style: const TextStyle(
@@ -397,7 +397,7 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
                     tooltip: isActive ? 'Pasif Yap' : 'Aktif Yap',
                   ),
                   IconButton(
-                    icon: const Icon(Icons.delete_outline, color: AppColors.danger),
+                    icon: const Icon(Icons.delete_outline, color: AppColors.bgDanger,
                     onPressed: () => _deleteEmployee(employee),
                     tooltip: 'Sil',
                   ),

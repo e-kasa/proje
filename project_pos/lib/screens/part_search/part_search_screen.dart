@@ -284,7 +284,7 @@ class _PartSearchScreenState extends ConsumerState<PartSearchScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search, size: 80, color: AppColors.textMuted.withOpacity(0.3)),
+          Icon(Icons.search, size: 80, color: AppColors.textMuted.withValues(alpha: 0.3)),
           const SizedBox(height: 16),
           const Text('Parca Arama', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
           const SizedBox(height: 8),
@@ -308,7 +308,7 @@ class _PartSearchScreenState extends ConsumerState<PartSearchScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off, size: 80, color: AppColors.textMuted.withOpacity(0.5)),
+          Icon(Icons.search_off, size: 80, color: AppColors.textMuted.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
           const Text('Sonuc bulunamadi', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
           const SizedBox(height: 8),
@@ -351,7 +351,7 @@ class _PartSearchScreenState extends ConsumerState<PartSearchScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: AppColors.info.withOpacity(0.1),
+                              color: AppColors.info.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -375,20 +375,20 @@ class _PartSearchScreenState extends ConsumerState<PartSearchScreen> {
                     if (result['salePrice'] != null)
                       Text(
                         '${result['salePrice']} TL',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.success),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.bgSuccess,
                       ),
                     if (result['shelfLocationCode'] != null && result['shelfLocationCode'].toString().isNotEmpty)
                       Container(
                         margin: const EdgeInsets.only(top: 4),
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: AppColors.warning.withOpacity(0.1),
+                          color: AppColors.warning.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.location_on, size: 12, color: AppColors.warning),
+                            const Icon(Icons.location_on, size: 12, color: AppColors.bgWarning,
                             const SizedBox(width: 2),
                             Text(
                               result['shelfLocationCode'],
@@ -413,7 +413,7 @@ class _PartSearchScreenState extends ConsumerState<PartSearchScreen> {
                 children: oemNumbers.map((oem) => Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -435,7 +435,7 @@ class _PartSearchScreenState extends ConsumerState<PartSearchScreen> {
                 children: crossRefs.map((cr) => Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppColors.bgDanger.withOpacity(0.1),
+                    color: AppColors.bgDanger.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -457,7 +457,7 @@ class _PartSearchScreenState extends ConsumerState<PartSearchScreen> {
                 children: vehicles.take(5).map((v) => Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: AppColors.textMuted.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(

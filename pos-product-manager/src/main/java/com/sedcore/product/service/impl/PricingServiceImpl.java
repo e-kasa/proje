@@ -25,17 +25,13 @@ public class PricingServiceImpl extends BaseDbServiceImp<PricingRepository, Vari
     }
 
     public PricingResponse mapToResponse(VariantPricing pricing) {
-        return PricingResponse.builder()
-                .id(pricing.getId())
-                .variantId(pricing.getVariant() != null ? pricing.getVariant().getId() : null)
-                .variantSku(pricing.getVariant() != null ? pricing.getVariant().getSku() : null)
-                .purchasePrice(pricing.getPurchasePrice())
-                .salePrice(pricing.getSalePrice())
-                .vatRate(pricing.getVatRate())
-                .specialTaxRate(pricing.getSpecialTaxRate())
-                .currency(pricing.getCurrency())
-                .validFrom(pricing.getValidFrom())
-                .build();
+        PricingResponse dto = toDTO(pricing);
+        // Variant FK ilişkisinden gelen alanlar — BeanUtils doğrudan kopyalamaz
+        if (pricing.getVariant() != null) {
+            dto.setVariantId(pricing.getVariant().getId());
+            dto.setVariantSku(pricing.getVariant().getSku());
+        }
+        return dto;
     }
 
     @Transactional(readOnly = true)

@@ -182,7 +182,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.assignment_return_outlined,
-                            color: Colors.orange),
+                            color: AppColors.bgWarning,
                         onPressed: () {
                           context
                               .push('/purchases/return/${widget.purchaseId}')
@@ -251,18 +251,18 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.red.withOpacity(0.1),
+          color: AppColors.danger.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.red.withOpacity(0.3)),
+          border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
-            const Icon(Icons.cancel_outlined, color: Colors.red, size: 20),
+            const Icon(Icons.cancel_outlined, color: AppColors.danger, size: 20),
             const SizedBox(width: 10),
             Text(
               'Bu satın alma iptal edilmiştir',
               style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: Colors.red, fontWeight: FontWeight.w600),
+                  ?.copyWith(color: AppColors.danger, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -276,19 +276,19 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.orange.withOpacity(0.1),
+          color: AppColors.warning.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.orange.withOpacity(0.3)),
+          border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
-            const Icon(Icons.schedule, color: Colors.orange, size: 20),
+            const Icon(Icons.schedule, color: AppColors.warning, size: 20),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 'Kalan borç: ${_fmt.format(remaining)}',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.orange[800], fontWeight: FontWeight.w600),
+                    color: AppColors.warning[800], fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -300,18 +300,18 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.1),
+        color: AppColors.success.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.green.withOpacity(0.3)),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.check_circle_outline, color: Colors.green, size: 20),
+          const Icon(Icons.check_circle_outline, color: AppColors.success, size: 20),
           const SizedBox(width: 10),
           Text(
             'Ödeme tamamlandı',
             style: theme.textTheme.bodyMedium
-                ?.copyWith(color: Colors.green, fontWeight: FontWeight.w600),
+                ?.copyWith(color: AppColors.success, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -329,10 +329,10 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
       ),
       child: _isEditing ? _buildHeaderEdit(theme) : _buildHeaderView(theme, dateDisplay),
@@ -349,7 +349,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child:
@@ -499,14 +499,14 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primary.withOpacity(0.08),
-            AppColors.primary.withOpacity(0.02),
+            AppColors.primary.withValues(alpha: 0.08),
+            AppColors.primary.withValues(alpha: 0.02),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.primary.withOpacity(0.15)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
       ),
       child: Column(
         children: [
@@ -531,11 +531,11 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
               ),
               Expanded(
                 child:
-                    _amountTile('Ödenen', paid, Colors.green, theme),
+                    _amountTile('Ödenen', paid, AppColors.success, theme),
               ),
               Expanded(
                 child: _amountTile(
-                    'Kalan', remaining, Colors.orange, theme),
+                    'Kalan', remaining, AppColors.warning, theme),
               ),
             ],
           ),
@@ -547,7 +547,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
               value: total > 0 ? (paid / total).clamp(0.0, 1.0) : 0,
               minHeight: 8,
               valueColor: AlwaysStoppedAnimation<Color>(
-                remaining > 0 ? Colors.orange : Colors.green,
+                remaining > 0 ? AppColors.warning : AppColors.success,
               ),
             ),
           ),
@@ -604,7 +604,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -648,10 +648,10 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
       ),
       child: Row(
@@ -662,7 +662,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Center(
@@ -716,7 +716,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
                         AppColors.primary, theme),
                     const SizedBox(width: 8),
                     _itemTag('${_fmt.format(unitPrice)} /br',
-                        Icons.sell_outlined, Colors.teal, theme),
+                        Icons.sell_outlined, AppColors.teal, theme),
                   ],
                 ),
               ],
@@ -751,7 +751,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
@@ -774,10 +774,10 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
       ),
       child: Column(

@@ -72,58 +72,18 @@ public class SupplierServiceImpl
     // =========================================================================
 
     public SupplierResponse mapToResponse(Supplier supplier) {
-        SupplierResponse.SupplierResponseBuilder builder = SupplierResponse.builder()
-                .id(supplier.getId())
-                .name(supplier.getName())
-                .contactName(supplier.getContactName())
-                .phone(supplier.getPhone())
-                .email(supplier.getEmail())
-                .address(supplier.getAddress())
-                .notes(supplier.getNotes())
-                .customerType(supplier.getCustomerType())
-                .taxNumber(supplier.getTaxNumber())
-                .taxOffice(supplier.getTaxOffice())
-                .creditLimit(supplier.getCreditLimit())
-                .paymentTermDays(supplier.getPaymentTermDays())
-                .riskStatus(supplier.getRiskStatus())
-                .isActive(supplier.getIsActive())
-                .isDeleted(supplier.getIsDeleted());
-
+        SupplierResponse dto = toDTO(supplier);
+        // Account-derived fields — doğrudan entity alanı değil, ilişkiden gelir
         if (supplier.getAccount() != null) {
-            builder.balance(supplier.getAccount().getCurrentBalance())
-                   .totalDebt(supplier.getAccount().getTotalDebt())
-                   .totalPaid(supplier.getAccount().getTotalCredit());
+            dto.setBalance(supplier.getAccount().getCurrentBalance());
+            dto.setTotalDebt(supplier.getAccount().getTotalDebt());
+            dto.setTotalPaid(supplier.getAccount().getTotalCredit());
         }
-
-        return builder.build();
+        return dto;
     }
 
     private AccountTransactionResponse mapToTransactionResponse(AccountTransaction tx) {
-        AccountTransactionResponse.AccountTransactionResponseBuilder builder =
-                AccountTransactionResponse.builder()
-                        .id(tx.getId())
-                        .transactionType(tx.getTransactionType())
-                        .transactionTypeLabel(tx.getTransactionType() != null
-                                ? tx.getTransactionType().getDescription() : null)
-                        .debitAmount(tx.getDebitAmount())
-                        .creditAmount(tx.getCreditAmount())
-                        .balance(tx.getBalance())
-                        .description(tx.getDescription())
-                        .notes(tx.getNotes())
-                        .referenceId(tx.getReferenceId())
-                        .referenceNumber(tx.getReferenceNumber())
-                        .referenceType(tx.getReferenceType())
-                        .transactionDate(tx.getTransactionDate())
-                        .dueDate(tx.getDueDate())
-                        .isOverdue(tx.getIsOverdue())
-                        .isCancelled(tx.getIsCancelled())
-                        .cancelledDate(tx.getCancelledDate())
-                        .cancelledBy(tx.getCancelledBy());
-        if (tx.getSupplier() != null) {
-            builder.supplierId(tx.getSupplier().getId())
-                   .supplierName(tx.getSupplier().getName());
-        }
-        return builder.build();
+        return accountTransactionService.toResponse(tx);
     }
 
     // =========================================================================

@@ -38,22 +38,14 @@ public class CustomerAccountServiceImpl
     // =========================================================================
 
     private CustomerAccountResponse mapToResponse(CustomerAccount acct) {
-        return CustomerAccountResponse.builder()
-                .id(acct.getId())
-                .customerId(acct.getCustomer().getId())
-                .customerName(acct.getCustomer().getName())
-                .creditLimit(acct.getCustomer().getCreditLimit())
-                .currentBalance(acct.getCurrentBalance())
-                .totalDebt(acct.getTotalDebt())
-                .totalCredit(acct.getTotalCredit())
-                .overdueAmount(acct.getOverdueAmount())
-                .availableCreditLimit(acct.getAvailableCreditLimit())
-                .isCreditLimitExceeded(acct.getIsCreditLimitExceeded())
-                .totalTransactionCount(acct.getTotalTransactionCount())
-                .lastTransactionDate(acct.getLastTransactionDate())
-                .lastPaymentDate(acct.getLastPaymentDate())
-                .lastSaleDate(acct.getLastSaleDate())
-                .build();
+        CustomerAccountResponse dto = toDTO(acct);
+        // Customer FK ilişkisinden gelen alanlar — BeanUtils doğrudan kopyalamaz
+        if (acct.getCustomer() != null) {
+            dto.setCustomerId(acct.getCustomer().getId());
+            dto.setCustomerName(acct.getCustomer().getName());
+            dto.setCreditLimit(acct.getCustomer().getCreditLimit());
+        }
+        return dto;
     }
 
     // =========================================================================

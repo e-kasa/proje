@@ -121,7 +121,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -192,7 +192,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
           ),
         ),
         const SizedBox(width: 8),
-        Expanded(child: Divider(color: AppColors.primary.withOpacity(0.2))),
+        Expanded(child: Divider(color: AppColors.primary.withValues(alpha: 0.2))),
       ],
     );
   }
@@ -335,7 +335,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
             padding: const EdgeInsets.only(top: 4, left: 12),
             child: Text(
               'En az 1 ürün eklemelisiniz',
-              style: theme.textTheme.bodySmall?.copyWith(color: AppColors.danger),
+              style: theme.textTheme.bodySmall?.copyWith(color: AppColors.bgDanger,
             ),
           ),
         const SizedBox(height: 8),
@@ -350,14 +350,14 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
     return Container(
       constraints: const BoxConstraints(maxHeight: 280),
       decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
         borderRadius: AppConstants.borderRadiusSmall,
       ),
       child: ListView.separated(
         padding: EdgeInsets.zero,
         shrinkWrap: true,
         itemCount: _searchResults.length,
-        separatorBuilder: (_, __) => Divider(height: 1, color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+        separatorBuilder: (_, __) => Divider(height: 1, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
         itemBuilder: (_, i) {
           final p = _searchResults[i];
           final variants = (p['variants'] as List?)?.cast<Map<String, dynamic>>() ?? [];
@@ -449,7 +449,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.remove_circle_outline_rounded, color: Colors.red, size: 20),
+                    icon: const Icon(Icons.remove_circle_outline_rounded, color: AppColors.danger, size: 20),
                     onPressed: () => setState(() => _items.removeAt(index)),
                     tooltip: 'Kalemi Kaldır',
                   ),
@@ -530,9 +530,9 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
     return Container(
       padding: AppConstants.pagePadding,
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.05),
+        color: AppColors.primary.withValues(alpha: 0.05),
         borderRadius: AppConstants.borderRadiusSmall,
-        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -585,7 +585,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
       labelText: label,
       prefixIcon: Icon(icon),
       filled: true,
-      fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+      fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       border: OutlineInputBorder(
         borderRadius: AppConstants.borderRadiusSmall,
         borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
@@ -726,7 +726,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
     final shouldUpdate = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        icon: const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 48),
+        icon: const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 48),
         title: const Text('Kredi Limiti Tanımsız'),
         content: Text(
           '"$supplierName" tedarikçisinin kredi limiti tanımlanmamış.\n\n'

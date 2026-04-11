@@ -98,8 +98,8 @@ class AppGradients {
   // === GLASS MORPHISM GRADIENT ===
   static LinearGradient glassGradient = LinearGradient(
     colors: [
-      Colors.white.withOpacity(0.2),
-      Colors.white.withOpacity(0.1),
+      Colors.white.withValues(alpha: 0.2),
+      Colors.white.withValues(alpha: 0.1),
     ],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
@@ -110,7 +110,7 @@ class AppGradients {
     return LinearGradient(
       colors: [
         color,
-        color.withOpacity(0.7),
+        color.withValues(alpha: 0.7),
       ],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,

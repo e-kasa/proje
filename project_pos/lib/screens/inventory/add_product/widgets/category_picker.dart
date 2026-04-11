@@ -80,9 +80,9 @@ class _CategoryPickerButtonState extends State<CategoryPickerButton>
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               decoration: BoxDecoration(
-                color: levelColor.withOpacity(0.04),
+                color: levelColor.withValues(alpha: 0.04),
                 border: Border.all(
-                  color: levelColor.withOpacity(0.5),
+                  color: levelColor.withValues(alpha: 0.5),
                   width: 1.5,
                 ),
                 borderRadius: BorderRadius.circular(8),
@@ -95,7 +95,7 @@ class _CategoryPickerButtonState extends State<CategoryPickerButton>
                 final pulseValue = _pulseAnimation.value;
                 final borderColor = Color.lerp(
                   Colors.grey.shade300,
-                  widget.accentColor.withOpacity(0.5),
+                  widget.accentColor.withValues(alpha: 0.5),
                   pulseValue,
                 )!;
                 final borderWidth = 1.0 + (pulseValue * 0.5);
@@ -131,7 +131,7 @@ class _CategoryPickerButtonState extends State<CategoryPickerButton>
           width: 28,
           height: 28,
           decoration: BoxDecoration(
-            color: levelColor.withOpacity(0.12),
+            color: levelColor.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Center(child: Text(levelIcon, style: const TextStyle(fontSize: 13))),
@@ -287,7 +287,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: widget.accentColor.withOpacity(0.1),
+                      color: widget.accentColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(Icons.account_tree_outlined, color: widget.accentColor, size: 20),
@@ -310,7 +310,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: widget.accentColor.withOpacity(0.1),
+                            color: widget.accentColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -334,7 +334,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                       },
                       icon: const Icon(Icons.clear, size: 14),
                       label: Text(widget.t('common.clear')),
-                      style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+                      style: TextButton.styleFrom(foregroundColor: AppColors.bgDanger,
                     ),
                 ],
               ),
@@ -379,7 +379,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: widget.accentColor.withOpacity(0.5), width: 1.5),
+                    borderSide: BorderSide(color: widget.accentColor.withValues(alpha: 0.5), width: 1.5),
                   ),
                 ),
               ),
@@ -443,14 +443,14 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? lColor.withOpacity(0.12)
+                                    ? lColor.withValues(alpha: 0.12)
                                     : level == 0
                                         ? Colors.grey.shade50
                                         : Colors.transparent,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                   color: isSelected
-                                      ? lColor.withOpacity(0.6)
+                                      ? lColor.withValues(alpha: 0.6)
                                       : level == 0
                                           ? Colors.grey.shade200
                                           : Colors.transparent,
@@ -463,7 +463,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                                     width: 34,
                                     height: 34,
                                     decoration: BoxDecoration(
-                                      color: lColor.withOpacity(0.12),
+                                      color: lColor.withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Center(child: Text(lIcon, style: const TextStyle(fontSize: 16))),
@@ -484,7 +484,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                                         if (lLabel.isNotEmpty)
                                           Text(
                                             lLabel,
-                                            style: TextStyle(fontSize: 10, color: lColor.withOpacity(0.8)),
+                                            style: TextStyle(fontSize: 10, color: lColor.withValues(alpha: 0.8)),
                                           ),
                                       ],
                                     ),

@@ -170,7 +170,7 @@ class ParkedOrdersPanel extends ConsumerWidget {
                     ),
                     IconButton(
                       onPressed: () => _showDeleteConfirmation(context, index, notifier),
-                      icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.danger),
+                      icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.bgDanger,
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                     ),
@@ -219,7 +219,7 @@ class ParkedOrdersPanel extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Row(

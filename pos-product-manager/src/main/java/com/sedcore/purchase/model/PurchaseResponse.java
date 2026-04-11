@@ -1,5 +1,6 @@
 package com.sedcore.purchase.model;
 
+import com.towpen.base.restservice.model.DtoBaseModel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,7 +17,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PurchaseResponse {
+public class PurchaseResponse extends DtoBaseModel {
 
     private String id;
 

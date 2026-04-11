@@ -65,7 +65,7 @@ class BatchSummaryBar extends ConsumerWidget {
         const SizedBox(width: 8),
         _statChip('$newItems', t('batch.new'), AppColors.orange),
         const SizedBox(width: 8),
-        _statChip('$existingItems', t('batch.existing'), AppColors.success),
+        _statChip('$existingItems', t('batch.existing'), AppColors.bgSuccess,
         const Spacer(),
         // Center: amounts
         _amountText('${t('batch.purchase')}:', totalCost, AppColors.textSecondary),
@@ -73,7 +73,7 @@ class BatchSummaryBar extends ConsumerWidget {
         _amountText('${t('batch.sale')}:', totalSale, AppColors.textPrimary),
         const SizedBox(width: 16),
         _amountText('${t('batch.profit')}:', totalProfit,
-            totalProfit >= 0 ? AppColors.success : AppColors.danger),
+            totalProfit >= 0 ? AppColors.success : AppColors.bgDanger,
         const Spacer(),
         // Right: buttons
         OutlinedButton(

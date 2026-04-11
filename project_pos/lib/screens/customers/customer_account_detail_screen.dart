@@ -88,7 +88,7 @@ class _CustomerAccountDetailScreenState
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, size: 48, color: AppColors.danger),
+              const Icon(Icons.error_outline, size: 48, color: AppColors.bgDanger,
               const SizedBox(height: 12),
               Text(_error ?? 'Musteri bulunamadi',
                   style: const TextStyle(color: AppColors.textSecondary)),
@@ -260,15 +260,15 @@ class _CustomerAccountDetailScreenState
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isExceeded
-              ? [AppColors.danger, AppColors.danger.withOpacity(0.8)]
-              : [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+              ? [AppColors.danger, AppColors.danger.withValues(alpha: 0.8)]
+              : [AppColors.primary, AppColors.primary.withValues(alpha: 0.8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-              color: AppColors.primary.withOpacity(0.3),
+              color: AppColors.primary.withValues(alpha: 0.3),
               blurRadius: 12,
               offset: const Offset(0, 4)),
         ],
@@ -286,7 +286,7 @@ class _CustomerAccountDetailScreenState
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Text('LIMIT ASILDI',
@@ -309,7 +309,7 @@ class _CustomerAccountDetailScreenState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(balanceLabel,
@@ -340,7 +340,7 @@ class _CustomerAccountDetailScreenState
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, size: 16, color: color),
@@ -392,7 +392,7 @@ class _CustomerAccountDetailScreenState
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isCancelled
-              ? AppColors.textMuted.withOpacity(0.3)
+              ? AppColors.textMuted.withValues(alpha: 0.3)
               : isOverdue
                   ? AppColors.warning
                   : AppColors.border,
@@ -406,10 +406,10 @@ class _CustomerAccountDetailScreenState
             height: 40,
             decoration: BoxDecoration(
               color: isCancelled
-                  ? AppColors.textMuted.withOpacity(0.1)
+                  ? AppColors.textMuted.withValues(alpha: 0.1)
                   : isDebit
-                      ? AppColors.danger.withOpacity(0.1)
-                      : AppColors.success.withOpacity(0.1),
+                      ? AppColors.danger.withValues(alpha: 0.1)
+                      : AppColors.success.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
@@ -451,21 +451,21 @@ class _CustomerAccountDetailScreenState
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: AppColors.warning.withOpacity(0.15),
+                          color: AppColors.warning.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: const Text('VADESI GECMIS',
                             style: TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.warning)),
+                                color: AppColors.bgWarning),
                       ),
                     if (isCancelled)
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: AppColors.textMuted.withOpacity(0.15),
+                          color: AppColors.textMuted.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: const Text('IPTAL',

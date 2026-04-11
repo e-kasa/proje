@@ -164,7 +164,7 @@ class _AddStoreScreenState extends ConsumerState<AddStoreScreen> {
                         final isSelected = _selectedType == type['value'];
                         return Card(
                           margin: const EdgeInsets.only(bottom: 8),
-                          color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white,
+                          color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: AppConstants.borderRadiusMedium,
                             side: BorderSide(color: isSelected ? AppColors.primary : AppColors.border, width: isSelected ? 2 : 1),
@@ -254,7 +254,7 @@ class _AddStoreScreenState extends ConsumerState<AddStoreScreen> {
                       children: [
                         SwitchListTile(value: _hasWarehouse, onChanged: (v) => setState(() => _hasWarehouse = v), title: const Text('Deposu Var'), subtitle: Text(_hasWarehouse ? 'Mağazanın deposu var' : 'Mağazanın deposu yok', style: const TextStyle(fontSize: 12)), secondary: Icon(_hasWarehouse ? Icons.warehouse : Icons.store, color: _hasWarehouse ? AppColors.success : AppColors.textMuted)),
                         const Divider(),
-                        SwitchListTile(value: _isActive, onChanged: (v) => setState(() => _isActive = v), title: const Text('Aktif'), subtitle: Text(_isActive ? 'Mağaza şu anda aktif' : 'Mağaza şu anda pasif', style: const TextStyle(fontSize: 12)), secondary: Icon(_isActive ? Icons.check_circle : Icons.cancel, color: _isActive ? AppColors.success : AppColors.danger)),
+                        SwitchListTile(value: _isActive, onChanged: (v) => setState(() => _isActive = v), title: const Text('Aktif'), subtitle: Text(_isActive ? 'Mağaza şu anda aktif' : 'Mağaza şu anda pasif', style: const TextStyle(fontSize: 12)), secondary: Icon(_isActive ? Icons.check_circle : Icons.cancel, color: _isActive ? AppColors.success : AppColors.bgDanger),
                       ],
                     ),
                     const SizedBox(height: 24),

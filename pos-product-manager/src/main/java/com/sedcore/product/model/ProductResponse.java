@@ -2,9 +2,9 @@ package com.sedcore.product.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.sedcore.common.enums.ProductStatus;
+import com.towpen.base.restservice.model.DtoBaseModel;
 
 import jakarta.persistence.Embeddable;
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,7 +21,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProductResponse {
+public class ProductResponse extends DtoBaseModel {
 
 	private String id;
     private String name;

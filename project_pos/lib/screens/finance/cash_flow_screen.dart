@@ -249,7 +249,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                                     currencyFormat.format(income),
                                     style: const TextStyle(
                                         fontSize: 12,
-                                        color: AppColors.success),
+                                        color: AppColors.bgSuccess,
                                     textAlign: TextAlign.right,
                                   ),
                                 ),
@@ -259,7 +259,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                                     currencyFormat.format(expense),
                                     style: const TextStyle(
                                         fontSize: 12,
-                                        color: AppColors.danger),
+                                        color: AppColors.bgDanger,
                                     textAlign: TextAlign.right,
                                   ),
                                 ),
@@ -317,7 +317,7 @@ class _FlowCard extends StatelessWidget {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: color, size: 18),

@@ -1,5 +1,6 @@
 package com.sedcore.supplier.model;
 
+import com.towpen.base.restservice.model.DtoBaseModel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,7 +13,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SupplierAccountResponse {
+public class SupplierAccountResponse extends DtoBaseModel {
     private String id;
     private String supplierId;
     private String supplierName;

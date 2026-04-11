@@ -72,8 +72,8 @@ class _MatchConfirmModalState extends State<MatchConfirmModal> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    const Color(0xFFFF9800).withOpacity(0.1),
-                    const Color(0xFFFF9800).withOpacity(0.05),
+                    const Color(0xFFFF9800).withValues(alpha: 0.1),
+                    const Color(0xFFFF9800).withValues(alpha: 0.05),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -84,7 +84,7 @@ class _MatchConfirmModalState extends State<MatchConfirmModal> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF9800).withOpacity(0.2),
+                      color: const Color(0xFFFF9800).withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(Icons.link, color: const Color(0xFFFF9800), size: 32),
@@ -125,13 +125,13 @@ class _MatchConfirmModalState extends State<MatchConfirmModal> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.info.withOpacity(0.1),
+                        color: AppColors.info.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.info.withOpacity(0.3)),
+                        border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.info_outline, color: AppColors.info),
+                          Icon(Icons.info_outline, color: AppColors.bgInfo,
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
@@ -324,9 +324,9 @@ class _MatchConfirmModalState extends State<MatchConfirmModal> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(8),
-        color: color.withOpacity(0.05),
+        color: color.withValues(alpha: 0.05),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

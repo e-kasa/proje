@@ -137,7 +137,7 @@ class _ProductSearchPanelState extends ConsumerState<ProductSearchPanel> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.inventory_2_outlined,
-              size: 64, color: AppColors.textMuted.withOpacity(0.5)),
+              size: 64, color: AppColors.textMuted.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
           const Text(
             'Ürün bulunamadı',
@@ -379,7 +379,7 @@ class _ProductSearchPanelState extends ConsumerState<ProductSearchPanel> {
           duration: const Duration(milliseconds: 150),
           decoration: BoxDecoration(
             color: isOutOfStock
-                ? AppColors.bgLight.withOpacity(0.7)
+                ? AppColors.bgLight.withValues(alpha: 0.7)
                 : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
@@ -389,7 +389,7 @@ class _ProductSearchPanelState extends ConsumerState<ProductSearchPanel> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),

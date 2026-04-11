@@ -1370,12 +1370,20 @@ public class ItemServiceImpl extends BaseDbServiceImp<ItemRepository, Item>
 
     // Kendi entity'si → save(entity)
     // Başka service'in entity'si → prepareAndSave(repository, entity)
+
+    // ── MAPPING — ZORUNLU PATTERN ────────────────────────────────────────
+    // Response sınıfı DtoBaseModel extend etmeli (bakınız §3.13)
     private ItemResponse toResponse(Item item) {
-        return ItemResponse.builder()
-                .id(item.getId())
-                .name(item.getName())
-                .build();
+        return toDTO(item);  // ← BeanUtils tabanlı, aynı isimli tüm alanlar kopyalanır
     }
+
+    // FK ilişkisinden gelen alanlar varsa — toDTO() sonrası manuel ekle:
+    // private ItemResponse toResponse(Item item) {
+    //     ItemResponse dto = toDTO(item);
+    //     dto.setCategoryName(item.getCategory().getName());  // FK alanı
+    //     dto.setStatusLabel(item.getStatus().getDescription()); // computed
+    //     return dto;
+    // }
 }
 ```
 
@@ -1677,6 +1685,171 @@ product_relationship: COMPLEMENTARY, SIMILAR, ALTERNATIVE örnekleri
 | `throw ExceptionMapper.map(e)` `e` tanımsız | `throw new TOpenException(new TOpenMessage(TMessageType.FIELD_IS_REQUIRED_1001))` |
 | Null bytes dosyada | `tr -d '\0' < file > file.clean && mv file.clean file` |
 | `io.swagger.v3.oas.models.components.Components` | `io.swagger.v3.oas.models.Components` (components alt paket değil) |
+| `return ResponseBuilder.builder()...build()` mapper'da | `toDTO(entity)` kullan — bakınız §3.13 |
+| Response DTO'da `extends DtoBaseModel` eksik | `toDTO()` çalışmaz → ekle |
+| `collect(Collectors.toList())` | `.toList()` (Java 25) |
+| Record Response + `toDTO()` | Records DtoBaseModel extend edemez → class yap |
+| Cross-service `toResponse()` private | Interface'e ekle: `MyResponse toResponse(MyEntity e)` |
+| `toDTO(variant)` — farklı entity tipi | T mismatch → delegate: `variantService.mapToResponse(v)` |
+
+---
+
+## 3.12 Build
+
+```bash
+cd core && mvn install -q
+cd pos-product-manager && mvn compile   # 0 error hedefi
+mvn spring-boot:run
+mvn test
+```
+
+---
+
+## 3.13 Entity → DTO Mapping Standardı (ZORUNLU)
+
+> **Kural:** Tüm `toResponse()` / `mapToResponse()` metotlarında `BaseDbServiceImp.toDTO()` kullan.  
+> Builder pattern ile manuel mapping **yasaktır**.
+
+### Response DTO Kuralları
+
+```java
+// ✅ DOĞRU — Her Response DTO DtoBaseModel extend etmeli
+@Data @Builder @NoArgsConstructor @AllArgsConstructor
+public class ItemResponse extends DtoBaseModel {
+    private String id;
+    private String name;
+    private String companyCode;
+    private Boolean isActive;
+}
+
+// ❌ YANLIŞ — DtoBaseModel olmadan
+public class ItemResponse {   // extends eksik
+    ...
+}
+```
+
+**Kısıtlamalar:**
+- **Java Records** `extends DtoBaseModel` yapamaz → Records sadece rapor/salt-okunur model için kullan (bakınız §3.13-Records)
+- `@Builder @NoArgsConstructor @AllArgsConstructor` üçü birlikte zorunlu — `toDTO()` no-args constructor gerektirir
+
+### Mapping Kategorileri
+
+**Kategori 1 — Tam eşleşme** (yalnızca `toDTO(entity)`):
+```java
+// Entity ve Response field isimleri + tipleri birebir eşleşiyor
+private ItemResponse toResponse(Item item) {
+    return toDTO(item);
+}
+```
+Örnekler: `BrandResponse`, `UnitResponse`, `VehicleResponse`
+
+**Kategori 2 — Kısmi eşleşme** (`toDTO()` + manuel supplement):
+```java
+// BeanUtils eşleşen alanları kopyalar; FK/enum/computed alanlar manuel eklenir
+private OemNumberResponse toResponse(OemNumber oem) {
+    OemNumberResponse dto = toDTO(oem);
+    dto.setVariantId(oem.getVariant().getId());          // FK → manuel
+    return dto;
+}
+
+private BarcodeResponse toResponse(Barcode b) {
+    BarcodeResponse dto = toDTO(b);
+    dto.setBarcodeType(b.getBarcodeType() != null        // enum→String → manuel
+        ? b.getBarcodeType().name() : null);
+    return dto;
+}
+
+private AccountTransactionResponse toResponse(AccountTransaction tx) {
+    AccountTransactionResponse dto = toDTO(tx);
+    dto.setTransactionTypeLabel(                         // computed → manuel
+        tx.getTransactionType() != null
+            ? tx.getTransactionType().getDescription() : null);
+    if (tx.getSupplier() != null) {
+        dto.setSupplierId(tx.getSupplier().getId());     // FK → manuel
+        dto.setSupplierName(tx.getSupplier().getName());
+    }
+    return dto;
+}
+```
+
+**Kategori 3 — Farklı entity tipi** (cross-service delegasyon):
+```java
+// ProductServiceImpl'de T=Product olduğundan, ProductVariant için toDTO() çalışmaz
+// → delegate to variantService.mapToResponse() (interface'e eklenmeli)
+private ProductVariantResponse mapVariantToResponse(ProductVariant variant) {
+    ProductVariantResponse dto = variantService.mapToResponse(variant); // ← delegasyon
+    // Bu service'e özgü enrichment
+    dto.setInventory(inventoryService.findByVariantIdSafe(variant.getId()));
+    return dto;
+}
+```
+
+### BeanUtils Kopyalama Kuralları
+
+| Durum | BeanUtils Davranışı | Çözüm |
+|-------|---------------------|-------|
+| Aynı isim + aynı tip | ✅ Kopyalar | — |
+| Enum → aynı Enum tipi | ✅ Kopyalar | — |
+| Enum → String | ❌ Kopyalamaz | `dto.setX(entity.getX().name())` |
+| FK ilişkisi (`@ManyToOne`) | ❌ Kopyalamaz | `dto.setXId(entity.getX().getId())` |
+| `List<Entity>` (LAZY) | ❌ Kopyalamaz | manuel map |
+| Farklı isimli alan | ❌ Kopyalamaz | `dto.setDisplayName(entity.getUserDisplayName())` |
+| Hesaplanan alan | ❌ Kopyalamaz | `dto.setLabel(entity.getEnum().getDescription())` |
+
+### Stream.toList() — Java 25
+
+```java
+// ✅ DOĞRU — Java 25
+return dao.findAll().stream()
+        .map(this::toResponse)
+        .toList();
+
+// ❌ ESKİ — artık kullanma
+return dao.findAll().stream()
+        .map(this::toResponse)
+        .collect(Collectors.toList());
+```
+
+### Records (Rapor Modelleri)
+
+Records sadece **`BaseDbServiceImp` extend etmeyen** report servislerinde kullanılır.  
+`toDTO()` ile uyumsuz — builder ve no-args constructor gerektirmez.
+
+```java
+// ✅ DOĞRU — SalesReportServiceImpl toDTO() kullanmıyor
+@Builder
+public record ProfitOverview(BigDecimal revenue, BigDecimal cost) {}
+
+// ❌ YANLIŞ — toDTO() kullanılan servis için Record
+public record BrandResponse(String id, String name) {}  // DtoBaseModel extend edilemez
+```
+
+### Cross-Service Mapper Erişimi
+
+Başka bir servis `toResponse()` metoduna ihtiyaç duyuyorsa → **interface'e ekle**:
+
+```java
+// AccountTransactionService interface:
+AccountTransactionResponse toResponse(AccountTransaction tx);
+
+// ProductVariantService interface:
+ProductVariantResponse mapToResponse(ProductVariant variant);
+```
+
+### Yeni Servis Checklist
+
+```
+□ Response DTO → extends DtoBaseModel ekle
+□ @NoArgsConstructor @AllArgsConstructor ekle (builder varsa)
+□ getDTOClassForService() → return MyResponse.class
+□ toResponse() / mapToResponse() → toDTO() ile başla
+□ FK alanları → toDTO() sonrası manuel set
+□ Enum → String dönüşümü → toDTO() sonrası .name() ile set
+□ Computed alanlar → toDTO() sonrası hesapla
+□ .collect(Collectors.toList()) → .toList() (Java 25)
+□ Java Records → sadece non-BaseDbServiceImp report servislerinde
+□ Cross-service mapper erişimi → interface'e metot ekle
+```
 
 ---
 
@@ -1835,8 +2008,12 @@ export const ProductService = {
 ```
 1. Backend Entity         → TOpenSimpleCompanyEntity extends, @Table, LAZY ilişkiler
 2. Backend Repository     → BaseDaoRepository extends, companyCode parametreli sorgular
-3. Backend DTO            → Request (@NotBlank validasyon) + Response (@Data @Builder)
+3. Backend DTO            → Request (@NotBlank validasyon)
+                            Response → extends DtoBaseModel, @Data @Builder @NoArgsConstructor @AllArgsConstructor
 4. Backend Service        → BaseDbServiceImp extends, readOnly okumalar, save/prepareAndSave
+                            getDTOClassForService() → return MyResponse.class
+                            toResponse() → toDTO(entity) + manuel FK/enum/computed supplement (§3.13)
+                            stream().map().toList()  ← Collectors.toList() DEĞİL
 5. Backend Controller     → TOpenException catch + rethrow, diğerleri ExceptionMapper.map
 6. Flutter Service        → ApiClient inject, response.data['data'], rethrow
 7. service_locator.dart   → Provider<MyService> ekle

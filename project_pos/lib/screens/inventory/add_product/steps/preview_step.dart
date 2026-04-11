@@ -108,12 +108,12 @@ class PreviewStep extends ConsumerWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  item.color.withOpacity(0.08),
-                  item.color.withOpacity(0.02),
+                  item.color.withValues(alpha: 0.08),
+                  item.color.withValues(alpha: 0.02),
                 ],
               ),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: item.color.withOpacity(0.15)),
+              border: Border.all(color: item.color.withValues(alpha: 0.15)),
             ),
             child: Stack(
               children: [
@@ -123,7 +123,7 @@ class PreviewStep extends ConsumerWidget {
                   child: Icon(
                     item.icon,
                     size: 32,
-                    color: item.color.withOpacity(0.07),
+                    color: item.color.withValues(alpha: 0.07),
                   ),
                 ),
                 Column(
@@ -143,7 +143,7 @@ class PreviewStep extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w500,
-                        color: item.color.withOpacity(0.65),
+                        color: item.color.withValues(alpha: 0.65),
                       ),
                     ),
                   ],
@@ -225,9 +225,9 @@ class PreviewStep extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: _accentColor.withOpacity(0.1),
+              color: _accentColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: _accentColor.withOpacity(0.3)),
+              border: Border.all(color: _accentColor.withValues(alpha: 0.3)),
             ),
             child: Text(
               state.sectorType.displayName,
@@ -343,14 +343,14 @@ class PreviewStep extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.25)),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: color.withOpacity(0.7)),
+          Icon(icon, size: 12, color: color.withValues(alpha: 0.7)),
           const SizedBox(width: 4),
           Text(
             label,
@@ -429,16 +429,16 @@ class PreviewStep extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.info.withOpacity(0.06),
+                color: AppColors.info.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.swipe_rounded, size: 14, color: AppColors.info),
+                  Icon(Icons.swipe_rounded, size: 14, color: AppColors.bgInfo,
                   const SizedBox(width: 4),
                   Text(
                     t('common.scroll_to_see_all'),
-                    style: TextStyle(fontSize: 10, color: AppColors.info),
+                    style: TextStyle(fontSize: 10, color: AppColors.bgInfo,
                   ),
                 ],
               ),
@@ -448,7 +448,7 @@ class PreviewStep extends ConsumerWidget {
             scrollDirection: Axis.horizontal,
             child: DataTable(
               headingRowColor: WidgetStateProperty.all(
-                _accentColor.withOpacity(0.06),
+                _accentColor.withValues(alpha: 0.06),
               ),
               dataRowMinHeight: 36,
               dataRowMaxHeight: 44,
@@ -475,10 +475,10 @@ class PreviewStep extends ConsumerWidget {
                     color: WidgetStateProperty.resolveWith<Color?>(
                       (states) {
                         if (isZeroStock) {
-                          return AppColors.warning.withOpacity(0.06);
+                          return AppColors.warning.withValues(alpha: 0.06);
                         }
                         if (entry.key.isOdd) {
-                          return AppColors.bgLight.withOpacity(0.5);
+                          return AppColors.bgLight.withValues(alpha: 0.5);
                         }
                         return null;
                       },
@@ -556,7 +556,7 @@ class PreviewStep extends ConsumerWidget {
                 // Total row
                 DataRow(
                   color: WidgetStateProperty.all(
-                    _accentColor.withOpacity(0.08),
+                    _accentColor.withValues(alpha: 0.08),
                   ),
                   cells: [
                     const DataCell(SizedBox.shrink()),
@@ -641,7 +641,7 @@ class PreviewStep extends ConsumerWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: _accentColor.withOpacity(0.08),
+                  color: _accentColor.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -686,7 +686,7 @@ class PreviewStep extends ConsumerWidget {
                     Icon(
                       Icons.add_photo_alternate_rounded,
                       size: 40,
-                      color: AppColors.textMuted.withOpacity(0.4),
+                      color: AppColors.textMuted.withValues(alpha: 0.4),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -717,7 +717,7 @@ class PreviewStep extends ConsumerWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1e293b).withOpacity(0.3),
+            color: const Color(0xFF1e293b).withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -731,7 +731,7 @@ class PreviewStep extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.08),
+                  color: Colors.white.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
@@ -764,10 +764,10 @@ class PreviewStep extends ConsumerWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.08),
+                      color: Colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                       ),
                     ),
                     child: Row(
@@ -782,7 +782,7 @@ class PreviewStep extends ConsumerWidget {
                         Text(
                           t('common.copy'),
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
+                            color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                           ),
@@ -800,10 +800,10 @@ class PreviewStep extends ConsumerWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.25),
+              color: Colors.black.withValues(alpha: 0.25),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
               ),
             ),
             child: SingleChildScrollView(
@@ -821,7 +821,7 @@ class PreviewStep extends ConsumerWidget {
     final stringColor = const Color(0xFF86efac); // light green
     final numberColor = const Color(0xFFfde68a); // light amber
     final boolNullColor = const Color(0xFFc4b5fd); // light purple
-    final punctuationColor = Colors.white.withOpacity(0.4);
+    final punctuationColor = Colors.white.withValues(alpha: 0.4);
 
     final lines = json.split('\n');
     for (int i = 0; i < lines.length; i++) {
@@ -955,10 +955,10 @@ class PreviewStep extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border.withOpacity(0.4)),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -974,7 +974,7 @@ class PreviewStep extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: _accentColor.withOpacity(0.1),
+            color: _accentColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, size: 18, color: _accentColor),
@@ -1026,7 +1026,7 @@ class PreviewStep extends ConsumerWidget {
     return Divider(
       height: 1,
       thickness: 1,
-      color: AppColors.border.withOpacity(0.3),
+      color: AppColors.border.withValues(alpha: 0.3),
     );
   }
 }

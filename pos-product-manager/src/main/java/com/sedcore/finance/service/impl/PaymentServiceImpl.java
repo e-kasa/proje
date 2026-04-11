@@ -82,39 +82,24 @@ public class PaymentServiceImpl
     // =========================================================================
 
     private PaymentResponse mapToResponse(Payment p) {
-        PaymentResponse.PaymentResponseBuilder builder = PaymentResponse.builder()
-                .id(p.getId())
-                .paymentType(p.getPaymentType())
-                .paymentTypeLabel(p.getPaymentType() != null ? p.getPaymentType().getDescription() : null)
-                .amount(p.getAmount())
-                .paymentDate(p.getPaymentDate())
-                .referenceNumber(p.getReferenceNumber())
-                .bankName(p.getBankName())
-                .accountNumber(p.getAccountNumber())
-                .checkNumber(p.getCheckNumber())
-                .checkDate(p.getCheckDate())
-                .description(p.getDescription())
-                .notes(p.getNotes())
-                .accountTransactionId(p.getAccountTransactionId())
-                .isCancelled(p.getIsCancelled())
-                .cancelledDate(p.getCancelledDate())
-                .cancelledReason(p.getCancelledReason())
-                .isVerified(p.getIsVerified())
-                .verifiedDate(p.getVerifiedDate())
-                .verifiedBy(p.getVerifiedBy());
+        PaymentResponse dto = toDTO(p);
 
+        // paymentTypeLabel — enum'dan hesaplanan alan
+        dto.setPaymentTypeLabel(p.getPaymentType() != null ? p.getPaymentType().getDescription() : null);
+
+        // FK ilişkilerinden gelen alanlar — BeanUtils doğrudan kopyalamaz
         if (p.getCustomer() != null) {
-            builder.customerId(p.getCustomer().getId())
-                   .customerName(p.getCustomer().getName());
+            dto.setCustomerId(p.getCustomer().getId());
+            dto.setCustomerName(p.getCustomer().getName());
         }
         if (p.getSupplier() != null) {
-            builder.supplierId(p.getSupplier().getId())
-                   .supplierName(p.getSupplier().getName());
+            dto.setSupplierId(p.getSupplier().getId());
+            dto.setSupplierName(p.getSupplier().getName());
         }
-        if (p.getSale() != null) builder.saleId(p.getSale().getId());
-        if (p.getPurchase() != null) builder.purchaseId(p.getPurchase().getId());
+        if (p.getSale() != null) dto.setSaleId(p.getSale().getId());
+        if (p.getPurchase() != null) dto.setPurchaseId(p.getPurchase().getId());
 
-        return builder.build();
+        return dto;
     }
 
     // =========================================================================

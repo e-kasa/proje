@@ -190,7 +190,7 @@ class _OverdueTrackingScreenState extends ConsumerState<OverdueTrackingScreen>
           border: Border.all(color: AppColors.border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -202,7 +202,7 @@ class _OverdueTrackingScreenState extends ConsumerState<OverdueTrackingScreen>
               radius: 22,
               backgroundColor:
                   (isCustomer ? AppColors.info : AppColors.orange)
-                      .withOpacity(0.1),
+                      .withValues(alpha: 0.1),
               child: Icon(
                 isCustomer ? Icons.person : Icons.business,
                 color: isCustomer ? AppColors.info : AppColors.orange,
@@ -225,7 +225,7 @@ class _OverdueTrackingScreenState extends ConsumerState<OverdueTrackingScreen>
                   Row(
                     children: [
                       Icon(Icons.calendar_today,
-                          size: 13, color: AppColors.danger),
+                          size: 13, color: AppColors.bgDanger,
                       const SizedBox(width: 4),
                       Text(
                         dueDate.length >= 10

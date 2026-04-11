@@ -126,7 +126,7 @@ class AppConfirmationDialog {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: iconColor.withOpacity(0.1),
+                    color: iconColor.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -243,7 +243,7 @@ class AppConfirmationDialog {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: (iconColor ?? AppColors.info).withOpacity(0.1),
+                    color: (iconColor ?? AppColors.bgInfo.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -290,11 +290,11 @@ class AppConfirmationDialog {
 
   /// Helper function to convert color to ButtonVariant
   static ButtonVariant _getVariantFromColor(Color color) {
-    if (color == AppColors.danger) {
+    if (color == AppColors.bgDanger {
       return ButtonVariant.danger;
-    } else if (color == AppColors.success) {
+    } else if (color == AppColors.bgSuccess {
       return ButtonVariant.success;
-    } else if (color == AppColors.warning) {
+    } else if (color == AppColors.bgWarning {
       return ButtonVariant.warning;
     } else {
       return ButtonVariant.primary;

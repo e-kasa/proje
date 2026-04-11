@@ -105,7 +105,7 @@ public class CompanyCategoryServiceImpl extends BaseDbServiceImp<CompanyCategory
 
         return entries.stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     // -----------------------------------------------------------------------
@@ -202,7 +202,7 @@ public class CompanyCategoryServiceImpl extends BaseDbServiceImp<CompanyCategory
 
         log.info("Firma [{}] kategori seçimi güncellendi: {} kategori", companyCode, saved.size());
 
-        return saved.stream().map(this::toResponse).collect(Collectors.toList());
+        return saved.stream().map(this::toResponse).toList();
     }
 
     // -----------------------------------------------------------------------
@@ -248,30 +248,24 @@ public class CompanyCategoryServiceImpl extends BaseDbServiceImp<CompanyCategory
     // Entity → Response DTO dönüşümü
     // -----------------------------------------------------------------------
     private CompanyCategoryResponse toResponse(CompanyCategory entity) {
-        CompanyCategoryResponse.CompanyCategoryResponseBuilder builder = CompanyCategoryResponse.builder()
-                .id(entity.getId())
-                .companyCode(entity.getCompanyCode())
-                .categoryId(entity.getCategoryId())
-                .isActive(entity.getIsActive())
-                .displayOrder(entity.getDisplayOrder());
-
-        // Kategori detayları join ile geldiyse ekle
+        CompanyCategoryResponse dto = toDTO(entity);
+        // Kategori join alanları — BeanUtils doğrudan kopyalamaz (FK ilişkisi)
         if (entity.getCategory() != null) {
             Category cat = entity.getCategory();
-            builder.categoryName(cat.getName())
-                    .categorySlug(cat.getSlug())
-                    .categoryPath(cat.getPath())
-                    .categoryLevel(cat.getLevel())
-                    .categoryParentId(cat.getParentCategory() != null ? cat.getParentCategory().getId() : null)
-                    .categoryImageUrl(cat.getImageUrl())
-                    .categoryIcon(cat.getIcon())
-                    .categoryStatus(cat.getStatus() != null ? cat.getStatus().name() : null);
+            dto.setCategoryName(cat.getName());
+            dto.setCategorySlug(cat.getSlug());
+            dto.setCategoryPath(cat.getPath());
+            dto.setCategoryLevel(cat.getLevel());
+            dto.setCategoryParentId(cat.getParentCategory() != null ? cat.getParentCategory().getId() : null);
+            dto.setCategoryImageUrl(cat.getImageUrl());
+            dto.setCategoryIcon(cat.getIcon());
+            // categoryStatus: enum → String dönüşümü
+            dto.setCategoryStatus(cat.getStatus() != null ? cat.getStatus().name() : null);
         } else {
             // Lazy load — sadece id var, detay yok
-            builder.categoryName("—");
+            dto.setCategoryName("—");
         }
-
-        return builder.build();
+        return dto;
     }
 
     @Override

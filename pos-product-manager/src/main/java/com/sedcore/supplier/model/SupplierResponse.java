@@ -2,6 +2,7 @@ package com.sedcore.supplier.model;
 
 import com.sedcore.common.enums.CustomerType;
 import com.sedcore.common.enums.RiskStatus;
+import com.towpen.base.restservice.model.DtoBaseModel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,7 +17,7 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SupplierResponse {
+public class SupplierResponse extends DtoBaseModel {
 
     private String id;
     private String name;

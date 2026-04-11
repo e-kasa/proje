@@ -123,7 +123,7 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.08),
+            color: AppColors.primary.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
@@ -189,8 +189,8 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: isPositive
-                      ? AppColors.success.withOpacity(0.1)
-                      : AppColors.danger.withOpacity(0.1),
+                      ? AppColors.success.withValues(alpha: 0.1)
+                      : AppColors.danger.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(

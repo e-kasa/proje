@@ -381,7 +381,7 @@ class _EnhancedProductListScreenState
                 Container(
                   decoration: BoxDecoration(
                     color: _isOemSearching
-                        ? AppColors.orange.withOpacity(0.15)
+                        ? AppColors.orange.withValues(alpha: 0.15)
                         : AppColors.bgLight,
                     borderRadius: AppConstants.borderRadiusMedium,
                     border: Border.all(
@@ -433,7 +433,7 @@ class _EnhancedProductListScreenState
                             setState(() => _selectedCategory = null);
                             _filterProducts();
                           },
-                          selectedColor: AppColors.primary.withOpacity(0.2),
+                          selectedColor: AppColors.primary.withValues(alpha: 0.2),
                         ),
                       ),
                       ..._categories.map((cat) => Padding(
@@ -445,7 +445,7 @@ class _EnhancedProductListScreenState
                                 setState(() => _selectedCategory = cat);
                                 _filterProducts();
                               },
-                              selectedColor: AppColors.primary.withOpacity(0.2),
+                              selectedColor: AppColors.primary.withValues(alpha: 0.2),
                             ),
                           )),
                     ],
@@ -467,7 +467,7 @@ class _EnhancedProductListScreenState
                             setState(() => _selectedStatus = null);
                             _filterProducts();
                           },
-                          selectedColor: AppColors.warning.withOpacity(0.2),
+                          selectedColor: AppColors.warning.withValues(alpha: 0.2),
                         ),
                       ),
                       ...['DRAFT', 'ACTIVE', 'INACTIVE', 'OUT_OF_STOCK']
@@ -481,7 +481,7 @@ class _EnhancedProductListScreenState
                                     _filterProducts();
                                   },
                                   selectedColor: _getStatusColor(status)
-                                      .withOpacity(0.2),
+                                      .withValues(alpha: 0.2),
                                 ),
                               )),
                     ],
@@ -736,13 +736,13 @@ class _EnhancedProductListScreenState
                       Row(
                         children: [
                           const Icon(Icons.compare_arrows,
-                              size: 12, color: AppColors.info),
+                              size: 12, color: AppColors.bgInfo,
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               'Ref: ${product['_crossRefs']}',
                               style: const TextStyle(
-                                  fontSize: 11, color: AppColors.info),
+                                  fontSize: 11, color: AppColors.bgInfo,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),

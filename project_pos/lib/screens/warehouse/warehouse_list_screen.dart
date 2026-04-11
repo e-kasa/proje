@@ -89,7 +89,7 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
       builder: (context) => AlertDialog(
         title: const Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: AppColors.warning),
+            Icon(Icons.warning_amber_rounded, color: AppColors.bgWarning,
             SizedBox(width: 12),
             Text('Depo Sil'),
           ],
@@ -207,7 +207,7 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
                                   });
                                   _loadWarehouses();
                                 },
-                                selectedColor: AppColors.primary.withOpacity(0.2),
+                                selectedColor: AppColors.primary.withValues(alpha: 0.2),
                               ),
                             )),
                             const SizedBox(width: 8),
@@ -220,7 +220,7 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
                                 });
                                 _loadWarehouses();
                               },
-                              selectedColor: AppColors.success.withOpacity(0.2),
+                              selectedColor: AppColors.success.withValues(alpha: 0.2),
                             ),
                           ],
                         ),
@@ -304,9 +304,9 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: AppConstants.borderRadiusMedium,
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -338,7 +338,7 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
                   suffix,
                   style: TextStyle(
                     fontSize: 11,
-                    color: color.withOpacity(0.7),
+                    color: color.withValues(alpha: 0.7),
                   ),
                 ),
               ),
@@ -379,7 +379,7 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: isActive ? AppColors.primary.withOpacity(0.1) : AppColors.textMuted.withOpacity(0.1),
+                      color: isActive ? AppColors.primary.withValues(alpha: 0.1) : AppColors.textMuted.withValues(alpha: 0.1),
                       borderRadius: AppConstants.borderRadiusMedium,
                     ),
                     child: Icon(
@@ -570,9 +570,9 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: AppConstants.borderRadiusSmall,
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

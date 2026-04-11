@@ -411,24 +411,28 @@ public class UserDefService extends BaseDbServiceImp<UserDefRepository, UserDef>
     }
 
     private UserResponse toResponse(UserDef user) {
-        List<String> roles = userRoleRepository.findByUserDef(user.getId());
+        // toDTO(): id, companyCode, isActive, storeId, userName → BeanUtils ile kopyalanır
+        UserResponse dto = toDTO(user);
 
+        // displayName — entity'de userDisplayName olarak tanımlı, isim uyuşmazlığı
+        dto.setDisplayName(user.getUserDisplayName());
+
+        // languageVal — entity'de LanguageType enum, response'da String
+        dto.setLanguageVal(user.getLanguageVal() != null ? user.getLanguageVal().getValue() : "TR");
+
+        // userType — entity'de UserType enum, response'da String
+        dto.setUserType(user.getUserType() != null ? user.getUserType().name() : "USER");
+
+        // canLogin — UserDef'te değil, UserDefAccess'ten gelir
         Boolean canLogin = userDefAccessRepository.findByUserDef(user)
                 .map(UserDefAccess::getCanLogin)
                 .orElse(false);
+        dto.setCanLogin(canLogin);
 
-        return UserResponse.builder()
-                .id(user.getId())
-                .userName(user.getUserName())
-                .displayName(user.getUserDisplayName())
-                .companyCode(user.getCompanyCode())
-                .languageVal(user.getLanguageVal() != null ? user.getLanguageVal().getValue() : "TR")
-                .isActive(user.getIsActive())
-                .storeId(user.getStoreId())
-                .userType(user.getUserType() != null ? user.getUserType().name() : "USER")
-                .canLogin(canLogin)
-                .roles(roles)
-                .build();
+        // roles — UserRole ilişkisinden gelir
+        dto.setRoles(userRoleRepository.findByUserDef(user.getId()));
+
+        return dto;
     }
 
     private LanguageType parseLanguage(String val) {

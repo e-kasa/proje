@@ -249,7 +249,7 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.link_off, size: 80, color: AppColors.textMuted.withOpacity(0.5)),
+                      Icon(Icons.link_off, size: 80, color: AppColors.textMuted.withValues(alpha: 0.5)),
                       const SizedBox(height: 16),
                       const Text('Henuz arac uyumlulugu eklenmemis', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
                       const SizedBox(height: 16),
@@ -284,7 +284,7 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
                           leading: Container(
                             width: 44, height: 44,
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
+                              color: AppColors.primary.withValues(alpha: 0.1),
                               borderRadius: AppConstants.borderRadiusSmall,
                             ),
                             child: const Center(child: Icon(Icons.directions_car, color: AppColors.primary, size: 24)),
@@ -303,7 +303,7 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
                                 Text(compat['vehicleEngineType'], style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
                               if (compat['isVerified'] == true) ...[
                                 const SizedBox(width: 8),
-                                const Icon(Icons.verified, size: 14, color: AppColors.success),
+                                const Icon(Icons.verified, size: 14, color: AppColors.bgSuccess,
                               ],
                             ],
                           ),

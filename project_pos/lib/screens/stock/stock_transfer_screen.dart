@@ -247,7 +247,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
         ),
         const SizedBox(width: 8),
         Expanded(
-            child: Divider(color: AppColors.primary.withOpacity(0.2))),
+            child: Divider(color: AppColors.primary.withValues(alpha: 0.2))),
       ],
     );
   }
@@ -277,7 +277,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
                   selected: locationType == _LocationType.warehouse,
                   onSelected: (_) =>
                       onTypeChanged(_LocationType.warehouse),
-                  selectedColor: AppColors.primary.withOpacity(0.15),
+                  selectedColor: AppColors.primary.withValues(alpha: 0.15),
                   checkmarkColor: AppColors.primary,
                   labelStyle: TextStyle(
                     color: locationType == _LocationType.warehouse
@@ -294,7 +294,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
                   selected: locationType == _LocationType.store,
                   onSelected: (_) =>
                       onTypeChanged(_LocationType.store),
-                  selectedColor: AppColors.primary.withOpacity(0.15),
+                  selectedColor: AppColors.primary.withValues(alpha: 0.15),
                   checkmarkColor: AppColors.primary,
                   labelStyle: TextStyle(
                     color: locationType == _LocationType.store
@@ -407,7 +407,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
       decoration: BoxDecoration(
         border: Border.all(
             color:
-                theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListView.separated(
@@ -417,7 +417,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
         separatorBuilder: (_, __) => Divider(
           height: 1,
           color:
-              theme.colorScheme.outlineVariant.withOpacity(0.4),
+              theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
         ),
         itemBuilder: (_, i) {
           final p = _searchResults[i];
@@ -433,8 +433,8 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
             leading: CircleAvatar(
               radius: 16,
               backgroundColor: alreadyAdded
-                  ? AppColors.success.withOpacity(0.15)
-                  : AppColors.primary.withOpacity(0.1),
+                  ? AppColors.success.withValues(alpha: 0.15)
+                  : AppColors.primary.withValues(alpha: 0.1),
               child: Icon(
                 alreadyAdded
                     ? Icons.check_rounded
@@ -457,7 +457,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
             trailing: alreadyAdded
                 ? Text(t('stock.added'),
                     style: const TextStyle(
-                        fontSize: 11, color: AppColors.success))
+                        fontSize: 11, color: AppColors.bgSuccess)
                 : const Icon(Icons.add_circle_outline,
                     color: AppColors.primary, size: 22),
             onTap: alreadyAdded
@@ -580,10 +580,10 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.05),
+        color: AppColors.primary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(14),
         border:
-            Border.all(color: AppColors.primary.withOpacity(0.2)),
+            Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -639,7 +639,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
       prefixIcon: Icon(icon),
       filled: true,
       fillColor: theme.colorScheme.surfaceContainerHighest
-          .withOpacity(0.3),
+          .withValues(alpha: 0.3),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide:

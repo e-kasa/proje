@@ -31,9 +31,9 @@ class RecommendationPanel extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.bgInfo.withOpacity(0.08),
+          color: AppColors.bgInfo.withValues(alpha: 0.08),
           border: Border(
-            top: BorderSide(color: AppColors.info.withOpacity(0.3), width: 1),
+            top: BorderSide(color: AppColors.info.withValues(alpha: 0.3), width: 1),
           ),
         ),
         child: Column(
@@ -43,17 +43,17 @@ class RecommendationPanel extends ConsumerWidget {
             // Başlık
             Row(
               children: [
-                Icon(Icons.lightbulb_outline, size: 18, color: AppColors.info),
+                Icon(Icons.lightbulb_outline, size: 18, color: AppColors.bgInfo,
                 const SizedBox(width: 8),
                 Text(
                   t('pos.recommended_products'),
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.info),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.bgInfo,
                 ),
                 const SizedBox(width: 4),
                 if (posState.recommendations.isNotEmpty)
                   Text(
                     '(${posState.recommendations.length})',
-                    style: TextStyle(fontSize: 11, color: AppColors.info.withOpacity(0.6)),
+                    style: TextStyle(fontSize: 11, color: AppColors.info.withValues(alpha: 0.6)),
                   ),
                 if (posState.isLoadingRecommendations) ...[
                   const SizedBox(width: 8),
@@ -61,7 +61,7 @@ class RecommendationPanel extends ConsumerWidget {
                     width: 12, height: 12,
                     child: CircularProgressIndicator(
                       strokeWidth: 1.5,
-                      valueColor: AlwaysStoppedAnimation(AppColors.info),
+                      valueColor: AlwaysStoppedAnimation(AppColors.bgInfo,
                     ),
                   ),
                 ],
@@ -169,10 +169,10 @@ class _RecommendationCard extends StatelessWidget {
           width: 160,
           decoration: BoxDecoration(
             color: Colors.white,
-            border: Border.all(color: isOutOfStock ? AppColors.border : (badge.color).withOpacity(0.3), width: 1.5),
+            border: Border.all(color: isOutOfStock ? AppColors.border : (badge.color).withValues(alpha: 0.3), width: 1.5),
             borderRadius: BorderRadius.circular(10),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2)),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2)),
             ],
           ),
           child: Column(
@@ -182,7 +182,7 @@ class _RecommendationCard extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
-                  color: badge.color.withOpacity(0.15),
+                  color: badge.color.withValues(alpha: 0.15),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(9),
                     topRight: Radius.circular(9),
@@ -256,7 +256,7 @@ class _RecommendationCard extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                               decoration: BoxDecoration(
-                                color: profit > 0 ? AppColors.success.withOpacity(0.1) : AppColors.danger.withOpacity(0.1),
+                                color: profit > 0 ? AppColors.success.withValues(alpha: 0.1) : AppColors.danger.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -300,7 +300,7 @@ class _RecommendationCard extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 5),
                 decoration: BoxDecoration(
-                  color: isOutOfStock ? AppColors.border.withOpacity(0.5) : AppColors.success.withOpacity(0.1),
+                  color: isOutOfStock ? AppColors.border.withValues(alpha: 0.5) : AppColors.success.withValues(alpha: 0.1),
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(9),
                     bottomRight: Radius.circular(9),
@@ -371,13 +371,13 @@ class _StockBadge extends StatelessWidget {
     final Color textColor;
 
     if (status == 'OUT_OF_STOCK' || stock <= 0) {
-      bgColor = AppColors.danger.withOpacity(0.1);
+      bgColor = AppColors.danger.withValues(alpha: 0.1);
       textColor = AppColors.danger;
     } else if (status == 'LOW_STOCK' || stock <= 5) {
-      bgColor = AppColors.warning.withOpacity(0.1);
+      bgColor = AppColors.warning.withValues(alpha: 0.1);
       textColor = AppColors.warning;
     } else {
-      bgColor = AppColors.success.withOpacity(0.1);
+      bgColor = AppColors.success.withValues(alpha: 0.1);
       textColor = AppColors.success;
     }
 

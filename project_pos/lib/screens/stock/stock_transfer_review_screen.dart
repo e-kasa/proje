@@ -143,7 +143,7 @@ class _StockTransferReviewScreenState
         children: [
           Row(
             children: [
-              Icon(Icons.swap_horiz, color: Colors.blue[700], size: 24),
+              Icon(Icons.swap_horiz, color: AppColors.info[700], size: 24),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -200,7 +200,7 @@ class _StockTransferReviewScreenState
                 '${(_decidedCount / _response!.itemCount * 100).toInt()}%',
                 style: TextStyle(
                   fontSize: 13,
-                  color: Colors.blue[700],
+                  color: AppColors.info[700],
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -211,7 +211,7 @@ class _StockTransferReviewScreenState
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
               value: progress,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue[700]!),
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.info[700]!),
               minHeight: 8,
             ),
           ),
@@ -228,11 +228,11 @@ class _StockTransferReviewScreenState
     Color headerColor = Colors.grey[50]!;
 
     if (hasDecision) {
-      borderColor = Colors.green[400]!;
-      headerColor = Colors.green[50]!;
+      borderColor = AppColors.success[400]!;
+      headerColor = AppColors.success[50]!;
     } else if (!item.isStockSufficient) {
-      borderColor = Colors.orange[400]!;
-      headerColor = Colors.orange[50]!;
+      borderColor = AppColors.warning[400]!;
+      headerColor = AppColors.warning[50]!;
     }
 
     return Container(
@@ -264,8 +264,8 @@ class _StockTransferReviewScreenState
                   ),
                   decoration: BoxDecoration(
                     color: item.isStockSufficient
-                        ? Colors.green[100]
-                        : Colors.orange[100],
+                        ? AppColors.success[100]
+                        : AppColors.warning[100],
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -274,8 +274,8 @@ class _StockTransferReviewScreenState
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: item.isStockSufficient
-                          ? Colors.green[800]
-                          : Colors.orange[800],
+                          ? AppColors.success[800]
+                          : AppColors.warning[800],
                     ),
                   ),
                 ),
@@ -296,7 +296,7 @@ class _StockTransferReviewScreenState
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.green,
+                      color: AppColors.success,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -331,7 +331,7 @@ class _StockTransferReviewScreenState
                         t('stock.source'),
                         item.sourceLocation,
                         Icons.output,
-                        Colors.red,
+                        AppColors.danger,
                       ),
                     ),
                     Container(
@@ -347,7 +347,7 @@ class _StockTransferReviewScreenState
                         t('stock.target'),
                         item.targetLocation!,
                         Icons.input,
-                        Colors.green,
+                        AppColors.success,
                       ),
                     ),
                   ],
@@ -359,13 +359,13 @@ class _StockTransferReviewScreenState
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: item.isStockSufficient
-                        ? Colors.green[50]
-                        : Colors.orange[50],
+                        ? AppColors.success[50]
+                        : AppColors.warning[50],
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: item.isStockSufficient
-                          ? Colors.green[200]!
-                          : Colors.orange[200]!,
+                          ? AppColors.success[200]!
+                          : AppColors.warning[200]!,
                     ),
                   ),
                   child: Row(
@@ -406,8 +406,8 @@ class _StockTransferReviewScreenState
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: item.isStockSufficient
-                                  ? Colors.green[700]
-                                  : Colors.orange[700],
+                                  ? AppColors.success[700]
+                                  : AppColors.warning[700],
                             ),
                           ),
                         ],
@@ -422,13 +422,13 @@ class _StockTransferReviewScreenState
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.orange[100],
+                      color: AppColors.warning[100],
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: Colors.orange[300]!),
+                      border: Border.all(color: AppColors.warning[300]!),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.warning, color: Colors.orange[800], size: 20),
+                        Icon(Icons.warning, color: AppColors.warning[800], size: 20),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -437,7 +437,7 @@ class _StockTransferReviewScreenState
                                 : t('stock.source_no_stock'),
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.orange[900],
+                              color: AppColors.warning[900],
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -494,9 +494,9 @@ class _StockTransferReviewScreenState
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -558,7 +558,7 @@ class _StockTransferReviewScreenState
                   child: _buildDecisionButton(
                     '${t('stock.approve')} (${item.requestedQuantity} ${t('stock.unit_piece')})',
                     Icons.check_circle,
-                    Colors.green,
+                    AppColors.success,
                     () => _makeDecision(item, TransferAction.APPROVE_FULL),
                   ),
                 ),
@@ -567,7 +567,7 @@ class _StockTransferReviewScreenState
                   child: _buildDecisionButton(
                     t('stock.reject'),
                     Icons.cancel,
-                    Colors.red,
+                    AppColors.danger,
                     () => _makeDecision(item, TransferAction.REJECT),
                   ),
                 ),
@@ -582,7 +582,7 @@ class _StockTransferReviewScreenState
                       child: _buildDecisionButton(
                         '${t('stock.partial_approve')} (${item.availableStock} ${t('stock.unit_piece')})',
                         Icons.add_task,
-                        Colors.orange,
+                        AppColors.warning,
                         () => _makeDecisionPartial(item),
                       ),
                     ),
@@ -595,7 +595,7 @@ class _StockTransferReviewScreenState
                       child: _buildDecisionButton(
                         t('stock.request_more_info'),
                         Icons.info_outline,
-                        Colors.blue,
+                        AppColors.info,
                         () => _makeDecision(item, TransferAction.REQUEST_MORE_INFO),
                       ),
                     ),
@@ -604,7 +604,7 @@ class _StockTransferReviewScreenState
                       child: _buildDecisionButton(
                         t('stock.reject'),
                         Icons.cancel,
-                        Colors.red,
+                        AppColors.danger,
                         () => _makeDecision(item, TransferAction.REJECT),
                       ),
                     ),
@@ -616,7 +616,7 @@ class _StockTransferReviewScreenState
             _buildDecisionButton(
               '${t('stock.reject')} (${t('stock.no_stock')})',
               Icons.cancel,
-              Colors.red,
+              AppColors.danger,
               () => _makeDecision(item, TransferAction.REJECT),
             ),
         ],
@@ -643,37 +643,37 @@ class _StockTransferReviewScreenState
     final decision = item.userDecision!;
     String actionText = '';
     IconData actionIcon = Icons.check;
-    Color actionColor = Colors.green;
+    Color actionColor = AppColors.success;
 
     switch (decision.action) {
       case TransferAction.APPROVE_FULL:
         actionText = '${t('stock.fully_approved')} (${item.requestedQuantity} ${t('stock.unit_piece')})';
         actionIcon = Icons.check_circle;
-        actionColor = Colors.green;
+        actionColor = AppColors.success;
         break;
       case TransferAction.APPROVE_PARTIAL:
         actionText = '${t('stock.partially_approved')} (${decision.approvedQuantity} ${t('stock.unit_piece')})';
         actionIcon = Icons.add_task;
-        actionColor = Colors.orange;
+        actionColor = AppColors.warning;
         break;
       case TransferAction.REJECT:
         actionText = t('stock.rejected');
         actionIcon = Icons.cancel;
-        actionColor = Colors.red;
+        actionColor = AppColors.danger;
         break;
       case TransferAction.REQUEST_MORE_INFO:
         actionText = t('stock.more_info_requested');
         actionIcon = Icons.info_outline;
-        actionColor = Colors.blue;
+        actionColor = AppColors.info;
         break;
     }
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: actionColor.withOpacity(0.1),
+        color: actionColor.withValues(alpha: 0.1),
         border: Border(
-          top: BorderSide(color: actionColor.withOpacity(0.3)),
+          top: BorderSide(color: actionColor.withValues(alpha: 0.3)),
         ),
       ),
       child: Row(
@@ -733,7 +733,7 @@ class _StockTransferReviewScreenState
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),

@@ -103,8 +103,8 @@ class _ManualMatchModalState extends State<ManualMatchModal> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.primary.withOpacity(0.1),
-                    AppColors.primary.withOpacity(0.05),
+                    AppColors.primary.withValues(alpha: 0.1),
+                    AppColors.primary.withValues(alpha: 0.05),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -115,7 +115,7 @@ class _ManualMatchModalState extends State<ManualMatchModal> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.2),
+                      color: AppColors.primary.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(Icons.search, color: AppColors.primary, size: 32),
@@ -200,7 +200,7 @@ class _ManualMatchModalState extends State<ManualMatchModal> {
                               return Card(
                                 margin: const EdgeInsets.only(bottom: 8),
                                 color: isSelected
-                                    ? AppColors.primary.withOpacity(0.1)
+                                    ? AppColors.primary.withValues(alpha: 0.1)
                                     : Colors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
@@ -289,9 +289,9 @@ class _ManualMatchModalState extends State<ManualMatchModal> {
                                 Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: AppColors.success.withOpacity(0.1),
+                                    color: AppColors.success.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                                    border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
                                   ),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,

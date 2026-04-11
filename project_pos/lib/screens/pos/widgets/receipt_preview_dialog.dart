@@ -30,7 +30,7 @@ class ReceiptPreviewDialog extends ConsumerWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withValues(alpha: 0.15),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -64,7 +64,7 @@ class ReceiptPreviewDialog extends ConsumerWidget {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white.withOpacity(0.85),
+                      color: Colors.white.withValues(alpha: 0.85),
                     ),
                   ),
                 ],
@@ -110,7 +110,7 @@ class ReceiptPreviewDialog extends ConsumerWidget {
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.person_outline, size: 16, color: AppColors.info),
+                              const Icon(Icons.person_outline, size: 16, color: AppColors.bgInfo,
                               const SizedBox(width: 6),
                               Text(
                                 customer['name']?.toString() ?? 'Müşteri',
@@ -229,7 +229,7 @@ class ReceiptPreviewDialog extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.08),
+                          color: AppColors.primary.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
@@ -301,7 +301,7 @@ class ReceiptPreviewDialog extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: AppColors.border.withOpacity(0.5))),
+                border: Border(top: BorderSide(color: AppColors.border.withValues(alpha: 0.5))),
               ),
               child: Row(
                 children: [

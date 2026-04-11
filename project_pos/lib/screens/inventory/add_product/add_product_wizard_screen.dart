@@ -237,9 +237,9 @@ class _AddProductWizardScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: _accentColor.withOpacity(0.1),
+        color: _accentColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _accentColor.withOpacity(0.3)),
+        border: Border.all(color: _accentColor.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -275,7 +275,7 @@ class _AddProductWizardScreenState
                 decoration: BoxDecoration(
                   gradient: isDone
                       ? LinearGradient(
-                          colors: [_accentColor, _accentColor.withOpacity(0.6)])
+                          colors: [_accentColor, _accentColor.withValues(alpha: 0.6)])
                       : null,
                   color: isDone ? null : theme.colorScheme.outlineVariant,
                   borderRadius: BorderRadius.circular(1),
@@ -306,7 +306,7 @@ class _AddProductWizardScreenState
                               end: Alignment.bottomRight,
                               colors: [
                                 AppColors.success,
-                                AppColors.success.withOpacity(0.8),
+                                AppColors.success.withValues(alpha: 0.8),
                               ],
                             )
                           : null,
@@ -318,7 +318,7 @@ class _AddProductWizardScreenState
                       boxShadow: isCurrent
                           ? [
                               BoxShadow(
-                                color: _accentColor.withOpacity(0.4),
+                                color: _accentColor.withValues(alpha: 0.4),
                                 blurRadius: 10,
                                 spreadRadius: 1,
                               ),
@@ -326,7 +326,7 @@ class _AddProductWizardScreenState
                           : null,
                       border: isCurrent
                           ? Border.all(
-                              color: _accentColor.withOpacity(0.3), width: 2.5)
+                              color: _accentColor.withValues(alpha: 0.3), width: 2.5)
                           : null,
                     ),
                     child: Center(
@@ -399,7 +399,7 @@ class _AddProductWizardScreenState
             Border(top: BorderSide(color: theme.colorScheme.outlineVariant)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -435,13 +435,13 @@ class _AddProductWizardScreenState
                   color: AppColors.bgSuccess,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                      color: AppColors.success.withOpacity(0.3)),
+                      color: AppColors.success.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.check_circle_rounded,
-                        size: 14, color: AppColors.success),
+                        size: 14, color: AppColors.bgSuccess,
                     const SizedBox(width: 4),
                     Text(
                       '$_savedCount ${_t('product.product')}',

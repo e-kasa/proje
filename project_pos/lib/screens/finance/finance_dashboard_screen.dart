@@ -82,14 +82,14 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
                   // Expense by Category
                   if (_summary['expensesByCategory'] != null)
                     _buildCategoryBreakdown(t('finance.expenses_by_category'),
-                        _summary['expensesByCategory'], AppColors.danger),
+                        _summary['expensesByCategory'], AppColors.bgDanger,
 
                   const SizedBox(height: 16),
 
                   // Revenue by Category
                   if (_summary['revenuesByCategory'] != null)
                     _buildCategoryBreakdown(t('finance.income_by_category'),
-                        _summary['revenuesByCategory'], AppColors.success),
+                        _summary['revenuesByCategory'], AppColors.bgSuccess,
                 ],
               ),
             ),
@@ -166,7 +166,7 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: AppColors.success.withOpacity(0.1),
+                            color: AppColors.success.withValues(alpha: 0.1),
                             borderRadius: AppConstants.borderRadiusSmall,
                           ),
                           child: const Icon(
@@ -215,7 +215,7 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: AppColors.danger.withOpacity(0.1),
+                            color: AppColors.danger.withValues(alpha: 0.1),
                             borderRadius: AppConstants.borderRadiusSmall,
                           ),
                           child: const Icon(
@@ -329,7 +329,7 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
                 child: _buildActionButton(
                   icon: Icons.account_balance_wallet_outlined,
                   label: t('accounts.title'),
-                  color: Colors.teal,
+                  color: AppColors.teal,
                   onTap: () => context.go('/accounts'),
                 ),
               ),
@@ -352,7 +352,7 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: AppConstants.borderRadiusMedium,
         ),
         child: Column(
@@ -433,7 +433,7 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
                     child: LinearProgressIndicator(
                       value: percentage / 100,
                       minHeight: 6,
-                      backgroundColor: color.withOpacity(0.1),
+                      backgroundColor: color.withValues(alpha: 0.1),
                       valueColor: AlwaysStoppedAnimation<Color>(color),
                     ),
                   ),

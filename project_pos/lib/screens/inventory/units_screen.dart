@@ -163,7 +163,7 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
         builder: (context, setDialogState) => AlertDialog(
           title: Row(
             children: [
-              const Icon(Icons.edit, color: AppColors.info),
+              const Icon(Icons.edit, color: AppColors.bgInfo,
               const SizedBox(width: 12),
               Text(t('inventory.edit_unit')),
             ],
@@ -310,7 +310,7 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -438,7 +438,7 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
                   width: 56,
                   height: 56,
                   decoration: BoxDecoration(
-                    color: typeColor.withOpacity(0.1),
+                    color: typeColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(typeIcon, color: typeColor, size: 28),
@@ -484,7 +484,7 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: typeColor.withOpacity(0.1),
+                              color: typeColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -528,7 +528,7 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
                       value: 'edit',
                       child: Row(
                         children: [
-                          Icon(Icons.edit, size: 18, color: AppColors.info),
+                          Icon(Icons.edit, size: 18, color: AppColors.bgInfo,
                           SizedBox(width: 12),
                           Text('Düzenle'),
                         ],
@@ -538,7 +538,7 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete, size: 18, color: AppColors.danger),
+                          Icon(Icons.delete, size: 18, color: AppColors.bgDanger,
                           SizedBox(width: 12),
                           Text('Sil'),
                         ],

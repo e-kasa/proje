@@ -39,22 +39,14 @@ public class SupplierAccountServiceImpl
     // =========================================================================
 
     private SupplierAccountResponse mapToResponse(SupplierAccount acct) {
-        return SupplierAccountResponse.builder()
-                .id(acct.getId())
-                .supplierId(acct.getSupplier().getId())
-                .supplierName(acct.getSupplier().getName())
-                .creditLimit(acct.getSupplier().getCreditLimit())
-                .currentBalance(acct.getCurrentBalance())
-                .totalDebt(acct.getTotalDebt())
-                .totalCredit(acct.getTotalCredit())
-                .overdueAmount(acct.getOverdueAmount())
-                .availableCreditLimit(acct.getAvailableCreditLimit())
-                .isCreditLimitExceeded(acct.getIsCreditLimitExceeded())
-                .totalTransactionCount(acct.getTotalTransactionCount())
-                .lastTransactionDate(acct.getLastTransactionDate())
-                .lastPaymentDate(acct.getLastPaymentDate())
-                .lastPurchaseDate(acct.getLastPurchaseDate())
-                .build();
+        SupplierAccountResponse dto = toDTO(acct);
+        // Supplier FK ilişkisinden gelen alanlar — BeanUtils doğrudan kopyalamaz
+        if (acct.getSupplier() != null) {
+            dto.setSupplierId(acct.getSupplier().getId());
+            dto.setSupplierName(acct.getSupplier().getName());
+            dto.setCreditLimit(acct.getSupplier().getCreditLimit());
+        }
+        return dto;
     }
 
     // =========================================================================

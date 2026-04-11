@@ -380,6 +380,17 @@ public class PurchaseServiceImpl
     // ─── HELPERS ─────────────────────────────────────────────────────────────
 
     private PurchaseResponse mapToResponse(Purchase purchase) {
+        // toDTO(): id, invoiceNumber, deliveryNoteNumber, purchaseDate, totalAmount,
+        //          paidAmount, remainingDebt, isCancelled, notes kopyalanır
+        PurchaseResponse dto = toDTO(purchase);
+
+        // Supplier FK alanları — BeanUtils doğrudan kopyalamaz
+        if (purchase.getSupplier() != null) {
+            dto.setSupplierId(purchase.getSupplier().getId());
+            dto.setSupplierName(purchase.getSupplier().getName());
+        }
+
+        // Kalemler — StockMovement ilişkisinden derlenir
         List<PurchaseResponse.PurchaseItemResponse> items = new ArrayList<>();
         if (purchase.getMovements() != null) {
             items = purchase.getMovements().stream()
@@ -398,24 +409,11 @@ public class PurchaseServiceImpl
                                 .lineTotal(price.multiply(BigDecimal.valueOf(m.getQuantity())))
                                 .build();
                     })
-                    .collect(Collectors.toList());
+                    .toList();
         }
-
-        return PurchaseResponse.builder()
-                .id(purchase.getId())
-                .supplierId(purchase.getSupplier() != null ? purchase.getSupplier().getId() : null)
-                .supplierName(purchase.getSupplier() != null ? purchase.getSupplier().getName() : null)
-                .invoiceNumber(purchase.getInvoiceNumber())
-                .deliveryNoteNumber(purchase.getDeliveryNoteNumber())
-                .purchaseDate(purchase.getPurchaseDate())
-                .totalAmount(purchase.getTotalAmount())
-                .paidAmount(purchase.getPaidAmount())
-                .remainingDebt(purchase.getRemainingDebt())
-                .isCancelled(purchase.getIsCancelled())
-                .notes(purchase.getNotes())
-                .items(items)
-                .itemCount(items.size())
-                .build();
+        dto.setItems(items);
+        dto.setItemCount(items.size());
+        return dto;
     }
 
     private BigDecimal calculateTotal(List<PurchaseItemRequest> items) {

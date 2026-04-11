@@ -361,9 +361,9 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
   Widget _buildLevelBadge(Map<String, dynamic> cat) {
     final level = (cat['level'] as int?) ?? 0;
     const labels = ['Kök Kategori (Seviye 0)', 'Alt Kategori (Seviye 1)', 'İkinci Alt Kategori (Seviye 2)'];
-    const colors = [Colors.blue, Colors.orange, Colors.purple];
+    const colors = [AppColors.info, AppColors.warning, AppColors.secondary];
     final label = level < labels.length ? labels[level] : 'Seviye $level';
-    final color = level < colors.length ? colors[level] : Colors.grey;
+    final color = level < colors.length ? colors[level] : AppColors.textMuted;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

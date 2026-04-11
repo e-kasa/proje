@@ -127,7 +127,7 @@ class _ProductSalesAnalysisScreenState
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.08),
+                      color: AppColors.primary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -249,7 +249,7 @@ class _ProductSalesAnalysisScreenState
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
           border: rank <= 3
-              ? Border.all(color: rankColor.withOpacity(0.4), width: 1.5)
+              ? Border.all(color: rankColor.withValues(alpha: 0.4), width: 1.5)
               : null,
         ),
         padding: const EdgeInsets.all(14),
@@ -262,7 +262,7 @@ class _ProductSalesAnalysisScreenState
               height: 38,
               decoration: BoxDecoration(
                 color:
-                    rank <= 3 ? rankColor.withOpacity(0.15) : AppColors.bgLight,
+                    rank <= 3 ? rankColor.withValues(alpha: 0.15) : AppColors.bgLight,
                 shape: BoxShape.circle,
                 border:
                     rank <= 3 ? Border.all(color: rankColor, width: 2) : null,

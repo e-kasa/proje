@@ -20,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -44,7 +43,7 @@ public class VehicleCompatibilityServiceImpl extends BaseDbServiceImp<VehicleCom
     public List<VehicleCompatibilityResponse> getByVariantId(String variantId) {
         return dao.findByVariantId(variantId).stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -52,7 +51,7 @@ public class VehicleCompatibilityServiceImpl extends BaseDbServiceImp<VehicleCom
     public List<VehicleCompatibilityResponse> getByVehicleId(String vehicleId) {
         return dao.findByVehicleId(vehicleId).stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -107,25 +106,24 @@ public class VehicleCompatibilityServiceImpl extends BaseDbServiceImp<VehicleCom
     public List<VehicleCompatibilityResponse> searchByVehicle(String make, String model, Integer year) {
         return dao.searchByVehicle(make, model, year).stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private VehicleCompatibilityResponse toResponse(VehicleCompatibility vc) {
-        Vehicle vehicle = vc.getVehicle();
+        VehicleCompatibilityResponse dto = toDTO(vc);
+        // Variant FK alanları — BeanUtils doğrudan kopyalamaz
         ProductVariant variant = vc.getVariant();
-        return VehicleCompatibilityResponse.builder()
-                .id(vc.getId())
-                .variantId(variant.getId())
-                .variantSku(variant.getSku())
-                .variantName(variant.getName())
-                .vehicleId(vehicle.getId())
-                .vehicleMake(vehicle.getMake())
-                .vehicleModel(vehicle.getModel())
-                .vehicleYearStart(vehicle.getYearStart())
-                .vehicleYearEnd(vehicle.getYearEnd())
-                .vehicleEngineType(vehicle.getEngineType())
-                .notes(vc.getNotes())
-                .isVerified(vc.getIsVerified())
-                .build();
+        dto.setVariantId(variant.getId());
+        dto.setVariantSku(variant.getSku());
+        dto.setVariantName(variant.getName());
+        // Vehicle FK alanları — BeanUtils doğrudan kopyalamaz
+        Vehicle vehicle = vc.getVehicle();
+        dto.setVehicleId(vehicle.getId());
+        dto.setVehicleMake(vehicle.getMake());
+        dto.setVehicleModel(vehicle.getModel());
+        dto.setVehicleYearStart(vehicle.getYearStart());
+        dto.setVehicleYearEnd(vehicle.getYearEnd());
+        dto.setVehicleEngineType(vehicle.getEngineType());
+        return dto;
     }
 }

@@ -201,7 +201,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
               Container(
                 width: 40, height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.textMuted.withOpacity(0.1),
+                  color: AppColors.textMuted.withValues(alpha: 0.1),
                   borderRadius: AppConstants.borderRadiusMedium,
                 ),
                 child: const Icon(Icons.account_balance_wallet_outlined,
@@ -235,7 +235,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
           RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}';
 
     return AppCard(
-      borderColor: isExceeded ? AppColors.danger.withOpacity(0.4) : null,
+      borderColor: isExceeded ? AppColors.danger.withValues(alpha: 0.4) : null,
       borderWidth: isExceeded ? 1.5 : null,
       child: Padding(
         padding: AppConstants.paddingMedium,
@@ -256,7 +256,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: AppColors.danger.withOpacity(0.1),
+                      color: AppColors.danger.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Text('Limit Aşıldı',
@@ -271,21 +271,21 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
               children: [
                 Expanded(child: _accountRow(
                     Icons.account_balance_outlined, 'Güncel Bakiye', fmt(balance),
-                    balance != null && balance > 0 ? AppColors.danger : AppColors.success)),
+                    balance != null && balance > 0 ? AppColors.danger : AppColors.bgSuccess),
                 const SizedBox(width: 12),
                 Expanded(child: _accountRow(
-                    Icons.trending_up_outlined, 'Toplam Borç', fmt(debt), AppColors.danger)),
+                    Icons.trending_up_outlined, 'Toplam Borç', fmt(debt), AppColors.bgDanger),
               ],
             ),
             const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(child: _accountRow(
-                    Icons.check_circle_outline, 'Toplam Ödeme', fmt(paid), AppColors.success)),
+                    Icons.check_circle_outline, 'Toplam Ödeme', fmt(paid), AppColors.bgSuccess),
                 const SizedBox(width: 12),
                 Expanded(child: _accountRow(
                     Icons.credit_card_outlined, 'Kullanılabilir Limit', fmt(available),
-                    isExceeded ? AppColors.danger : AppColors.info)),
+                    isExceeded ? AppColors.danger : AppColors.bgInfo),
               ],
             ),
             if (limit != null) ...[
@@ -359,9 +359,9 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: AppConstants.borderRadiusMedium,
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Column(
           children: [
@@ -380,7 +380,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.06),
+        color: color.withValues(alpha: 0.06),
         borderRadius: AppConstants.borderRadiusMedium,
       ),
       child: Row(
@@ -392,7 +392,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label,
-                    style: TextStyle(fontSize: 10, color: color.withOpacity(0.8))),
+                    style: TextStyle(fontSize: 10, color: color.withValues(alpha: 0.8))),
                 Text(value,
                     style: TextStyle(
                         fontSize: 13, fontWeight: FontWeight.bold, color: color)),
@@ -640,7 +640,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
                       return ListTile(
                         leading: CircleAvatar(
                           radius: 18,
-                          backgroundColor: color.withOpacity(0.1),
+                          backgroundColor: color.withValues(alpha: 0.1),
                           child: Icon(
                               isDebit
                                   ? Icons.arrow_upward
@@ -700,7 +700,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
               height: 40,
               decoration: BoxDecoration(
                 color: (_isActive ? AppColors.success : AppColors.textMuted)
-                    .withOpacity(0.12),
+                    .withValues(alpha: 0.12),
                 borderRadius: AppConstants.borderRadiusMedium,
               ),
               child: Icon(

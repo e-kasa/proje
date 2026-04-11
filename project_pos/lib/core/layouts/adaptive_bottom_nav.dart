@@ -27,7 +27,7 @@ class AdaptiveBottomNav extends StatelessWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 16,
             offset: const Offset(0, -3),
           ),
@@ -115,7 +115,7 @@ class _BottomNavItem extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
-      splashColor: AppColors.primary.withOpacity(0.08),
+      splashColor: AppColors.primary.withValues(alpha: 0.08),
       highlightColor: Colors.transparent,
       child: SizedBox(
         height: double.infinity,
@@ -131,7 +131,7 @@ class _BottomNavItem extends StatelessWidget {
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? AppColors.primary.withOpacity(0.12)
+                      ? AppColors.primary.withValues(alpha: 0.12)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(20),
                 ),

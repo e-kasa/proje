@@ -277,7 +277,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -370,16 +370,16 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.06),
+        color: color.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.25)),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(sector['icon'] as IconData, color: color, size: 22),
@@ -408,7 +408,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -447,7 +447,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 32),
           decoration: BoxDecoration(
-            color: _isDragging ? AppColors.primary.withOpacity(0.04) : Colors.white,
+            color: _isDragging ? AppColors.primary.withValues(alpha: 0.04) : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: _isDragging ? AppColors.primary : AppColors.border,
@@ -457,8 +457,8 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
             boxShadow: [
               BoxShadow(
                 color: _isDragging
-                    ? AppColors.primary.withOpacity(0.08)
-                    : Colors.black.withOpacity(0.04),
+                    ? AppColors.primary.withValues(alpha: 0.08)
+                    : Colors.black.withValues(alpha: 0.04),
                 blurRadius: _isDragging ? 16 : 8,
                 offset: const Offset(0, 4),
               ),
@@ -469,7 +469,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.08),
+                  color: AppColors.primary.withValues(alpha: 0.08),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -513,7 +513,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -537,7 +537,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -658,9 +658,9 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.success.withOpacity(0.3), width: 2),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.3), width: 2),
         boxShadow: [
-          BoxShadow(color: AppColors.success.withOpacity(0.08), blurRadius: 16, offset: const Offset(0, 4)),
+          BoxShadow(color: AppColors.success.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -668,10 +668,10 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.1),
+              color: AppColors.success.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.check_circle, size: 52, color: AppColors.success),
+            child: const Icon(Icons.check_circle, size: 52, color: AppColors.bgSuccess,
           ),
           const SizedBox(height: 20),
           const Text(
@@ -687,7 +687,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
           const SizedBox(
             width: 32,
             height: 32,
-            child: CircularProgressIndicator(strokeWidth: 3, valueColor: AlwaysStoppedAnimation<Color>(AppColors.success)),
+            child: CircularProgressIndicator(strokeWidth: 3, valueColor: AlwaysStoppedAnimation<Color>(AppColors.bgSuccess),
           ),
         ],
       ),
@@ -700,17 +700,17 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.danger.withOpacity(0.3), width: 2),
+        border: Border.all(color: AppColors.danger.withValues(alpha: 0.3), width: 2),
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppColors.danger.withOpacity(0.1),
+              color: AppColors.danger.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.error_outline, size: 44, color: AppColors.danger),
+            child: const Icon(Icons.error_outline, size: 44, color: AppColors.bgDanger,
           ),
           const SizedBox(height: 16),
           const Text(
@@ -726,12 +726,12 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
             ),
             child: Row(
               children: [
-                const Icon(Icons.warning_amber_rounded, size: 18, color: AppColors.danger),
+                const Icon(Icons.warning_amber_rounded, size: 18, color: AppColors.bgDanger,
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     _errorMessage ?? 'Bilinmeyen hata',
-                    style: const TextStyle(fontSize: 13, color: AppColors.danger),
+                    style: const TextStyle(fontSize: 13, color: AppColors.bgDanger,
                   ),
                 ),
               ],
@@ -766,19 +766,19 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [color.withOpacity(0.08), color.withOpacity(0.03)],
+          colors: [color.withValues(alpha: 0.08), color.withValues(alpha: 0.03)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(Icons.download_rounded, color: color, size: 24),
@@ -855,7 +855,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -877,10 +877,10 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: isSectorSpecific ? sectorColor.withOpacity(0.1) : AppColors.bgLight,
+                  color: isSectorSpecific ? sectorColor.withValues(alpha: 0.1) : AppColors.bgLight,
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: isSectorSpecific ? sectorColor.withOpacity(0.3) : AppColors.border,
+                    color: isSectorSpecific ? sectorColor.withValues(alpha: 0.3) : AppColors.border,
                   ),
                 ),
                 child: Row(
@@ -931,9 +931,9 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
 
   Widget _buildSupportedFormats() {
     final formats = [
-      {'icon': Icons.table_chart, 'name': 'Excel', 'ext': '.xlsx, .xls', 'color': Colors.green},
-      {'icon': Icons.description, 'name': 'CSV', 'ext': '.csv', 'color': Colors.blue},
-      {'icon': Icons.picture_as_pdf, 'name': 'PDF', 'ext': '.pdf', 'color': Colors.red},
+      {'icon': Icons.table_chart, 'name': 'Excel', 'ext': '.xlsx, .xls', 'color': AppColors.success},
+      {'icon': Icons.description, 'name': 'CSV', 'ext': '.csv', 'color': AppColors.info},
+      {'icon': Icons.picture_as_pdf, 'name': 'PDF', 'ext': '.pdf', 'color': AppColors.danger},
     ];
 
     return Row(
@@ -1067,7 +1067,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
-            Icon(Icons.help_outline, color: AppColors.info),
+            Icon(Icons.help_outline, color: AppColors.bgInfo,
             SizedBox(width: 12),
             Text('Nasıl Çalışır?', style: TextStyle(fontSize: 18)),
           ],

@@ -12,9 +12,9 @@ Widget buildAddImageButton(VoidCallback onTap, {required bool isMobile, required
     borderRadius: BorderRadius.circular(12),
     child: Container(
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 2, style: BorderStyle.solid),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 2, style: BorderStyle.solid),
         borderRadius: BorderRadius.circular(12),
-        color: AppColors.primary.withOpacity(0.05),
+        color: AppColors.primary.withValues(alpha: 0.05),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -36,7 +36,7 @@ Widget buildImagePreview(String imagePath, VoidCallback onRemove) {
   return Container(
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: AppColors.textMuted.withOpacity(0.2)),
+      border: Border.all(color: AppColors.textMuted.withValues(alpha: 0.2)),
       color: Colors.grey[100],
     ),
     child: Stack(
@@ -44,7 +44,7 @@ Widget buildImagePreview(String imagePath, VoidCallback onRemove) {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          child: Icon(Icons.image, size: 40, color: AppColors.textMuted.withOpacity(0.5)),
+          child: Icon(Icons.image, size: 40, color: AppColors.textMuted.withValues(alpha: 0.5)),
         ),
         Positioned(
           top: 4,
@@ -101,10 +101,10 @@ class ColorGroupedView extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 2),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 2),
         borderRadius: BorderRadius.circular(12),
         gradient: LinearGradient(
-          colors: [Colors.white, AppColors.primary.withOpacity(0.02)],
+          colors: [Colors.white, AppColors.primary.withValues(alpha: 0.02)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -121,7 +121,7 @@ class ColorGroupedView extends ConsumerWidget {
                   color: state.groupingAttribute == 'Renk' ? state.getColorForAttribute(color) : AppColors.primary,
                   borderRadius: BorderRadius.circular(8),
                   boxShadow: [BoxShadow(
-                    color: (state.groupingAttribute == 'Renk' ? state.getColorForAttribute(color) : AppColors.primary).withOpacity(0.3),
+                    color: (state.groupingAttribute == 'Renk' ? state.getColorForAttribute(color) : AppColors.primary).withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   )],
@@ -194,9 +194,9 @@ class ColorGroupedView extends ConsumerWidget {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.textMuted.withOpacity(0.1),
+                  color: AppColors.textMuted.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.textMuted.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.textMuted.withValues(alpha: 0.2)),
                 ),
                 child: Text(
                   size.isNotEmpty ? size : variant.sku,
@@ -266,7 +266,7 @@ class VariantImageAccordion extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.textMuted.withOpacity(0.2)),
+        border: Border.all(color: AppColors.textMuted.withValues(alpha: 0.2)),
         borderRadius: BorderRadius.circular(8),
         color: isExpanded ? Colors.white : Colors.grey[50],
       ),
@@ -288,7 +288,7 @@ class VariantImageAccordion extends ConsumerWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: variant.images.isEmpty ? AppColors.textMuted.withOpacity(0.1) : AppColors.success.withOpacity(0.1),
+              color: variant.images.isEmpty ? AppColors.textMuted.withValues(alpha: 0.1) : AppColors.success.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -305,7 +305,7 @@ class VariantImageAccordion extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: variant.images.isEmpty ? AppColors.textMuted.withOpacity(0.1) : AppColors.success.withOpacity(0.1),
+                  color: variant.images.isEmpty ? AppColors.textMuted.withValues(alpha: 0.1) : AppColors.success.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(

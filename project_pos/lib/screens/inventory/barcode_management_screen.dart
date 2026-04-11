@@ -243,7 +243,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -452,7 +452,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
                           selected: isSelected,
                           onSelected: (_) => _applyTypeFilter(type),
                           backgroundColor: AppColors.bgLight,
-                          selectedColor: AppColors.primary.withOpacity(0.2),
+                          selectedColor: AppColors.primary.withValues(alpha: 0.2),
                           labelStyle: TextStyle(
                             color: isSelected ? AppColors.primary : AppColors.textSecondary,
                             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -468,7 +468,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -578,7 +578,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
                       width: 56,
                       height: 56,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(Icons.qr_code_2, color: AppColors.primary, size: 28),
@@ -620,7 +620,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withOpacity(0.1),
+                                  color: AppColors.primary.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
@@ -643,7 +643,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppColors.danger.withOpacity(0.1),
+                          color: AppColors.danger.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -659,7 +659,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppColors.warning.withOpacity(0.1),
+                          color: AppColors.warning.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -701,7 +701,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
                     const SizedBox(width: 16),
                     Row(
                       children: [
-                        const Icon(Icons.attach_money, size: 16, color: AppColors.success),
+                        const Icon(Icons.attach_money, size: 16, color: AppColors.bgSuccess,
                         Text(
                           '${barcode['price']} ₺',
                           style: const TextStyle(
@@ -715,7 +715,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
                     const SizedBox(width: 16),
                     Row(
                       children: [
-                        const Icon(Icons.inventory_2, size: 16, color: AppColors.info),
+                        const Icon(Icons.inventory_2, size: 16, color: AppColors.bgInfo,
                         const SizedBox(width: 4),
                         Text(
                           '${barcode['stock']}',

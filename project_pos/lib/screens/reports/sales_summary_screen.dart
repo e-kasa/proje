@@ -120,7 +120,7 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.08),
+            color: AppColors.primary.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
@@ -261,7 +261,7 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 20),
@@ -338,7 +338,7 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
               Container(
                 height: 10,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(5),
                 ),
               ),

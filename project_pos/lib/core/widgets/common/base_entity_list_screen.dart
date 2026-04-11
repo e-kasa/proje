@@ -439,7 +439,7 @@ class BaseEntityListScreenState<T>
           duration: AppConstants.animationFast,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
-            color: selected ? color.withOpacity(0.12) : Colors.transparent,
+            color: selected ? color.withValues(alpha: 0.12) : Colors.transparent,
             border: Border.all(
               color: selected ? color : AppColors.border,
               width: selected ? 1.5 : 1,
@@ -571,7 +571,7 @@ class StatPill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: AppConstants.borderRadiusSmall,
         ),
         child: Column(

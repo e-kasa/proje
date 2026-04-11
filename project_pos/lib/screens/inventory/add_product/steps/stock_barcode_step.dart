@@ -37,7 +37,7 @@ class StockBarcodeStep extends ConsumerWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -58,7 +58,7 @@ class StockBarcodeStep extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: c.withOpacity(0.08),
+        color: c.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -66,7 +66,7 @@ class StockBarcodeStep extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: c.withOpacity(0.15),
+              color: c.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: c, size: 20),
@@ -157,9 +157,9 @@ class StockBarcodeStep extends ConsumerWidget {
               return Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.06),
+                  color: color.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: color.withOpacity(0.15)),
+                  border: Border.all(color: color.withValues(alpha: 0.15)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -356,13 +356,13 @@ class StockBarcodeStep extends ConsumerWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () => showBulkStockDialog(context: context, state: state, onChanged: onChanged, t: t),
-                  icon: Icon(Icons.inventory_2, size: isMobile ? 18 : 20, color: AppColors.info),
+                  icon: Icon(Icons.inventory_2, size: isMobile ? 18 : 20, color: AppColors.bgInfo,
                   label: Text(
                     isMobile ? t('inventory.stock') : t('product.apply_stock'),
-                    style: TextStyle(fontSize: isMobile ? 11 : 13, color: AppColors.info),
+                    style: TextStyle(fontSize: isMobile ? 11 : 13, color: AppColors.bgInfo,
                   ),
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: AppColors.info.withOpacity(0.5)),
+                    side: BorderSide(color: AppColors.info.withValues(alpha: 0.5)),
                     padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 16, vertical: isMobile ? 12 : 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
@@ -372,13 +372,13 @@ class StockBarcodeStep extends ConsumerWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () => showBulkPurchasePriceDialog(context: context, state: state, onChanged: onChanged, t: t),
-                  icon: Icon(Icons.attach_money, size: isMobile ? 18 : 20, color: AppColors.danger),
+                  icon: Icon(Icons.attach_money, size: isMobile ? 18 : 20, color: AppColors.bgDanger,
                   label: Text(
                     isMobile ? t('product.purchase') : t('product.purchase_price'),
-                    style: TextStyle(fontSize: isMobile ? 11 : 13, color: AppColors.danger),
+                    style: TextStyle(fontSize: isMobile ? 11 : 13, color: AppColors.bgDanger,
                   ),
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: AppColors.danger.withOpacity(0.5)),
+                    side: BorderSide(color: AppColors.danger.withValues(alpha: 0.5)),
                     padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 16, vertical: isMobile ? 12 : 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
@@ -388,13 +388,13 @@ class StockBarcodeStep extends ConsumerWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () => showBulkSalePriceDialog(context: context, state: state, onChanged: onChanged, t: t),
-                  icon: Icon(Icons.sell, size: isMobile ? 18 : 20, color: AppColors.success),
+                  icon: Icon(Icons.sell, size: isMobile ? 18 : 20, color: AppColors.bgSuccess,
                   label: Text(
                     isMobile ? t('product.sale') : t('product.sale_price'),
-                    style: TextStyle(fontSize: isMobile ? 11 : 13, color: AppColors.success),
+                    style: TextStyle(fontSize: isMobile ? 11 : 13, color: AppColors.bgSuccess,
                   ),
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: AppColors.success.withOpacity(0.5)),
+                    side: BorderSide(color: AppColors.success.withValues(alpha: 0.5)),
                     padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 16, vertical: isMobile ? 12 : 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
@@ -446,7 +446,7 @@ class StockBarcodeStep extends ConsumerWidget {
                           width: 28,
                           height: 28,
                           decoration: BoxDecoration(
-                            color: _accentColor.withOpacity(0.12),
+                            color: _accentColor.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           alignment: Alignment.center,
@@ -472,8 +472,8 @@ class StockBarcodeStep extends ConsumerWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: variantProfit >= 0
-                                  ? AppColors.success.withOpacity(0.1)
-                                  : AppColors.danger.withOpacity(0.1),
+                                  ? AppColors.success.withValues(alpha: 0.1)
+                                  : AppColors.danger.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Row(
@@ -528,7 +528,7 @@ class StockBarcodeStep extends ConsumerWidget {
                             initialValue: variant.purchasePrice.toStringAsFixed(2),
                             keyboardType: TextInputType.number,
                             decoration: inputDecoration('Alis').copyWith(
-                              prefixIcon: const Icon(Icons.attach_money, size: 18, color: AppColors.danger),
+                              prefixIcon: const Icon(Icons.attach_money, size: 18, color: AppColors.bgDanger,
                               prefixText: '\u20ba',
                             ),
                             onChanged: (val) { variant.purchasePrice = double.tryParse(val) ?? 0; onChanged(); },
@@ -541,7 +541,7 @@ class StockBarcodeStep extends ConsumerWidget {
                             initialValue: variant.salePrice.toStringAsFixed(2),
                             keyboardType: TextInputType.number,
                             decoration: inputDecoration('Satis').copyWith(
-                              prefixIcon: const Icon(Icons.sell, size: 18, color: AppColors.success),
+                              prefixIcon: const Icon(Icons.sell, size: 18, color: AppColors.bgSuccess,
                               prefixText: '\u20ba',
                             ),
                             onChanged: (val) { variant.salePrice = double.tryParse(val) ?? 0; onChanged(); },

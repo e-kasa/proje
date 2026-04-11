@@ -189,7 +189,7 @@ class _MultiWarehouseStockScreenState
               t('stock.total_products'),
               totalProducts.toString(),
               Icons.inventory_2,
-              Colors.blue,
+              AppColors.info,
             ),
           ),
           const SizedBox(width: 12),
@@ -198,7 +198,7 @@ class _MultiWarehouseStockScreenState
               t('stock.total_stock'),
               totalStock.toString(),
               Icons.warehouse,
-              Colors.green,
+              AppColors.success,
             ),
           ),
           const SizedBox(width: 12),
@@ -207,7 +207,7 @@ class _MultiWarehouseStockScreenState
               t('stock.low_stock'),
               lowStockCount.toString(),
               Icons.warning,
-              Colors.orange,
+              AppColors.warning,
             ),
           ),
         ],
@@ -220,9 +220,9 @@ class _MultiWarehouseStockScreenState
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: AppConstants.borderRadiusMedium,
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

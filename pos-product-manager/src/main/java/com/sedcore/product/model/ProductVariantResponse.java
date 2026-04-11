@@ -1,6 +1,7 @@
 package com.sedcore.product.model;
 
 import com.sedcore.common.enums.ProductStatus;
+import com.towpen.base.restservice.model.DtoBaseModel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,7 +19,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProductVariantResponse {
+public class ProductVariantResponse extends DtoBaseModel {
 
     private String id;
     private String sku;

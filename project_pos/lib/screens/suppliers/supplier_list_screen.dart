@@ -275,7 +275,7 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.10),
+              color: AppColors.primary.withValues(alpha: 0.10),
               borderRadius: AppConstants.borderRadiusMedium,
             ),
             child: const Icon(
@@ -348,7 +348,7 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
                         child: Container(
                           padding: AppConstants.paddingHorizontalSmall,
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.08),
+                            color: AppColors.primary.withValues(alpha: 0.08),
                             borderRadius: AppConstants.borderRadiusSmall,
                           ),
                           child: const Row(
@@ -391,7 +391,7 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
                 const PopupMenuItem(
                   value: 'account',
                   child: MenuRow(Icons.account_balance_wallet_outlined,
-                      'Cari Hesap', AppColors.success),
+                      'Cari Hesap', AppColors.bgSuccess,
                 ),
                 const PopupMenuItem(
                   value: 'edit',
@@ -402,9 +402,9 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
                   value: 'toggle',
                   child: isActive
                       ? const MenuRow(Icons.block_outlined,
-                          'Pasiflestir', AppColors.warning)
+                          'Pasiflestir', AppColors.bgWarning
                       : const MenuRow(Icons.check_circle_outline,
-                          'Aktivlestir', AppColors.success),
+                          'Aktivlestir', AppColors.bgSuccess,
                 ),
               ],
             ),
@@ -416,7 +416,7 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
   Widget _balancePill(String label, double amount) {
     final isDebt = amount > 0;
     final color = isDebt
-        ? Colors.orange
+        ? AppColors.warning
         : amount < 0
             ? AppColors.success
             : AppColors.textMuted;
@@ -430,9 +430,9 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
     return Container(
       padding: AppConstants.paddingHorizontalSmall,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: AppConstants.borderRadiusSmall,
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

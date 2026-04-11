@@ -159,14 +159,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.picture_as_pdf, color: AppColors.danger),
+              leading: const Icon(Icons.picture_as_pdf, color: AppColors.bgDanger,
               title: const Text('PDF olarak dışa aktar'),
               shape: RoundedRectangleBorder(borderRadius: AppConstants.borderRadiusSmall),
               onTap: () => Navigator.of(ctx).pop('pdf'),
             ),
             const SizedBox(height: 8),
             ListTile(
-              leading: const Icon(Icons.table_chart, color: AppColors.success),
+              leading: const Icon(Icons.table_chart, color: AppColors.bgSuccess,
               title: const Text('Excel olarak dışa aktar'),
               shape: RoundedRectangleBorder(borderRadius: AppConstants.borderRadiusSmall),
               onTap: () => Navigator.of(ctx).pop('excel'),
@@ -249,7 +249,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                   children: [
                     Container(
                       padding: AppConstants.pagePadding,
-                      color: Colors.white,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -284,14 +283,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
 
   Widget _buildAdvancedReportLinks() {
     final links = [
-      _ReportLink('Satış Özeti',    Icons.show_chart,          Colors.blue,       '/reports/sales-summary'),
-      _ReportLink('Ürün Analizi',   Icons.bar_chart_rounded,   Colors.green,      '/reports/product-analysis'),
-      _ReportLink('Müşteri Analizi',Icons.people_alt_outlined,  Colors.purple,     '/reports/customer-analysis'),
-      _ReportLink('Kar Analizi',    Icons.trending_up_rounded,  Colors.teal,       '/reports/profit-overview'),
+      _ReportLink('Satış Özeti',    Icons.show_chart,          AppColors.info,      '/reports/sales-summary'),
+      _ReportLink('Ürün Analizi',   Icons.bar_chart_rounded,   AppColors.success,   '/reports/product-analysis'),
+      _ReportLink('Müşteri Analizi',Icons.people_alt_outlined,  AppColors.secondary, '/reports/customer-analysis'),
+      _ReportLink('Kar Analizi',    Icons.trending_up_rounded,  AppColors.teal,      '/reports/profit-overview'),
     ];
 
     return Container(
-      color: Colors.white,
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -330,9 +328,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
         decoration: BoxDecoration(
-          color: link.color.withOpacity(0.07),
+          color: link.color.withValues(alpha: 0.07),
           borderRadius: AppConstants.borderRadiusSmall,
-          border: Border.all(color: link.color.withOpacity(0.18)),
+          border: Border.all(color: link.color.withValues(alpha: 0.18)),
         ),
         child: Column(
           children: [
@@ -363,13 +361,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
           children: [
             Expanded(child: _buildStatCard('Toplam Satış', _totalSalesCount.toString(), Icons.receipt_long, AppColors.primary)),
             const SizedBox(width: 12),
-            Expanded(child: _buildStatCard('Toplam Tutar', '₺${_totalSalesAmount.toStringAsFixed(0)}', Icons.attach_money, AppColors.success)),
+            Expanded(child: _buildStatCard('Toplam Tutar', '₺${_totalSalesAmount.toStringAsFixed(0)}', Icons.attach_money, AppColors.bgSuccess),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _buildStatCard('Ortalama', '₺${_averageSaleAmount.toStringAsFixed(0)}', Icons.analytics, AppColors.warning)),
+            Expanded(child: _buildStatCard('Ortalama', '₺${_averageSaleAmount.toStringAsFixed(0)}', Icons.analytics, AppColors.bgWarning),
             const SizedBox(width: 12),
             Expanded(
               child: _buildStatCard(
@@ -420,7 +418,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text('₺${total.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.success)),
+                          Text('₺${total.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.bgSuccess),
                           Text(sale['paymentMethod']?.toString() ?? '', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
                         ],
                       ),
@@ -442,9 +440,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
           children: [
             Expanded(child: _buildStatCard('Toplam Müşteri', _totalCustomers.toString(), Icons.people, AppColors.primary)),
             const SizedBox(width: 12),
-            Expanded(child: _buildStatCard('Aktif', _activeCustomers.toString(), Icons.person_outline, AppColors.success)),
+            Expanded(child: _buildStatCard('Aktif', _activeCustomers.toString(), Icons.person_outline, AppColors.bgSuccess),
             const SizedBox(width: 12),
-            Expanded(child: _buildStatCard('VIP', _topCustomers.where((c) => c['customerType'] == 'vip').length.toString(), Icons.star, AppColors.warning)),
+            Expanded(child: _buildStatCard('VIP', _topCustomers.where((c) => c['customerType'] == 'vip').length.toString(), Icons.star, AppColors.bgWarning),
           ],
         ),
         const SizedBox(height: 24),
@@ -470,7 +468,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                       leading: CircleAvatar(
                         backgroundColor: isVip ? AppColors.warning.withValues(alpha: 0.1) : AppColors.primary.withValues(alpha: 0.1),
                         child: isVip
-                            ? const Icon(Icons.star, color: AppColors.warning)
+                            ? const Icon(Icons.star, color: AppColors.bgWarning
                             : Text(
                                 (customer['name']?.toString() ?? '?')[0].toUpperCase(),
                                 style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
@@ -478,7 +476,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                       ),
                       title: Text(customer['name']?.toString() ?? '-', style: const TextStyle(fontWeight: FontWeight.bold)),
                       subtitle: Text('${customer['loyaltyPoints'] ?? 0} Puan', style: const TextStyle(fontSize: 12)),
-                      trailing: Text('₺${totalPurchases.toStringAsFixed(0)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.success)),
+                      trailing: Text('₺${totalPurchases.toStringAsFixed(0)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.bgSuccess),
                     );
                   },
                 ),
@@ -497,15 +495,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
           children: [
             Expanded(child: _buildStatCard('Toplam Ürün', _totalProducts.toString(), Icons.inventory_2, AppColors.primary)),
             const SizedBox(width: 12),
-            Expanded(child: _buildStatCard('Düşük Stok', _lowStockProducts.toString(), Icons.warning, AppColors.warning)),
+            Expanded(child: _buildStatCard('Düşük Stok', _lowStockProducts.toString(), Icons.warning, AppColors.bgWarning),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _buildStatCard('Tükenen', _outOfStockProducts.toString(), Icons.error, AppColors.danger)),
+            Expanded(child: _buildStatCard('Tükenen', _outOfStockProducts.toString(), Icons.error, AppColors.bgDanger),
             const SizedBox(width: 12),
-            Expanded(child: _buildStatCard('Toplam Değer', '₺${_totalInventoryValue.toStringAsFixed(0)}', Icons.attach_money, AppColors.success)),
+            Expanded(child: _buildStatCard('Toplam Değer', '₺${_totalInventoryValue.toStringAsFixed(0)}', Icons.attach_money, AppColors.bgSuccess),
           ],
         ),
         const SizedBox(height: 24),

@@ -596,7 +596,7 @@ class _OrderSummaryCardState extends State<_OrderSummaryCard> {
                           Text(
                             '${c.format(s.totalDiscount)} indirim uygulandı',
                             style: const TextStyle(
-                                fontSize: 11, color: AppColors.success),
+                                fontSize: 11, color: AppColors.bgSuccess,
                           ),
                       ],
                     ),
@@ -667,7 +667,7 @@ class _OrderSummaryCardState extends State<_OrderSummaryCard> {
                   if (s.totalDiscount > 0)
                     _SummaryDetailRow(
                         'İndirim', '-${c.format(s.totalDiscount)}',
-                        color: AppColors.success),
+                        color: AppColors.bgSuccess,
                   _SummaryDetailRow('KDV', c.format(s.totalTax)),
                   const SizedBox(height: 6),
                   Row(
@@ -942,7 +942,7 @@ class _QuickAmountChip extends StatelessWidget {
           children: [
             if (isExact) ...[
               const Icon(Icons.check_rounded,
-                  size: 13, color: AppColors.success),
+                  size: 13, color: AppColors.bgSuccess,
               const SizedBox(width: 4),
             ],
             Text(
@@ -1086,7 +1086,7 @@ class _MixedPaymentSection extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                         color: remaining > 0
                             ? AppColors.warning
-                            : AppColors.success),
+                            : AppColors.bgSuccess,
                   ),
                 ],
               ),
@@ -1223,7 +1223,7 @@ class _ChangeAmountBanner extends StatelessWidget {
               style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.success),
+                  color: AppColors.bgSuccess,
             ),
           ),
           Text(
@@ -1437,7 +1437,7 @@ class _SuccessSheetState extends ConsumerState<_SuccessSheet>
                           valueStyle: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.success),
+                              color: AppColors.bgSuccess,
                         ),
                       ],
                       const Divider(height: 16),

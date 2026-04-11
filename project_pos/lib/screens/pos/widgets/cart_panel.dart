@@ -27,7 +27,7 @@ class CartPanel extends ConsumerWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(-4, 0),
           ),
@@ -48,7 +48,7 @@ class CartPanel extends ConsumerWidget {
   Widget _buildHeader(BuildContext context, PosNotifier notifier, PosState state) {
     return Container(
       padding: const EdgeInsets.all(16),
-      color: AppColors.primary.withOpacity(0.05),
+      color: AppColors.primary.withValues(alpha: 0.05),
       child: Row(
         children: [
           const Icon(Icons.shopping_basket_rounded, color: AppColors.primary),
@@ -72,7 +72,7 @@ class CartPanel extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: AppColors.border.withOpacity(0.5))),
+          border: Border(bottom: BorderSide(color: AppColors.border.withValues(alpha: 0.5))),
         ),
         child: Row(
           children: [
@@ -145,7 +145,7 @@ class CartPanel extends ConsumerWidget {
         children: [
           _summaryRow('Ara Toplam', currencyFormat.format(state.subtotal)),
           if (state.totalDiscount > 0)
-            _summaryRow('İndirim', '-${currencyFormat.format(state.totalDiscount)}', color: AppColors.danger),
+            _summaryRow('İndirim', '-${currencyFormat.format(state.totalDiscount)}', color: AppColors.bgDanger,
           _summaryRow('KDV', currencyFormat.format(state.totalTax)),
           const Divider(height: 24),
           Row(
@@ -302,7 +302,7 @@ class _CustomerPickerSheetState extends ConsumerState<_CustomerPickerSheet> {
                 icon: const Icon(Icons.person_remove, size: 16),
                 label: const Text('Temizle', style: TextStyle(fontSize: 12)),
                 style: TextButton.styleFrom(
-                    foregroundColor: AppColors.danger),
+                    foregroundColor: AppColors.bgDanger,
               ),
           ]),
         ),

@@ -268,7 +268,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                   : null,
               filled: true,
               fillColor: theme.colorScheme.surfaceContainerHighest
-                  .withOpacity(0.5),
+                  .withValues(alpha: 0.5),
               border: OutlineInputBorder(
                 borderRadius: AppConstants.borderRadiusMedium,
                 borderSide: BorderSide.none,
@@ -303,14 +303,14 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.info.withOpacity(0.1),
+                      color: AppColors.info.withValues(alpha: 0.1),
                       borderRadius: AppConstants.borderRadiusSmall,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.date_range,
-                            size: 14, color: AppColors.info),
+                            size: 14, color: AppColors.bgInfo,
                         const SizedBox(width: 4),
                         Text(
                           '${state.startDate != null ? _dateFmt.format(state.startDate!) : '...'}'
@@ -327,7 +327,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                           onTap: () =>
                               ref.read(saleListProvider.notifier).clearDateRange(),
                           child: Icon(Icons.close,
-                              size: 14, color: AppColors.info),
+                              size: 14, color: AppColors.bgInfo,
                         ),
                       ],
                     ),
@@ -366,7 +366,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
       selected: selected,
       onSelected: (_) =>
           ref.read(saleListProvider.notifier).setStatusFilter(value),
-      selectedColor: AppColors.primary.withOpacity(0.15),
+      selectedColor: AppColors.primary.withValues(alpha: 0.15),
       checkmarkColor: AppColors.primary,
     );
   }
@@ -383,13 +383,13 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
             color: hasFilter
-                ? AppColors.info.withOpacity(0.1)
+                ? AppColors.info.withValues(alpha: 0.1)
                 : theme.colorScheme.surfaceContainerHighest
-                    .withOpacity(0.5),
+                    .withValues(alpha: 0.5),
             borderRadius: AppConstants.borderRadiusSmall,
             border: Border.all(
               color: hasFilter
-                  ? AppColors.info.withOpacity(0.3)
+                  ? AppColors.info.withValues(alpha: 0.3)
                   : Colors.transparent,
             ),
           ),
@@ -521,10 +521,10 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                     height: 40,
                     decoration: BoxDecoration(
                       color: cancelled
-                          ? Colors.red.withOpacity(0.1)
+                          ? AppColors.danger.withValues(alpha: 0.1)
                           : isPending
-                              ? Colors.orange.withOpacity(0.1)
-                              : AppColors.primary.withOpacity(0.1),
+                              ? AppColors.warning.withValues(alpha: 0.1)
+                              : AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: AppConstants.borderRadiusSmall,
                     ),
                     child: Icon(
@@ -534,9 +534,9 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                               ? Icons.schedule_rounded
                               : Icons.point_of_sale_rounded,
                       color: cancelled
-                          ? Colors.red
+                          ? AppColors.danger
                           : isPending
-                              ? Colors.orange
+                              ? AppColors.warning
                               : AppColors.primary,
                       size: 20,
                     ),
@@ -588,7 +588,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                         _fmt.format(total),
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: cancelled ? Colors.grey : AppColors.primary,
+                          color: cancelled ? AppColors.textMuted : AppColors.primary,
                         ),
                       ),
                       if (paymentMethod.isNotEmpty)
@@ -621,16 +621,16 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                   ],
                   const Spacer(),
                   if (cancelled)
-                    _tag(t('sales.cancelled'), Icons.cancel_outlined, Colors.red,
+                    _tag(t('sales.cancelled'), Icons.cancel_outlined, AppColors.danger,
                         theme)
                   else if (isPending)
-                    _tag(t('sales.pending'), Icons.schedule_rounded, Colors.orange,
+                    _tag(t('sales.pending'), Icons.schedule_rounded, AppColors.warning,
                         theme)
                   else if (isPaid)
-                    _tag(t('sales.paid'), Icons.check_circle_outline, Colors.green,
+                    _tag(t('sales.paid'), Icons.check_circle_outline, AppColors.success,
                         theme)
                   else
-                    _tag(t('sales.open'), Icons.hourglass_empty, Colors.blue, theme),
+                    _tag(t('sales.open'), Icons.hourglass_empty, AppColors.info, theme),
                 ],
               ),
             ],
@@ -643,7 +643,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: AppConstants.borderRadiusSmall,
       ),
       child: Row(
@@ -685,7 +685,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+          const Icon(Icons.error_outline, size: 48, color: AppColors.bgDanger,
           const SizedBox(height: 12),
           Text(error, textAlign: TextAlign.center),
           const SizedBox(height: 16),

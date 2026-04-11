@@ -396,55 +396,34 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
             basePrice = variantResponses.get(0).getSalePrice();
         }
 
-        return ProductResponse.builder()
-                .id(product.getId())
-                .name(product.getName())
-                .slug(product.getSlug())
-                .description(product.getDescription())
-                .sector(product.getSector())
-                .metadata(product.getMetadata())
-                .categoryId(product.getCategoryId())
-                .categoryName(categoryName)
-                .brand(product.getBrand())
-                .unit(product.getUnit())
-                .sku(product.getSku())
-                .basePrice(basePrice)
-                .status(product.getStatus())
-                .variants(variantResponses)
-                .build();
+        // toDTO(): id, name, slug, description, sector, categoryId, brand, unit, sku, status, metadata kopyalanır
+        ProductResponse dto = toDTO(product);
+        // Manuel supplement: hesaplanan / join / nested alanlar
+        dto.setCategoryName(categoryName);
+        dto.setBasePrice(basePrice);
+        dto.setVariants(variantResponses);
+        return dto;
     }
 
     /**
      * ProductVariant Entity → ProductVariantResponse mapping
+     * Temel alan kopyalaması productVariantService.mapToResponse() (toDTO tabanlı) üzerinden yapılır.
+     * Bu metot yalnızca ProductServiceImpl'e özgü inventory enrichment'ı ekler.
      */
     private ProductVariantResponse mapVariantToResponse(ProductVariant variant) {
-        // Barkodları map'le
-        List<BarcodeResponse> barcodeResponses = new ArrayList<>();
-        if (variant.getBarcodes() != null && !variant.getBarcodes().isEmpty()) {
-            barcodeResponses = variant.getBarcodes().stream()
-                    .filter(b -> Boolean.TRUE.equals(b.getIsActive()))
-                    .map(b -> BarcodeResponse.builder()
-                            .id(b.getId())
-                            .barcodeCode(b.getBarcodeCode())
-                            .barcodeType(b.getBarcodeType() != null ? b.getBarcodeType().name() : null)
-                            .isPrimary(b.getIsPrimary())
-                            .isActive(b.getIsActive())
-                            .usageCount(b.getUsageCount())
-                            .build())
-                    .toList();
-        }
+        // Temel mapping: toDTO tabanlı — barcodes ve salePrice dahil
+        ProductVariantResponse dto = variantService.mapToResponse(variant);
 
-        // Inventory: InventoryView'dan tüm depoları topla
+        // Inventory enrichment — ProductVariantService'de InventoryService inject yok
         InventoryResponse inventoryResponse = null;
-        List<InventoryResponse> inventoryList = new java.util.ArrayList<>();
+        List<InventoryResponse> inventoryList = new ArrayList<>();
         try {
             List<InventoryView> inventories = inventoryService.findByVariantIdSafe(variant.getId());
             if (!inventories.isEmpty()) {
                 int totalQty = inventories.stream()
                         .mapToInt(iv -> iv.getPhysicalQuantity() != null ? iv.getPhysicalQuantity() : 0)
                         .sum();
-                InventoryView first = inventories.get(0);
-                // Toplam stok (geriye dönük uyumluluk)
+                InventoryView first = inventories.getFirst();
                 inventoryResponse = InventoryResponse.builder()
                         .id(first.getId())
                         .variantId(first.getVariantId())
@@ -453,7 +432,6 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                         .physicalQuantity(totalQty)
                         .minStockLevel(variant.getMinStockLevel())
                         .build();
-                // Lokasyon bazlı stok listesi — Flutter çok-mağaza UI için
                 inventoryList = inventories.stream()
                         .map(iv -> InventoryResponse.builder()
                                 .variantId(iv.getVariantId())
@@ -462,31 +440,14 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                                 .physicalQuantity(iv.getPhysicalQuantity() != null ? iv.getPhysicalQuantity() : 0)
                                 .minStockLevel(variant.getMinStockLevel())
                                 .build())
-                        .collect(java.util.stream.Collectors.toList());
+                        .toList();
             }
         } catch (Exception e) {
             log.warn("Stok bilgisi alınamadı variant={}: {}", variant.getId(), e.getMessage());
         }
-
-        // Pricing — variantPricings listesinden en son fiyat
-        BigDecimal salePrice = null;
-        if (variant.getVariantPricings() != null && !variant.getVariantPricings().isEmpty()) {
-            salePrice = variant.getVariantPricings()
-                    .get(variant.getVariantPricings().size() - 1)
-                    .getSalePrice();
-        }
-
-        return ProductVariantResponse.builder()
-                .id(variant.getId())
-                .sku(variant.getSku())
-                .name(variant.getName())
-                .additionalPrice(variant.getAdditionalPrice())
-                .salePrice(salePrice)
-                .attributes(variant.getAttributes())
-                .barcodes(barcodeResponses)
-                .inventory(inventoryResponse)
-                .inventories(inventoryList)
-                .build();
+        dto.setInventory(inventoryResponse);
+        dto.setInventories(inventoryList);
+        return dto;
     }
 
     @Override

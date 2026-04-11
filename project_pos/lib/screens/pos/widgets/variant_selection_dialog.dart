@@ -175,17 +175,17 @@ class _VariantSelectionDialogState extends State<VariantSelectionDialog> {
         duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(
           color: isOutOfStock
-              ? AppColors.bgLight.withOpacity(0.5)
+              ? AppColors.bgLight.withValues(alpha: 0.5)
               : isTransferOnly
-                  ? AppColors.bgWarning.withOpacity(0.3)
+                  ? AppColors.bgWarning.withValues(alpha: 0.3)
                   : isSelected
-                      ? AppColors.primary.withOpacity(0.1)
+                      ? AppColors.primary.withValues(alpha: 0.1)
                       : Colors.white,
           border: Border.all(
             color: isSelected
                 ? AppColors.primary
                 : isTransferOnly
-                    ? AppColors.warning.withOpacity(0.5)
+                    ? AppColors.warning.withValues(alpha: 0.5)
                     : AppColors.border,
             width: isSelected ? 2 : 1,
           ),

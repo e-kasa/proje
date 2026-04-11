@@ -260,13 +260,13 @@ class BasicInfoStep extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: isPositive
-            ? AppColors.success.withOpacity(0.08)
-            : AppColors.danger.withOpacity(0.08),
+            ? AppColors.success.withValues(alpha: 0.08)
+            : AppColors.danger.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isPositive
-              ? AppColors.success.withOpacity(0.3)
-              : AppColors.danger.withOpacity(0.3),
+              ? AppColors.success.withValues(alpha: 0.3)
+              : AppColors.danger.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -424,7 +424,7 @@ class BasicInfoStep extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Divider(color: AppColors.border.withOpacity(0.5), height: 24),
+          Divider(color: AppColors.border.withValues(alpha: 0.5), height: 24),
           const SizedBox(height: 4),
 
           // Cross References
@@ -513,7 +513,7 @@ class BasicInfoStep extends ConsumerWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.1),
+                  color: accentColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -541,26 +541,26 @@ class BasicInfoStep extends ConsumerWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
             decoration: BoxDecoration(
-              color: AppColors.bgLight.withOpacity(0.5),
+              color: AppColors.bgLight.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: accentColor.withOpacity(0.2),
+                color: accentColor.withValues(alpha: 0.2),
               ),
             ),
             child: Column(
               children: [
                 Icon(emptyIcon,
-                    size: 28, color: accentColor.withOpacity(0.3)),
+                    size: 28, color: accentColor.withValues(alpha: 0.3)),
                 const SizedBox(height: 6),
                 Text(emptyText,
                     style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textMuted.withOpacity(0.7))),
+                        color: AppColors.textMuted.withValues(alpha: 0.7))),
                 const SizedBox(height: 8),
                 Text(addHint,
                     style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.textMuted.withOpacity(0.5))),
+                        color: AppColors.textMuted.withValues(alpha: 0.5))),
               ],
             ),
           ),
@@ -573,10 +573,10 @@ class BasicInfoStep extends ConsumerWidget {
             decoration: BoxDecoration(
               color: isEven
                   ? Colors.transparent
-                  : AppColors.bgLight.withOpacity(0.7),
+                  : AppColors.bgLight.withValues(alpha: 0.7),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: AppColors.border.withOpacity(isEven ? 0.3 : 0.15),
+                color: AppColors.border.withValues(alpha: isEven ? 0.3 : 0.15),
               ),
             ),
             child: Row(
@@ -587,7 +587,7 @@ class BasicInfoStep extends ConsumerWidget {
                   height: 24,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: accentColor.withOpacity(0.1),
+                    color: accentColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -816,10 +816,10 @@ class BasicInfoStep extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border.withOpacity(0.4)),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -860,7 +860,7 @@ class BasicInfoStep extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: value ? activeColor.withOpacity(0.08) : Colors.transparent,
+          color: value ? activeColor.withValues(alpha: 0.08) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
               color: value ? activeColor : AppColors.border),
@@ -915,7 +915,7 @@ class _SectionHeader extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: c.withOpacity(0.1),
+                color: c.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, size: 18, color: c),
@@ -951,7 +951,7 @@ class _SectionHeader extends StatelessWidget {
           height: 2,
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [c.withOpacity(0.4), c.withOpacity(0.0)],
+              colors: [c.withValues(alpha: 0.4), c.withValues(alpha: 0.0)],
               stops: const [0.0, 1.0],
             ),
             borderRadius: BorderRadius.circular(1),

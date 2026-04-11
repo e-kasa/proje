@@ -23,4 +23,7 @@ public interface AccountTransactionService extends BaseDbService<AccountTransact
     AccountTransactionResponse cancelTransaction(String id, String reason);
 
     List<AccountTransactionResponse> findBySupplierId(String supplierId);
+
+    /** Entity → Response dönüşümü — cross-domain kullanım için */
+    AccountTransactionResponse toResponse(AccountTransaction tx);
 }

@@ -80,12 +80,8 @@ public class InventoryService extends BaseDbServiceImp<InventoryRepository, Inve
     // -------------------------------------------------------------------------
 
     private InventoryResponse toResponse(InventoryView iv) {
-        return InventoryResponse.builder()
-                .id(iv.getId())
-                .variantId(iv.getVariantId())
-                .storeId(iv.getStoreId())
-                .warehouseId(iv.getWarehouseId())
-                .physicalQuantity(iv.getPhysicalQuantity())
-                .build();
+        // toDTO(): id, variantId, storeId, warehouseId, physicalQuantity kopyalanır
+        // minStockLevel InventoryView'da yok — ProductVariant'tan ayrıca set edilir (ProductServiceImpl)
+        return toDTO(iv);
     }
 }

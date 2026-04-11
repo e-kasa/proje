@@ -32,7 +32,7 @@ class PaymentRecordModal {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.1),
+                  color: accentColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
@@ -86,7 +86,7 @@ class PaymentRecordModal {
                     controller: bankCtrl,
                     decoration: InputDecoration(
                       labelText: 'Banka Adi',
-                      prefixIcon: const Icon(Icons.account_balance, color: AppColors.info),
+                      prefixIcon: const Icon(Icons.account_balance, color: AppColors.bgInfo,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
@@ -99,7 +99,7 @@ class PaymentRecordModal {
                     hintText: paymentType == 'CHECK' ? 'Cek no...'
                         : paymentType == 'BANK_TRANSFER' ? 'Dekont no...'
                         : 'Referans no...',
-                    prefixIcon: const Icon(Icons.tag, color: AppColors.info),
+                    prefixIcon: const Icon(Icons.tag, color: AppColors.bgInfo,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
@@ -270,7 +270,7 @@ class _AccountSelectContentState extends State<_AccountSelectContent> with Singl
           contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           leading: CircleAvatar(
             radius: 18,
-            backgroundColor: (isCust ? AppColors.info : AppColors.primary).withOpacity(0.1),
+            backgroundColor: (isCust ? AppColors.info : AppColors.primary).withValues(alpha: 0.1),
             child: Icon(isCust ? Icons.person : Icons.business, size: 18, color: isCust ? AppColors.info : AppColors.primary),
           ),
           title: Text(item['name']?.toString() ?? '-', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),

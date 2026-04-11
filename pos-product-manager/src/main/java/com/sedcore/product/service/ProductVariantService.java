@@ -9,4 +9,7 @@ import java.util.List;
 public interface ProductVariantService extends BaseDbService<ProductVariant> {
 
     List<ProductVariantResponse> findByProductId(String productId);
+
+    /** Entity → Response dönüşümü — cross-service kullanım için */
+    ProductVariantResponse mapToResponse(ProductVariant variant);
 }

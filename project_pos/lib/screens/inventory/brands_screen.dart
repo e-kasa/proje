@@ -177,7 +177,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            const Icon(Icons.edit, color: AppColors.info),
+            const Icon(Icons.edit, color: AppColors.bgInfo,
             const SizedBox(width: 12),
             Text(t('inventory.edit_brand')),
           ],
@@ -367,7 +367,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: AppConstants.borderRadiusSmall,
                   ),
                   child: Row(
@@ -466,7 +466,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                   width: 56,
                   height: 56,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: AppConstants.borderRadiusMedium,
                   ),
                   child: const Center(
@@ -495,8 +495,8 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
                               color: isActive
-                                  ? AppColors.success.withOpacity(0.1)
-                                  : AppColors.textMuted.withOpacity(0.1),
+                                  ? AppColors.success.withValues(alpha: 0.1)
+                                  : AppColors.textMuted.withValues(alpha: 0.1),
                               borderRadius: AppConstants.borderRadiusSmall,
                             ),
                             child: Text(
@@ -560,7 +560,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                       value: 'edit',
                       child: Row(
                         children: [
-                          const Icon(Icons.edit, size: 18, color: AppColors.info),
+                          const Icon(Icons.edit, size: 18, color: AppColors.bgInfo,
                           const SizedBox(width: 12),
                           Text(t('common.edit')),
                         ],
@@ -584,7 +584,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                       value: 'delete',
                       child: Row(
                         children: [
-                          const Icon(Icons.delete, size: 18, color: AppColors.danger),
+                          const Icon(Icons.delete, size: 18, color: AppColors.bgDanger,
                           const SizedBox(width: 12),
                           Text(t('common.delete')),
                         ],

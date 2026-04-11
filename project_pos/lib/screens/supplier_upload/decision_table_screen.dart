@@ -211,7 +211,7 @@ class _DecisionTableScreenState extends State<DecisionTableScreen> {
           // Progress Header
           Container(
             padding: const EdgeInsets.all(16),
-            color: Colors.blue[50],
+            color: AppColors.info[50],
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -222,8 +222,8 @@ class _DecisionTableScreenState extends State<DecisionTableScreen> {
                           ? Icons.check_circle
                           : Icons.pending,
                       color: _decidedCount == _products.length
-                          ? Colors.green
-                          : Colors.orange,
+                          ? AppColors.success
+                          : AppColors.warning,
                     ),
                     const SizedBox(width: 12),
                     Text(
@@ -279,7 +279,7 @@ class _DecisionTableScreenState extends State<DecisionTableScreen> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, -2),
                 ),
@@ -332,10 +332,10 @@ class _ProductDecisionCard extends StatelessWidget {
   });
 
   Color _getMatchColor() {
-    if (product.isNewProduct) return Colors.red;
-    if (product.matchScore >= 90) return Colors.green;
-    if (product.matchScore >= 70) return Colors.orange;
-    return Colors.grey;
+    if (product.isNewProduct) return AppColors.danger;
+    if (product.matchScore >= 90) return AppColors.success;
+    if (product.matchScore >= 70) return AppColors.warning;
+    return AppColors.textMuted;
   }
 
   String _getMatchText() {
@@ -374,7 +374,7 @@ class _ProductDecisionCard extends StatelessWidget {
 
     return Card(
       elevation: isDecided ? 1 : 2,
-      color: isDecided ? Colors.green[50] : Colors.white,
+      color: isDecided ? AppColors.success[50] : Colors.white,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -387,7 +387,7 @@ class _ProductDecisionCard extends StatelessWidget {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: Colors.blue[100],
+                    color: AppColors.info[100],
                     shape: BoxShape.circle,
                   ),
                   child: Center(
@@ -395,7 +395,7 @@ class _ProductDecisionCard extends StatelessWidget {
                       '${index + 1}',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue[900],
+                        color: AppColors.info[900],
                       ),
                     ),
                   ),
@@ -423,7 +423,7 @@ class _ProductDecisionCard extends StatelessWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: _getMatchColor().withOpacity(0.2),
+                              color: _getMatchColor().withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -470,7 +470,7 @@ class _ProductDecisionCard extends StatelessWidget {
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: isDecided ? Colors.green : Colors.blue,
+                      color: isDecided ? AppColors.success : AppColors.info,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -511,18 +511,18 @@ class _ProductDecisionCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.green[100],
+                  color: AppColors.success[100],
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                    const Icon(Icons.check_circle, color: AppColors.success, size: 20),
                     const SizedBox(width: 8),
                     Text(
                       _getDecisionSummary(),
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.green[900],
+                        color: AppColors.success[900],
                       ),
                     ),
                   ],

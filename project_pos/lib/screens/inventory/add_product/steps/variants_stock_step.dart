@@ -112,9 +112,9 @@ class VariantsStockStep extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.success.withOpacity(0.06),
+                color: AppColors.success.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -165,7 +165,7 @@ class VariantsStockStep extends ConsumerWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: selected ? accent.withOpacity(0.06) : Colors.transparent,
+          color: selected ? accent.withValues(alpha: 0.06) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selected ? accent : AppColors.border,
@@ -174,7 +174,7 @@ class VariantsStockStep extends ConsumerWidget {
           boxShadow: selected
               ? [
                   BoxShadow(
-                    color: accent.withOpacity(0.15),
+                    color: accent.withValues(alpha: 0.15),
                     blurRadius: 12,
                     offset: const Offset(0, 2),
                   ),
@@ -188,7 +188,7 @@ class VariantsStockStep extends ConsumerWidget {
               height: 48,
               decoration: BoxDecoration(
                 color: selected
-                    ? accent.withOpacity(0.12)
+                    ? accent.withValues(alpha: 0.12)
                     : AppColors.bgLight,
                 shape: BoxShape.circle,
               ),
@@ -246,7 +246,7 @@ class VariantsStockStep extends ConsumerWidget {
               child: Column(
                 children: [
                   Icon(Icons.widgets_outlined,
-                      color: AppColors.textMuted.withOpacity(0.5), size: 40),
+                      color: AppColors.textMuted.withValues(alpha: 0.5), size: 40),
                   const SizedBox(height: 12),
                   Text(
                     t('product.no_attributes_yet'),
@@ -288,14 +288,14 @@ class VariantsStockStep extends ConsumerWidget {
                     decoration: BoxDecoration(
                       gradient: hasValuesForGenerate
                           ? LinearGradient(
-                              colors: [accent, accent.withOpacity(0.8)],
+                              colors: [accent, accent.withValues(alpha: 0.8)],
                               begin: Alignment.centerLeft,
                               end: Alignment.centerRight,
                             )
                           : null,
                       color: hasValuesForGenerate
                           ? null
-                          : AppColors.textMuted.withOpacity(0.15),
+                          : AppColors.textMuted.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Padding(
@@ -325,7 +325,7 @@ class VariantsStockStep extends ConsumerWidget {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 3),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(
+                                color: Colors.white.withValues(alpha: 
                                     hasValuesForGenerate ? 0.25 : 0.6),
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -404,11 +404,11 @@ class VariantsStockStep extends ConsumerWidget {
         }),
         ActionChip(
           avatar: const Icon(Icons.add_rounded,
-              size: 16, color: AppColors.success),
+              size: 16, color: AppColors.bgSuccess,
           label: Text(t('product.new_attribute'),
-              style: const TextStyle(fontSize: 12, color: AppColors.success)),
-          backgroundColor: AppColors.success.withOpacity(0.06),
-          side: BorderSide(color: AppColors.success.withOpacity(0.3)),
+              style: const TextStyle(fontSize: 12, color: AppColors.bgSuccess),
+          backgroundColor: AppColors.success.withValues(alpha: 0.06),
+          side: BorderSide(color: AppColors.success.withValues(alpha: 0.3)),
           onPressed: () => showAddAttributeDialog(
               context: context, state: state, onChanged: onChanged, t: t),
         ),
@@ -433,7 +433,7 @@ class VariantsStockStep extends ConsumerWidget {
           Row(
             children: [
               Icon(Icons.drag_handle_rounded,
-                  size: 16, color: AppColors.textMuted.withOpacity(0.4)),
+                  size: 16, color: AppColors.textMuted.withValues(alpha: 0.4)),
               const SizedBox(width: 4),
               Icon(attr.icon, size: 16, color: attrColor),
               const SizedBox(width: 6),
@@ -445,7 +445,7 @@ class VariantsStockStep extends ConsumerWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: attrColor.withOpacity(0.08),
+                  color: attrColor.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -466,11 +466,11 @@ class VariantsStockStep extends ConsumerWidget {
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: AppColors.danger.withOpacity(0.06),
+                    color: AppColors.danger.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Icon(Icons.close_rounded,
-                      size: 16, color: AppColors.danger),
+                      size: 16, color: AppColors.bgDanger,
                 ),
               ),
             ],
@@ -488,15 +488,15 @@ class VariantsStockStep extends ConsumerWidget {
                           color: attrColor,
                           fontWeight: FontWeight.w500)),
                   deleteIcon: Icon(Icons.close_rounded,
-                      size: 14, color: attrColor.withOpacity(0.6)),
+                      size: 14, color: attrColor.withValues(alpha: 0.6)),
                   onDeleted: () {
                     state.removeValueFromAttribute(index, entry.key);
                     onChanged();
                   },
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   visualDensity: VisualDensity.compact,
-                  backgroundColor: attrColor.withOpacity(0.08),
-                  side: BorderSide(color: attrColor.withOpacity(0.2)),
+                  backgroundColor: attrColor.withValues(alpha: 0.08),
+                  side: BorderSide(color: attrColor.withValues(alpha: 0.2)),
                 );
               }),
               ActionChip(
@@ -511,9 +511,9 @@ class VariantsStockStep extends ConsumerWidget {
                     t: t),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 visualDensity: VisualDensity.compact,
-                backgroundColor: AppColors.success.withOpacity(0.06),
+                backgroundColor: AppColors.success.withValues(alpha: 0.06),
                 side:
-                    BorderSide(color: AppColors.success.withOpacity(0.2)),
+                    BorderSide(color: AppColors.success.withValues(alpha: 0.2)),
               ),
             ],
           ),
@@ -542,7 +542,7 @@ class VariantsStockStep extends ConsumerWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: accent.withOpacity(0.08),
+                  color: accent.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -568,7 +568,7 @@ class VariantsStockStep extends ConsumerWidget {
                     ? AppColors.bgLight
                     : Colors.white,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.border.withOpacity(0.4)),
+                border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
               ),
               child: Row(
                 children: [
@@ -579,8 +579,8 @@ class VariantsStockStep extends ConsumerWidget {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          accent.withOpacity(0.15),
-                          accent.withOpacity(0.08),
+                          accent.withValues(alpha: 0.15),
+                          accent.withValues(alpha: 0.08),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -610,7 +610,7 @@ class VariantsStockStep extends ConsumerWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 1),
                           decoration: BoxDecoration(
-                            color: AppColors.textMuted.withOpacity(0.1),
+                            color: AppColors.textMuted.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(v.sku,
@@ -637,10 +637,10 @@ class VariantsStockStep extends ConsumerWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: chipColor.withOpacity(0.08),
+                            color: chipColor.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(6),
                             border:
-                                Border.all(color: chipColor.withOpacity(0.2)),
+                                Border.all(color: chipColor.withValues(alpha: 0.2)),
                           ),
                           child: Text(e.value,
                               style: TextStyle(
@@ -888,7 +888,7 @@ class VariantsStockStep extends ConsumerWidget {
                     horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: isEven
-                      ? AppColors.bgLight.withOpacity(0.5)
+                      ? AppColors.bgLight.withValues(alpha: 0.5)
                       : Colors.white,
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -901,7 +901,7 @@ class VariantsStockStep extends ConsumerWidget {
                           width: 22,
                           height: 22,
                           decoration: BoxDecoration(
-                            color: _accentColor.withOpacity(0.1),
+                            color: _accentColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           alignment: Alignment.center,
@@ -946,7 +946,7 @@ class VariantsStockStep extends ConsumerWidget {
                                     style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w600,
-                                        color: AppColors.danger)),
+                                        color: AppColors.bgDanger),
                               ),
                               prefixIconConstraints: const BoxConstraints(
                                   minWidth: 0, minHeight: 0),
@@ -974,7 +974,7 @@ class VariantsStockStep extends ConsumerWidget {
                                     style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w600,
-                                        color: AppColors.success)),
+                                        color: AppColors.bgSuccess),
                               ),
                               prefixIconConstraints: const BoxConstraints(
                                   minWidth: 0, minHeight: 0),
@@ -1102,7 +1102,7 @@ class VariantsStockStep extends ConsumerWidget {
         decoration: BoxDecoration(
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withOpacity(0.5)),
+          border: Border.all(color: color.withValues(alpha: 0.5)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1126,10 +1126,10 @@ class VariantsStockStep extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border.withOpacity(0.5)),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1163,7 +1163,7 @@ class VariantsStockStep extends ConsumerWidget {
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: _accentColor.withOpacity(0.1),
+            color: _accentColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, size: 18, color: _accentColor),

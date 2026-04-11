@@ -154,7 +154,7 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
                         final isSelected = _selectedType == type['value'];
                         return Card(
                           margin: const EdgeInsets.only(bottom: 8),
-                          color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white,
+                          color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: AppConstants.borderRadiusMedium,
                             side: BorderSide(

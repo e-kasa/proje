@@ -85,7 +85,7 @@ class _StockValueReportScreenState
                       const SizedBox(height: 12),
                       Text(
                         _error!,
-                        style: const TextStyle(color: AppColors.danger),
+                        style: const TextStyle(color: AppColors.bgDanger,
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
@@ -168,7 +168,7 @@ class _StockValueReportScreenState
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
+            color: AppColors.primary.withValues(alpha: 0.3),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -182,7 +182,7 @@ class _StockValueReportScreenState
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.account_balance_wallet,
@@ -193,7 +193,7 @@ class _StockValueReportScreenState
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -243,7 +243,7 @@ class _StockValueReportScreenState
         border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -255,7 +255,7 @@ class _StockValueReportScreenState
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 20),
@@ -317,7 +317,7 @@ class _StockValueReportScreenState
             border: Border.all(color: AppColors.border),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -330,7 +330,7 @@ class _StockValueReportScreenState
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: AppColors.teal.withOpacity(0.1),
+                  color: AppColors.teal.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(Icons.warehouse,
@@ -354,7 +354,7 @@ class _StockValueReportScreenState
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        _buildMiniTag('$itemCount SKU', AppColors.info),
+                        _buildMiniTag('$itemCount SKU', AppColors.bgInfo,
                         const SizedBox(width: 6),
                         _buildMiniTag('$totalQty ${t('stock.unit_piece')}', AppColors.purple),
                       ],
@@ -381,7 +381,7 @@ class _StockValueReportScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(

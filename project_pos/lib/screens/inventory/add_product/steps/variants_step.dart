@@ -80,14 +80,14 @@ class VariantsStep extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.info.withOpacity(0.06),
+              color: AppColors.info.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.info.withOpacity(0.15)),
+              border: Border.all(color: AppColors.info.withValues(alpha: 0.15)),
             ),
             child: Row(
               children: [
                 Icon(Icons.info_outline_rounded,
-                    size: 16, color: AppColors.info.withOpacity(0.7)),
+                    size: 16, color: AppColors.info.withValues(alpha: 0.7)),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -152,7 +152,7 @@ class VariantsStep extends ConsumerWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.08) : Colors.white,
+          color: isSelected ? color.withValues(alpha: 0.08) : Colors.white,
           border: Border.all(
             color: isSelected ? color : AppColors.border,
             width: isSelected ? 2 : 1,
@@ -161,7 +161,7 @@ class VariantsStep extends ConsumerWidget {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                      color: color.withOpacity(0.12),
+                      color: color.withValues(alpha: 0.12),
                       blurRadius: 8,
                       offset: const Offset(0, 2))
                 ]
@@ -174,7 +174,7 @@ class VariantsStep extends ConsumerWidget {
               height: 48,
               decoration: BoxDecoration(
                 color: isSelected
-                    ? color.withOpacity(0.15)
+                    ? color.withValues(alpha: 0.15)
                     : AppColors.bgLight,
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -221,7 +221,7 @@ class VariantsStep extends ConsumerWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.12),
+              color: AppColors.success.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(Icons.check_circle_rounded,
@@ -337,7 +337,7 @@ class VariantsStep extends ConsumerWidget {
         padding: EdgeInsets.symmetric(
             horizontal: isMobile ? 10 : 14, vertical: isMobile ? 8 : 10),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : Colors.white,
+          color: isSelected ? color.withValues(alpha: 0.1) : Colors.white,
           border: Border.all(
             color: isSelected ? color : AppColors.border,
             width: isSelected ? 1.5 : 1,
@@ -384,7 +384,7 @@ class VariantsStep extends ConsumerWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: _accentColor.withOpacity(0.08),
+                    color: _accentColor.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -404,22 +404,22 @@ class VariantsStep extends ConsumerWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.success.withOpacity(0.08),
+                    color: AppColors.success.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
                     border:
-                        Border.all(color: AppColors.success.withOpacity(0.3)),
+                        Border.all(color: AppColors.success.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.add_rounded,
-                          size: 14, color: AppColors.success),
+                          size: 14, color: AppColors.bgSuccess,
                       const SizedBox(width: 4),
                       Text(t('common.new_item'),
                           style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.success)),
+                              color: AppColors.bgSuccess),
                     ],
                   ),
                 ),
@@ -431,9 +431,9 @@ class VariantsStep extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: AppColors.warning.withOpacity(0.04),
+                color: AppColors.warning.withValues(alpha: 0.04),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.warning.withOpacity(0.2)),
+                border: Border.all(color: AppColors.warning.withValues(alpha: 0.2)),
               ),
               child: Row(
                 children: [
@@ -441,7 +441,7 @@ class VariantsStep extends ConsumerWidget {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: AppColors.warning.withOpacity(0.1),
+                      color: AppColors.warning.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.info_outline_rounded,
@@ -476,7 +476,7 @@ class VariantsStep extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border.withOpacity(0.7)),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.7)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -493,7 +493,7 @@ class VariantsStep extends ConsumerWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: attrColor.withOpacity(0.08),
+                  color: attrColor.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -514,11 +514,11 @@ class VariantsStep extends ConsumerWidget {
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: AppColors.danger.withOpacity(0.06),
+                    color: AppColors.danger.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Icon(Icons.close_rounded,
-                      size: 16, color: AppColors.danger),
+                      size: 16, color: AppColors.bgDanger,
                 ),
               ),
             ],
@@ -536,15 +536,15 @@ class VariantsStep extends ConsumerWidget {
                           color: attrColor,
                           fontWeight: FontWeight.w500)),
                   deleteIcon: Icon(Icons.close_rounded,
-                      size: 14, color: attrColor.withOpacity(0.6)),
+                      size: 14, color: attrColor.withValues(alpha: 0.6)),
                   onDeleted: () {
                     state.removeValueFromAttribute(index, entry.key);
                     onChanged();
                   },
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   visualDensity: VisualDensity.compact,
-                  backgroundColor: attrColor.withOpacity(0.08),
-                  side: BorderSide(color: attrColor.withOpacity(0.2)),
+                  backgroundColor: attrColor.withValues(alpha: 0.08),
+                  side: BorderSide(color: attrColor.withValues(alpha: 0.2)),
                 );
               }),
               ActionChip(
@@ -558,8 +558,8 @@ class VariantsStep extends ConsumerWidget {
                     t: t),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 visualDensity: VisualDensity.compact,
-                backgroundColor: AppColors.success.withOpacity(0.06),
-                side: BorderSide(color: AppColors.success.withOpacity(0.2)),
+                backgroundColor: AppColors.success.withValues(alpha: 0.06),
+                side: BorderSide(color: AppColors.success.withValues(alpha: 0.2)),
               ),
             ],
           ),
@@ -605,7 +605,7 @@ class VariantsStep extends ConsumerWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: accent.withOpacity(0.08),
+                  color: accent.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -630,7 +630,7 @@ class VariantsStep extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: isEven ? AppColors.bgLight : Colors.white,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.border.withOpacity(0.3)),
+                border: Border.all(color: AppColors.border.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -638,7 +638,7 @@ class VariantsStep extends ConsumerWidget {
                     width: 28,
                     height: 28,
                     decoration: BoxDecoration(
-                      color: accent.withOpacity(0.12),
+                      color: accent.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(7),
                     ),
                     alignment: Alignment.center,
@@ -663,7 +663,7 @@ class VariantsStep extends ConsumerWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 1),
                           decoration: BoxDecoration(
-                            color: AppColors.textMuted.withOpacity(0.08),
+                            color: AppColors.textMuted.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(v.sku,
@@ -689,10 +689,10 @@ class VariantsStep extends ConsumerWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: chipColor.withOpacity(0.08),
+                            color: chipColor.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(6),
                             border:
-                                Border.all(color: chipColor.withOpacity(0.2)),
+                                Border.all(color: chipColor.withValues(alpha: 0.2)),
                           ),
                           child: Text(e.value,
                               style: TextStyle(
@@ -740,10 +740,10 @@ class VariantsStep extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border.withOpacity(0.5)),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -778,7 +778,7 @@ class VariantsStep extends ConsumerWidget {
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: _accentColor.withOpacity(0.1),
+            color: _accentColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, size: 18, color: _accentColor),

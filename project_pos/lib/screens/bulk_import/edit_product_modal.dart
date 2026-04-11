@@ -279,18 +279,18 @@ class _EditProductModalState extends ConsumerState<EditProductModal> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.info.withOpacity(0.1),
+            color: AppColors.info.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.info),
+            border: Border.all(color: AppColors.bgInfo,
           ),
           child: Row(
             children: [
-              const Icon(Icons.info, color: AppColors.info),
+              const Icon(Icons.info, color: AppColors.bgInfo,
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   'Bu ürünü sistemdeki mevcut bir ürünle eşleştirin. Seçilen ürün güncellenecektir.',
-                  style: TextStyle(color: AppColors.info),
+                  style: TextStyle(color: AppColors.bgInfo,
                 ),
               ),
             ],
@@ -364,16 +364,16 @@ class _EditProductModalState extends ConsumerState<EditProductModal> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.danger.withOpacity(0.1),
+                color: AppColors.danger.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.danger),
+                border: Border.all(color: AppColors.bgDanger,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Row(
                     children: [
-                      Icon(Icons.warning, color: AppColors.danger),
+                      Icon(Icons.warning, color: AppColors.bgDanger,
                       const SizedBox(width: 12),
                       const Text(
                         'Aşağıdaki hataları düzeltin:',
@@ -516,7 +516,7 @@ class _EditProductModalState extends ConsumerState<EditProductModal> {
       decoration: BoxDecoration(
         border: Border.all(color: accentColor),
         borderRadius: BorderRadius.circular(8),
-        color: accentColor.withOpacity(0.05),
+        color: accentColor.withValues(alpha: 0.05),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -555,11 +555,11 @@ class _EditProductModalState extends ConsumerState<EditProductModal> {
         decoration: BoxDecoration(
           border: Border.all(color: isSelected ? AppColors.success : AppColors.border, width: isSelected ? 2 : 1),
           borderRadius: BorderRadius.circular(8),
-          color: isSelected ? AppColors.success.withOpacity(0.05) : Colors.white,
+          color: isSelected ? AppColors.success.withValues(alpha: 0.05) : Colors.white,
         ),
         child: Row(
           children: [
-            Radio<bool>(value: true, groupValue: isSelected, onChanged: (_) => onSelect(), activeColor: AppColors.success),
+            Radio<bool>(value: true, groupValue: isSelected, onChanged: (_) => onSelect(), activeColor: AppColors.bgSuccess,
             const SizedBox(width: 12),
             Expanded(
               child: Column(

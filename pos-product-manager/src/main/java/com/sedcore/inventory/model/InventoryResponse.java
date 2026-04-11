@@ -1,5 +1,6 @@
 package com.sedcore.inventory.model;
 
+import com.towpen.base.restservice.model.DtoBaseModel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,7 +16,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class InventoryResponse {
+public class InventoryResponse extends DtoBaseModel {
 
     private String id;
 

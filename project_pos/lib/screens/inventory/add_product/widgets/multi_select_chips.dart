@@ -104,9 +104,9 @@ class MultiSelectChips extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: accentColor.withOpacity(0.08),
+        color: accentColor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: accentColor.withOpacity(0.25), width: 1),
+        border: Border.all(color: accentColor.withValues(alpha: 0.25), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -116,7 +116,7 @@ class MultiSelectChips extends ConsumerWidget {
             width: 20,
             height: 20,
             decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.15),
+              color: accentColor.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
@@ -148,7 +148,7 @@ class MultiSelectChips extends ConsumerWidget {
               width: 18,
               height: 18,
               decoration: BoxDecoration(
-                color: AppColors.danger.withOpacity(0.1),
+                color: AppColors.danger.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
@@ -172,14 +172,14 @@ class MultiSelectChips extends ConsumerWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.success.withOpacity(0.08),
-            AppColors.success.withOpacity(0.03),
+            AppColors.success.withValues(alpha: 0.08),
+            AppColors.success.withValues(alpha: 0.03),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.success.withOpacity(0.3), width: 1),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.3), width: 1),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -188,7 +188,7 @@ class MultiSelectChips extends ConsumerWidget {
             width: 22,
             height: 22,
             decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.15),
+              color: AppColors.success.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
@@ -233,7 +233,7 @@ class MultiSelectChips extends ConsumerWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: AppColors.textMuted.withOpacity(0.08),
+                color: AppColors.textMuted.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,

@@ -61,7 +61,7 @@ void showAddAttributeDialog({
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white,
+                      color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : Colors.white,
                       border: Border.all(
                         color: isSelected ? AppColors.primary : AppColors.border,
                         width: isSelected ? 2 : 1,

@@ -132,15 +132,15 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 Text(t('pos.title'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)),
                 Row(
                   children: [
-                    Icon(Icons.store_outlined, size: 11, color: Colors.white.withOpacity(0.8)),
+                    Icon(Icons.store_outlined, size: 11, color: Colors.white.withValues(alpha: 0.8)),
                     const SizedBox(width: 3),
                     Text(
                       posState.activeStoreId ?? 'Mağaza Seçilmedi',
-                      style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.85)),
+                      style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.85)),
                     ),
                     if (posState.availableStoreIds.length > 1) ...[
                       const SizedBox(width: 4),
-                      Icon(Icons.expand_more, size: 13, color: Colors.white.withOpacity(0.7)),
+                      Icon(Icons.expand_more, size: 13, color: Colors.white.withValues(alpha: 0.7)),
                     ],
                   ],
                 ),

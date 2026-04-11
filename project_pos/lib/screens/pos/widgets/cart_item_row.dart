@@ -29,8 +29,8 @@ class CartItemRow extends ConsumerWidget {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 16),
-        color: AppColors.danger.withOpacity(0.1),
-        child: const Icon(Icons.delete_outline, color: AppColors.danger),
+        color: AppColors.danger.withValues(alpha: 0.1),
+        child: const Icon(Icons.delete_outline, color: AppColors.bgDanger,
       ),
       onDismissed: (_) => onRemove(),
       child: Padding(
@@ -192,7 +192,7 @@ class CartItemRow extends ConsumerWidget {
                     height: 14,
                     child: CircularProgressIndicator(
                       strokeWidth: 1.5,
-                      valueColor: AlwaysStoppedAnimation(AppColors.info),
+                      valueColor: AlwaysStoppedAnimation(AppColors.bgInfo,
                     ),
                   )
                 : Icon(

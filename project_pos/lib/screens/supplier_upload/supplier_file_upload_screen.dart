@@ -179,7 +179,7 @@ class _SupplierFileUploadScreenState extends State<SupplierFileUploadScreen> {
                     decoration: BoxDecoration(
                       border: Border.all(
                         color: _selectedFile != null
-                            ? Colors.green
+                            ? AppColors.success
                             : Colors.grey[300]!,
                         width: 2,
                       ),
@@ -212,7 +212,7 @@ class _SupplierFileUploadScreenState extends State<SupplierFileUploadScreen> {
                           Icon(
                             Icons.insert_drive_file,
                             size: 48,
-                            color: Colors.green[600],
+                            color: AppColors.success[600],
                           ),
                           const SizedBox(height: 8),
                           Text(

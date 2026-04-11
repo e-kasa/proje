@@ -235,7 +235,7 @@ class _AccountStatementScreenState
         borderRadius: AppConstants.borderRadiusMedium,
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
+            color: AppColors.primary.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -246,7 +246,7 @@ class _AccountStatementScreenState
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: AppConstants.borderRadiusSmall,
             ),
             child: const Icon(Icons.account_balance,
@@ -259,7 +259,7 @@ class _AccountStatementScreenState
               Text(
                 'Acilis Bakiyesi',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.85),
+                  color: Colors.white.withValues(alpha: 0.85),
                   fontSize: 13,
                 ),
               ),
@@ -304,7 +304,7 @@ class _AccountStatementScreenState
           scrollDirection: Axis.horizontal,
           child: DataTable(
             headingRowColor:
-                WidgetStateProperty.all(AppColors.primary.withOpacity(0.05)),
+                WidgetStateProperty.all(AppColors.primary.withValues(alpha: 0.05)),
             columnSpacing: 16,
             horizontalMargin: 12,
             headingTextStyle: const TextStyle(
@@ -416,7 +416,7 @@ class _AccountStatementScreenState
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: AppConstants.borderRadiusSmall,
           ),
           child: Icon(icon, color: color, size: 18),

@@ -33,43 +33,27 @@ public class AccountTransactionServiceImpl
     // MAPPER
     // =========================================================================
 
-    private AccountTransactionResponse mapToResponse(AccountTransaction tx) {
-        AccountTransactionResponse.AccountTransactionResponseBuilder builder =
-                AccountTransactionResponse.builder()
-                        .id(tx.getId())
-                        .transactionType(tx.getTransactionType())
-                        .transactionTypeLabel(
-                                tx.getTransactionType() != null
-                                        ? tx.getTransactionType().getDescription()
-                                        : null)
-                        .debitAmount(tx.getDebitAmount())
-                        .creditAmount(tx.getCreditAmount())
-                        .balance(tx.getBalance())
-                        .description(tx.getDescription())
-                        .notes(tx.getNotes())
-                        .referenceId(tx.getReferenceId())
-                        .referenceNumber(tx.getReferenceNumber())
-                        .referenceType(tx.getReferenceType())
-                        .transactionDate(tx.getTransactionDate())
-                        .dueDate(tx.getDueDate())
-                        .isOverdue(tx.getIsOverdue())
-                        .isCancelled(tx.getIsCancelled())
-                        .cancelledDate(tx.getCancelledDate())
-                        .cancelledBy(tx.getCancelledBy());
+    @Override
+    public AccountTransactionResponse toResponse(AccountTransaction tx) {
+        AccountTransactionResponse dto = toDTO(tx);
 
-        // Tedarikçi bilgisi
+        // transactionTypeLabel — enum'dan hesaplanan alan, BeanUtils kopyalamaz
+        dto.setTransactionTypeLabel(
+                tx.getTransactionType() != null ? tx.getTransactionType().getDescription() : null);
+
+        // Tedarikçi FK alanları
         if (tx.getSupplier() != null) {
-            builder.supplierId(tx.getSupplier().getId())
-                   .supplierName(tx.getSupplier().getName());
+            dto.setSupplierId(tx.getSupplier().getId());
+            dto.setSupplierName(tx.getSupplier().getName());
         }
 
-        // Müşteri bilgisi
+        // Müşteri FK alanları
         if (tx.getCustomer() != null) {
-            builder.customerId(tx.getCustomer().getId())
-                   .customerName(tx.getCustomer().getName());
+            dto.setCustomerId(tx.getCustomer().getId());
+            dto.setCustomerName(tx.getCustomer().getName());
         }
 
-        return builder.build();
+        return dto;
     }
 
     // =========================================================================
@@ -82,7 +66,7 @@ public class AccountTransactionServiceImpl
         log.info("Cari hareket getiriliyor: id={}", id);
         AccountTransaction tx = findById(id)
                 .orElseThrow(() -> new RuntimeException("Cari hareket bulunamadi: " + id));
-        return mapToResponse(tx);
+        return toResponse(tx);
     }
 
     @Override
@@ -91,7 +75,7 @@ public class AccountTransactionServiceImpl
         log.info("Tedarikci hareketleri getiriliyor: supplierId={}", supplierId);
         return dao.findBySupplierId(supplierId)
                 .stream()
-                .map(this::mapToResponse)
+                .map(this::toResponse)
                 .toList();
     }
 
@@ -101,7 +85,7 @@ public class AccountTransactionServiceImpl
         log.info("Tedarikci hareketleri (tip filtreli) getiriliyor: supplierId={}, type={}", supplierId, type);
         return dao.findBySupplierIdAndTransactionType(supplierId, type)
                 .stream()
-                .map(this::mapToResponse)
+                .map(this::toResponse)
                 .toList();
     }
 
@@ -111,7 +95,7 @@ public class AccountTransactionServiceImpl
         log.info("Musteri hareketleri getiriliyor: customerId={}", customerId);
         return dao.findByCustomerId(customerId)
                 .stream()
-                .map(this::mapToResponse)
+                .map(this::toResponse)
                 .toList();
     }
 
@@ -121,7 +105,7 @@ public class AccountTransactionServiceImpl
         log.info("Satin alma hareketleri getiriliyor: purchaseId={}", purchaseId);
         return dao.findByPurchaseId(purchaseId)
                 .stream()
-                .map(this::mapToResponse)
+                .map(this::toResponse)
                 .toList();
     }
 
@@ -147,7 +131,7 @@ public class AccountTransactionServiceImpl
         AccountTransaction saved = save(tx);
         log.info("Cari hareket iptal edildi: id={}", saved.getId());
 
-        return mapToResponse(saved);
+        return toResponse(saved);
     }
 
     @Override

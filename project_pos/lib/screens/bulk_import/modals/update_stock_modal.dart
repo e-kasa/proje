@@ -74,7 +74,7 @@ class _UpdateStockModalState extends State<UpdateStockModal> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.warning.withOpacity(0.1),
+                    color: AppColors.warning.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(Icons.inventory, color: AppColors.warning, size: 32),
@@ -176,18 +176,18 @@ class _UpdateStockModalState extends State<UpdateStockModal> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.success.withOpacity(0.1),
-                    AppColors.success.withOpacity(0.05),
+                    AppColors.success.withValues(alpha: 0.1),
+                    AppColors.success.withValues(alpha: 0.05),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.check_circle, color: AppColors.success),
+                  Icon(Icons.check_circle, color: AppColors.bgSuccess,
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -199,7 +199,7 @@ class _UpdateStockModalState extends State<UpdateStockModal> {
                           _updateMode == StockUpdateMode.ADD
                               ? '$currentStock + $newStock = $resultStock adet'
                               : '$currentStock → $resultStock adet',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.success),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.bgSuccess,
                         ),
                       ],
                     ),

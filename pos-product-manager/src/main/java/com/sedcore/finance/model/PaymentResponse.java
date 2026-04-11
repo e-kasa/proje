@@ -1,6 +1,7 @@
 package com.sedcore.finance.model;
 
 import com.sedcore.common.enums.PaymentType;
+import com.towpen.base.restservice.model.DtoBaseModel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,7 +17,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaymentResponse {
+public class PaymentResponse extends DtoBaseModel {
 
     private String id;
 

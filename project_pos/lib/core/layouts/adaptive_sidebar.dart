@@ -69,7 +69,7 @@ class AdaptiveSidebar extends ConsumerWidget {
               borderRadius: BorderRadius.circular(9),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.3),
+                  color: AppColors.primary.withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 3),
                 ),
@@ -318,7 +318,7 @@ class _SidebarNavItemState extends State<_SidebarNavItem> {
           ),
           decoration: BoxDecoration(
             color: isSelected
-                ? AppColors.primary.withOpacity(0.1)
+                ? AppColors.primary.withValues(alpha: 0.1)
                 : _hovered
                     ? AppColors.bgLight
                     : Colors.transparent,

@@ -25,7 +25,7 @@ Widget buildFormField({
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: (iconColor ?? AppColors.primary).withOpacity(0.10),
+                color: (iconColor ?? AppColors.primary).withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Icon(
@@ -96,7 +96,7 @@ InputDecoration inputDecoration(String hint, {bool isDense = false}) {
     focusedBorder: OutlineInputBorder(
       borderRadius: radius,
       borderSide: BorderSide(
-        color: AppColors.primary.withOpacity(0.8),
+        color: AppColors.primary.withValues(alpha: 0.8),
         width: 2,
       ),
     ),
@@ -119,7 +119,7 @@ InputDecoration inputDecoration(String hint, {bool isDense = false}) {
     ),
     hintStyle: TextStyle(
       fontSize: 13,
-      color: AppColors.textMuted.withOpacity(0.7),
+      color: AppColors.textMuted.withValues(alpha: 0.7),
     ),
   );
 }
@@ -142,15 +142,15 @@ Widget buildStatCard(
     clipBehavior: Clip.antiAlias,
     decoration: BoxDecoration(
       gradient: LinearGradient(
-        colors: [color.withOpacity(0.10), color.withOpacity(0.03)],
+        colors: [color.withValues(alpha: 0.10), color.withValues(alpha: 0.03)],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
       borderRadius: BorderRadius.circular(isMobile ? 6 : 8),
-      border: Border.all(color: color.withOpacity(0.25), width: 1),
+      border: Border.all(color: color.withValues(alpha: 0.25), width: 1),
       boxShadow: [
         BoxShadow(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           blurRadius: isMobile ? 3 : 4,
           offset: const Offset(0, 1),
         ),
@@ -166,7 +166,7 @@ Widget buildStatCard(
             child: Icon(
               icon,
               size: isMobile ? 28 : 36,
-              color: color.withOpacity(0.07),
+              color: color.withValues(alpha: 0.07),
             ),
           ),
         // Icerik
@@ -178,7 +178,7 @@ Widget buildStatCard(
                 Icon(
                   icon,
                   size: isMobile ? 12 : 16,
-                  color: color.withOpacity(0.7),
+                  color: color.withValues(alpha: 0.7),
                 ),
                 SizedBox(height: isMobile ? 1 : 2),
               ],
@@ -199,7 +199,7 @@ Widget buildStatCard(
                 cleanLabel,
                 style: TextStyle(
                   fontSize: isMobile ? 7 : 8,
-                  color: color.withOpacity(0.8),
+                  color: color.withValues(alpha: 0.8),
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.2,
                 ),
@@ -259,18 +259,18 @@ Widget buildSummaryCard(
     clipBehavior: Clip.antiAlias,
     decoration: BoxDecoration(
       gradient: LinearGradient(
-        colors: [color, color.withOpacity(0.75)],
+        colors: [color, color.withValues(alpha: 0.75)],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
       borderRadius: BorderRadius.circular(isMobile ? 6 : 8),
       border: Border.all(
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.white.withValues(alpha: 0.2),
         width: 1,
       ),
       boxShadow: [
         BoxShadow(
-          color: color.withOpacity(0.25),
+          color: color.withValues(alpha: 0.25),
           blurRadius: isMobile ? 4 : 6,
           offset: const Offset(0, 2),
         ),
@@ -286,7 +286,7 @@ Widget buildSummaryCard(
             child: Icon(
               icon,
               size: isMobile ? 28 : 36,
-              color: Colors.white.withOpacity(0.12),
+              color: Colors.white.withValues(alpha: 0.12),
             ),
           ),
         // Icerik
@@ -298,7 +298,7 @@ Widget buildSummaryCard(
                 Icon(
                   icon,
                   size: isMobile ? 10 : 14,
-                  color: Colors.white.withOpacity(0.85),
+                  color: Colors.white.withValues(alpha: 0.85),
                 ),
                 SizedBox(height: isMobile ? 1 : 2),
               ],
@@ -321,7 +321,7 @@ Widget buildSummaryCard(
                 child: Text(
                   label,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     fontSize: isMobile ? 7 : 8,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.1,
@@ -392,7 +392,7 @@ Widget buildInfoCard(
           : null,
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.05),
+          color: Colors.black.withValues(alpha: 0.05),
           blurRadius: isMobile ? 6 : 10,
           offset: const Offset(0, 2),
         ),
@@ -533,7 +533,7 @@ class _CopyableValueState extends State<_CopyableValue> {
               size: 14,
               color: _copied
                   ? AppColors.success
-                  : AppColors.textMuted.withOpacity(0.6),
+                  : AppColors.textMuted.withValues(alpha: 0.6),
             ),
           ),
         ],

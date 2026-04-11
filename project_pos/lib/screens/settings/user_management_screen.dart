@@ -378,9 +378,9 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
 
   Color _getRoleBadgeColor(String roleName) {
     final lower = roleName.toLowerCase();
-    if (lower.contains('yönetici') || lower.contains('admin')) return Colors.purple;
+    if (lower.contains('yönetici') || lower.contains('admin')) return AppColors.secondary;
     if (lower.contains('kasiyer') || lower.contains('cashier')) return AppColors.success;
-    if (lower.contains('depo') || lower.contains('warehouse')) return Colors.orange;
+    if (lower.contains('depo') || lower.contains('warehouse')) return AppColors.warning;
     if (lower.contains('mağaza') || lower.contains('store')) return AppColors.primary;
     return AppColors.info;
   }

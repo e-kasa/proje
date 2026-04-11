@@ -52,7 +52,7 @@ class _RecommendationSheet extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.info.withOpacity(0.12),
+                    color: AppColors.info.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(Icons.lightbulb_rounded, color: AppColors.info, size: 22),
@@ -104,7 +104,7 @@ class _RecommendationSheet extends ConsumerWidget {
                     },
                     icon: const Icon(Icons.add_shopping_cart, size: 16),
                     label: const Text('Tümünü Ekle'),
-                    style: TextButton.styleFrom(foregroundColor: AppColors.success),
+                    style: TextButton.styleFrom(foregroundColor: AppColors.bgSuccess,
                   ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
@@ -227,13 +227,13 @@ class _RecCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: alreadyInCart ? AppColors.bgLight : Colors.white,
           border: Border.all(
-            color: alreadyInCart ? AppColors.border : badge.color.withOpacity(0.4),
+            color: alreadyInCart ? AppColors.border : badge.color.withValues(alpha: 0.4),
             width: 1.5,
           ),
           borderRadius: BorderRadius.circular(12),
           boxShadow: alreadyInCart
               ? []
-              : [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 6, offset: const Offset(0, 2))],
+              : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6, offset: const Offset(0, 2))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,7 +243,7 @@ class _RecCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: badge.color.withOpacity(0.12),
+                color: badge.color.withValues(alpha: 0.12),
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
               ),
               child: Row(
@@ -351,8 +351,8 @@ class _RecCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 8),
               decoration: BoxDecoration(
                 color: alreadyInCart
-                    ? AppColors.border.withOpacity(0.3)
-                    : AppColors.success.withOpacity(0.1),
+                    ? AppColors.border.withValues(alpha: 0.3)
+                    : AppColors.success.withValues(alpha: 0.1),
                 borderRadius: const BorderRadius.vertical(bottom: Radius.circular(11)),
               ),
               child: Row(

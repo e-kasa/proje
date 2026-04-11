@@ -157,7 +157,7 @@ class _AccountSummaryDashboardScreenState
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: startColor.withOpacity(0.3),
+            color: startColor.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -170,7 +170,7 @@ class _AccountSummaryDashboardScreenState
         children: [
           Row(
             children: [
-              Icon(icon, color: Colors.white.withOpacity(0.9), size: 22),
+              Icon(icon, color: Colors.white.withValues(alpha: 0.9), size: 22),
               const Spacer(),
             ],
           ),
@@ -189,7 +189,7 @@ class _AccountSummaryDashboardScreenState
           Text(
             title,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.85),
+              color: Colors.white.withValues(alpha: 0.85),
               fontSize: 11,
               fontWeight: FontWeight.w500,
             ),
@@ -260,7 +260,7 @@ class _AccountSummaryDashboardScreenState
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: color, size: 20),
@@ -342,7 +342,7 @@ class _AccountSummaryDashboardScreenState
             radius: 20,
             backgroundColor:
                 (isCustomer ? AppColors.info : AppColors.orange)
-                    .withOpacity(0.1),
+                    .withValues(alpha: 0.1),
             child: Icon(
               isCustomer ? Icons.person : Icons.business,
               color: isCustomer ? AppColors.info : AppColors.orange,
@@ -371,7 +371,7 @@ class _AccountSummaryDashboardScreenState
                         color: (isCustomer
                                 ? AppColors.info
                                 : AppColors.orange)
-                            .withOpacity(0.1),
+                            .withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(

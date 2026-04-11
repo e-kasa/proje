@@ -132,7 +132,7 @@ class RightMenuDrawer extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.primary.withOpacity(0.85)],
+          colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.85)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -226,7 +226,7 @@ class RightMenuDrawer extends ConsumerWidget {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 1),
       decoration: BoxDecoration(
-        color: isActive ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+        color: isActive ? AppColors.primary.withValues(alpha: 0.1) : Colors.transparent,
         borderRadius: BorderRadius.circular(10),
       ),
       child: ListTile(
@@ -273,7 +273,7 @@ class RightMenuDrawer extends ConsumerWidget {
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
-          side: BorderSide(color: AppColors.danger.withOpacity(0.3)),
+          side: BorderSide(color: AppColors.danger.withValues(alpha: 0.3)),
         ),
         onTap: () async {
           Navigator.of(context).pop();

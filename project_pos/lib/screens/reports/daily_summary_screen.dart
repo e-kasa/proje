@@ -140,7 +140,7 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
                   if (isToday)
                     const Text('Bugun',
                         style: TextStyle(
-                            fontSize: 12, color: AppColors.success)),
+                            fontSize: 12, color: AppColors.bgSuccess),
                 ],
               ),
             ),
@@ -197,7 +197,7 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: AppConstants.borderRadiusSmall,
             ),
             child: Icon(icon, size: 18, color: color),
@@ -260,7 +260,7 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: (info['color'] as Color).withOpacity(0.1),
+                    color: (info['color'] as Color).withValues(alpha: 0.1),
                     borderRadius: AppConstants.borderRadiusSmall,
                   ),
                   child: Icon(info['icon'] as IconData,
@@ -336,7 +336,7 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: idx < 3
-                          ? AppColors.warning.withOpacity(0.15)
+                          ? AppColors.warning.withValues(alpha: 0.15)
                           : AppColors.bgLight,
                       borderRadius: AppConstants.borderRadiusSmall,
                     ),
@@ -428,7 +428,7 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
                       style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.success)),
+                          color: AppColors.bgSuccess),
                 ]),
               );
             }),

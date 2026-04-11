@@ -241,7 +241,7 @@ class _StockMovementHistoryScreenState
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -276,9 +276,9 @@ class _StockMovementHistoryScreenState
                 children: [
                   _buildFilterChip(t('common.all'), 'all', null),
                   const SizedBox(width: 8),
-                  _buildFilterChip(t('stock.incoming'), 'in', AppColors.success),
+                  _buildFilterChip(t('stock.incoming'), 'in', AppColors.bgSuccess,
                   const SizedBox(width: 8),
-                  _buildFilterChip(t('stock.outgoing'), 'out', AppColors.danger),
+                  _buildFilterChip(t('stock.outgoing'), 'out', AppColors.bgDanger,
                 ],
               ),
             ),
@@ -300,7 +300,7 @@ class _StockMovementHistoryScreenState
                             const SizedBox(height: 12),
                             Text(
                               _error!,
-                              style: const TextStyle(color: AppColors.danger),
+                              style: const TextStyle(color: AppColors.bgDanger,
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 16),
@@ -382,7 +382,7 @@ class _StockMovementHistoryScreenState
           border: Border.all(color: AppColors.border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withValues(alpha: 0.03),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -396,7 +396,7 @@ class _StockMovementHistoryScreenState
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: badgeColor.withOpacity(0.1),
+                color: badgeColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
@@ -438,7 +438,7 @@ class _StockMovementHistoryScreenState
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: badgeColor.withOpacity(0.15),
+                          color: badgeColor.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(

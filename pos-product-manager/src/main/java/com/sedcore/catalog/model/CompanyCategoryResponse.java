@@ -1,13 +1,18 @@
 package com.sedcore.catalog.model;
 
+import com.towpen.base.restservice.model.DtoBaseModel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Data
 @Builder
-public class CompanyCategoryResponse {
+@NoArgsConstructor
+@AllArgsConstructor
+public class CompanyCategoryResponse extends DtoBaseModel {
 
     private String id;
     private String companyCode;

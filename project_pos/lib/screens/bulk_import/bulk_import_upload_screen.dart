@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -204,8 +204,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgLight,
+    return AppScaffold(
       appBar: AppAppBar.standard(
         title: 'Toplu Ürün Yükleme',
         actions: [

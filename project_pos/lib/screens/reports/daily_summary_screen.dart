@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
@@ -69,8 +69,7 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgLight,
+    return AppScaffold(
       appBar: AppAppBar.standard(
         title: 'Gunluk Ozet',
         actions: [

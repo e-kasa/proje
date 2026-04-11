@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -63,7 +63,6 @@ class _StockAlertScreenState extends ConsumerState<StockAlertScreen> {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        backgroundColor: AppColors.bgLight,
         appBar: AppAppBar.standard(
           title: t('stock.alerts'),
           bottom: TabBar(

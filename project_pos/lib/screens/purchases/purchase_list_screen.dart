@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -133,8 +133,7 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
     final state = ref.watch(purchaseListProvider);
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+    return AppScaffold(
       appBar: AppAppBar.standard(
         title: 'Satın Alma',
         actions: [
@@ -152,7 +151,6 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
         },
         icon: const Icon(Icons.add),
         label: const Text('Yeni Alım'),
-        backgroundColor: AppColors.primary,
       ),
       body: Column(
         children: [

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/widgets/widgets.dart';
 import '../../core/theme/app_constants.dart';
@@ -154,8 +154,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
   Widget build(BuildContext context) {
     final isEdit = widget.customer != null || widget.customerId != null;
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+    return AppScaffold(
       appBar: AppAppBar.primary(title: isEdit ? 'Müşteri Düzenle' : 'Yeni Müşteri'),
       body: _isLoading && isEdit && widget.customer == null
           ? const Center(child: CircularProgressIndicator())

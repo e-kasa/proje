@@ -1,31 +1,35 @@
-// src/services/core/axiosClient.ts
+// src/core/axiosClient/index.ts
+// Two separate clients:
+//   securityApi  → http://localhost:8000  (authentication)
+//   productApi   → http://localhost:8001  (product manager)
 
-import axios from "axios";
+import axios, { type AxiosInstance } from "axios";
 import { logout, setCredentials } from "../redux/authSlice.ts";
 import store from "../redux/store.tsx";
 
+class HttpClient {
+    private instance: AxiosInstance;
 
-
-export class HttpClient {
-
-    
-    private instance = axios.create({
-        baseURL: 'http://localhost:8080/',
-        timeout: 15000,
-    });
-
-    constructor() {
+    constructor(baseURL: string) {
+        this.instance = axios.create({
+            baseURL,
+            timeout: 15000,
+        });
         this.requestInterceptor();
         this.responseInterceptor();
     }
 
     private requestInterceptor() {
         this.instance.interceptors.request.use((config) => {
-            const token = store.getState().auth.token;
+            const state = store.getState();
+            const token = state.auth.token;
+            const companyCode = state.auth.companyCode ?? localStorage.getItem("companyCode") ?? "syste";
 
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
             }
+            config.headers["X-Company-Code"] = companyCode;
+
             return config;
         });
     }
@@ -33,12 +37,9 @@ export class HttpClient {
     private responseInterceptor() {
         this.instance.interceptors.response.use(
             (response) => {
-                // ✅ ApiResponse wrapper'ı otomatik aç
-                if (response.data && typeof response.data === 'object' && 'data' in response.data) {
-                    return {
-                        ...response,
-                        data: response.data.data, // ApiResponse.data'yı direkt döndür
-                    };
+                // Unwrap ApiResponse wrapper automatically
+                if (response.data && typeof response.data === "object" && "data" in response.data) {
+                    return { ...response, data: response.data.data };
                 }
                 return response;
             },
@@ -55,24 +56,15 @@ export class HttpClient {
 
                 if (error.response.status === 401 && !originalRequest._retry) {
                     originalRequest._retry = true;
-
                     try {
-                        const res = await axios.post(
-                            import.meta.env.VITE_API_URL + "/auth/refresh"
-                        );
-
+                        const res = await axios.post("http://localhost:8000/auth/refresh");
                         const newToken = res.data.accessToken || res.data.token;
-
-                        store.dispatch(
-                            setCredentials({ accessToken: newToken, user: null })
-                        );
-
+                        store.dispatch(setCredentials({ accessToken: newToken, user: null }));
                         originalRequest.headers.Authorization = "Bearer " + newToken;
                         return this.instance(originalRequest);
                     } catch (refreshError) {
                         console.error("❌ Refresh Token Failed:", refreshError);
                         store.dispatch(logout());
-                        
                         return Promise.reject({
                             message: "Oturum süreniz doldu. Lütfen tekrar giriş yapın.",
                             code: "TOKEN_EXPIRED",
@@ -80,98 +72,75 @@ export class HttpClient {
                     }
                 }
 
-                return Promise.reject(error);
+                return Promise.reject(this.handleError(error));
             }
         );
     }
 
-    get = async <T>(url: string, params?: any): Promise<T> => {
-        const response = await this.instance.get<T>(url, {
-            params
-        });
+    get = async <T>(url: string, params?: Record<string, unknown>): Promise<T> => {
+        const response = await this.instance.get<T>(url, { params });
         return response.data;
     };
 
-
-    post = async <T>(url: string, data?: any): Promise<T> => {
-        try {
-            const response = await this.instance.post<T>(url, data, {
-            });
-            return response.data;
-        } catch (error) {
-            throw this.handleError(error);
-        }
+    post = async <T>(url: string, data?: unknown): Promise<T> => {
+        const response = await this.instance.post<T>(url, data);
+        return response.data;
     };
 
-    put = async <T>(url: string, data?: any): Promise<T> => {
-        try {
-            const response = await this.instance.put<T>(url, data);
-            return response.data;
-        } catch (error) {
-            throw this.handleError(error);
-        }
+    put = async <T>(url: string, data?: unknown): Promise<T> => {
+        const response = await this.instance.put<T>(url, data);
+        return response.data;
     };
 
     delete = async <T = void>(url: string): Promise<T> => {
-        try {
-            const response = await this.instance.delete<T>(url);
-            return response.data;
-        } catch (error) {
-            throw this.handleError(error);
-        }
+        const response = await this.instance.delete<T>(url);
+        return response.data;
     };
 
-    private handleError(error: any) {
-        if (!error.response) {
+    private handleError(error: unknown) {
+        const err = error as { response?: { status: number; data?: { message?: string; error?: string; errorMessage?: string; code?: string } }; message?: string };
+
+        if (!err.response) {
             return {
-                message: error.message || "Bağlantı hatası. Sunucuya ulaşılamıyor.",
+                message: err.message || "Bağlantı hatası. Sunucuya ulaşılamıyor.",
                 code: "NETWORK_ERROR",
                 status: 0,
             };
         }
 
-        const status = error.response.status;
-        const data = error.response.data;
-
-        const message =
-            data?.message ||
-            data?.error ||
-            data?.errorMessage ||
-            this.getDefaultErrorMessage(status);
+        const status = err.response.status;
+        const data = err.response.data;
+        const message = data?.message ?? data?.error ?? data?.errorMessage ?? this.getDefaultErrorMessage(status);
 
         return {
             message,
             status,
-            code: data?.code || `HTTP_${status}`,
-            data: data,
-            response: error.response,
+            code: data?.code ?? `HTTP_${status}`,
+            data,
         };
     }
 
     private getDefaultErrorMessage(status: number): string {
-        switch (status) {
-            case 400:
-                return "Geçersiz istek. Lütfen bilgilerinizi kontrol edin.";
-            case 401:
-                return "Oturum süreniz doldu. Lütfen tekrar giriş yapın.";
-            case 403:
-                return "Bu işlem için yetkiniz yok.";
-            case 404:
-                return "İstenen kaynak bulunamadı.";
-            case 409:
-                return "Bu kayıt zaten mevcut.";
-            case 422:
-                return "Girilen bilgiler geçersiz.";
-            case 500:
-                return "Sunucu hatası. Lütfen daha sonra tekrar deneyin.";
-            case 502:
-                return "Sunucu geçici olarak kullanılamıyor.";
-            case 503:
-                return "Servis şu anda bakımda.";
-            default:
-                return "Bir hata oluştu. Lütfen tekrar deneyin.";
-        }
+        const messages: Record<number, string> = {
+            400: "Geçersiz istek. Lütfen bilgilerinizi kontrol edin.",
+            401: "Oturum süreniz doldu. Lütfen tekrar giriş yapın.",
+            403: "Bu işlem için yetkiniz yok.",
+            404: "İstenen kaynak bulunamadı.",
+            409: "Bu kayıt zaten mevcut.",
+            422: "Girilen bilgiler geçersiz.",
+            500: "Sunucu hatası. Lütfen daha sonra tekrar deneyin.",
+            502: "Sunucu geçici olarak kullanılamıyor.",
+            503: "Servis şu anda bakımda.",
+        };
+        return messages[status] ?? "Bir hata oluştu. Lütfen tekrar deneyin.";
     }
 }
 
-export const api = new HttpClient();
+// Security service (authentication) → port 8000
+export const securityApi = new HttpClient("http://localhost:8000/");
+
+// Product manager service → port 8001
+export const productApi = new HttpClient("http://localhost:8001/");
+
+// Default export for backward compatibility (points to product manager)
+export const api = productApi;

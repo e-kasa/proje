@@ -7,7 +7,6 @@
 -- ================================================
 -- INVENTORY VIEW
 -- ================================================
-DROP TABLE IF EXISTS inventory_view;
 DROP VIEW IF EXISTS inventory_view;
 CREATE VIEW inventory_view AS
 SELECT

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -92,8 +92,7 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+    return AppScaffold(
       appBar: AppAppBar.standard(
         title: 'Kar/Zarar Ozeti',
         actions: [

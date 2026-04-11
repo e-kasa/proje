@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -116,8 +116,7 @@ class _AddIncomeScreenState extends ConsumerState<AddIncomeScreen> {
   @override
   Widget build(BuildContext context) {
     final t = i18nOf(ref);
-    return Scaffold(
-      backgroundColor: AppColors.bgLight,
+    return AppScaffold(
       appBar: AppAppBar.standard(title: t('finance.add_income')),
       body: SingleChildScrollView(
         padding: AppConstants.pagePadding,

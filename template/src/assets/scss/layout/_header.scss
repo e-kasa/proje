@@ -2,8 +2,8 @@
 @use "../utils/variables";
 
 .header {
-    background: variables.$white;
-    border-bottom: 1px solid variables.$border-color;
+    background: variables.$primary-gradient;
+    border-bottom: none;
     height: 65px;
     z-index: 999;
     @include mixins.position(fixed,0,0,null,0);

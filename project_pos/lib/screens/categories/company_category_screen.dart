@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../services/company_category_service.dart';
@@ -218,8 +218,7 @@ class _CompanyCategoryScreenState extends ConsumerState<CompanyCategoryScreen> {
     final state = ref.watch(companyCategoryProvider);
     final notifier = ref.read(companyCategoryProvider.notifier);
 
-    return Scaffold(
-      backgroundColor: AppColors.bgLight,
+    return AppScaffold(
       appBar: _buildAppBar(state, notifier),
       body: _buildBody(state, notifier),
       bottomNavigationBar: _buildBottomBar(state, notifier),
@@ -231,10 +230,18 @@ class _CompanyCategoryScreenState extends ConsumerState<CompanyCategoryScreen> {
   // ----------------------------------------------------------
   AppBar _buildAppBar(CompanyCategoryState state, CompanyCategoryNotifier notifier) {
     return AppBar(
-      title: const Text('Kategori Tanımla'),
-      backgroundColor: AppColors.primary,
+      title: const Text('Kategori Tanımla', style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
       foregroundColor: Colors.white,
       elevation: 0,
+      surfaceTintColor: Colors.transparent,
+      iconTheme: const IconThemeData(color: Colors.white),
+      actionsIconTheme: const IconThemeData(color: Colors.white),
+      flexibleSpace: Container(
+        decoration: const BoxDecoration(gradient: LinearGradient(
+          colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+        )),
+      ),
       actions: [
         if (!state.isLoading) ...[
           TextButton.icon(

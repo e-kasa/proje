@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/stock_management_models.dart';
 import '../../services/service_locator.dart';
@@ -81,19 +81,16 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
   Widget build(BuildContext context) {
     final t = i18nOf(ref);
     if (_isLoading) {
-      return Scaffold(
-        backgroundColor: AppColors.bgLight,
+      return AppScaffold(
         body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (_error != null || _response == null) {
-      return Scaffold(
-        backgroundColor: AppColors.bgLight,
+      return AppScaffold(
         body: Center(child: Text(t('stock.data_load_failed'))),
       );
     }
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
+    return AppScaffold(
       appBar: AppAppBar.standard(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -218,7 +215,6 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                   });
                 },
                 selectedColor: Colors.blue[700],
-                backgroundColor: Colors.grey[200],
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
@@ -266,7 +262,6 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
               value: progress,
-              backgroundColor: Colors.grey[200],
               valueColor: AlwaysStoppedAnimation<Color>(Colors.blue[700]!),
               minHeight: 8,
             ),

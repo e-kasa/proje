@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -204,8 +204,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
     final theme = Theme.of(context);
     final t = i18nOf(ref);
 
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+    return AppScaffold(
       appBar: AppAppBar.standard(
         title: t('sales.title'),
         actions: [
@@ -223,7 +222,6 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
         },
         icon: const Icon(Icons.add),
         label: Text(t('sales.new_sale')),
-        backgroundColor: AppColors.primary,
       ),
       body: Column(
         children: [

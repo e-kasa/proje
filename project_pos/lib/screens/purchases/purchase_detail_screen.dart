@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -126,8 +126,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
     final theme = Theme.of(context);
     final cancelled = _purchase['isCancelled'] == true;
 
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+    return AppScaffold(
       appBar: AppAppBar.standard(
         title: _isEditing ? 'Satın Alma Düzenle' : 'Satın Alma Detayı',
         leading: IconButton(
@@ -547,7 +546,6 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
             child: LinearProgressIndicator(
               value: total > 0 ? (paid / total).clamp(0.0, 1.0) : 0,
               minHeight: 8,
-              backgroundColor: Colors.grey.withOpacity(0.15),
               valueColor: AlwaysStoppedAnimation<Color>(
                 remaining > 0 ? Colors.orange : Colors.green,
               ),

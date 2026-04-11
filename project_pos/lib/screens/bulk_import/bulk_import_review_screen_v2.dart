@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
@@ -1223,8 +1223,7 @@ class _BulkImportReviewScreenV2State extends State<BulkImportReviewScreenV2> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgLight,
+    return AppScaffold(
       appBar: AppAppBar.standard(
         title: 'Toplu Ürün Yükleme - İnceleme (${_sectorLabel})',
         actions: [

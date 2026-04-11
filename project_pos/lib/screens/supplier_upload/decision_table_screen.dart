@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../core/widgets/widgets.dart';
 
 /// EKRAN 4: Karar Ver (Ana Ekran - Tablo Görünümü)
@@ -201,7 +201,7 @@ class _DecisionTableScreenState extends State<DecisionTableScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AppScaffold(
       appBar: AppAppBar.standard(
         title: '📋 Tedarikçi: ${widget.supplierName}',
         elevation: 0,

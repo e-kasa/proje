@@ -5,7 +5,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/widgets.dart';
 import '../providers/pos_provider.dart';
 import 'cart_item_row.dart';
-import 'recommendation_panel.dart';
 
 class CartPanel extends ConsumerWidget {
   final VoidCallback onPaymentPressed;
@@ -38,7 +37,6 @@ class CartPanel extends ConsumerWidget {
           _buildHeader(context, notifier, posState),
           _buildCustomerSection(context, notifier, posState),
           Expanded(child: _buildItemList(posState, notifier)),
-          const RecommendationPanel(),
           _buildSummary(posState),
           _buildActionButtons(posState),
         ],

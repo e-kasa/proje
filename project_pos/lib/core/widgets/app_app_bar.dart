@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
+import 'package:flutter/services.dart';
 import '../theme/app_gradients.dart';
 
 enum AppBarVariant { standard, primary, gradient }
@@ -101,36 +101,17 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     switch (variant) {
       case AppBarVariant.standard:
-        return AppBar(
-          title: Text(title),
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          foregroundColor: AppColors.textPrimary,
-          elevation: elevation ?? 0,
-          surfaceTintColor: Colors.transparent,
-          leading: leading,
-          automaticallyImplyLeading: automaticallyImplyLeading,
-          actions: actions,
-          bottom: bottom,
-          centerTitle: centerTitle,
-        );
-
       case AppBarVariant.primary:
-        return AppBar(
-          title: Text(title),
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          elevation: elevation ?? 0,
-          surfaceTintColor: Colors.transparent,
-          leading: leading,
-          automaticallyImplyLeading: automaticallyImplyLeading,
-          actions: actions,
-          bottom: bottom,
-          centerTitle: centerTitle,
-        );
-
       case AppBarVariant.gradient:
         return AppBar(
-          title: Text(title),
+          title: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
           foregroundColor: Colors.white,
           elevation: elevation ?? 0,
           surfaceTintColor: Colors.transparent,
@@ -139,6 +120,12 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
           actions: actions,
           bottom: bottom,
           centerTitle: centerTitle,
+          iconTheme: const IconThemeData(color: Colors.white),
+          actionsIconTheme: const IconThemeData(color: Colors.white),
+          systemOverlayStyle: const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.light,
+          ),
           flexibleSpace: Container(
             decoration: const BoxDecoration(
               gradient: AppGradients.primaryGradient,

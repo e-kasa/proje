@@ -17,8 +17,8 @@ $font-family-secondary: "Poppins", sans-serif;
 $font-awesome: "Fontawesome";
 	
 // Theme Colors Variables
-$primary: #FE9F43;
-$primary-hover: color.adjust($primary, $lightness: -10%);
+$primary: #667eea;
+$primary-hover: #5568d3;
 $secondary: #092C4C;
 $secondary-hover: color.adjust($secondary, $lightness: -10%);
 $success: #3EB780;
@@ -44,16 +44,16 @@ $green: #1dd871;
 $yellow: #ffff00;
 $blue: #3577f1;
 
-// Primary
-$primary-100: #FFF6EE;
-$primary-200: #FFEDDD;
-$primary-300: #FFE3CB;
-$primary-400: #FFDABA;
-$primary-500: #FFD0A8;
-$primary-600: #FFC796;
-$primary-700: #FFBD84;
-$primary-800: #FFB370;
-$primary-900: #FFA95B;
+// Primary (blue-purple tints matching Flutter #667eea)
+$primary-100: #eef0fd;
+$primary-200: #dde1fb;
+$primary-300: #ccd2f9;
+$primary-400: #bbc3f7;
+$primary-500: #aab4f5;
+$primary-600: #99a5f2;
+$primary-700: #8896f0;
+$primary-800: #7787ee;
+$primary-900: #6678ec;
 
 // Secondary
 $secondary-100: #E4E8EC;
@@ -284,7 +284,7 @@ $gplus: #DD4B39;
 $appstore: #000;
 
 // Gradient Variables
-$primary-transparent: #FFF6EE;
+$primary-transparent: #eef0fd;
 $secondary-transparent: #E6EAED;
 $success-transparent: #ECFAF2;
 $warning-transparent: #FFFAEA;
@@ -298,7 +298,7 @@ $pink-transparent: #FCEBF5;
 $cyan-transparent: #E9F8FB;
 $indigo-transparent: #EDEDFB;
 $orange-transparent: #FCEFEA;
-$primary-gradient: linear-gradient(to right, $primary 0%, #8e77fa 100%);
+$primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 $secondary-gradient: linear-gradient(to right, $secondary 0%, #28b7f9 100%);
 $success-gradient: linear-gradient(to right,$success 0%, #5cf9e2 100%);
 $warning-gradient: linear-gradient(to right, $warning 0%, #fbc434 100%);
@@ -339,7 +339,7 @@ $rounded-pill: 1.5rem;
 $box-shadow: 0px 4px 60px 0px rgba(231, 231, 231, 0.47);
 $box-shadow-sm: 0px 4px 60px 0px rgba(190, 190, 190, 0.27);
 $box-shadow-lg: 0 5px 10px rgba(30, 32, 37, 0.12);
-$box-shadow-primary: 0px 4px 10px 0px rgba(254, 159, 67, 0.3);
+$box-shadow-primary: 0px 4px 10px 0px rgba(102, 126, 234, 0.3);
 
 // Font Size
 $font-size-8: 8px;

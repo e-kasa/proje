@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import '../providers/pos_provider.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'recommendation_bottom_sheet.dart';
 
-class CartItemRow extends StatelessWidget {
+class CartItemRow extends ConsumerWidget {
   final CartItem item;
   final VoidCallback onRemove;
   final ValueChanged<int> onQuantityChanged;
@@ -18,7 +20,9 @@ class CartItemRow extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recCount = ref.watch(posProvider.select((s) => s.recommendations.length));
+    final isLoadingRecs = ref.watch(posProvider.select((s) => s.isLoadingRecommendations));
     return Dismissible(
       key: ValueKey(item.productId),
       direction: DismissDirection.endToStart,
@@ -98,7 +102,7 @@ class CartItemRow extends StatelessWidget {
                       decoration: TextDecoration.lineThrough,
                     ),
                   ),
-                // İndirim/Silme butonları
+                // İndirim / Öneri / Silme butonları
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -107,6 +111,8 @@ class CartItemRow extends StatelessWidget {
                       color: AppColors.warning,
                       onTap: () => _showDiscountDialog(context),
                     ),
+                    const SizedBox(width: 4),
+                    _buildRecommendationButton(context, recCount, isLoadingRecs),
                     const SizedBox(width: 4),
                     _buildMiniButton(
                       icon: Icons.close,
@@ -168,6 +174,58 @@ class CartItemRow extends StatelessWidget {
         padding: const EdgeInsets.all(6),
         child: Icon(icon, size: 16, color: AppColors.primary),
       ),
+    );
+  }
+
+  Widget _buildRecommendationButton(BuildContext context, int count, bool loading) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        InkWell(
+          onTap: () => showRecommendationBottomSheet(context),
+          borderRadius: BorderRadius.circular(4),
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: loading
+                ? SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.5,
+                      valueColor: AlwaysStoppedAnimation(AppColors.info),
+                    ),
+                  )
+                : Icon(
+                    Icons.lightbulb_rounded,
+                    size: 14,
+                    color: count > 0 ? AppColors.info : AppColors.border,
+                  ),
+          ),
+        ),
+        if (count > 0)
+          Positioned(
+            top: -2,
+            right: -2,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              constraints: const BoxConstraints(minWidth: 13, minHeight: 13),
+              decoration: BoxDecoration(
+                color: AppColors.info,
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                '$count',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 8,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/supplier_import_models.dart';
 import '../../core/api/api_client.dart';
@@ -144,7 +144,6 @@ class _SupplierImportReviewScreenState
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (context) => _DecisionBottomSheet(
         item: item,
         onDecisionMade: (decision) {
@@ -159,8 +158,7 @@ class _SupplierImportReviewScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
+    return AppScaffold(
       appBar: AppAppBar.standard(
         title: 'Tedarikçi Ürün Kontrolü',
         actions: [
@@ -214,7 +212,6 @@ class _SupplierImportReviewScreenState
                 child: ElevatedButton(
                   onPressed: _decidedCount > 0 ? _handleSave : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -301,7 +298,6 @@ class _SupplierImportReviewScreenState
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 8,
-              backgroundColor: Colors.grey[200],
               valueColor: AlwaysStoppedAnimation<Color>(
                 progress == 1.0 ? Colors.green : Colors.blue,
               ),
@@ -640,7 +636,6 @@ class _SupplierImportReviewScreenState
             icon: const Icon(Icons.add_circle, size: 22),
             label: const Text('Yeni Ürün Oluştur'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
@@ -675,7 +670,6 @@ class _SupplierImportReviewScreenState
       icon: const Icon(Icons.touch_app, size: 22),
       label: Text('Karar Ver (${item.forProduct.length} Seçenek)'),
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 14),
         shape: RoundedRectangleBorder(
@@ -696,7 +690,6 @@ class _SupplierImportReviewScreenState
         tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         childrenPadding: const EdgeInsets.all(12),
         leading: CircleAvatar(
-          backgroundColor: Colors.orange[100],
           child: Icon(Icons.inventory, color: Colors.orange[700], size: 20),
         ),
         title: Text(

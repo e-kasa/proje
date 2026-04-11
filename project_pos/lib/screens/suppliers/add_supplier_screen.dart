@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/widgets/widgets.dart';
 import '../../core/theme/app_constants.dart';
@@ -798,8 +798,7 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
     final isEdit =
         widget.supplier != null || widget.supplierId != null;
 
-    return Scaffold(
-      backgroundColor: AppColors.bgLight,
+    return AppScaffold(
       appBar: AppAppBar.primary(
         title: isEdit ? 'Tedarikçi Düzenle' : 'Yeni Tedarikçi',
         actions: [

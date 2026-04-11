@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
@@ -127,7 +127,7 @@ class _AccountStatementScreenState
   Widget build(BuildContext context) {
     final hasAccount = _accountId != null && _accountId!.isNotEmpty;
 
-    return Scaffold(
+    return AppScaffold(
       appBar: AppAppBar.gradient(
         title: hasAccount ? 'Hesap Ekstresi - ${_accountName ?? ''}' : 'Hesap Ekstresi',
         actions: [

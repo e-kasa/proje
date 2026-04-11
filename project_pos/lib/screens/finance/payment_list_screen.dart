@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
@@ -93,8 +93,7 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
         NumberFormat.currency(locale: 'tr_TR', symbol: '\u20BA');
     final net = _totalIncome - _totalExpense;
 
-    return Scaffold(
-      backgroundColor: AppColors.bgLight,
+    return AppScaffold(
       appBar: AppAppBar.standard(
         title: 'Odemeler',
         actions: [

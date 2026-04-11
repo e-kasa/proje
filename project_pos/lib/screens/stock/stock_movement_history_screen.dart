@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
@@ -185,8 +185,7 @@ class _StockMovementHistoryScreenState
     final t = i18nOf(ref);
     final filtered = _filteredMovements;
 
-    return Scaffold(
-      backgroundColor: AppColors.bgLight,
+    return AppScaffold(
       appBar: AppAppBar.standard(
         title: t('stock.movement_history'),
         actions: [

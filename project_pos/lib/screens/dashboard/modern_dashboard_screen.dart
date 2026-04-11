@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -52,8 +52,7 @@ class _ModernDashboardScreenState
       return AppEmptyState.error(description: _error, onAction: _load);
     }
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F8),
+    return AppScaffold(
       body: RefreshIndicator(
         onRefresh: _load,
         color: AppColors.primary,
@@ -737,8 +736,7 @@ class _ModernDashboardScreenState
 
   // ── SKELETON ─────────────────────────────────────────────────────────────────
   Widget _buildSkeleton() {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F8),
+    return AppScaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

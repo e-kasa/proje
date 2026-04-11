@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -117,8 +117,7 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
     final cfg = ref.watch(sectorConfigProvider);
     final isDesktop = MediaQuery.sizeOf(context).width > 800;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F8),
+    return AppScaffold(
       body: Column(
         children: [
           _buildTopBar(state, isDesktop, t),

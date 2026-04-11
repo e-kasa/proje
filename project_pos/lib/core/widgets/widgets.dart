@@ -5,6 +5,7 @@
 
 // Basic Components
 export 'app_app_bar.dart';
+export 'app_scaffold.dart';
 export 'app_button.dart';
 export 'app_card.dart';
 export 'app_badge.dart';

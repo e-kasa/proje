@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../theme/app_colors.dart';
 import '../../theme/app_constants.dart';
+import '../../theme/app_gradients.dart';
 import '../widgets.dart';
 
 // ---------------------------------------------------------------------------
@@ -316,17 +318,26 @@ class BaseEntityListScreenState<T>
   // -------------------------------------------------------------------------
   AppBar _buildAppBar() {
     return AppBar(
-      backgroundColor: widget.accentColor,
       foregroundColor: Colors.white,
       elevation: 0,
+      surfaceTintColor: Colors.transparent,
+      iconTheme: const IconThemeData(color: Colors.white),
+      actionsIconTheme: const IconThemeData(color: Colors.white),
+      systemOverlayStyle: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+      ),
+      flexibleSpace: Container(
+        decoration: const BoxDecoration(gradient: AppGradients.primaryGradient),
+      ),
       title: _selectionMode
           ? Text(
               '${_selected.length} secili',
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
             )
           : Text(
               widget.title,
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
             ),
       actions: [
         if (_selectionMode) ...[

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../core/utils/app_logger.dart';
 import '../../models/supplier_upload_models.dart';
 import '../../core/widgets/widgets.dart';
@@ -41,7 +41,7 @@ class _SupplierUploadWizardScreenState
       return _buildSummaryScreen();
     }
 
-    return Scaffold(
+    return AppScaffold(
       appBar: AppAppBar.standard(
         title: 'Tedarikçi Dosyası - Ürün Kararları',
         bottom: PreferredSize(
@@ -400,7 +400,7 @@ class _SupplierUploadWizardScreenState
   }
 
   Widget _buildSummaryScreen() {
-    return Scaffold(
+    return AppScaffold(
       appBar: AppAppBar.standard(
         title: 'Özet - Kararlarınızı Gözden Geçirin',
         leading: IconButton(
@@ -904,7 +904,7 @@ class _SuccessScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AppScaffold(
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

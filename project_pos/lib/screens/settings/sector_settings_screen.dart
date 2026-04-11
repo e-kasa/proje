@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/config/sector_config.dart';
@@ -38,8 +38,7 @@ class SectorSettingsScreen extends ConsumerWidget {
     final currentSector =
         SectorTypeExt.fromApi(user?.sectorType);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F8),
+    return AppScaffold(
       appBar: AppAppBar.standard(
         title: 'Sektör Ayarları',
         elevation: 0,

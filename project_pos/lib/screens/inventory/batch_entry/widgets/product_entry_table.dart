@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
@@ -365,7 +365,6 @@ class ProductEntryTable extends ConsumerWidget {
         icon: Icon(icon, size: 16),
         padding: EdgeInsets.zero,
         style: IconButton.styleFrom(
-          backgroundColor: AppColors.bgLight,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
         ),
       ),

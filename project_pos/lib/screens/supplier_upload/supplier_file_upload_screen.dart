@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import '../../core/widgets/widgets.dart';
@@ -111,7 +111,7 @@ class _SupplierFileUploadScreenState extends State<SupplierFileUploadScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AppScaffold(
       appBar: AppAppBar.standard(
         title: '📦 Tedarikçi Dosyası Yükle',
         elevation: 0,

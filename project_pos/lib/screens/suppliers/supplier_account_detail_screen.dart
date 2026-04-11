@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -74,16 +74,14 @@ class _SupplierAccountDetailScreenState
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(
-        backgroundColor: AppColors.bgLight,
+      return AppScaffold(
         appBar: AppAppBar.standard(title: 'Cari Hesap'),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_error != null || _supplier == null) {
-      return Scaffold(
-        backgroundColor: AppColors.bgLight,
+      return AppScaffold(
         appBar: AppAppBar.standard(title: 'Cari Hesap'),
         body: Center(
           child: Column(
@@ -114,8 +112,7 @@ class _SupplierAccountDetailScreenState
     final isLimitExceeded = _account?['isCreditLimitExceeded'] == true;
     final txCount = _account?['totalTransactionCount'] ?? _transactions.length;
 
-    return Scaffold(
-      backgroundColor: AppColors.bgLight,
+    return AppScaffold(
       appBar: AppAppBar.standard(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),

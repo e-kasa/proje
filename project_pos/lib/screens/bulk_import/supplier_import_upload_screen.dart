@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
@@ -126,8 +126,7 @@ class _SupplierImportUploadScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
+    return AppScaffold(
       appBar: AppAppBar.standard(
         title: 'Tedarikçi Dosyası Yükle',
         elevation: 0,
@@ -356,7 +355,6 @@ class _SupplierImportUploadScreenState
         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
       ),
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.green,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(
@@ -483,7 +481,6 @@ class _SupplierImportUploadScreenState
                 child: LinearProgressIndicator(
                   value: _uploadProgress,
                   minHeight: 8,
-                  backgroundColor: Colors.grey[200],
                   valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
                 ),
               ),

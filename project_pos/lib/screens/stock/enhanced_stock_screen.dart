@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -154,8 +154,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
     final stockState = ref.watch(stockProvider);
     final filtered = _applyFilters(stockState.products);
 
-    return Scaffold(
-      backgroundColor: AppColors.bgLight,
+    return AppScaffold(
       body: Column(
         children: [
           // Header with filters

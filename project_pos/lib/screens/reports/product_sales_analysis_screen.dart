@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
@@ -100,8 +100,7 @@ class _ProductSalesAnalysisScreenState
     final totalRevenue = _products.fold<double>(
         0, (sum, p) => sum + ((p['totalRevenue'] ?? 0).toDouble()));
 
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+    return AppScaffold(
       appBar: AppAppBar.standard(
         title: 'Urun Satis Analizi',
         actions: [

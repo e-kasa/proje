@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -170,11 +170,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
     final cfg = ref.watch(sectorConfigProvider);
 
     if (_isLoading || _tabController == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const AppScaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (_error != null || _product == null) {
-      return Scaffold(
+      return AppScaffold(
         appBar: AppAppBar.standard(title: t('common.error')),
         body: Center(
           child: Column(
@@ -191,8 +191,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
     }
 
     final product = _product!;
-    return Scaffold(
-      backgroundColor: AppColors.bgLight,
+    return AppScaffold(
       appBar: AppAppBar.standard(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),

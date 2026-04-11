@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
@@ -168,13 +168,22 @@ class _AddProductWizardScreenState
         }
       },
       child: Scaffold(
-        backgroundColor: AppColors.bgLight,
         appBar: AppBar(
           elevation: 0,
-          backgroundColor: theme.colorScheme.surface,
           surfaceTintColor: Colors.transparent,
+          foregroundColor: Colors.white,
+          iconTheme: const IconThemeData(color: Colors.white),
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
           leading: IconButton(
-            icon: const Icon(Icons.close_rounded),
+            icon: const Icon(Icons.close_rounded, color: Colors.white),
             onPressed: () => Navigator.maybePop(context),
           ),
           title: Row(
@@ -188,13 +197,11 @@ class _AddProductWizardScreenState
                           ? '${_t('product.add_product')} ($_savedCount ${_t('wizard.saved')})'
                           : _t('product.add_new_product'),
                       style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w700),
+                          fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
                     ),
                     Text(
-                      '${_stepTitles[_currentStep]} -- ${_t('wizard.step')} ${_currentStep + 1}/$_totalSteps',
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: theme.colorScheme.onSurfaceVariant),
+                      '${_stepTitles[_currentStep]} — ${_t('wizard.step')} ${_currentStep + 1}/$_totalSteps',
+                      style: const TextStyle(fontSize: 12, color: Colors.white70),
                     ),
                   ],
                 ),

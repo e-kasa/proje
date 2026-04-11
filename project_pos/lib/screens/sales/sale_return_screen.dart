@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -106,8 +106,7 @@ class _SaleReturnScreenState extends ConsumerState<SaleReturnScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+    return AppScaffold(
       appBar: AppAppBar.standard(
         title: 'Satış İadesi',
         leading: IconButton(
@@ -626,7 +625,6 @@ class _SaleReturnScreenState extends ConsumerState<SaleReturnScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.warning,
             ),
             child: const Text('Onayla'),
           ),

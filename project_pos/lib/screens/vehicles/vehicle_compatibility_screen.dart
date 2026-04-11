@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/widgets/widgets.dart';
 import '../../core/theme/app_colors.dart';
@@ -228,8 +228,7 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgLight,
+    return AppScaffold(
       appBar: AppAppBar.standard(
         title: 'Arac Uyumlulugu',
         leading: IconButton(

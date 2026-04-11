@@ -39,7 +39,7 @@
                         color: variables.$white;
                     }
                     svg {
-                        color: #FE9F43
+                        color: variables.$primary
                     }
                 }
                 svg {
@@ -67,7 +67,7 @@
                         color: #637381;
                     }
                     &:hover{
-                        background: rgba(254, 159, 67, 0.08);
+                        background: rgba(102, 126, 234, 0.08);
                         color: variables.$primary;
                         border-radius: 5px;
                         img {
@@ -81,7 +81,7 @@
                         }
                     }
                     &.active{
-                        background: rgba(254, 159, 67, 0.08);
+                        background: rgba(102, 126, 234, 0.08);
                         color: variables.$primary;
                         border-radius: 5px;
                         svg{
@@ -109,7 +109,7 @@
                 }
                 &.active{
                     a{
-                        background: rgba(254, 159, 67, 0.08);
+                        background: rgba(102, 126, 234, 0.08);
                         border-radius: 5px;
                         img{
                             filter: invert(72%) sepia(76%) saturate(1430%) hue-rotate(327deg) brightness(103%) contrast(101%);
@@ -214,7 +214,7 @@
                        > li 
                        {
                         &.active a{
-                            background: rgba(254, 159, 67, 0.08);
+                            background: rgba(102, 126, 234, 0.08);
                             border-radius: 5px;
                             color: variables.$primary;
                             span, i {

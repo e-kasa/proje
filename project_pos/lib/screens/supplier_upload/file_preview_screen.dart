@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../core/widgets/widgets.dart';
 
 /// EKRAN 2: Önizleme
@@ -54,7 +54,7 @@ class _FilePreviewScreenState extends State<FilePreviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AppScaffold(
       appBar: AppAppBar.standard(
         title: '👁️ Dosya Önizleme',
         elevation: 0,

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:animate_do/animate_do.dart';
@@ -105,8 +105,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
       return _CategoryData(cat.title, cat.color, filteredActions);
     }).where((cat) => cat.actions.isNotEmpty).toList();
 
-    return Scaffold(
-      backgroundColor: AppColors.bgLight,
+    return AppScaffold(
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [

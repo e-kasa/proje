@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
@@ -153,8 +153,7 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
   Widget build(BuildContext context) {
     final isEdit = widget.category != null;
 
-    return Scaffold(
-      backgroundColor: AppColors.bgLight,
+    return AppScaffold(
       appBar: AppAppBar.primary(
         title: isEdit ? 'Kategori Düzenle' : 'Yeni Kategori',
         actions: [

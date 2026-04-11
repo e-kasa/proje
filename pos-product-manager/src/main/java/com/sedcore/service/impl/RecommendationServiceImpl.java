@@ -2,9 +2,14 @@ package com.sedcore.service.impl;
 
 import com.sedcore.context.CompanyContext;
 import com.sedcore.enums.ProductRelationType;
+import com.sedcore.entity.InventoryView;
 import com.sedcore.entity.ProductRelationship;
+import com.sedcore.entity.ProductVariant;
+import com.sedcore.entity.VariantPricing;
 import com.sedcore.model.RecommendationResponse;
 import com.sedcore.repository.CrossReferenceRepository;
+import com.sedcore.repository.InventoryRepository;
+import com.sedcore.repository.ProductVariantRepository;
 import com.sedcore.repository.StockMovementRepository;
 import com.sedcore.service.ProductRelationshipService;
 import com.sedcore.service.RecommendationService;
@@ -33,6 +38,8 @@ public class RecommendationServiceImpl implements RecommendationService {
     private final ProductRelationshipService relationshipService;
     private final StockMovementRepository stockMovementRepository;
     private final CrossReferenceRepository crossReferenceRepository;
+    private final ProductVariantRepository productVariantRepository;
+    private final InventoryRepository inventoryRepository;
 
     @Override
     @Cacheable(value = "recommendations", key = "#productIds.stream().sorted().collect(T(java.util.stream.Collectors).joining(','))")
@@ -79,7 +86,12 @@ public class RecommendationServiceImpl implements RecommendationService {
 
             List<RecommendationResponse> scored = calculateWeightedScore(filtered);
 
-            return scored.stream().limit(limit).collect(Collectors.toList());
+            List<RecommendationResponse> result = scored.stream().limit(limit).collect(Collectors.toList());
+
+            // Fiyat, stok ve kâr bilgilerini zenginleştir
+            enrichRecommendations(result);
+
+            return result;
 
         } catch (Exception e) {
             log.error("Hybrid recommendations hesaplanirken hata", e);
@@ -250,5 +262,58 @@ public class RecommendationServiceImpl implements RecommendationService {
     @Override
     public List<Map<String, Object>> getTopRecommendedProducts(int limit) {
         return Collections.emptyList();
+    }
+
+    /**
+     * Önerileri fiyat, maliyet, stok ve kâr bilgileriyle zenginleştirir.
+     * VariantPricing'den purchasePrice (maliyet) ve salePrice (satış fiyatı),
+     * InventoryView'dan stok miktarı alınır.
+     */
+    private void enrichRecommendations(List<RecommendationResponse> recommendations) {
+        for (RecommendationResponse rec : recommendations) {
+            try {
+                // ID, frequently_bought'ta variantId, diğerlerinde productId olabilir
+                // Önce variant olarak ara
+                var variantOpt = productVariantRepository.findById(rec.getId());
+                if (variantOpt.isPresent()) {
+                    ProductVariant variant = variantOpt.get();
+                    // Fiyat: VariantPricing'den
+                    List<VariantPricing> pricings = variant.getVariantPricings();
+                    if (pricings != null && !pricings.isEmpty()) {
+                        VariantPricing pricing = pricings.get(0);
+                        if (pricing.getSalePrice() != null) {
+                            rec.setBasePrice(pricing.getSalePrice().doubleValue());
+                        }
+                        if (pricing.getPurchasePrice() != null) {
+                            rec.setCostPrice(pricing.getPurchasePrice().doubleValue());
+                        }
+                    }
+                    // Ürün adı (variant adı boşsa product adından al)
+                    if (rec.getName() == null || rec.getName().isBlank()) {
+                        if (variant.getProduct() != null) {
+                            rec.setName(variant.getProduct().getName());
+                        }
+                    }
+                    // SKU
+                    if (rec.getSku() == null || rec.getSku().isBlank()) {
+                        rec.setSku(variant.getSku());
+                    }
+                    // Stok: InventoryView'dan tüm lokasyonların toplamı
+                    List<InventoryView> invList = inventoryRepository.findByVariantId(variant.getId());
+                    int totalStock = invList.stream()
+                            .mapToInt(iv -> iv.getPhysicalQuantity() != null ? iv.getPhysicalQuantity() : 0)
+                            .sum();
+                    rec.setStock(totalStock);
+                    rec.setStockStatus(totalStock <= 0 ? "OUT_OF_STOCK" : totalStock <= 5 ? "LOW_STOCK" : "IN_STOCK");
+
+                    // Barkod (sepete hızlı ekleme)
+                    if (variant.getBarcodes() != null && !variant.getBarcodes().isEmpty()) {
+                        rec.setBarcode(variant.getBarcodes().get(0).getBarcodeCode());
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Recommendation enrichment hatasi id={}: {}", rec.getId(), e.getMessage());
+            }
+        }
     }
 }

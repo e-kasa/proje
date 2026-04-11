@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -107,8 +107,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+    return AppScaffold(
       appBar: AppAppBar.standard(
         title: 'Yeni Satın Alma',
         leading: IconButton(
@@ -367,7 +366,6 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
               dense: true,
               leading: CircleAvatar(
                 radius: 16,
-                backgroundColor: theme.colorScheme.surfaceContainerHighest,
                 child: const Icon(Icons.inventory_2_outlined, size: 16),
               ),
               title: Text(p['name']?.toString() ?? '', style: const TextStyle(fontSize: 13)),
@@ -381,7 +379,6 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
               dense: true,
               leading: CircleAvatar(
                 radius: 16,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
                 child: const Icon(Icons.inventory_2_outlined, size: 16, color: AppColors.primary),
               ),
               title: Text(p['name']?.toString() ?? '', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
@@ -399,7 +396,6 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
             dense: true,
             leading: CircleAvatar(
               radius: 16,
-              backgroundColor: AppColors.primary.withOpacity(0.1),
               child: const Icon(Icons.inventory_2_outlined, size: 16, color: AppColors.primary),
             ),
             title: Text(p['name']?.toString() ?? '', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),

@@ -15,10 +15,12 @@ public interface VehicleCompatibilityRepository extends BaseDaoRepository<Vehicl
 
     List<VehicleCompatibility> findByVehicleId(String vehicleId);
 
-    @Query("SELECT vc FROM VehicleCompatibility vc JOIN vc.vehicle v " +
-            "WHERE (:make IS NULL OR LOWER(v.make) = LOWER(:make)) " +
-            "AND (:model IS NULL OR LOWER(v.model) = LOWER(:model)) " +
-            "AND (:year IS NULL OR (v.yearStart <= :year AND v.yearEnd >= :year))")
+    @Query("""
+            SELECT vc FROM VehicleCompatibility vc JOIN vc.vehicle v
+            WHERE (:make IS NULL OR LOWER(v.make) = LOWER(:make))
+            AND (:model IS NULL OR LOWER(v.model) = LOWER(:model))
+            AND (:year IS NULL OR (v.yearStart <= :year AND v.yearEnd >= :year))
+            """)
     List<VehicleCompatibility> searchByVehicle(@Param("make") String make,
                                                 @Param("model") String model,
                                                 @Param("year") Integer year);

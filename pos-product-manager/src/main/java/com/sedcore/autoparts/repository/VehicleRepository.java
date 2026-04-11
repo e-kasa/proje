@@ -21,10 +21,12 @@ public interface VehicleRepository extends BaseDaoRepository<Vehicle> {
     @Query("SELECT DISTINCT v.model FROM Vehicle v WHERE v.make = :make AND v.isActive = true ORDER BY v.model")
     List<String> findDistinctModelsByMake(@Param("make") String make);
 
-    @Query("SELECT v FROM Vehicle v WHERE v.isActive = true " +
-            "AND (:make IS NULL OR LOWER(v.make) = LOWER(:make)) " +
-            "AND (:model IS NULL OR LOWER(v.model) = LOWER(:model)) " +
-            "AND (:year IS NULL OR (v.yearStart <= :year AND v.yearEnd >= :year))")
+    @Query("""
+            SELECT v FROM Vehicle v WHERE v.isActive = true
+            AND (:make IS NULL OR LOWER(v.make) = LOWER(:make))
+            AND (:model IS NULL OR LOWER(v.model) = LOWER(:model))
+            AND (:year IS NULL OR (v.yearStart <= :year AND v.yearEnd >= :year))
+            """)
     List<Vehicle> searchVehicles(@Param("make") String make,
                                  @Param("model") String model,
                                  @Param("year") Integer year);

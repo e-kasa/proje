@@ -1,23 +1,20 @@
 package com.sedcore.sales.model;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
-@Data
+/**
+ * Ürün Satış Analizi — Java 25 Record
+ */
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class ProductSalesAnalysis {
-    private String variantId;
-    private String variantSku;
-    private String variantName;
-    private String productName;
-    private String categoryName;
-    private Integer quantitySold;
-    private BigDecimal totalRevenue;
-    private BigDecimal averageUnitPrice;
-}
+public record ProductSalesAnalysis(
+        String variantId,
+        String variantSku,
+        String variantName,
+        String productName,
+        String categoryName,
+        Integer quantitySold,
+        BigDecimal totalRevenue,
+        BigDecimal averageUnitPrice
+) {}

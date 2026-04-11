@@ -1,23 +1,20 @@
 package com.sedcore.sales.model;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Data
+/**
+ * Müşteri Satış Analizi — Java 25 Record
+ */
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class CustomerSalesAnalysis {
-    private String customerId;
-    private String customerName;
-    private String customerType;
-    private Long totalPurchases;
-    private BigDecimal totalSpent;
-    private BigDecimal averageOrderValue;
-    private LocalDateTime lastPurchaseDate;
-}
+public record CustomerSalesAnalysis(
+        String customerId,
+        String customerName,
+        String customerType,
+        Long totalPurchases,
+        BigDecimal totalSpent,
+        BigDecimal averageOrderValue,
+        LocalDateTime lastPurchaseDate
+) {}

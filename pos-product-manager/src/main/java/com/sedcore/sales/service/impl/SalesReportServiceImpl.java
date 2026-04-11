@@ -12,13 +12,7 @@ import com.sedcore.sales.repository.SaleRepository;
 import com.sedcore.inventory.repository.StockMovementRepository;
 import com.sedcore.sales.service.SalesReportService;
 import lombok.RequiredArgsConstructor;
-import com.towpen.base.enums.model.TMessageType;
-import com.towpen.base.exceptions.TOpenException;
-import com.towpen.base.restservice.model.TOpenMessage;
 import lombok.extern.slf4j.Slf4j;
-import com.towpen.base.enums.model.TMessageType;
-import com.towpen.base.exceptions.TOpenException;
-import com.towpen.base.restservice.model.TOpenMessage;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +22,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.concurrent.StructuredTaskScope;
 
 @Service
 @Slf4j
@@ -44,35 +38,35 @@ public class SalesReportServiceImpl implements SalesReportService {
     public SalesSummary getSalesSummary(LocalDateTime startDate, LocalDateTime endDate, String groupBy) {
         log.info("Satis ozeti: {} - {}, groupBy={}", startDate, endDate, groupBy);
 
-        List<Sale> allSales = (List<Sale>) saleRepository.findAll();
-        List<Sale> filtered = allSales.stream()
+        var allSales = (List<Sale>) saleRepository.findAll();
+        var filtered = allSales.stream()
                 .filter(s -> !Boolean.TRUE.equals(s.getIsCancelled()))
                 .filter(s -> s.getSaleDate() != null
                         && !s.getSaleDate().isBefore(startDate)
                         && !s.getSaleDate().isAfter(endDate))
-                .collect(Collectors.toList());
+                .toList();
 
-        BigDecimal totalRevenue = filtered.stream()
+        var totalRevenue = filtered.stream()
                 .map(s -> s.getTotalAmount() != null ? s.getTotalAmount() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal totalPaid = filtered.stream()
+        var totalPaid = filtered.stream()
                 .map(s -> s.getPaidAmount() != null ? s.getPaidAmount() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal avgOrder = !filtered.isEmpty()
+        var avgOrder = !filtered.isEmpty()
                 ? totalRevenue.divide(BigDecimal.valueOf(filtered.size()), 2, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
 
-        // Period grouping
         String pattern = "month".equalsIgnoreCase(groupBy) ? "yyyy-MM" : "yyyy-MM-dd";
-        DateTimeFormatter df = DateTimeFormatter.ofPattern(pattern);
+        var df = DateTimeFormatter.ofPattern(pattern);
 
-        Map<String, List<Sale>> grouped = filtered.stream()
-                .collect(Collectors.groupingBy(s -> s.getSaleDate().format(df)));
+        var grouped = new TreeMap<String, List<Sale>>();
+        for (var s : filtered) {
+            grouped.computeIfAbsent(s.getSaleDate().format(df), k -> new ArrayList<>()).add(s);
+        }
 
-        List<SalesSummary.PeriodData> periodData = grouped.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
+        var periodData = grouped.entrySet().stream()
                 .map(e -> SalesSummary.PeriodData.builder()
                         .period(e.getKey())
                         .salesCount((long) e.getValue().size())
@@ -83,7 +77,7 @@ public class SalesReportServiceImpl implements SalesReportService {
                                 .map(s -> s.getPaidAmount() != null ? s.getPaidAmount() : BigDecimal.ZERO)
                                 .reduce(BigDecimal.ZERO, BigDecimal::add))
                         .build())
-                .collect(Collectors.toList());
+                .toList();
 
         return SalesSummary.builder()
                 .totalSalesCount((long) filtered.size())
@@ -99,36 +93,37 @@ public class SalesReportServiceImpl implements SalesReportService {
     public List<ProductSalesAnalysis> getProductSalesAnalysis(LocalDateTime startDate, LocalDateTime endDate, int limit) {
         log.info("Urun satis analizi: {} - {}, limit={}", startDate, endDate, limit);
 
-        List<StockMovement> allMovements = (List<StockMovement>) stockMovementRepository.findAll();
-        List<StockMovement> saleMovements = allMovements.stream()
+        var allMovements = (List<StockMovement>) stockMovementRepository.findAll();
+        var saleMovements = allMovements.stream()
                 .filter(m -> m.getMovementType() == StockMovementType.SALE_OUT)
                 .filter(m -> m.getCreateTime() != null
                         && !toLocalDateTime(m.getCreateTime()).isBefore(startDate)
                         && !toLocalDateTime(m.getCreateTime()).isAfter(endDate))
-                .collect(Collectors.toList());
+                .toList();
 
-        // Group by variant
-        Map<String, List<StockMovement>> byVariant = saleMovements.stream()
-                .filter(m -> m.getVariant() != null)
-                .collect(Collectors.groupingBy(m -> m.getVariant().getId()));
+        var byVariant = new HashMap<String, List<StockMovement>>();
+        for (var m : saleMovements) {
+            if (m.getVariant() != null) {
+                byVariant.computeIfAbsent(m.getVariant().getId(), k -> new ArrayList<>()).add(m);
+            }
+        }
 
-        List<ProductSalesAnalysis> result = byVariant.entrySet().stream()
+        return byVariant.entrySet().stream()
                 .map(e -> {
-                    StockMovement first = e.getValue().get(0);
+                    var first = e.getValue().getFirst(); // Java 21+ SequencedCollection
                     int totalQty = e.getValue().stream()
                             .mapToInt(m -> m.getQuantity() != null ? m.getQuantity() : 0)
                             .sum();
-                    BigDecimal totalRev = e.getValue().stream()
+                    var totalRev = e.getValue().stream()
                             .map(m -> {
-                                BigDecimal price = m.getUnitPrice() != null ? m.getUnitPrice() : BigDecimal.ZERO;
+                                var price = m.getUnitPrice() != null ? m.getUnitPrice() : BigDecimal.ZERO;
                                 int qty = m.getQuantity() != null ? m.getQuantity() : 0;
                                 return price.multiply(BigDecimal.valueOf(qty));
                             })
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
-                    BigDecimal avgPrice = totalQty > 0
+                    var avgPrice = totalQty > 0
                             ? totalRev.divide(BigDecimal.valueOf(totalQty), 2, RoundingMode.HALF_UP)
                             : BigDecimal.ZERO;
-
                     String productName = first.getVariant().getProduct() != null
                             ? first.getVariant().getProduct().getName() : "";
 
@@ -142,38 +137,38 @@ public class SalesReportServiceImpl implements SalesReportService {
                             .averageUnitPrice(avgPrice)
                             .build();
                 })
-                .sorted(Comparator.comparing(ProductSalesAnalysis::getTotalRevenue).reversed())
+                .sorted(Comparator.comparing(ProductSalesAnalysis::totalRevenue).reversed())
                 .limit(limit)
-                .collect(Collectors.toList());
-
-        return result;
+                .toList();
     }
 
     @Override
     public List<CustomerSalesAnalysis> getCustomerSalesAnalysis(LocalDateTime startDate, LocalDateTime endDate, int limit) {
         log.info("Musteri satis analizi: {} - {}, limit={}", startDate, endDate, limit);
 
-        List<Sale> allSales = (List<Sale>) saleRepository.findAll();
-        List<Sale> filtered = allSales.stream()
+        var allSales = (List<Sale>) saleRepository.findAll();
+        var filtered = allSales.stream()
                 .filter(s -> !Boolean.TRUE.equals(s.getIsCancelled()))
                 .filter(s -> s.getSaleDate() != null
                         && !s.getSaleDate().isBefore(startDate)
                         && !s.getSaleDate().isAfter(endDate))
                 .filter(s -> s.getCustomer() != null)
-                .collect(Collectors.toList());
+                .toList();
 
-        Map<String, List<Sale>> byCustomer = filtered.stream()
-                .collect(Collectors.groupingBy(s -> s.getCustomer().getId()));
+        var byCustomer = new HashMap<String, List<Sale>>();
+        for (var s : filtered) {
+            byCustomer.computeIfAbsent(s.getCustomer().getId(), k -> new ArrayList<>()).add(s);
+        }
 
-        List<CustomerSalesAnalysis> result = byCustomer.entrySet().stream()
+        return byCustomer.entrySet().stream()
                 .map(e -> {
-                    Sale first = e.getValue().get(0);
-                    BigDecimal totalSpent = e.getValue().stream()
+                    var first = e.getValue().getFirst();
+                    var totalSpent = e.getValue().stream()
                             .map(s -> s.getTotalAmount() != null ? s.getTotalAmount() : BigDecimal.ZERO)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
-                    BigDecimal avgOrder = totalSpent.divide(
+                    var avgOrder = totalSpent.divide(
                             BigDecimal.valueOf(e.getValue().size()), 2, RoundingMode.HALF_UP);
-                    LocalDateTime lastDate = e.getValue().stream()
+                    var lastDate = e.getValue().stream()
                             .map(Sale::getSaleDate)
                             .max(Comparator.naturalOrder())
                             .orElse(null);
@@ -190,46 +185,57 @@ public class SalesReportServiceImpl implements SalesReportService {
                             .lastPurchaseDate(lastDate)
                             .build();
                 })
-                .sorted(Comparator.comparing(CustomerSalesAnalysis::getTotalSpent).reversed())
+                .sorted(Comparator.comparing(CustomerSalesAnalysis::totalSpent).reversed())
                 .limit(limit)
-                .collect(Collectors.toList());
-
-        return result;
+                .toList();
     }
 
     @Override
     public ProfitOverview getProfitOverview(LocalDateTime startDate, LocalDateTime endDate) {
         log.info("Kar/zarar ozeti: {} - {}", startDate, endDate);
 
-        // Revenue from sales
-        List<Sale> allSales = (List<Sale>) saleRepository.findAll();
-        List<Sale> filteredSales = allSales.stream()
+        // Java 25 — Structured Concurrency: satış ve stok hareketi verilerini paralel çek
+        List<Sale> allSales;
+        List<StockMovement> allMovements;
+
+        try (var scope = StructuredTaskScope.open()) {
+            var salesTask      = scope.fork(() -> (List<Sale>) saleRepository.findAll());
+            var movementsTask  = scope.fork(() -> (List<StockMovement>) stockMovementRepository.findAll());
+            scope.join();
+            allSales     = salesTask.get();
+            allMovements = movementsTask.get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("Paralel veri çekimi kesildi", e);
+            allSales     = (List<Sale>) saleRepository.findAll();
+            allMovements = (List<StockMovement>) stockMovementRepository.findAll();
+        }
+
+        var filteredSales = allSales.stream()
                 .filter(s -> !Boolean.TRUE.equals(s.getIsCancelled()))
                 .filter(s -> s.getSaleDate() != null
                         && !s.getSaleDate().isBefore(startDate)
                         && !s.getSaleDate().isAfter(endDate))
-                .collect(Collectors.toList());
+                .toList();
 
-        BigDecimal totalRevenue = filteredSales.stream()
+        var totalRevenue = filteredSales.stream()
                 .map(s -> s.getTotalAmount() != null ? s.getTotalAmount() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Cost from purchase movements in the period
-        List<StockMovement> allMovements = (List<StockMovement>) stockMovementRepository.findAll();
-        BigDecimal totalCost = allMovements.stream()
+        var totalCost = allMovements.stream()
                 .filter(m -> m.getMovementType() == StockMovementType.SALE_OUT)
                 .filter(m -> m.getCreateTime() != null
                         && !toLocalDateTime(m.getCreateTime()).isBefore(startDate)
                         && !toLocalDateTime(m.getCreateTime()).isAfter(endDate))
                 .map(m -> {
-                    BigDecimal price = m.getUnitPrice() != null ? m.getUnitPrice() : BigDecimal.ZERO;
+                    var price = m.getUnitPrice() != null ? m.getUnitPrice() : BigDecimal.ZERO;
                     int qty = m.getQuantity() != null ? m.getQuantity() : 0;
                     return price.multiply(BigDecimal.valueOf(qty));
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal grossProfit = totalRevenue.subtract(totalCost);
-        BigDecimal margin = totalRevenue.compareTo(BigDecimal.ZERO) > 0
+        var grossProfit = totalRevenue.subtract(totalCost);
+        var margin = totalRevenue.compareTo(BigDecimal.ZERO) > 0
                 ? grossProfit.multiply(BigDecimal.valueOf(100)).divide(totalRevenue, 2, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
 

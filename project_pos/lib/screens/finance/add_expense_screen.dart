@@ -8,7 +8,7 @@ import '../../core/theme/app_colors.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../../core/utils/validation_helper.dart';
 import '../../services/finance_service.dart';
-import '../../core/api/api_client.dart';
+import '../../services/service_locator.dart';
 import '../../providers/auth_provider.dart';
 
 class AddExpenseScreen extends ConsumerStatefulWidget {
@@ -61,7 +61,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   @override
   void initState() {
     super.initState();
-    _financeService = FinanceService(ApiClient());
+    _financeService = ref.read(financeServiceProvider);
     _dateController.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
     _loadCategories();
     if (widget.expenseId != null) {

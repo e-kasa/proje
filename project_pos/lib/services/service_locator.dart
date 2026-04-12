@@ -28,6 +28,8 @@ import 'registration_service.dart';
 import 'menu_service.dart';
 import 'i18n_service.dart';
 import 'recommendation_service.dart';
+import 'hrm_service.dart';
+import 'finance_service.dart';
 
 // API Client Provider
 final apiClientProvider = Provider<ApiClient>((ref) {
@@ -173,4 +175,14 @@ final i18nServiceProvider = Provider<I18nService>((ref) {
 final recommendationServiceProvider = Provider<RecommendationService>((ref) {
   final apiClient = ref.watch(apiClientProvider);
   return RecommendationService(apiClient);
+});
+
+final hrmServiceProvider = Provider<HrmService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return HrmService(apiClient);
+});
+
+final financeServiceProvider = Provider<FinanceService>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return FinanceService(apiClient);
 });

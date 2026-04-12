@@ -7,7 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/finance_service.dart';
-import '../../core/api/api_client.dart';
+import '../../services/service_locator.dart';
 
 class FinanceDashboardScreen extends ConsumerStatefulWidget {
   const FinanceDashboardScreen({super.key});
@@ -24,7 +24,7 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
   @override
   void initState() {
     super.initState();
-    _financeService = FinanceService(ApiClient());
+    _financeService = ref.read(financeServiceProvider);
     _loadSummary();
   }
 

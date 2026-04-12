@@ -6,7 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/warehouse_service.dart';
-import '../../core/api/api_client.dart';
+import '../../services/service_locator.dart';
 import '../../core/utils/i18n_helper.dart';
 
 class AddWarehouseScreen extends ConsumerStatefulWidget {
@@ -48,7 +48,7 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
   @override
   void initState() {
     super.initState();
-    _warehouseService = WarehouseService(ApiClient());
+    _warehouseService = ref.read(warehouseServiceProvider);
     if (widget.warehouseId != null) {
       _loadWarehouse();
     }

@@ -6,7 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/store_service.dart';
-import '../../core/api/api_client.dart';
+import '../../services/service_locator.dart';
 import '../../core/utils/i18n_helper.dart';
 
 class AddStoreScreen extends ConsumerStatefulWidget {
@@ -53,7 +53,7 @@ class _AddStoreScreenState extends ConsumerState<AddStoreScreen> {
   @override
   void initState() {
     super.initState();
-    _storeService = StoreService(ApiClient());
+    _storeService = ref.read(storeServiceProvider);
     if (widget.storeId != null) _loadStore();
   }
 

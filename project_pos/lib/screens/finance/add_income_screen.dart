@@ -8,7 +8,7 @@ import '../../core/widgets/widgets.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import '../../core/utils/validation_helper.dart';
 import '../../services/finance_service.dart';
-import '../../core/api/api_client.dart';
+import '../../services/service_locator.dart';
 import '../../providers/auth_provider.dart';
 
 class AddIncomeScreen extends ConsumerStatefulWidget {
@@ -57,7 +57,7 @@ class _AddIncomeScreenState extends ConsumerState<AddIncomeScreen> {
   @override
   void initState() {
     super.initState();
-    _financeService = FinanceService(ApiClient());
+    _financeService = ref.read(financeServiceProvider);
     _dateController.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
   }
 

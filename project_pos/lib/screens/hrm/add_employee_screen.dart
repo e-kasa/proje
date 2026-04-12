@@ -6,7 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_constants.dart';
 import '../../core/widgets/widgets.dart';
 import '../../services/hrm_service.dart';
-import '../../core/api/api_client.dart';
+import '../../services/service_locator.dart';
 import '../../core/utils/i18n_helper.dart';
 
 class AddEmployeeScreen extends ConsumerStatefulWidget {
@@ -48,7 +48,7 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen> {
   @override
   void initState() {
     super.initState();
-    _hrmService = HrmService(ApiClient());
+    _hrmService = ref.read(hrmServiceProvider);
     if (_isEditing) _loadEmployee();
   }
 

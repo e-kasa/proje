@@ -584,42 +584,17 @@ class _BatchRowCard extends ConsumerStatefulWidget {
 }
 
 class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
-  late final TextEditingController _nameCtrl;
-  late final TextEditingController _barcodeCtrl;
-  late final TextEditingController _oemCtrl;
-  late final TextEditingController _purchaseCtrl;
-  late final TextEditingController _saleCtrl;
-  late final TextEditingController _brandCtrl;
-  late final TextEditingController _shelfCtrl;
-  late final TextEditingController _descCtrl;
-  late final TextEditingController _minStockCtrl;
 
-  @override
-  void initState() {
-    super.initState();
-    final r = widget.row;
-    _nameCtrl = TextEditingController(text: r.productName);
-    _barcodeCtrl = TextEditingController(text: r.barcode);
-    _oemCtrl = TextEditingController(text: r.oemNumber ?? '');
-    _purchaseCtrl = TextEditingController(
-        text: r.purchasePrice > 0 ? r.purchasePrice.toString() : '');
-    _saleCtrl = TextEditingController(
-        text: r.salePrice > 0 ? r.salePrice.toString() : '');
-    _brandCtrl = TextEditingController(text: r.brandName ?? '');
-    _shelfCtrl = TextEditingController(text: r.shelfLocation ?? '');
-    _descCtrl = TextEditingController(text: r.description ?? '');
-    _minStockCtrl = TextEditingController(text: r.minStockLevel.toString());
-  }
-
-  @override
-  void dispose() {
-    for (final c in [
-      _nameCtrl, _barcodeCtrl, _oemCtrl, _purchaseCtrl,
-      _saleCtrl, _brandCtrl, _shelfCtrl, _descCtrl, _minStockCtrl,
-    ]) {
-      c.dispose();
-    }
-    super.dispose();
+  void _showEditDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (_) => _BatchRowEditDialog(
+        rowId: widget.row.id,
+        cfg: widget.cfg,
+        currency: widget.currency,
+      ),
+    );
   }
 
   void _update({
@@ -694,36 +669,30 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
     final margin = row.salePrice > 0
         ? ((row.salePrice - row.purchasePrice) / row.salePrice * 100)
         : 0.0;
-    final isExpanded = row.isExpanded;
 
     final accentColor = _accentColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1A1A2E) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: _statusColor.withValues(alpha: isExpanded ? 0.5 : 0.25),
-          width: isExpanded ? 1.5 : 1,
-        ),
+        border: Border.all(color: _statusColor.withValues(alpha: 0.25)),
         boxShadow: [
           BoxShadow(
-            color: _statusColor.withValues(alpha: isExpanded ? 0.08 : 0.04),
-            blurRadius: isExpanded ? 14 : 6,
+            color: _statusColor.withValues(alpha: 0.04),
+            blurRadius: 6,
             offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: Column(
-        children: [
-          // ── Collapsed header ──────────────────────────────────────────────
-          Material(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
-            child: InkWell(
-              onTap: () => _update(isExpanded: !isExpanded),
-              borderRadius: BorderRadius.circular(16),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: () => _showEditDialog(context),
+          borderRadius: BorderRadius.circular(16),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(0, 12, 12, 12),
                 child: Row(
@@ -824,6 +793,14 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                                       _MetaChip(
                                         icon: Icons.business_outlined,
                                         label: row.brandName!,
+                                      ),
+                                    // Footwear: varyant sayısı chip
+                                    if (widget.cfg.fields.showVariantSize &&
+                                        row.variantRows.isNotEmpty)
+                                      _MetaChip(
+                                        icon: Icons.layers_rounded,
+                                        label: '${row.variantRows.length} varyant',
+                                        color: accentColor,
                                       ),
                                   ],
                                 ),
@@ -945,39 +922,269 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                         ),
                       ],
                     ),
-                    const SizedBox(width: 6),
-                    AnimatedRotation(
-                      turns: isExpanded ? 0.5 : 0,
-                      duration: const Duration(milliseconds: 200),
-                      child: const Icon(Icons.keyboard_arrow_down_rounded,
-                          color: AppColors.textMuted, size: 22),
-                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.edit_outlined,
+                        color: AppColors.textMuted, size: 16),
                   ],
                 ),
               ),
             ),
           ),
+        ),
+      );
+  }
 
-          // ── Expanded form ─────────────────────────────────────────────────
-          if (isExpanded) ...[
-            Divider(height: 1, color: _statusColor.withValues(alpha: 0.2)),
+  Color get _accentColor => switch (widget.cfg.type) {
+        SectorType.autoParts => AppColors.orange,
+        SectorType.footwear => AppColors.pink,
+        SectorType.technology => AppColors.info,
+        SectorType.general => AppColors.primary,
+      };
+}
 
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+// ── BATCH ROW EDIT DIALOG ─────────────────────────────────────────────────────
+class _BatchRowEditDialog extends ConsumerStatefulWidget {
+  final String rowId;
+  final SectorConfig cfg;
+  final NumberFormat currency;
+
+  const _BatchRowEditDialog({
+    required this.rowId,
+    required this.cfg,
+    required this.currency,
+  });
+
+  @override
+  ConsumerState<_BatchRowEditDialog> createState() => _BatchRowEditDialogState();
+}
+
+class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _barcodeCtrl;
+  late final TextEditingController _oemCtrl;
+  late final TextEditingController _purchaseCtrl;
+  late final TextEditingController _saleCtrl;
+  late final TextEditingController _brandCtrl;
+  late final TextEditingController _shelfCtrl;
+  late final TextEditingController _descCtrl;
+  late final TextEditingController _minStockCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    final r = ref.read(batchEntryProvider).rows
+        .firstWhere((r) => r.id == widget.rowId, orElse: () => BatchEntryRow());
+    _nameCtrl = TextEditingController(text: r.productName);
+    _barcodeCtrl = TextEditingController(text: r.barcode);
+    _oemCtrl = TextEditingController(text: r.oemNumber ?? '');
+    _purchaseCtrl = TextEditingController(
+        text: r.purchasePrice > 0 ? r.purchasePrice.toString() : '');
+    _saleCtrl = TextEditingController(
+        text: r.salePrice > 0 ? r.salePrice.toString() : '');
+    _brandCtrl = TextEditingController(text: r.brandName ?? '');
+    _shelfCtrl = TextEditingController(text: r.shelfLocation ?? '');
+    _descCtrl = TextEditingController(text: r.description ?? '');
+    _minStockCtrl = TextEditingController(text: r.minStockLevel.toString());
+  }
+
+  @override
+  void dispose() {
+    for (final c in [
+      _nameCtrl, _barcodeCtrl, _oemCtrl, _purchaseCtrl,
+      _saleCtrl, _brandCtrl, _shelfCtrl, _descCtrl, _minStockCtrl,
+    ]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  void _update({
+    String? productName,
+    String? barcode,
+    String? oemNumber,
+    List<Map<String, String>>? oemList,
+    double? purchasePrice,
+    double? salePrice,
+    int? quantity,
+    String? categoryId,
+    String? categoryName,
+    String? brandName,
+    String? unitId,
+    String? shelfLocation,
+    int? minStockLevel,
+    double? vatRate,
+    bool? vatIncluded,
+    String? description,
+    Map<String, String>? attributes,
+    List<BatchVariantRow>? variantRows,
+  }) {
+    ref.read(batchEntryProvider.notifier).updateRow(
+          widget.rowId,
+          productName: productName,
+          barcode: barcode,
+          oemNumber: oemNumber,
+          oemList: oemList,
+          purchasePrice: purchasePrice,
+          salePrice: salePrice,
+          quantity: quantity,
+          categoryId: categoryId,
+          categoryName: categoryName,
+          brandName: brandName,
+          unitId: unitId,
+          shelfLocation: shelfLocation,
+          minStockLevel: minStockLevel,
+          vatRate: vatRate,
+          vatIncluded: vatIncluded,
+          description: description,
+          attributes: attributes,
+          variantRows: variantRows,
+        );
+  }
+
+  BatchRowCompletion _completion(BatchEntryRow row) => BatchRowCompletion.compute(
+        row,
+        isExisting: row.isExisting,
+        brandRequired: widget.cfg.fields.brandRequired,
+        oemRequired: widget.cfg.fields.oemRequired,
+        shelfRequired: widget.cfg.fields.shelfRequired,
+        showOem: widget.cfg.fields.showOem,
+        showShelf: widget.cfg.fields.showShelf,
+        showVariantTable: widget.cfg.fields.showVariantSize,
+      );
+
+  Color get _accentColor => switch (widget.cfg.type) {
+        SectorType.autoParts => AppColors.orange,
+        SectorType.footwear => AppColors.pink,
+        SectorType.technology => AppColors.info,
+        SectorType.general => AppColors.primary,
+      };
+
+  IconData get _accentIcon => switch (widget.cfg.type) {
+        SectorType.autoParts => Icons.build_circle_outlined,
+        SectorType.footwear => Icons.shopping_bag_outlined,
+        SectorType.technology => Icons.devices_outlined,
+        SectorType.general => Icons.store_outlined,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final row = ref.watch(batchEntryProvider.select(
+      (s) => s.rows.firstWhere((r) => r.id == widget.rowId,
+          orElse: () => BatchEntryRow()),
+    ));
+
+    // Satır silindiyse dialog'u kapat
+    if (row.id != widget.rowId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) Navigator.of(context).pop();
+      });
+      return const SizedBox.shrink();
+    }
+
+    final t = i18nOf(ref);
+    final completion = _completion(row);
+    final accentColor = _accentColor;
+    final accentIcon = _accentIcon;
+    final margin = row.salePrice > 0
+        ? ((row.salePrice - row.purchasePrice) / row.salePrice * 100)
+        : 0.0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF1A1A2E) : Colors.white;
+
+    return Dialog(
+      backgroundColor: bg,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 600,
+          maxHeight: MediaQuery.of(context).size.height * 0.88,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Dialog Header ─────────────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.07),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                border: Border(
+                  bottom: BorderSide(color: accentColor.withValues(alpha: 0.15)),
+                ),
+              ),
+              child: Row(
                 children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(accentIcon, size: 18, color: accentColor),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          row.productName.isNotEmpty
+                              ? row.productName
+                              : row.barcode.isNotEmpty
+                                  ? row.barcode
+                                  : t('batch.enter_product_name'),
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: row.productName.isEmpty
+                                ? AppColors.textMuted
+                                : AppColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 3),
+                        _ReadinessBadge(completion: completion, t: t),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _WizardStepDots(completion: completion),
+                  const SizedBox(width: 8),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () => Navigator.of(context).pop(),
+                      child: const Padding(
+                        padding: EdgeInsets.all(6),
+                        child: Icon(Icons.close_rounded,
+                            size: 20, color: AppColors.textMuted),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Scrollable form ───────────────────────────────────────────
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   // ── Bölüm 1: Ürün Bilgileri ──────────────────────────────
                   _WizardSectionHeader(
                     stepNumber: 1,
                     title: t('product.basic_info'),
-                    section: _completion.sectionA,
+                    section: completion.sectionA,
                     isRequired: true,
                     t: t,
                   ),
                   const SizedBox(height: 8),
 
-                  // Mevcut ürün → read-only bilgi kartı
                   if (row.isExisting)
                     _ExistingProductInfoCard(row: row, accentColor: accentColor, t: t)
                   else
@@ -1006,7 +1213,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                           _FormRow(children: [
                             _CategoryDropdown(
                               label: '${widget.cfg.labels.categoryName} *',
-                              selectedId: widget.row.categoryId,
+                              selectedId: row.categoryId,
                               onSelected: (id, name) =>
                                   _update(categoryId: id, categoryName: name),
                             ),
@@ -1026,7 +1233,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                           const SizedBox(height: 10),
                           _UnitDropdown(
                             label: t('product.unit'),
-                            value: widget.row.unitId ?? 'adet',
+                            value: row.unitId ?? 'adet',
                             onChanged: (v) => _update(unitId: v),
                           ),
                           const SizedBox(height: 10),
@@ -1045,7 +1252,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                   _WizardSectionHeader(
                     stepNumber: 2,
                     title: t('batch.price_and_stock'),
-                    section: _completion.sectionB,
+                    section: completion.sectionB,
                     isRequired: true,
                     t: t,
                   ),
@@ -1083,7 +1290,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                           Expanded(
                             child: _VatDropdown(
                               label: t('batch.vat'),
-                              value: widget.row.vatRate,
+                              value: row.vatRate,
                               onChanged: (v) => _update(vatRate: v),
                             ),
                           ),
@@ -1091,7 +1298,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                           Expanded(
                             child: _VatIncludedSwitch(
                               label: t('batch.vat_included'),
-                              value: widget.row.vatIncluded,
+                              value: row.vatIncluded,
                               onChanged: (v) => _update(vatIncluded: v),
                             ),
                           ),
@@ -1166,14 +1373,34 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                     ),
                   ),
 
-                  // ── Bölüm 3: Detaylar (Sektöre Özgü) ────────────────────
-                  if (widget.cfg.fields.showOem ||
+                  // ── Bölüm 3: Detaylar / Sektöre Özgü ────────────────────
+                  if (widget.cfg.fields.showVariantSize) ...[
+                    // FOOTWEAR: Varyant tablosu
+                    const SizedBox(height: 14),
+                    _WizardSectionHeader(
+                      stepNumber: 3,
+                      title: t('batch.variants'),
+                      section: completion.sectionC,
+                      isRequired: true,
+                      t: t,
+                    ),
+                    const SizedBox(height: 8),
+                    _FootwearVariantTable(
+                      variantRows: row.variantRows,
+                      defaultPurchasePrice: row.purchasePrice,
+                      defaultSalePrice: row.salePrice,
+                      sizeLabel: widget.cfg.labels.variantField,
+                      accentColor: accentColor,
+                      onChanged: (rows) => _update(variantRows: rows),
+                    ),
+                  ] else if (widget.cfg.fields.showOem ||
                       widget.cfg.fields.showShelf) ...[
+                    // Diğer sektörler: OEM / Raf / Min Stok
                     const SizedBox(height: 14),
                     _WizardSectionHeader(
                       stepNumber: 3,
                       title: '${widget.cfg.type.displayName} ${t('batch.fields')}',
-                      section: _completion.sectionC,
+                      section: completion.sectionC,
                       isRequired: widget.cfg.fields.oemRequired ||
                           widget.cfg.fields.shelfRequired,
                       t: t,
@@ -1232,8 +1459,8 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                     ),
                   ],
 
-                  // ── Bölüm 4: Varyant Özellikleri ─────────────────────────
-                  if (row.isNew) ...[
+                  // ── Bölüm 4: Varyant Özellikleri (Footwear hariç) ────────
+                  if (row.isNew && !widget.cfg.fields.showVariantSize) ...[
                     const SizedBox(height: 10),
                     _BatchAttributesSection(
                       attributes: row.attributes,
@@ -1269,29 +1496,53 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+            ),
+
+            // ── Dialog Footer ─────────────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: AppColors.border),
+                ),
+              ),
+              child: Row(
+                children: [
+                  TextButton.icon(
+                    onPressed: () {
+                      ref.read(batchEntryProvider.notifier).removeRow(widget.rowId);
+                      Navigator.of(context).pop();
+                    },
+                    icon: const Icon(Icons.delete_outline_rounded,
+                        size: 16, color: AppColors.danger),
+                    label: Text(t('common.remove'),
+                        style: const TextStyle(color: AppColors.danger, fontSize: 13)),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(color: AppColors.danger.withValues(alpha: 0.3)),
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(t('common.close'),
+                        style: const TextStyle(color: AppColors.textSecondary)),
+                  ),
                 ],
               ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }
-
-  Color get _accentColor => switch (widget.cfg.type) {
-        SectorType.autoParts => AppColors.orange,
-        SectorType.footwear => AppColors.pink,
-        SectorType.technology => AppColors.info,
-        SectorType.general => AppColors.primary,
-      };
-
-  IconData get accentIcon => switch (widget.cfg.type) {
-        SectorType.autoParts => Icons.build_circle_outlined,
-        SectorType.footwear => Icons.shopping_bag_outlined,
-        SectorType.technology => Icons.devices_outlined,
-        SectorType.general => Icons.store_outlined,
-      };
 }
 
 // ── QUANTITY CONTROL ──────────────────────────────────────────────────────────
@@ -3421,6 +3672,323 @@ class _SectorExtraFieldsState extends State<_SectorExtraFields> {
         const SizedBox(height: 8),
         ...rows,
       ],
+    );
+  }
+}
+
+// ── FOOTWEAR VARIANT TABLE ────────────────────────────────────────────────────
+class _FootwearVariantTable extends StatefulWidget {
+  final List<BatchVariantRow> variantRows;
+  final double defaultPurchasePrice;
+  final double defaultSalePrice;
+  final String sizeLabel;
+  final Color accentColor;
+  final void Function(List<BatchVariantRow>) onChanged;
+
+  const _FootwearVariantTable({
+    required this.variantRows,
+    required this.defaultPurchasePrice,
+    required this.defaultSalePrice,
+    required this.sizeLabel,
+    required this.accentColor,
+    required this.onChanged,
+  });
+
+  @override
+  State<_FootwearVariantTable> createState() => _FootwearVariantTableState();
+}
+
+class _FootwearVariantTableState extends State<_FootwearVariantTable> {
+  // key: "${rowId}_field"
+  final Map<String, TextEditingController> _ctrls = {};
+
+  @override
+  void dispose() {
+    for (final c in _ctrls.values) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  TextEditingController _ctrl(String rowId, String field, String initial) =>
+      _ctrls.putIfAbsent('${rowId}_$field', () => TextEditingController(text: initial));
+
+  void _addRow() {
+    final newRow = BatchVariantRow(
+      purchasePrice: widget.defaultPurchasePrice > 0 ? widget.defaultPurchasePrice : null,
+      salePrice: widget.defaultSalePrice > 0 ? widget.defaultSalePrice : null,
+    );
+    widget.onChanged([...widget.variantRows, newRow]);
+  }
+
+  void _removeRow(String rowId) {
+    // Dispose controllers for this row
+    final toRemove = _ctrls.keys.where((k) => k.startsWith('${rowId}_')).toList();
+    for (final k in toRemove) {
+      _ctrls[k]!.dispose();
+      _ctrls.remove(k);
+    }
+    widget.onChanged(widget.variantRows.where((r) => r.id != rowId).toList());
+  }
+
+  void _updateRow(BatchVariantRow updated) {
+    final rows = widget.variantRows.map((r) => r.id == updated.id ? updated : r).toList();
+    widget.onChanged(rows);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF1A1A2E) : Colors.white;
+    final borderColor = widget.accentColor.withValues(alpha: 0.25);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── Tablo başlığı ──────────────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: widget.accentColor.withValues(alpha: 0.07),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
+            ),
+            child: Row(
+              children: [
+                _HeaderCell(widget.sizeLabel, flex: 2),
+                _HeaderCell('Renk', flex: 2),
+                _HeaderCell('Adet', flex: 1),
+                _HeaderCell('Barkod', flex: 2),
+                _HeaderCell('Alış ₺', flex: 2),
+                _HeaderCell('Satış ₺', flex: 2),
+                const SizedBox(width: 28), // delete button placeholder
+              ],
+            ),
+          ),
+          // ── Satırlar ───────────────────────────────────────────────────────
+          if (widget.variantRows.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: Text(
+                  'Henüz varyant eklenmedi',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            )
+          else
+            ...widget.variantRows.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final vr = entry.value;
+              final rowBg = idx.isOdd
+                  ? widget.accentColor.withValues(alpha: 0.03)
+                  : Colors.transparent;
+              return _VariantTableRow(
+                key: ValueKey(vr.id),
+                variantRow: vr,
+                rowBg: rowBg,
+                sizeCtrl: _ctrl(vr.id, 'size', vr.size),
+                colorCtrl: _ctrl(vr.id, 'color', vr.color),
+                barcodeCtrl: _ctrl(vr.id, 'barcode', vr.barcode),
+                qtyCtrl: _ctrl(vr.id, 'qty', vr.quantity > 0 ? '${vr.quantity}' : '1'),
+                purchaseCtrl: _ctrl(vr.id, 'purchase',
+                    vr.purchasePrice != null && vr.purchasePrice! > 0
+                        ? vr.purchasePrice!.toString()
+                        : ''),
+                saleCtrl: _ctrl(vr.id, 'sale',
+                    vr.salePrice != null && vr.salePrice! > 0
+                        ? vr.salePrice!.toString()
+                        : ''),
+                onUpdate: _updateRow,
+                onDelete: () => _removeRow(vr.id),
+              );
+            }),
+          // ── Ekle butonu ────────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: _addRow,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: widget.accentColor.withValues(alpha: 0.4),
+                      style: BorderStyle.solid,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add_rounded, size: 15, color: widget.accentColor),
+                      const SizedBox(width: 5),
+                      Text(
+                        'Varyant Ekle',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: widget.accentColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeaderCell extends StatelessWidget {
+  final String label;
+  final int flex;
+  const _HeaderCell(this.label, {this.flex = 1});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      flex: flex,
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textMuted,
+          letterSpacing: 0.3,
+        ),
+      ),
+    );
+  }
+}
+
+class _VariantTableRow extends StatelessWidget {
+  final BatchVariantRow variantRow;
+  final Color rowBg;
+  final TextEditingController sizeCtrl;
+  final TextEditingController colorCtrl;
+  final TextEditingController barcodeCtrl;
+  final TextEditingController qtyCtrl;
+  final TextEditingController purchaseCtrl;
+  final TextEditingController saleCtrl;
+  final void Function(BatchVariantRow) onUpdate;
+  final VoidCallback onDelete;
+
+  const _VariantTableRow({
+    super.key,
+    required this.variantRow,
+    required this.rowBg,
+    required this.sizeCtrl,
+    required this.colorCtrl,
+    required this.barcodeCtrl,
+    required this.qtyCtrl,
+    required this.purchaseCtrl,
+    required this.saleCtrl,
+    required this.onUpdate,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: rowBg,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Row(
+        children: [
+          _VCell(sizeCtrl, flex: 2, hint: '41', onChanged: (v) => onUpdate(variantRow.copyWith(size: v))),
+          _VCell(colorCtrl, flex: 2, hint: 'Kırmızı', onChanged: (v) => onUpdate(variantRow.copyWith(color: v))),
+          _VCell(qtyCtrl, flex: 1, hint: '1', isNum: true,
+              onChanged: (v) => onUpdate(variantRow.copyWith(quantity: int.tryParse(v) ?? 1))),
+          _VCell(barcodeCtrl, flex: 2, hint: 'Barkod', onChanged: (v) => onUpdate(variantRow.copyWith(barcode: v))),
+          _VCell(purchaseCtrl, flex: 2, hint: '0.00', isNum: true,
+              onChanged: (v) => onUpdate(variantRow.copyWith(
+                  purchasePrice: double.tryParse(v.replaceAll(',', '.'))))),
+          _VCell(saleCtrl, flex: 2, hint: '0.00', isNum: true,
+              onChanged: (v) => onUpdate(variantRow.copyWith(
+                  salePrice: double.tryParse(v.replaceAll(',', '.'))))),
+          SizedBox(
+            width: 28,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(4),
+                onTap: onDelete,
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
+                  child: Icon(Icons.close_rounded, size: 14, color: AppColors.danger),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VCell extends StatelessWidget {
+  final TextEditingController ctrl;
+  final int flex;
+  final String hint;
+  final bool isNum;
+  final void Function(String) onChanged;
+
+  const _VCell(this.ctrl, {
+    required this.flex,
+    required this.hint,
+    required this.onChanged,
+    this.isNum = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      flex: flex,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 6),
+        child: TextField(
+          controller: ctrl,
+          onChanged: onChanged,
+          keyboardType: isNum ? TextInputType.number : TextInputType.text,
+          inputFormatters: isNum
+              ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))]
+              : null,
+          style: const TextStyle(fontSize: 12),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(color: AppColors.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: const BorderSide(color: AppColors.primary),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

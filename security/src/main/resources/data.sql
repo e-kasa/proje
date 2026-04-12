@@ -1618,6 +1618,7 @@ VALUES
     ('bnd-bt082-0000-0000-000000000082', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.ready', 'Hazır', 'Ready'),
     ('bnd-bt083-0000-0000-000000000083', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.details', 'Detaylar', 'Details'),
     ('bnd-bt084-0000-0000-000000000084', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.product_info', 'Ürün Bilgileri', 'Product Info'),
+    ('bnd-bt085-0000-0000-000000000085', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.variants', 'Varyantlar', 'Variants'),
 
     -- ── WIZARD (Ürün ekleme adımları) ─────────────────────────────
     ('bnd-wz001-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.changes_will_be_lost', 'Değişiklikler kaybolacak', 'Changes will be lost'),

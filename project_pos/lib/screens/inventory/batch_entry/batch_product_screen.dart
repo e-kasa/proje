@@ -598,6 +598,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
     bool? isExpanded,
     double? vatRate,
     bool? vatIncluded,
+    Map<String, String>? attributes,
   }) {
     ref.read(batchEntryProvider.notifier).updateRow(
           widget.row.id,
@@ -614,6 +615,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
           isExpanded: isExpanded,
           vatRate: vatRate,
           vatIncluded: vatIncluded,
+          attributes: attributes,
         );
   }
 
@@ -1764,13 +1766,21 @@ class _ResultStat extends StatelessWidget {
 
 // ── BATCH ATTRIBUTES SECTION ─────────────────────────────────────────────────
 
-class _AttrPreset {
+class _AttrDef {
   final String name;
   final IconData icon;
-  const _AttrPreset(this.name, this.icon);
+  final List<String> suggestions;
+  const _AttrDef(this.name, this.icon, this.suggestions);
 }
 
-class _BatchAttributesSection extends StatelessWidget {
+class _AttrTemplate {
+  final String label;
+  final IconData icon;
+  final List<String> attrNames;
+  const _AttrTemplate(this.label, this.icon, this.attrNames);
+}
+
+class _BatchAttributesSection extends StatefulWidget {
   final Map<String, String> attributes;
   final SectorConfig cfg;
   final void Function(Map<String, String>) onChanged;
@@ -1781,6 +1791,74 @@ class _BatchAttributesSection extends StatelessWidget {
     required this.onChanged,
   });
 
+  @override
+  State<_BatchAttributesSection> createState() =>
+      _BatchAttributesSectionState();
+}
+
+class _BatchAttributesSectionState
+    extends State<_BatchAttributesSection> {
+  // ── Attribute catalogue ───────────────────────────────────────────────────
+  static const Map<String, _AttrDef> _catalogue = {
+    'Renk': _AttrDef('Renk', Icons.palette_rounded, [
+      'Siyah', 'Beyaz', 'Kırmızı', 'Mavi', 'Yeşil',
+      'Sarı', 'Gri', 'Mor', 'Turuncu', 'Kahverengi',
+    ]),
+    'Beden': _AttrDef('Beden', Icons.straighten_rounded,
+        ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL']),
+    'Numara': _AttrDef('Numara', Icons.straighten_rounded,
+        ['35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45']),
+    'Materyal': _AttrDef('Materyal', Icons.texture_rounded,
+        ['Deri', 'Süet', 'Kumaş', 'Plastik', 'Metal', 'Kauçuk', 'Ahşap']),
+    'Sezon': _AttrDef('Sezon', Icons.wb_sunny_rounded,
+        ['İlkbahar/Yaz', 'Sonbahar/Kış', 'Tüm Sezonlar']),
+    'RAM': _AttrDef('RAM', Icons.memory_rounded,
+        ['2GB', '4GB', '6GB', '8GB', '12GB', '16GB', '32GB', '64GB']),
+    'Depolama': _AttrDef('Depolama', Icons.storage_rounded,
+        ['32GB', '64GB', '128GB', '256GB', '512GB', '1TB', '2TB']),
+    'Garanti (ay)': _AttrDef('Garanti (ay)', Icons.verified_rounded,
+        ['6', '12', '18', '24', '36', '60']),
+    'Ekran': _AttrDef('Ekran', Icons.monitor_rounded,
+        ['5.5"', '6.1"', '6.7"', '13"', '14"', '15.6"', '17"']),
+    'İşlemci': _AttrDef('İşlemci', Icons.developer_board_rounded,
+        ['i3', 'i5', 'i7', 'i9', 'M1', 'M2', 'Snapdragon', 'Exynos']),
+    'Marka': _AttrDef('Marka', Icons.business_rounded, []),
+    'Model': _AttrDef('Model', Icons.category_rounded, []),
+    'Araç Grubu': _AttrDef('Araç Grubu', Icons.directions_car_rounded,
+        ['Binek', 'SUV', 'Pickup', 'Kamyonet', 'Minibüs', 'Ticari']),
+    'Motor': _AttrDef('Motor', Icons.engineering_rounded,
+        ['1.0', '1.2', '1.4', '1.6', '2.0', '2.5', 'Dizel', 'Benzin', 'Hibrit']),
+    'Boyut': _AttrDef('Boyut', Icons.straighten_rounded,
+        ['XS', 'S', 'M', 'L', 'XL', '2XL']),
+    'Ağırlık': _AttrDef('Ağırlık', Icons.scale_rounded,
+        ['50g', '100g', '250g', '500g', '1kg', '2kg', '5kg', '10kg']),
+  };
+
+  // ── Sector preset templates ───────────────────────────────────────────────
+  static const Map<SectorType, List<_AttrTemplate>> _templates = {
+    SectorType.autoParts: [
+      _AttrTemplate('Marka + Model', Icons.build_circle_rounded, ['Marka', 'Model']),
+      _AttrTemplate('Araç Grubu', Icons.directions_car_rounded, ['Araç Grubu']),
+      _AttrTemplate('Renk', Icons.palette_rounded, ['Renk']),
+      _AttrTemplate('Motor', Icons.engineering_rounded, ['Motor']),
+    ],
+    SectorType.footwear: [
+      _AttrTemplate('Renk + Numara', Icons.shopping_bag_rounded, ['Renk', 'Numara']),
+      _AttrTemplate('Renk + Beden', Icons.checkroom_rounded, ['Renk', 'Beden']),
+      _AttrTemplate('Materyal + Sezon', Icons.texture_rounded, ['Materyal', 'Sezon']),
+    ],
+    SectorType.technology: [
+      _AttrTemplate('RAM + Depolama', Icons.devices_rounded, ['RAM', 'Depolama']),
+      _AttrTemplate('Renk + RAM', Icons.memory_rounded, ['Renk', 'RAM']),
+      _AttrTemplate('Ekran + İşlemci', Icons.monitor_rounded, ['Ekran', 'İşlemci']),
+    ],
+    SectorType.general: [
+      _AttrTemplate('Renk + Beden', Icons.checkroom_rounded, ['Renk', 'Beden']),
+      _AttrTemplate('Renk + Boyut', Icons.palette_rounded, ['Renk', 'Boyut']),
+      _AttrTemplate('Materyal + Renk', Icons.texture_rounded, ['Materyal', 'Renk']),
+    ],
+  };
+
   static const _attrColors = [
     Color(0xFF5C6BC0),
     Color(0xFFEF5350),
@@ -1790,354 +1868,640 @@ class _BatchAttributesSection extends StatelessWidget {
     Color(0xFFAB47BC),
   ];
 
-  static const Map<SectorType, List<_AttrPreset>> _presets = {
-    SectorType.autoParts: [
-      _AttrPreset('Marka', Icons.business_rounded),
-      _AttrPreset('Model', Icons.category_rounded),
-      _AttrPreset('Araç Grubu', Icons.directions_car_rounded),
-      _AttrPreset('Renk', Icons.palette_rounded),
-    ],
-    SectorType.footwear: [
-      _AttrPreset('Renk', Icons.palette_rounded),
-      _AttrPreset('Numara', Icons.straighten_rounded),
-      _AttrPreset('Materyal', Icons.texture_rounded),
-      _AttrPreset('Sezon', Icons.sunny_rounded),
-    ],
-    SectorType.technology: [
-      _AttrPreset('Renk', Icons.palette_rounded),
-      _AttrPreset('RAM', Icons.memory_rounded),
-      _AttrPreset('Depolama', Icons.storage_rounded),
-      _AttrPreset('Garanti (ay)', Icons.verified_rounded),
-    ],
-    SectorType.general: [
-      _AttrPreset('Renk', Icons.palette_rounded),
-      _AttrPreset('Boyut', Icons.straighten_rounded),
-      _AttrPreset('Materyal', Icons.texture_rounded),
-      _AttrPreset('Ağırlık', Icons.scale_rounded),
-    ],
-  };
+  // ── Icon / colour helpers ─────────────────────────────────────────────────
+  final Map<String, IconData> _iconOverrides = {};
+  final Map<String, TextEditingController> _controllers = {};
 
-  Color _colorForKey(String key) {
-    final keys = attributes.keys.toList();
-    final idx = keys.indexOf(key);
-    return _attrColors[(idx < 0 ? 0 : idx) % _attrColors.length];
-  }
+  Color get _accent => switch (widget.cfg.type) {
+        SectorType.autoParts => AppColors.orange,
+        SectorType.footwear => AppColors.pink,
+        SectorType.technology => AppColors.info,
+        SectorType.general => AppColors.primary,
+      };
 
   @override
-  Widget build(BuildContext context) {
-    final presets =
-        _presets[cfg.type] ?? _presets[SectorType.general]!;
-    final unusedPresets =
-        presets.where((p) => !attributes.containsKey(p.name)).toList();
+  void dispose() {
+    for (final c in _controllers.values) {
+      c.dispose();
+    }
+    super.dispose();
+  }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header
-        Row(
-          children: [
-            const Icon(Icons.tune_rounded,
-                size: 13, color: AppColors.primary),
-            const SizedBox(width: 6),
-            const Text(
-              'Varyant Özellikleri',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primary,
-                letterSpacing: 0.3,
-              ),
-            ),
-            const Spacer(),
-            // Custom attribute button
-            GestureDetector(
-              onTap: () => _showAddDialog(context, null),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.25)),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.add_rounded,
-                        size: 12, color: AppColors.primary),
-                    SizedBox(width: 4),
-                    Text(
-                      'Özel',
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
+  TextEditingController _ctrl(String name) => _controllers.putIfAbsent(
+      name, () => TextEditingController(text: widget.attributes[name] ?? ''));
 
-        // Existing attributes as chips
-        if (attributes.isNotEmpty) ...[
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: attributes.entries.mapIndexed((idx, e) {
-              final color = _attrColors[idx % _attrColors.length];
-              return Container(
-                padding: const EdgeInsets.fromLTRB(8, 4, 4, 4),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                      color: color.withValues(alpha: 0.35)),
+  IconData _iconFor(String name) =>
+      _iconOverrides[name] ?? _catalogue[name]?.icon ?? Icons.label_rounded;
+
+  Color _colorAt(int idx) => _attrColors[idx % _attrColors.length];
+
+  // ── Mutations ─────────────────────────────────────────────────────────────
+  void _applyTemplate(_AttrTemplate tpl) {
+    final a = Map<String, String>.from(widget.attributes);
+    for (final n in tpl.attrNames) {
+      a.putIfAbsent(n, () => '');
+    }
+    widget.onChanged(a);
+  }
+
+  void _selectValue(String name, String val) {
+    _ctrl(name).text = val;
+    widget.onChanged(Map<String, String>.from(widget.attributes)..[name] = val);
+  }
+
+  void _setCustom(String name, String val) =>
+      widget.onChanged(Map<String, String>.from(widget.attributes)..[name] = val);
+
+  void _removeAttr(String name) {
+    _controllers[name]?.dispose();
+    _controllers.remove(name);
+    _iconOverrides.remove(name);
+    final a = Map<String, String>.from(widget.attributes)..remove(name);
+    widget.onChanged(a);
+  }
+
+  void _addAttr(String name, IconData icon) {
+    if (widget.attributes.containsKey(name)) return;
+    _iconOverrides[name] = icon;
+    widget.onChanged(Map<String, String>.from(widget.attributes)..[name] = '');
+  }
+
+  // ── Dialog: add new attribute ─────────────────────────────────────────────
+  void _showAddAttrDialog(BuildContext ctx) {
+    final nameCtrl = TextEditingController();
+    IconData selIcon = Icons.label_rounded;
+    String? nameError;
+
+    const iconOpts = [
+      (Icons.palette_rounded, 'Renk'),
+      (Icons.straighten_rounded, 'Beden'),
+      (Icons.memory_rounded, 'RAM'),
+      (Icons.storage_rounded, 'Depolama'),
+      (Icons.directions_car_rounded, 'Araç'),
+      (Icons.business_rounded, 'Marka'),
+      (Icons.category_rounded, 'Model'),
+      (Icons.verified_rounded, 'Garanti'),
+      (Icons.texture_rounded, 'Materyal'),
+      (Icons.scale_rounded, 'Ağırlık'),
+      (Icons.engineering_rounded, 'Motor'),
+      (Icons.label_rounded, 'Diğer'),
+    ];
+
+    showDialog(
+      context: ctx,
+      builder: (dCtx) => StatefulBuilder(
+        builder: (dCtx, setDs) => AlertDialog(
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20)),
+          title: Row(children: [
+            Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.success.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.add_rounded,
+                  color: AppColors.success, size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Text('Yeni Özellik',
+                style: TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w700)),
+          ]),
+          content: SizedBox(
+            width: 340,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  autofocus: true,
+                  onChanged: (_) => setDs(() => nameError = null),
+                  decoration: InputDecoration(
+                    labelText: 'Özellik Adı',
+                    hintText: 'ör: Renk, Beden, Model',
+                    errorText: nameError,
+                    border: const OutlineInputBorder(),
+                    prefixIcon: Icon(selIcon,
+                        size: 18, color: AppColors.textMuted),
+                  ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      e.key,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: color,
+                const SizedBox(height: 16),
+                const Text('İkon Seç',
+                    style: TextStyle(
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const Text(' : ',
-                        style: TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textMuted)),
-                    Text(
-                      e.value,
-                      style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w500),
-                    ),
-                    const SizedBox(width: 4),
-                    GestureDetector(
-                      onTap: () {
-                        final newMap =
-                            Map<String, String>.from(attributes)
-                              ..remove(e.key);
-                        onChanged(newMap);
-                      },
-                      child: Icon(Icons.close_rounded,
-                          size: 13, color: color),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 8),
-        ],
-
-        // Preset suggestion chips
-        if (unusedPresets.isNotEmpty)
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: unusedPresets
-                .map((p) => GestureDetector(
-                      onTap: () => _showAddDialog(context, p),
-                      child: Container(
+                        color: AppColors.textSecondary)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 7,
+                  runSpacing: 7,
+                  children: iconOpts.map((pair) {
+                    final isSel = selIcon == pair.$1;
+                    return GestureDetector(
+                      onTap: () =>
+                          setDs(() => selIcon = pair.$1),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 140),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                            horizontal: 10, vertical: 7),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF0F2F8),
-                          borderRadius: BorderRadius.circular(8),
+                          color: isSel
+                              ? AppColors.primary
+                                  .withValues(alpha: 0.1)
+                              : Colors.white,
                           border: Border.all(
-                              color: AppColors.border),
+                            color: isSel
+                                ? AppColors.primary
+                                : AppColors.border,
+                            width: isSel ? 1.5 : 1,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(p.icon,
-                                size: 12,
-                                color: AppColors.textMuted),
+                            Icon(pair.$1,
+                                size: 15,
+                                color: isSel
+                                    ? AppColors.primary
+                                    : AppColors.textMuted),
                             const SizedBox(width: 5),
-                            Text(
-                              '+ ${p.name}',
-                              style: const TextStyle(
+                            Text(pair.$2,
+                                style: TextStyle(
                                   fontSize: 11,
-                                  color: AppColors.textSecondary,
-                                  fontWeight: FontWeight.w500),
-                            ),
+                                  color: isSel
+                                      ? AppColors.primary
+                                      : AppColors.textSecondary,
+                                  fontWeight: isSel
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                )),
+                            if (isSel) ...[
+                              const SizedBox(width: 4),
+                              const Icon(
+                                  Icons.check_circle_rounded,
+                                  size: 11,
+                                  color: AppColors.primary),
+                            ],
                           ],
                         ),
                       ),
-                    ))
-                .toList(),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
           ),
-      ],
-    );
-  }
-
-  void _showAddDialog(BuildContext context, _AttrPreset? preset) {
-    showDialog(
-      context: context,
-      builder: (_) => _AddAttributeDialog(
-        presetName: preset?.name,
-        presetIcon: preset?.icon,
-        existingKeys: attributes.keys.toSet(),
-        onAdd: (key, value) {
-          final newMap = Map<String, String>.from(attributes);
-          newMap[key] = value;
-          onChanged(newMap);
-        },
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dCtx),
+              child: const Text('İptal'),
+            ),
+            AppButton.primary(
+              text: 'Ekle',
+              onPressed: () {
+                final name = nameCtrl.text.trim();
+                if (name.isEmpty) {
+                  setDs(() => nameError = 'Özellik adı zorunludur');
+                  return;
+                }
+                if (widget.attributes.containsKey(name)) {
+                  setDs(() => nameError = '$name zaten eklenmiş');
+                  return;
+                }
+                Navigator.pop(dCtx);
+                setState(() => _addAttr(name, selIcon));
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
-}
 
-// ── ADD ATTRIBUTE DIALOG ──────────────────────────────────────────────────────
-class _AddAttributeDialog extends StatefulWidget {
-  final String? presetName;
-  final IconData? presetIcon;
-  final Set<String> existingKeys;
-  final void Function(String key, String value) onAdd;
-
-  const _AddAttributeDialog({
-    required this.presetName,
-    required this.presetIcon,
-    required this.existingKeys,
-    required this.onAdd,
-  });
-
-  @override
-  State<_AddAttributeDialog> createState() =>
-      _AddAttributeDialogState();
-}
-
-class _AddAttributeDialogState extends State<_AddAttributeDialog> {
-  late final TextEditingController _keyCtrl;
-  late final TextEditingController _valueCtrl;
-  String? _keyError;
-
-  @override
-  void initState() {
-    super.initState();
-    _keyCtrl =
-        TextEditingController(text: widget.presetName ?? '');
-    _valueCtrl = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _keyCtrl.dispose();
-    _valueCtrl.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final key = _keyCtrl.text.trim();
-    final value = _valueCtrl.text.trim();
-    if (key.isEmpty) {
-      setState(() => _keyError = 'Özellik adı zorunludur');
-      return;
-    }
-    if (widget.existingKeys.contains(key)) {
-      setState(() => _keyError = '$key zaten eklenmiş');
-      return;
-    }
-    if (value.isEmpty) return;
-    widget.onAdd(key, value);
-    Navigator.pop(context);
-  }
-
+  // ── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20)),
-      title: Row(
-        children: [
-          Icon(widget.presetIcon ?? Icons.tune_rounded,
-              color: AppColors.primary, size: 22),
-          const SizedBox(width: 10),
-          const Text('Özellik Ekle',
-              style: TextStyle(fontSize: 16)),
+    final accent = _accent;
+    final templates =
+        _templates[widget.cfg.type] ?? _templates[SectorType.general]!;
+    final attrs = widget.attributes;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accent.withValues(alpha: 0.25)),
+        boxShadow: [
+          BoxShadow(
+              color: accent.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2)),
         ],
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextField(
-            controller: _keyCtrl,
-            autofocus: widget.presetName == null,
-            readOnly: widget.presetName != null,
-            decoration: InputDecoration(
-              labelText: 'Özellik Adı',
-              hintText: 'ör: Renk, Beden, Malzeme',
-              errorText: _keyError,
-              border: const OutlineInputBorder(),
-              prefixIcon: Icon(widget.presetIcon ?? Icons.label_outline,
-                  size: 18),
+          // ── Header bar ───────────────────────────────────────────────
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.06),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(12)),
             ),
-            onChanged: (_) {
-              if (_keyError != null) {
-                setState(() => _keyError = null);
-              }
-            },
+            child: Row(
+              children: [
+                Container(
+                  width: 30, height: 30,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(Icons.tune_rounded, size: 16, color: accent),
+                ),
+                const SizedBox(width: 10),
+                Text('Varyant Özellikleri',
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: accent)),
+                if (attrs.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text('${attrs.length} özellik',
+                        style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: accent)),
+                  ),
+                ],
+                const Spacer(),
+                Material(
+                  color: AppColors.success.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  child: InkWell(
+                    onTap: () => _showAddAttrDialog(context),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: AppColors.success
+                                .withValues(alpha: 0.3)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add_rounded,
+                              size: 14, color: AppColors.success),
+                          SizedBox(width: 4),
+                          Text('Yeni',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.success)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _valueCtrl,
-            autofocus: widget.presetName != null,
-            decoration: InputDecoration(
-              labelText: 'Değer',
-              hintText: _valueHint,
-              border: const OutlineInputBorder(),
-              prefixIcon:
-                  const Icon(Icons.edit_rounded, size: 18),
+
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Quick templates ─────────────────────────────────────
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: templates.map((tpl) {
+                    final isActive = tpl.attrNames
+                        .every((n) => attrs.containsKey(n));
+                    return GestureDetector(
+                      onTap: () =>
+                          setState(() => _applyTemplate(tpl)),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 170),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? accent.withValues(alpha: 0.1)
+                              : const Color(0xFFF4F5F8),
+                          border: Border.all(
+                            color: isActive
+                                ? accent
+                                : AppColors.border,
+                            width: isActive ? 1.5 : 1,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(tpl.icon,
+                                size: 13,
+                                color: isActive
+                                    ? accent
+                                    : AppColors.textMuted),
+                            const SizedBox(width: 5),
+                            Text(tpl.label,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: isActive
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                  color: isActive
+                                      ? accent
+                                      : AppColors.textSecondary,
+                                )),
+                            if (isActive) ...[
+                              const SizedBox(width: 4),
+                              Icon(Icons.check_circle_rounded,
+                                  size: 12, color: accent),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+
+                // ── Empty hint ──────────────────────────────────────────
+                if (attrs.isEmpty) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(13),
+                    decoration: BoxDecoration(
+                      color: AppColors.bgLight,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(children: [
+                      const Icon(Icons.info_outline_rounded,
+                          size: 15,
+                          color: AppColors.textMuted),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Şablon seç veya "Yeni" ile özellik ekle.\n'
+                          'Her özellik bu varyantı diğerlerinden ayırt eder.',
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                              height: 1.5),
+                        ),
+                      ),
+                    ]),
+                  ),
+                ],
+
+                // ── Attribute cards ─────────────────────────────────────
+                if (attrs.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  ...attrs.entries.toList().asMap().entries.map(
+                      (e) => _buildAttrCard(
+                          context, e.key, e.value.key, e.value.value, accent)),
+                ],
+              ],
             ),
-            onSubmitted: (_) => _submit(),
           ),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('İptal'),
-        ),
-        ElevatedButton.icon(
-          onPressed: _submit,
-          icon: const Icon(Icons.check_rounded, size: 16),
-          label: const Text('Ekle'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-      ],
     );
   }
 
-  String get _valueHint {
-    final key = (_keyCtrl.text.trim()).toLowerCase();
-    if (key.contains('renk') || key.contains('color')) {
-      return 'ör: Kırmızı, Mavi, Siyah';
-    }
-    if (key.contains('beden') || key.contains('numara') ||
-        key.contains('size')) {
-      return 'ör: S, M, L, XL veya 40, 41, 42';
-    }
-    if (key.contains('ram')) return 'ör: 8GB, 16GB';
-    if (key.contains('depolama') || key.contains('storage')) {
-      return 'ör: 256GB, 512GB';
-    }
-    if (key.contains('garanti')) return 'ör: 12, 24, 36';
-    return 'Değer girin';
+  Widget _buildAttrCard(BuildContext context, int idx, String name,
+      String curVal, Color accent) {
+    final def = _catalogue[name];
+    final color = _colorAt(idx);
+    final icon = _iconFor(name);
+    final suggestions = def?.suggestions ?? [];
+    final ctrl = _ctrl(name);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+              color: color.withValues(alpha: 0.06),
+              blurRadius: 6,
+              offset: const Offset(0, 2)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Card header
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.07),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(10)),
+            ),
+            child: Row(children: [
+              Container(
+                width: 28, height: 28,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(7),
+                ),
+                child: Icon(icon, size: 14, color: color),
+              ),
+              const SizedBox(width: 8),
+              Text(name,
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: color)),
+              const SizedBox(width: 6),
+              if (curVal.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(curVal,
+                      style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: color)),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text('Seçilmedi',
+                      style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.warning)),
+                ),
+              const Spacer(),
+              Material(
+                color: AppColors.danger.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(6),
+                child: InkWell(
+                  onTap: () => setState(() => _removeAttr(name)),
+                  borderRadius: BorderRadius.circular(6),
+                  child: const Padding(
+                    padding: EdgeInsets.all(5),
+                    child: Icon(Icons.close_rounded,
+                        size: 15, color: AppColors.danger),
+                  ),
+                ),
+              ),
+            ]),
+          ),
+
+          // Suggestions + text field
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (suggestions.isNotEmpty) ...[
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: suggestions.map((val) {
+                      final isSel = curVal == val;
+                      return GestureDetector(
+                        onTap: () =>
+                            setState(() => _selectValue(name, val)),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 140),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 11, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: isSel
+                                ? color
+                                : color.withValues(alpha: 0.07),
+                            border: Border.all(
+                              color: isSel
+                                  ? color
+                                  : color.withValues(alpha: 0.25),
+                              width: isSel ? 1.5 : 1,
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(val,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: isSel ? Colors.white : color,
+                              )),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 10),
+                  const Row(children: [
+                    Expanded(child: Divider(height: 1)),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Text('veya gir',
+                          style: TextStyle(
+                              fontSize: 10,
+                              color: AppColors.textMuted)),
+                    ),
+                    Expanded(child: Divider(height: 1)),
+                  ]),
+                  const SizedBox(height: 8),
+                ],
+                // Text input
+                SizedBox(
+                  height: 38,
+                  child: TextField(
+                    controller: ctrl,
+                    onChanged: (v) => _setCustom(name, v),
+                    style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w500),
+                    decoration: InputDecoration(
+                      hintText: _hintFor(name),
+                      hintStyle: const TextStyle(
+                          fontSize: 11, color: AppColors.textMuted),
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 10),
+                      filled: true,
+                      fillColor: color.withValues(alpha: 0.03),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                            color: color.withValues(alpha: 0.2)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                            color: color.withValues(alpha: 0.2)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide:
+                            BorderSide(color: color, width: 1.5),
+                      ),
+                      prefixIcon: Icon(icon,
+                          size: 14,
+                          color: color.withValues(alpha: 0.5)),
+                      prefixIconConstraints: const BoxConstraints(
+                          minWidth: 34, minHeight: 0),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _hintFor(String name) {
+    final lc = name.toLowerCase();
+    if (lc.contains('renk')) return 'ör: Kırmızı, #FF5733';
+    if (lc.contains('numara')) return 'ör: 40, 41, 42';
+    if (lc.contains('beden') || lc.contains('boyut')) return 'ör: S, M, L, XL';
+    if (lc.contains('ram')) return 'ör: 8GB, 16GB';
+    if (lc.contains('depolama')) return 'ör: 256GB, 1TB';
+    if (lc.contains('garanti')) return 'ör: 12 (ay)';
+    if (lc.contains('motor')) return 'ör: 1.6 Dizel';
+    if (lc.contains('araç')) return 'ör: Binek, SUV';
+    if (lc.contains('materyal')) return 'ör: Deri, Kumaş';
+    if (lc.contains('sezon')) return 'ör: Sonbahar/Kış';
+    if (lc.contains('ekran')) return 'ör: 6.1", 14"';
+    if (lc.contains('işlemci')) return 'ör: i7, Snapdragon';
+    return 'Değer girin…';
   }
 }
+
 
 // ── SECTOR EXTRA FIELDS ───────────────────────────────────────────────────────
 class _SectorExtraFields extends StatefulWidget {

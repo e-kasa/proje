@@ -156,6 +156,8 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                 if (v.getShelfLocationCode() != null && !v.getShelfLocationCode().isBlank()) {
                     variant.setShelfLocationCode(v.getShelfLocationCode());
                 }
+                // Minimum stok seviyesi
+                variant.setMinStockLevel(v.getMinStockLevel() != null ? v.getMinStockLevel() : 10);
                 variantService.save(variant);
 
                 // PRICING
@@ -307,30 +309,13 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
             for (BatchProductItem item : req.getNewProducts()) {
                 try {
                     // Mevcut createProduct mantığını yeniden kullan
+                    // Flutter initialStocks içinde storeId/warehouseId zaten gönderir.
                     CreateProductRequest cpr = CreateProductRequest.builder()
                             .product(item.getProduct())
                             .variants(item.getVariants())
                             .oemNumbers(item.getOemNumbers())
                             .crossReferences(item.getCrossReferences())
                             .build();
-
-                    // Purchase referansını variant'lara ekle (StockMovement için)
-                    if (item.getVariants() != null) {
-                        for (ProductVariantRequest vr : item.getVariants()) {
-                            if (vr.getInitialStocks() != null) {
-                                for (var stock : vr.getInitialStocks()) {
-                                    // storeId / warehouseId request'ten gelir
-                                    if (stock.getStoreId() == null) {
-                                        stock = com.sedcore.inventory.model.InitialStocksRequest.builder()
-                                                .storeId(req.getStoreId())
-                                                .warehouseId(req.getWarehouseId())
-                                                .quantity(stock.getQuantity())
-                                                .build();
-                                    }
-                                }
-                            }
-                        }
-                    }
 
                     ProductResponse created = _createProductWithPurchase(cpr, purchase);
 
@@ -460,6 +445,7 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                 if (v.getShelfLocationCode() != null && !v.getShelfLocationCode().isBlank()) {
                     variant.setShelfLocationCode(v.getShelfLocationCode());
                 }
+                variant.setMinStockLevel(v.getMinStockLevel() != null ? v.getMinStockLevel() : 10);
                 variantService.save(variant);
 
                 if (v.getPricing() != null) {
@@ -710,7 +696,7 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                 int totalQty = inventories.stream()
                         .mapToInt(iv -> iv.getPhysicalQuantity() != null ? iv.getPhysicalQuantity() : 0)
                         .sum();
-                InventoryView first = inventories.getFirst();
+                InventoryView first = inventories.get(0);
                 inventoryResponse = InventoryResponse.builder()
                         .id(first.getId())
                         .variantId(first.getVariantId())

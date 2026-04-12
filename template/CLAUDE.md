@@ -210,14 +210,15 @@ export const ENDPOINTS = {
   menu:        '/security/api/get-menu-for-user',
   i18n:        '/security/i18n/all',
 
-  products:    '/product/api/v1/products',
-  categories:  '/product/api/v1/categories',
-  brands:      '/product/api/v1/brands',
-  units:       '/product/api/v1/units',
-  sales:       '/product/api/v1/sales',
-  purchases:   '/product/api/v1/purchases',
-  stock:       '/product/api/v1/stock-movements',
-  suppliers:   '/product/api/v1/suppliers',
+  products:       '/product/api/v1/products',
+  productsBatch:  '/product/api/v1/products/batch',  // Toplu ürün girişi
+  categories:     '/product/api/v1/categories',
+  brands:         '/product/api/v1/brands',
+  units:          '/product/api/v1/units',
+  sales:          '/product/api/v1/sales',
+  purchases:      '/product/api/v1/purchases',
+  stock:          '/product/api/v1/stock-movements',
+  suppliers:      '/product/api/v1/suppliers',
 };
 
 // ❌ axiosInstance.get('/product/api/v1/products')  → hardcode URL yasak
@@ -325,3 +326,5 @@ const DashboardPage = lazy(() => import('./feature-module/dashboard'));
 | `console.log` production'da | `if (isDev) console.log(...)` veya kaldır |
 | `sessionInstance` direkt kullanmak | `JSON.parse(claims.sessionInstance)` ile parse et |
 | Lazy import olmadan büyük modül | Her feature-module lazy import olmalı |
+| Toplu ürün girişi — ayrı HTTP çağrıları | `ENDPOINTS.productsBatch` — tek POST ile tüm batch |
+| Sektör string hardcode (`'genel'`, `'parcaci'`) | `sectorType.apiValue` → `'GENERAL'`, `'AUTO_PARTS'` |

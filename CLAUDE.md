@@ -13,6 +13,7 @@ Her modülün kendi `CLAUDE.md` dosyası var. Buraya **tüm modülleri ilgilendi
 | POS / Satış | Barkodlu satış, ödeme, fiş |
 | Stok | Gerçek zamanlı seviye, kritik alarm, transfer |
 | Satın Alma | Tedarikçi alımı → stok otomatik güncellenir |
+| Toplu Ürün Girişi | Batch ekran → tek HTTP çağrısı → Purchase + N ürün/stok |
 | Cari Hesap | Borç-alacak, ödeme kaydı |
 | Raporlar | Günlük kapanış, satış trendi, kâr analizi |
 | Araç Uyumu | OEM / çapraz referans (yedek parça sektörü) |
@@ -255,6 +256,22 @@ React'te: `JSON.parse(claims.sessionInstance)`
 | `footwear` | `FOOTWEAR` | renk, beden/numara |
 
 Sektör tipi `Company.sectorType` alanında saklanır ve JWT `dynamicLoginParameters.sectorType` ile client'a iletilir.
+
+**Kritik kural — sektör string tutarlılığı:**
+```dart
+// Flutter (wizard_state.dart ve batch_entry_provider.dart):
+// ✅ DOĞRU
+String get sector => sectorType.apiValue;  // → 'AUTO_PARTS' | 'FOOTWEAR' vb.
+
+// ❌ YANLIŞ — eski Türkçe legacy değerler, veritabanında yanlış depolanır
+// 'parcaci', 'giyim', 'genel'  → KULLANMA
+```
+
+**Birim (unit) standardı:**
+```
+Varsayılan birim: 'adet'  (hem wizard hem batch tutarlı kullanır)
+Backend Unit tablosunda karşılığı olan kod gönderilmelidir.
+```
 
 ---
 

@@ -240,8 +240,101 @@ PUT    /product/api/v1/{resource}/{id}      → güncelle
 DELETE /product/api/v1/{resource}/{id}      → sil (soft)
 GET    /product/api/v1/{resource}/search?q= → arama
 GET    /product/api/v1/{resource}/{id}/sub  → alt kayıt listesi
+POST   /product/api/v1/{resource}/batch     → toplu oluştur
 
 Prefix: /product/**  (api-manager bu prefix'i yönlendirir)
+```
+
+---
+
+## 6a. BATCH (TOPLU ÜRÜN GİRİŞİ) ENDPOİNT
+
+```
+POST /product/api/v1/products/batch
+```
+
+**Amaç:** Flutter toplu ürün giriş ekranından tek HTTP çağrısıyla hem Purchase kaydı oluşturur hem yeni ürünler ekler hem de mevcut ürün stoklarını günceller.
+
+### Request DTOs
+
+```java
+// BatchCreateRequest — kök talep
+public class BatchCreateRequest {
+    @NotBlank private String supplierId;
+    @NotBlank private String invoiceNumber;
+    private String deliveryNoteNumber;
+    @NotNull  private LocalDate purchaseDate;
+    @NotBlank private String storeId;
+    @NotBlank private String warehouseId;
+    private String notes;
+    @Valid private List<BatchProductItem> newProducts;      // Yeni ürünler
+    @Valid private List<BatchExistingItem> existingProducts; // Mevcut ürün stok girişleri
+}
+
+// BatchProductItem — yeni ürün kalemi
+public class BatchProductItem {
+    private String tempId;            // Flutter'ın BatchEntryRow.id — sonuç eşlemesi için
+    private ProductRequest product;
+    private List<ProductVariantRequest> variants;
+    private List<OemNumberRequest> oemNumbers;
+    private List<CrossReferenceRequest> crossReferences;
+}
+
+// BatchExistingItem — mevcut ürüne stok ekle
+public class BatchExistingItem {
+    private String tempId;
+    @NotBlank  private String variantId;
+    @NotNull @Min(1) private Integer quantity;
+    @NotNull @Positive private BigDecimal unitPrice;
+    private BigDecimal taxRate;
+    private String notes;
+}
+```
+
+### Response DTOs
+
+```java
+// BatchCreateResponse
+public class BatchCreateResponse {
+    private String purchaseId;
+    private String invoiceNumber;
+    private int successCount;
+    private int failCount;
+    private BigDecimal totalAmount;
+    private List<BatchItemResult> results;  // Her kalem için ayrı sonuç
+}
+
+// BatchItemResult — tekil kalem sonucu
+public class BatchItemResult {
+    private String tempId;      // Flutter'ın gönderdiği tempId — eşleme için
+    private boolean success;
+    private String productId;
+    private String variantId;
+    private String message;     // Hata mesajı (success=false ise)
+}
+```
+
+### Servis Davranışı
+
+```java
+// ProductService.batchCreateProducts(request)
+// 1. Purchase kaydı oluşturulur (tek Purchase tüm batch için)
+// 2. newProducts: her ürün _createProductWithPurchase() ile işlenir
+//    → @Transactional(propagation = REQUIRES_NEW) — her ürün bağımsız transaction
+//    → Bir ürün başarısız olursa diğerleri etkilenmez
+// 3. existingProducts: StockMovement(IN) kaydı + variant.quantity arttırılır
+// 4. Purchase.totalAmount güncellenir
+// 5. BatchCreateResponse döner (tempId → sonuç eşlemesi)
+```
+
+### ProductVariantRequest — minStockLevel Alanı
+
+```java
+public class ProductVariantRequest {
+    // ... mevcut alanlar ...
+    private Integer minStockLevel;  // Minimum stok uyarı seviyesi — default 10
+    // Backend: variantPricing.setMinStockLevel(req.getMinStockLevel() != null ? req.getMinStockLevel() : 10)
+}
 ```
 
 ---

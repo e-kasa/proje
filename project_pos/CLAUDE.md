@@ -236,6 +236,83 @@ final myServiceProvider = Provider<MyService>(
 
 ---
 
+## 6a. BATCH ÜRÜN GİRİŞİ — SERVİS VE PROVIDER
+
+### ProductService.batchCreate()
+
+```dart
+// lib/services/product_service.dart
+Future<Map<String, dynamic>> batchCreate(Map<String, dynamic> request) async {
+  try {
+    final response = await _apiClient.post(
+      'product/api/v1/products/batch',
+      data: request,
+    );
+    return (response.data as Map<String, dynamic>)['data'] as Map<String, dynamic>;
+  } catch (e) {
+    debugPrint('ProductService.batchCreate hata: $e');
+    rethrow;
+  }
+}
+```
+
+### BatchEntryNotifier.submitAll() — Tek HTTP Çağrısı
+
+```dart
+// Önceki davranış: Her satır için ayrı HTTP çağrısı (N çağrı)
+// Yeni davranış: Tüm satırlar tek BatchCreateRequest içinde gönderilir
+
+Future<BatchSaveResult> submitAll() async {
+  // 1. Satırları "saving" durumuna al (_markRowsAsSaving)
+  // 2. newProductItems listesi oluştur:
+  //    - Footwear: her varyant satırı → ayrı ProductVariantRequest
+  //    - Diğer sektörler: her satır → tek variant
+  //    - tempId: satırın UUID'si (sonuç eşlemesi için)
+  // 3. existingItems listesi oluştur (BatchExistingItem)
+  // 4. Tek çağrı: _productService.batchCreate(batchRequest)
+  // 5. Sonuçları tempId ile eşle → RowStatus.saved / RowStatus.error
+}
+```
+
+**Önemli notlar:**
+- `tempId` = `BatchEntryRow.id` (UUID) — backend `BatchItemResult.tempId` ile döner
+- Footwear sektöründe her `BatchVariantRow` → ayrı `ProductVariantRequest` (aynı `tempId`)
+- Partial success desteklenir — bazı satırlar başarısız olabilir, diğerleri kaydedilir
+
+### Sektör String Tutarlılığı
+
+```dart
+// ✅ DOĞRU — sectorType.apiValue kullan
+// 'AUTO_PARTS' | 'FOOTWEAR' | 'TECHNOLOGY' | 'GENERAL'
+String get sector => sectorType.apiValue;
+
+// ❌ YANLIŞ — eski Türkçe legacy stringler
+// 'parcaci', 'giyim', 'genel' — KULLANMA
+```
+
+Bu kural hem wizard (`wizard_state.dart`) hem batch provider için geçerlidir.
+
+### CompanyCategoryService — Key Normalizasyonu
+
+```dart
+// getMyCategoryList() — API yanıtı normalize edilir
+// Backend 'categoryId'/'categoryName' döner, UI 'id'/'name' bekler
+return data.map((raw) {
+  final m = raw as Map<String, dynamic>;
+  return <String, dynamic>{
+    'id':       m['categoryId'] ?? m['id'] ?? '',
+    'name':     m['categoryName'] ?? m['name'] ?? '',
+    'parentId': m['categoryParentId'] ?? m['parentId'],
+    'level':    m['categoryLevel'] ?? m['level'],
+    'sortOrder':m['displayOrder'] ?? m['sortOrder'] ?? 0,
+    'icon':     m['categoryIcon'] ?? m['icon'],
+  };
+}).toList();
+// Hem wizard hem batch bu normalize edilmiş key'leri bekler
+```
+
+---
+
 ## 7. TASARIM SİSTEMİ
 
 ```dart

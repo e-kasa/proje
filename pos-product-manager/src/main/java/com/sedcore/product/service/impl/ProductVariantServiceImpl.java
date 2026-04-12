@@ -54,7 +54,8 @@ public class ProductVariantServiceImpl extends BaseDbServiceImp<ProductVariantRe
 
         // salePrice — VariantPricing ilişkisinden hesaplanan alan
         if (variant.getVariantPricings() != null && !variant.getVariantPricings().isEmpty()) {
-            VariantPricing latest = variant.getVariantPricings().getLast();
+            List<VariantPricing> pricings = variant.getVariantPricings();
+            VariantPricing latest = pricings.get(pricings.size() - 1);
             dto.setSalePrice(latest.getSalePrice());
         }
 

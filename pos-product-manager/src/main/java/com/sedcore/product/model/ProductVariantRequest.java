@@ -26,6 +26,8 @@ public class ProductVariantRequest {
         private List<BarcodeRequest> barcodes;
         private List<InitialStocksRequest> initialStocks;
         private String notes;
+        /** Minimum stok uyarı seviyesi — default 10 */
+        private Integer minStockLevel;
     
 
 }

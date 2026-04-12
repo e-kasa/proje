@@ -29,18 +29,17 @@ public class ExceptionMapper {
 
     /**
      * Exception tipi ve mesajına göre uygun TMessageType'ı döndür.
-     * Java 25 — Pattern Matching switch expression kullanır.
      */
     public static TMessageType getMessageType(Exception e) {
         if (e == null) return TMessageType.UNEXPECTED_ERROR_9999;
 
-        // Java 25: Pattern matching switch — önce exception tipine bak
-        TMessageType byType = switch (e) {
-            case EmptyResultDataAccessException ex  -> TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006;
-            case DataIntegrityViolationException ex -> TMessageType.ALREADY_EXISTS_1004;
-            default                                 -> null;
-        };
-        if (byType != null) return byType;
+        // Exception tipine göre eşleştir — Java 17 uyumlu instanceof zincirleri
+        if (e instanceof EmptyResultDataAccessException) {
+            return TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006;
+        }
+        if (e instanceof DataIntegrityViolationException) {
+            return TMessageType.ALREADY_EXISTS_1004;
+        }
 
         // Mesaj içeriğine göre eşleştir
         String msg = e.getMessage() != null ? e.getMessage().toLowerCase() : "";

@@ -12,14 +12,13 @@ Kasiyerin veya depo personelinin tedarikçiden gelen **fatura/irsaliye bazında*
 Üç giriş modu desteklenir:
 
 ```
-1. Manuel Ürün Arama   → Sistemde var, stok + tedarikçi cari güncelle
-2. Yeni Ürün Ekleme    → Sistemde yok, sıfırdan kayıt oluştur
-3. PDF / Fatura Yükle  → Faturadaki ürünleri otomatik oku → var/yok eşleştir (TODO)
+1. Barkod/OEM tarama    → Sistemde var  → RowStatus.existing  (stok + cari)
+2. Manuel satır ekle    → Sistemde yok  → RowStatus.newProduct (ürün oluştur)
+3. PDF / Fatura yükle   → TODO — henüz implement edilmedi
 ```
 
-Tüm modlar aynı `BatchEntryState`'i paylaşır ve aynı `submitAll()` akışından geçer.
-
-**Mevcut ürünlerde** sadece stok güncellenir + tedarikçi cari kaydı oluşur. Ürün bilgisi değişmez.
+`submitAll()` tüm satırları **tek HTTP isteğiyle** gönderir:  
+`POST /product/api/v1/products/batch` → `BatchCreateRequest` → `BatchCreateResponse`
 
 ---
 
@@ -27,18 +26,18 @@ Tüm modlar aynı `BatchEntryState`'i paylaşır ve aynı `submitAll()` akışı
 
 ```
 batch_entry/
-├── CLAUDE.md                          ← bu dosya
-├── batch_product_screen.dart          ← Ana ekran (route: /inventory/batch-entry)
+├── CLAUDE.md
+├── batch_product_screen.dart          ← Ana ekran + tüm internal widget'lar
 ├── models/
-│   └── batch_entry_models.dart        ← Tüm model sınıfları (aşağıda detay)
+│   └── batch_entry_models.dart        ← Model sınıfları
 ├── providers/
 │   └── batch_entry_provider.dart      ← BatchEntryNotifier (StateNotifier)
 └── widgets/
-    ├── batch_header_form.dart         ← Başlık formu (tedarikçi, fatura, depo, mağaza, tarih)
+    ├── batch_header_form.dart         ← Tedarikçi / fatura / depo / mağaza / tarih
     ├── batch_summary_bar.dart         ← Alt özet çubuğu
-    ├── barcode_search_input.dart      ← Barkod/OEM arama input'u
-    ├── product_entry_table.dart       ← Desktop tablo görünümü ⚠️ henüz import edilmiyor
-    └── quick_product_dialog.dart      ← Satır detay dialog'u
+    ├── barcode_search_input.dart      ← Barkod/OEM arama
+    ├── product_entry_table.dart       ← Desktop tablo (⚠️ henüz import edilmiyor)
+    └── quick_product_dialog.dart      ← OEM / CrossRef / Raf detay dialog'u
 ```
 
 ---
@@ -47,17 +46,22 @@ batch_entry/
 
 ```
 Giriş
-  ├── Barkod/OEM tarama       → addByBarcode()   → RowStatus.existing  veya  RowStatus.newProduct
-  ├── Manuel satır ekle       → addManualRow()   → RowStatus.newProduct
-  └── PDF yükle (TODO)        → parsePdfRows()   → her satır için addByBarcode() mantığı
+  ├── Barkod tarama      → addByBarcode()  → existing / newProduct
+  ├── Manuel ekle        → addManualRow()  → newProduct
+  └── PDF (TODO)
 
 State: BatchEntryState
-  ├── header (tedarikçi, fatura, depo, mağaza, tarih)
-  └── rows: List<BatchEntryRow>  (her ürün = 1 satır)
+  ├── header: supplierId, invoiceNumber, storeId, warehouseId, purchaseDate
+  └── rows: List<BatchEntryRow>
 
 submitAll()
-  ├── existing rows → PurchaseService.createPurchase()  (stok + tedarikçi cari)
-  └── new rows     → ProductService.createProduct()     (her ürün ayrı çağrı)
+  └── ProductService.batchCreate({
+        supplierId, invoiceNumber, purchaseDate, storeId, warehouseId,
+        newProducts:      [ { tempId, product{}, variants[], oemNumbers[], crossReferences[] } ]
+        existingProducts: [ { tempId, variantId, quantity, unitPrice } ]
+      })
+      → BatchCreateResponse { purchaseId, results: [{tempId, success, productId, message}] }
+      → results tempId üzerinden satırlara eşlenir → RowStatus.saved / RowStatus.error
 ```
 
 ---
@@ -67,7 +71,7 @@ submitAll()
 ### 4.1 Enum'lar
 
 ```dart
-enum RowStatus   { newProduct, existing, matched, error, saving, saved }
+enum RowStatus     { newProduct, existing, matched, error, saving, saved }
 enum SectionStatus { complete, partial, empty }
 enum CardReadiness { draft, incomplete, ready, saving, saved, error }
 ```
@@ -76,13 +80,13 @@ enum CardReadiness { draft, incomplete, ready, saving, saved, error }
 
 ```dart
 class BatchVariantRow {
-  final String id;    // otomatik
+  final String id;
   String size;        // Numara / Beden  → backend: attributes['Numara']
   String color;       // Renk            → backend: attributes['Renk']
   String barcode;
   int quantity;
-  double? purchasePrice; // null = BatchEntryRow.purchasePrice'tan miras alınır
-  double? salePrice;     // null = BatchEntryRow.salePrice'tan miras alınır
+  double? purchasePrice; // null → BatchEntryRow.purchasePrice'tan miras
+  double? salePrice;     // null → BatchEntryRow.salePrice'tan miras
 
   bool get isValid => size.trim().isNotEmpty && quantity > 0;
 }
@@ -91,260 +95,220 @@ class BatchVariantRow {
 ### 4.3 BatchEntryRow — Tam alan listesi
 
 ```dart
-// Kimlik
-String id                   // otomatik (_generateId)
-RowStatus status            // newProduct | existing | matched | saving | saved | error
+String id                              // otomatik UUID
+RowStatus status
 
-// Temel — tüm sektörler
+// Temel
 String barcode
-String productName          // zorunlu (yeni ürünlerde)
-String? categoryId          // ← ZORUNLU — dropdown'dan UUID; text girmek YASAK
-String? categoryName        // sadece gösterim
-String? brandId             // dropdown'dan ID
-String? brandName           // gösterim + payload
-String? unitId
-double purchasePrice        // alış fiyatı — mevcut ürünlerde cari için ZORUNLU
-double salePrice            // satış fiyatı ← ZORUNLU
-double vatRate              // 0 | 1 | 8 | 10 | 18 | 20
-bool vatIncluded            // default: false
-int quantity                // min: 1 ← ZORUNLU
+String productName                     // zorunlu (yeni)
+String? categoryId                     // UUID — dropdown'dan, text girmek YASAK
+String? categoryName                   // görüntüleme
+String? brandName                      // free text
+String? unitId                         // 'adet' | 'kg' | 'lt' | ...
+double purchasePrice                   // mevcut ürün: cari için ZORUNLU
+double salePrice                       // ZORUNLU
+double vatRate                         // 0|1|8|10|18|20, default 20.0
+bool vatIncluded                       // default false
+int quantity                           // ZORUNLU min:1
 String? description
 
 // Sektöre özgü
-String? shelfLocation       // raf kodu (parçacı: ZORUNLU, diğer: opsiyonel)
-int minStockLevel           // default: 10
-String? oemNumber           // tek OEM (UI input)
-List<Map<String,String>> oemList       // [{'oemNumber':..., 'manufacturer':...}]
-List<Map<String,String>> crossRefList  // [{'crossRefNumber':..., 'crossRefBrand':...}]
-Map<String,String> attributes          // sektöre özgü key-value
+String? shelfLocation                  // parçacı: ZORUNLU
+int minStockLevel                      // default 10
+String? oemNumber                      // tekil OEM (UI giriş alanı)
+List<Map<String,String>> oemList       // [{oemNumber, manufacturer}]
+List<Map<String,String>> crossRefList  // [{crossRefNumber, crossRefBrand}]
+Map<String,String> attributes          // sektör key-value
 
 // Footwear çoklu varyant
-List<BatchVariantRow> variantRows  // footwear sektöründe dolu, diğerlerinde []
+List<BatchVariantRow> variantRows      // footwear → dolu, diğerleri → []
 
 // Mevcut ürün referansı
 String? existingProductId
 String? existingVariantId
 String? existingVariantSku
 
-// UI
-bool isExpanded
 String? errorMessage
 ```
 
-### 4.4 BatchRowCompletion — Kart tamamlanma hesabı
+### 4.4 BatchRowCompletion
 
 ```dart
 BatchRowCompletion.compute(row, {
   isExisting, brandRequired, oemRequired, shelfRequired,
   showOem, showShelf,
-  showVariantTable,  // ← footwear için true (cfg.fields.showVariantSize)
+  showVariantTable,   // footwear → true (cfg.fields.showVariantSize)
 })
 ```
 
-**SectionA** (Ürün Bilgileri):
-- `isExisting` → daima complete
-- Yeni: `productName` + `categoryId` + (brandRequired → `brandName`)
-
-**SectionB** (Fiyat & Stok):
-- `salePrice > 0` + `quantity > 0`
-- `isExisting` → ayrıca `purchasePrice > 0` zorunlu (cari kaydı için)
-
-**SectionC** (Detaylar):
-- `showVariantTable=true` → `variantRows.any(v => v.isValid)` zorunlu
-- Diğer sektörler → `oemRequired` + `shelfRequired` kontrolleri
-
-**CardReadiness**:
-- `draft` → hiçbir şey girilmemiş
-- `incomplete` → eksik zorunlu alan var (missingFields listesi dolu)
-- `ready` → tüm zorunlular tamam, kaydedilebilir
-- `saving / saved / error` → kayıt durumu
+| Section | Kontrol |
+|---------|---------|
+| A (Ürün Bilgileri) | existing→complete / yeni: productName + categoryId + (brandRequired→brandName) |
+| B (Fiyat & Stok) | salePrice>0 + quantity>0; existing→ayrıca purchasePrice>0 |
+| C (Detaylar) | showVariantTable→variantRows.any(isValid); diğer→oemRequired/shelfRequired |
 
 ---
 
 ## 5. SEKTÖRE GÖRE KART ALANLARI
 
-`SectorConfig` (`core/config/sector_config.dart`) sektörü belirler.
+### Her sektörde ortak
+Ürün adı · Barkod · Kategori (UUID zorunlu) · Marka · Birim · Alış/Satış/KDV · Adet
 
-### 5.1 Her Sektörde Ortak
-
-| Alan | Tip | Zorunlu |
-|------|-----|---------|
-| Ürün adı | text | ✓ yeni |
-| Barkod | text | — |
-| Alış fiyatı | number | mevcut ürün: ✓ |
-| Satış fiyatı | number | ✓ |
-| KDV % | dropdown (0/1/8/10/18/20) | — |
-| KDV dahil mi? | switch | — |
-| Adet | +/− | ✓ |
-| Kategori | dropdown (UUID) | ✓ yeni |
-| Marka | dropdown | cfg.brandRequired |
-| Açıklama | text | — |
-
-### 5.2 Yedek Parçacı (`SectorType.autoParts`)
-
+### autoParts
 ```
-Section 3: OEM Numarası (oemList) + Çapraz Referans (crossRefList)
-           Raf Kodu (shelfLocation) ← ZORUNLU
-           Min. Stok Seviyesi
-Payload:  oemNumbers + crossReferences backend'e gönderilir
-OEM/CrossRef: backend'de variant[0]'a bağlanır (single variant, tasarım gereği)
+Section 3: OEM listesi + CrossRef listesi + Raf kodu (ZORUNLU) + Min. Stok
+Backend: oemNumbers[] + crossReferences[] → variant[0]'a bağlanır (single-variant tasarımı)
 ```
 
-### 5.3 Genel Perakende (`SectorType.general`)
-
+### general
 ```
-Section 3: Depo Konumu (shelfLocation, opsiyonel) + Min. Stok
-```
-
-### 5.4 Teknoloji (`SectorType.technology`)
-
-```
-Section 3: Seri/IMEI No (oemNumber → attributes['imei']) + Raf + Min. Stok
-NOT: Backend'de ayrı SerialNumber entity yok.
-     IMEI attributes map'e kaydedilir: attributes['imei'] = '354...'
-     quantity=10 → 10 adet, IMEI model referansı olarak saklanır
+Section 3: Depo konumu (opsiyonel) + Min. Stok
 ```
 
-### 5.5 Ayakkabı / Tekstil (`SectorType.footwear`)
-
+### technology
 ```
-Section 3: _FootwearVariantTable — inline düzenlenebilir tablo
-  Kolonlar: Numara/Beden | Renk | Adet | Barkod | Alış ₺ | Satış ₺ | ×
-  - Her satır = ayrı bir backend variant (ayrı SKU, ayrı stok)
-  - Fiyatlar boş bırakılırsa kart seviyesinden miras alınır
-  - "Varyant Ekle" butonu ile yeni satır eklenir
-  - isValid: size.isNotEmpty && quantity > 0
-
-_BatchAttributesSection footwear'da GİZLİDİR (variant tablosu yeterli)
+Section 3: IMEI / Seri No (oemNumber → metadata['imei']) + Raf + Min. Stok
+NOT: Backend'de SerialNumber entity yok → IMEI metadata map'e kaydedilir
 ```
 
-**Footwear payload yapısı** (`submitAll` içinde):
-
-```dart
-// variantRows her biri ayrı variant olarak gönderilir
-'variants': row.variantRows.map((vr) => {
-  'sku': _generateSku(),
-  'name': '${row.productName} - ${vr.size} ${vr.color}'.trim(),
-  'attributes': {
-    'Numara': vr.size,
-    if (vr.color.isNotEmpty) 'Renk': vr.color,
-  },
-  'pricing': {
-    'purchasePrice': vr.purchasePrice ?? row.purchasePrice,
-    'salePrice': vr.salePrice ?? row.salePrice,
-    'vatRate': row.vatRate,
-    'vatIncluded': row.vatIncluded,
-  },
-  'barcodes': vr.barcode.isNotEmpty
-      ? [{'code': vr.barcode, 'type': 'EAN13', 'isPrimary': true}]
-      : [],
-  'initialStocks': [{'storeId': state.storeId, 'warehouseId': state.warehouseId, 'quantity': vr.quantity}],
-}).toList(),
+### footwear
+```
+Section 3: _FootwearVariantTable
+  Kolonlar: Numara | Renk | Adet | Barkod | Alış ₺ | Satış ₺ | ×
+  Her satır → ayrı backend variant (ayrı SKU, ayrı stok)
+  Fiyat boş → kart seviyesinden miras
+  isValid: size.isNotEmpty && quantity > 0
+_BatchAttributesSection footwear'da GİZLİ
 ```
 
 ---
 
 ## 6. PAYLOAD STANDARDI
 
-### 6.1 Sektor string kuralı
+### 6.1 Sektör string
 
 ```dart
 'sector': cfg.type.apiValue   // 'AUTO_PARTS' | 'GENERAL' | 'TECHNOLOGY' | 'FOOTWEAR'
-// Backend Product.sector plain String — doğrudan saklıyor, validate etmiyor
-// Flutter SectorTypeExt.fromApi() ile parse edilir
-// YANLIŞ: cfg.type.apiValue.toLowerCase() → 'auto_parts' — tutarlı değil
+// ❌ 'parcaci' / 'giyim' / 'genel' — ESKİ wizard formatı, artık kullanılmıyor
+// ✅ Wizard da artık sectorType.apiValue kullanıyor (düzeltildi)
 ```
 
-### 6.2 Genel payload şablonu (footwear dışı)
+### 6.2 Batch endpoint yapısı
+
+```dart
+// POST /product/api/v1/products/batch
+{
+  'supplierId':          state.supplierId,
+  'invoiceNumber':       '...',
+  'purchaseDate':        'yyyy-MM-dd',
+  'storeId':             state.storeId,
+  'warehouseId':         state.warehouseId,
+  'deliveryNoteNumber':  state.deliveryNoteNumber,  // opsiyonel
+
+  'newProducts': [
+    {
+      'tempId': row.id,                             // sonuç eşlemesi için
+      'product': {
+        'name': row.productName,
+        'sku':  _generateSku(),
+        'categoryId': row.categoryId,               // UUID zorunlu
+        'brand': row.brandName ?? '',
+        'unit':  row.unitId ?? 'adet',
+        'sector': cfg.type.apiValue,
+        'metadata': _buildMetadata(row),
+      },
+      'variants': [                                 // footwear → N variant, diğer → 1
+        {
+          'sku': _generateSku(),
+          'name': '...',
+          'shelfLocationCode': row.shelfLocation,
+          'attributes': { 'Numara': vr.size, 'Renk': vr.color },  // footwear
+          'pricing': {
+            'purchasePrice': ..., 'salePrice': ...,
+            'vatRate': row.vatRate, 'vatIncluded': row.vatIncluded,
+            'taxExempt': false,
+          },
+          'initialStocks': [{'storeId': ..., 'warehouseId': ..., 'quantity': ...}],
+          'barcodes': [{'code': ..., 'type': 'EAN13', 'isPrimary': true}],
+        }
+      ],
+      'oemNumbers':      [ {'oemNumber', 'manufacturer', 'isPrimary'} ],  // autoParts
+      'crossReferences': [ {'crossRefNumber', 'crossRefBrand'} ],         // autoParts
+    }
+  ],
+
+  'existingProducts': [
+    {
+      'tempId':    row.id,
+      'variantId': row.existingVariantId,
+      'quantity':  row.quantity,
+      'unitPrice': row.purchasePrice,
+      'taxRate':   row.vatRate,
+    }
+  ],
+}
+```
+
+### 6.3 BatchCreateResponse
 
 ```dart
 {
-  'product': {
-    'name': row.productName,
-    'sku': _generateSku(),
-    'categoryId': row.categoryId,    // UUID zorunlu
-    'brand': row.brandName ?? '',
-    'unit': row.unitId ?? cfg.labels.defaultUnit,
-    'description': row.description ?? '',
-    'sector': cfg.type.apiValue,
-    'metadata': _buildMetadata(row, cfg),
-  },
-  'oemNumbers': row.oemList
-      .where((o) => (o['oemNumber'] ?? '').isNotEmpty)
-      .map((o) => {'oemNumber': o['oemNumber'], 'manufacturer': o['manufacturer'] ?? '',
-                   'isPrimary': o == row.oemList.first}).toList(),
-  'crossReferences': row.crossRefList
-      .where((c) => (c['crossRefNumber'] ?? '').isNotEmpty)
-      .map((c) => {'crossRefNumber': c['crossRefNumber'], 'crossRefBrand': c['crossRefBrand'] ?? ''}).toList(),
-  'variants': [
-    {
-      'sku': _generateSku(),
-      'name': row.productName,
-      'shelfLocationCode': row.shelfLocation,
-      'attributes': row.attributes,
-      'pricing': {
-        'purchasePrice': row.purchasePrice,
-        'salePrice': row.salePrice,
-        'vatRate': row.vatRate,
-        'vatIncluded': row.vatIncluded,
-        'taxExempt': false,
-      },
-      'initialStocks': [{'storeId': state.storeId, 'warehouseId': state.warehouseId, 'quantity': row.quantity}],
-      'barcodes': row.barcode.isNotEmpty ? [{'code': row.barcode, 'type': 'EAN13', 'isPrimary': true}] : [],
-    }
-  ],
-  'purchase': {
-    'supplierId': state.supplierId,
-    'invoiceNumber': state.invoiceNumber ?? _autoInvoiceNo(),
-    'deliveryNoteNumber': state.deliveryNoteNumber,
-    'purchaseDate': DateFormat('yyyy-MM-dd').format(state.purchaseDate),
-    'storeId': state.storeId,
-    'warehouseId': state.warehouseId,
-  },
+  'purchaseId':    '...',
+  'invoiceNumber': '...',
+  'successCount':  5,
+  'failCount':     1,
+  'totalAmount':   1250.00,
+  'results': [
+    { 'tempId': row.id, 'success': true,  'productId': '...', 'variantId': '...' },
+    { 'tempId': row.id, 'success': false, 'message': 'Hata mesajı' },
+  ]
 }
 ```
 
 ---
 
-## 7. KART TASARIM SİSTEMİ — Widget Mimarisi
+## 7. KART TASARIM SİSTEMİ
 
-### 7.1 Collapsed kart
-
-```
-[_ReadinessBadge]  Ürün adı + meta chips      [_WizardStepDots]
-                   eksik alan uyarısı (incomplete ise)
-                   fiyat / adet kontrolü
-```
-
-### 7.2 Expanded kart — Bölümler
+### 7.1 Collapsed kart (tıklanabilir)
 
 ```
-Section 1: _WizardSectionHeader(step:1, "Ürün Bilgileri")
-  ├── Mevcut ürün → _ExistingProductInfoCard (read-only)
-  └── Yeni ürün   → Ürün adı, Barkod, Kategori, Marka, Birim
-
-Section 2: _WizardSectionHeader(step:2, "Fiyat & Stok")
-  └── Alış, Satış, KDV, KDV dahil, Adet
-
-Section 3: _WizardSectionHeader(step:3, ...)
-  ├── footwear → _FootwearVariantTable
-  └── diğer    → OEM/Raf/MinStok (showOem || showShelf ise gösterilir)
-
-Section 4: _BatchAttributesSection (footwear'da GİZLİ)
-  └── Sektöre özgü attribute chip'leri
+[StatusBar] [Numara] [_ReadinessBadge] Ürün adı         [_WizardStepDots] [edit icon]
+                                       meta chips (barkod, kategori, marka, N varyant)
+                                       fiyat satırı + adet kontrolü
 ```
 
-### 7.3 Yeni widget'lar (batch_product_screen.dart içinde)
+Karta tıklanınca **popup dialog** açılır (`showDialog` → `_BatchRowEditDialog`).  
+İnline expand **yok**.
+
+### 7.2 Dialog — `_BatchRowEditDialog extends ConsumerStatefulWidget`
+
+```
+Header:   [accent icon] [ürün adı] [_ReadinessBadge] [_WizardStepDots] [×]
+Body:     SingleChildScrollView
+  Section 1 — Ürün Bilgileri   (existing → read-only ExistingProductInfoCard)
+  Section 2 — Fiyat & Stok
+  Section 3 — Detaylar / Footwear varyant tablosu
+  Section 4 — Attributes (footwear'da GİZLİ)
+Footer:   [Sil] [Kapat]
+```
+
+Controller'lar `initState`'te initialize edilir. `build()` başında `_syncControllers(row)` çağrılır.
+
+### 7.3 Internal widget'lar
 
 | Widget | Açıklama |
 |--------|---------|
-| `_ReadinessBadge` | CardReadiness'a göre renkli pill badge |
-| `_WizardStepDots` | 3 daire: complete=yeşil dolu, partial=amber, empty=gri |
+| `_ReadinessBadge` | CardReadiness → renkli pill |
+| `_WizardStepDots` | 3 daire: complete=yeşil / partial=amber / empty=gri |
 | `_WizardSectionHeader` | Adım no + başlık + tamamlanma chip'i |
-| `_ExistingProductInfoCard` | Mevcut ürün read-only bilgi kartı (Section A) |
-| `_FootwearVariantTable` | Footwear için inline varyant tablosu |
-| `_VariantTableRow` | Tek varyant satırı (TextFields inline) |
+| `_ExistingProductInfoCard` | Mevcut ürün read-only bilgi kartı |
+| `_CategoryDropdown` | `batchCategoriesProvider` → UUID dropdown |
+| `_UnitDropdown` | Birim seçimi (adet/kg/lt...) |
+| `_FootwearVariantTable` | Inline varyant tablosu |
+| `_VariantTableRow` | Tek varyant satırı |
 | `_VCell` | Tablo hücresi TextField |
+| `_MetaChip` | Collapsed kart etiketleri |
+| `_QuantityControl` | +/− adet kontrolü |
 
 ### 7.4 Durum renkleri
 
@@ -352,7 +316,7 @@ Section 4: _BatchAttributesSection (footwear'da GİZLİ)
 CardReadiness.draft      → AppColors.textMuted
 CardReadiness.incomplete → AppColors.warning
 CardReadiness.ready      → AppColors.success
-CardReadiness.saving     → AppColors.warning
+CardReadiness.saving     → AppColors.warning (animasyonlu)
 CardReadiness.saved      → AppColors.success
 CardReadiness.error      → AppColors.danger
 ```
@@ -364,89 +328,72 @@ CardReadiness.error      → AppColors.danger
 ```dart
 // addByBarcode() → RowStatus.existing
 BatchEntryRow(
-  barcode: p['barcode'] ?? trimmed,
-  productName: p['name'] ?? '',
-  brandName: p['brand'],
-  categoryId: p['categoryId'],
-  categoryName: p['categoryName'],      // ← _mapProduct'ta alınmalı
-  purchasePrice: p['purchasePrice'],    // ← firstVariant['purchasePrice']
-  salePrice: p['sellingPrice'] ?? p['basePrice'] ?? 0,
-  vatRate: p['taxRate'] ?? 20.0,
-  quantity: 1,
-  status: RowStatus.existing,
-  existingProductId: p['id'],
+  productName:       p['name'],
+  categoryId:        p['categoryId'],
+  categoryName:      p['categoryName'],
+  purchasePrice:     firstVariant['purchasePrice'],   // ← variants[0]'dan alınır
+  salePrice:         p['sellingPrice'] ?? p['basePrice'] ?? 0,
+  vatRate:           p['taxRate'] ?? 20.0,
   existingVariantId: p['variantId'],
-  existingVariantSku: p['sku'],
 )
 
-// submitAll() — existing row için PurchaseService.createPurchase() çağrılır:
-// → StockMovement(PURCHASE_IN) oluşturulur
-// → SupplierAccount.currentBalance += totalAmount (cari borç)
-// → AccountTransaction kaydı oluşur
+// submitAll() → BatchExistingItem olarak gönderilir
+// Backend: StockMovement(PURCHASE_IN) + SupplierAccount cari borç kaydı
 ```
 
 ---
 
-## 9. BİLİNEN HATALAR — GELİŞTİRİLECEK
+## 9. BİLİNEN HATALAR
 
-### P0 — Kritik (kayıt çalışmıyor)
+### P1 — Veri sorunları
 
-- [ ] **`categoryId` null** — Yeni ürün kartında kategori serbest metin, `categoryId` set edilmiyor.  
-  **Çözüm:** `CategoryPickerField` widget → dropdown ile UUID set et.
+- [ ] **Mevcut ürün `purchasePrice` = 0** — `_mapProduct` içinde `firstVariant['purchasePrice']`  
+  bakıyor ama API response yapısına göre key farklı olabilir → test edilmeli.
 
-### P1 — Yüksek (veri yanlış kaydediliyor)
+### P2 — UX sorunları
 
-- [ ] **`oemNumbers` payload'a girmiyor** — `row.oemList` var ama submitAll'da kullanılmıyor.
-- [ ] **`crossReferences` payload'a girmiyor** — `row.crossRefList` var ama submitAll'da kullanılmıyor.
-- [ ] **`attributes` variants bloğuna gitmiyor** — `row.attributes` map payload'a eklenmeli.
-- [ ] **Mevcut ürün `purchasePrice` = 0** — `_mapProduct`'ta `firstVariant['purchasePrice']` alınmıyor.
-- [ ] **`metadata` eksik** — `_buildMetadata()` submitAll içinde implemente edilmemiş.
-- [ ] **Footwear `submitAll`** — `variantRows` birden fazla variant olarak payload'a gönderilmeli (§5.5).
+- [ ] **`TextEditingController` stale** — `applyBrandToAll` vb. sonrası `_syncControllers`  
+  build'de çağrılıyor ama odak sorunları olabilir — test edilmeli.
+- [ ] **KDV dropdown** — Section 2'de `vatRate` dropdown mevcut, ama `taxExempt` /  
+  `specialTaxRate` batch modelde yok (wizard'da var).
 
-### P2 — Orta (UX sorunları)
+### P3 — İleride
 
-- [ ] **`TextEditingController` stale** — `applyBrandToAll` vb. sonrası controller'lar güncellenmez.
-- [ ] **KDV dropdown gösterilmiyor** — Expanded formda `vatRate` dropdown eksik.
-- [ ] **`BatchHeaderForm._loadData` hata sessiz yutuluyuyor** — `catch (_) {}` → `debugPrint` ekle.
-
-### P3 — Düşük / İleride
-
-- [ ] **`ProductEntryTable` kullanılmıyor** — Desktop modda aktifleştirilebilir.
-- [ ] **`categoryName` mevcut ürünlerde boş** — `_mapProduct`'ta eksik.
-- [ ] **PDF fatura yükleme modu** — Henüz implement edilmedi (§8).
-- [ ] **OEM ile arama** — `addByBarcode` yalnızca barkod/isim arıyor, OEM arama yok.
+- [ ] **`ProductEntryTable`** — Desktop modda import edilmiyor.
+- [ ] **PDF fatura parse** — `parsePdfRows()` metodu yok.
+- [ ] **OEM ile arama** — `addByBarcode` sadece barkod/isim, OEM arama yok.
+- [ ] **`categoryName` mevcut ürünlerde** — API response'a göre değişebilir.
 
 ---
 
 ## 10. GELİŞTİRME ÖNCELİK SIRASI
 
 ```
-Sprint 1: Kayıt düzeltmeleri
-  1. categoryId dropdown → CategoryPickerField
-  2. oemNumbers + crossReferences payload'a ekle
-  3. attributes variants bloğuna ekle
-  4. metadata implementasyonu (_buildMetadata)
-  5. Mevcut ürün purchasePrice düzeltme (_mapProduct)
+✅ TAMAMLANDI:
+  - CategoryId dropdown (_CategoryDropdown widget)
+  - oemNumbers + crossReferences payload'a eklendi
+  - Footwear multi-variant (variantRows → N variant)
+  - submitAll → tek batch çağrısı (POST /products/batch)
+  - Wizard sector string (parcaci/giyim → AUTO_PARTS/FOOTWEAR)
+  - getMyCategoryList key normalizasyonu
+  - minStockLevel backend DTO'ya eklendi
+  - metadata technology fix (imei)
+  - _buildOemList oemNumber fallback
 
-Sprint 2: Footwear tamamlama
-  6. submitAll'da variantRows → çoklu variant payload
-  7. Footwear collapsed görünüm: "N varyant" chip
+SONRA:
+  Sprint 3: UX iyileştirmeleri
+    - taxExempt / specialTaxRate batch modele ekle
+    - ProductEntryTable desktop'ta aktifleştir
+    - Mevcut ürün purchasePrice edge case testi
 
-Sprint 3: UX iyileştirmeleri
-  8. TextEditingController senkron (didUpdateWidget)
-  9. KDV dropdown expanded formda göster
-  10. ProductEntryTable desktop'ta aktifleştir
-
-Sprint 4: PDF modu
-  11. PdfInvoiceParser + UI
-  12. OEM arama desteği
+  Sprint 4: PDF modu
+    - PdfInvoiceParser
+    - OEM arama desteği
 ```
 
 ---
 
-## 11. i18n ANAHTARLARI (data.sql — bnd-bt prefixli)
-
-Son eklenen aralıklar:
+## 11. i18n ANAHTARLARI (data.sql — `bnd-bt` prefix)
 
 | ID | Key | TR | EN |
 |----|-----|----|----|
@@ -461,7 +408,7 @@ Son eklenen aralıklar:
 | bt078 | `batch.section_required` | Zorunlu | Required |
 | bt079 | `batch.section_optional` | Opsiyonel | Optional |
 | bt080 | `batch.price_and_stock` | Fiyat & Stok | Price & Stock |
-| bt081 | `batch.existing_stock_note` | Mevcut ürün: stok ve cari hesap güncellenecek | ... |
+| bt081 | `batch.existing_stock_note` | Mevcut ürün: stok ve cari hesap güncellenecek | Existing product: stock and supplier account will be updated |
 | bt082 | `batch.ready` | Hazır | Ready |
 | bt083 | `batch.details` | Detaylar | Details |
 | bt084 | `batch.product_info` | Ürün Bilgileri | Product Info |
@@ -472,18 +419,16 @@ Son eklenen aralıklar:
 ## 12. BAĞIMLILIKLAR
 
 ```dart
-// service_locator.dart'ta tanımlı
-productServiceProvider
-purchaseServiceProvider
-supplierServiceProvider
-warehouseServiceProvider
-storeServiceProvider
-companyCategoryServiceProvider
-brandServiceProvider
+// batch_entry_provider.dart — doğrudan kullanılan
+productServiceProvider     // batchCreate() + addByBarcode()
+oemServiceProvider         // (henüz aktif kullanılmıyor)
+sectorConfigProvider       // SectorConfig (type, fields, labels)
+companyCategoryServiceProvider  // batchCategoriesProvider için
 
-// Provider'lar
-batchEntryProvider    // StateNotifierProvider.autoDispose<BatchEntryNotifier, BatchEntryState>
-sectorConfigProvider  // SectorConfig (type, fields, labels)
+// batch_product_screen.dart — dialog ve kart içinde
+batchEntryProvider         // StateNotifierProvider.autoDispose
+batchCategoriesProvider    // FutureProvider.autoDispose → _CategoryDropdown
+i18nOf(ref)               // t('key') — tüm metin zorunlu
 ```
 
 ---
@@ -491,15 +436,18 @@ sectorConfigProvider  // SectorConfig (type, fields, labels)
 ## 13. TEST SENARYOLARI
 
 ```
-✓ Barkod ile mevcut ürün bulma → purchasePrice, salePrice, vatRate doğru dolar
-✓ Bulunamayan barkod → yeni satır, boş form
-✓ Aynı barkod iki kez taranır → adet +1 artar
-✓ Yeni ürün: categoryId seçilmeden → incomplete, kayıt engellenebilir
-✓ Yeni ürün: salePrice = 0 → CardReadiness.incomplete
-✓ Mevcut ürün: purchasePrice = 0 → CardReadiness.incomplete (cari için zorunlu)
-✓ Footwear: variantRows boş → SectionC empty, incomplete
-✓ Footwear: en az 1 valid variant → SectionC complete
-✓ submitAll: tedarikçi yok → validation hatası
-✓ submitAll: depo yok → validation hatası
-✓ Kısmi başarı: 3 üründen 1 hatalı → diğer 2 saved, 1 error
+✓ Barkod tarama → existing satır: purchasePrice/salePrice/vatRate dolar
+✓ Bilinmeyen barkod → yeni satır, boş form açılır
+✓ Aynı barkod iki kez → quantity +1 (addByBarcode duplicate logic)
+✓ Kategori seçilmeden → SectionA incomplete, kayıt engellenir
+✓ salePrice=0 → CardReadiness.incomplete
+✓ Mevcut ürün purchasePrice=0 → CardReadiness.incomplete
+✓ Footwear: variantRows boş → SectionC empty
+✓ Footwear: ≥1 valid variant → SectionC complete
+✓ submitAll: tedarikçi boş → validateAll() hata döner
+✓ submitAll: depo/mağaza boş → validateAll() hata döner
+✓ Kısmi başarı: results[] içinde success:false olan satır → RowStatus.error
+✓ Tüm başarılı → BatchSaveResult.errors=0, purchaseId dolu
+✓ Footwear: 3 variantRow → backend'e 3 ayrı variant gider
+✓ autoParts: oemList → newProducts[].oemNumbers[] olarak gider
 ```

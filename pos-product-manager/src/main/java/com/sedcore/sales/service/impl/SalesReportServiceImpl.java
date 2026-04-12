@@ -22,7 +22,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.StructuredTaskScope;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @Slf4j
@@ -110,7 +110,7 @@ public class SalesReportServiceImpl implements SalesReportService {
 
         return byVariant.entrySet().stream()
                 .map(e -> {
-                    var first = e.getValue().getFirst(); // Java 21+ SequencedCollection
+                    var first = e.getValue().get(0);
                     int totalQty = e.getValue().stream()
                             .mapToInt(m -> m.getQuantity() != null ? m.getQuantity() : 0)
                             .sum();
@@ -137,7 +137,7 @@ public class SalesReportServiceImpl implements SalesReportService {
                             .averageUnitPrice(avgPrice)
                             .build();
                 })
-                .sorted(Comparator.comparing(ProductSalesAnalysis::totalRevenue).reversed())
+                .sorted(Comparator.<ProductSalesAnalysis, BigDecimal>comparing(ProductSalesAnalysis::totalRevenue).reversed())
                 .limit(limit)
                 .toList();
     }
@@ -162,7 +162,7 @@ public class SalesReportServiceImpl implements SalesReportService {
 
         return byCustomer.entrySet().stream()
                 .map(e -> {
-                    var first = e.getValue().getFirst();
+                    var first = e.getValue().get(0);
                     var totalSpent = e.getValue().stream()
                             .map(s -> s.getTotalAmount() != null ? s.getTotalAmount() : BigDecimal.ZERO)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -185,7 +185,7 @@ public class SalesReportServiceImpl implements SalesReportService {
                             .lastPurchaseDate(lastDate)
                             .build();
                 })
-                .sorted(Comparator.comparing(CustomerSalesAnalysis::totalSpent).reversed())
+                .sorted(Comparator.<CustomerSalesAnalysis, BigDecimal>comparing(CustomerSalesAnalysis::totalSpent).reversed())
                 .limit(limit)
                 .toList();
     }
@@ -194,19 +194,20 @@ public class SalesReportServiceImpl implements SalesReportService {
     public ProfitOverview getProfitOverview(LocalDateTime startDate, LocalDateTime endDate) {
         log.info("Kar/zarar ozeti: {} - {}", startDate, endDate);
 
-        // Java 25 — Structured Concurrency: satış ve stok hareketi verilerini paralel çek
+        // Satış ve stok hareketi verilerini paralel çek — CompletableFuture (Java 17 uyumlu)
+        CompletableFuture<List<Sale>> salesFuture =
+                CompletableFuture.supplyAsync(() -> (List<Sale>) saleRepository.findAll());
+        CompletableFuture<List<StockMovement>> movementsFuture =
+                CompletableFuture.supplyAsync(() -> (List<StockMovement>) stockMovementRepository.findAll());
+
         List<Sale> allSales;
         List<StockMovement> allMovements;
-
-        try (var scope = StructuredTaskScope.open()) {
-            var salesTask      = scope.fork(() -> (List<Sale>) saleRepository.findAll());
-            var movementsTask  = scope.fork(() -> (List<StockMovement>) stockMovementRepository.findAll());
-            scope.join();
-            allSales     = salesTask.get();
-            allMovements = movementsTask.get();
-        } catch (InterruptedException e) {
+        try {
+            allSales     = salesFuture.get();
+            allMovements = movementsFuture.get();
+        } catch (Exception e) {
             Thread.currentThread().interrupt();
-            log.error("Paralel veri çekimi kesildi", e);
+            log.error("Paralel veri çekimi başarısız, sıralı çekime geçiliyor", e);
             allSales     = (List<Sale>) saleRepository.findAll();
             allMovements = (List<StockMovement>) stockMovementRepository.findAll();
         }

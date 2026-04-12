@@ -306,14 +306,39 @@ Backend:
 5. Controller     → @RequestHeader("X-Company-Code"), TOpenException → ExceptionMapper
 6. data.sql       → i18n mesaj anahtarları ekle
 
-Flutter:
-7. Service        → ApiClient, response.data['data'], rethrow
-8. Provider       → service_locator.dart'a ekle
-9. Notifier       → StateNotifier + autoDispose
-10. Ekran         → ConsumerStatefulWidget, i18n zorunlu, AppScaffold
-11. Router        → GoRoute ekle (router.dart)
-12. Menü          → menu_screen.dart + rol filtresi
+Flutter (Feature-First Mimari):
+7. features/<name>/services/<name>_service.dart   → ApiClient inject, response.data['data']
+8. features/<name>/di/<name>_di.dart              → Provider<XService> tanımı
+9. core/di/service_locator.dart                   → export '<name>_di.dart' ekle
+10. features/<name>/providers/<name>_provider.dart → StateNotifier + autoDispose
+11. features/<name>/screens/<name>_screen.dart     → ConsumerStatefulWidget, i18n, AppScaffold
+12. core/router/app_router.dart                   → GoRoute ekle
+13. data.sql                                      → i18n anahtarları ekle
 ```
+
+---
+
+## 12a. FLUTTER PROJE MİMARİSİ — ÖZET
+
+```
+lib/core/      → Altyapı (api, di, router, theme, widgets, utils)
+lib/shared/    → Cross-feature (auth/i18n/menu providers, services, models)
+lib/features/  → 20 business feature
+  ├── auth, dashboard, menu, pos
+  ├── inventory (add_product wizard + batch_entry alt yapısı korunur)
+  ├── catalog, stock, sales, purchases
+  ├── suppliers (upload/ merge dahil), customers, accounts
+  ├── finance, reports, import (bulk + scanner merge)
+  ├── autoparts (OEM/araç/parça arama)
+  ├── warehouse, store, hrm, settings
+```
+
+**Eski path'ler (lib/services/, lib/screens/, lib/models/, lib/providers/):**  
+Backward compat re-export shim olarak kaldı. Yeni kod her zaman `features/` path'lerini kullanmalı.
+
+**apiClientProvider:** `lib/core/api/api_client.dart`'ta tanımlı.  
+**Servis provider'ları:** Her feature'ın `di/<name>_di.dart`'ında tanımlı.  
+**Router:** `lib/core/router/app_router.dart`
 
 ---
 

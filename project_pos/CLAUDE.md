@@ -5,57 +5,175 @@ Genel kurallar ve multi-tenant zorunlulukları için kök `CLAUDE.md`'e bak.
 
 ---
 
-## 1. KLASÖR YAPISI
+## 1. MİMARİ — FEATURE-FIRST
+
+`lib/` klasörü üç katmana ayrılmıştır:
 
 ```
 lib/
-├── core/
-│   ├── api/
-│   │   └── api_client.dart          # Dio — JWT interceptor, X-Company-Code, auto-refresh
-│   ├── config/
-│   │   └── sector_config.dart       # Sektör bazlı alan görünürlüğü (SectorConfig, SectorType)
-│   ├── constants/
-│   │   └── app_constants.dart
-│   ├── layouts/
-│   │   └── responsive_layout.dart   # Desktop sidebar + mobile bottom nav
-│   ├── theme/
-│   │   └── app_colors.dart          # Tüm renkler buradan — direkt Color() yasak
-│   ├── utils/
-│   │   ├── router.dart              # GoRouter — routerProvider
-│   │   └── i18n_helper.dart         # i18nOf(ref) → t('key')
-│   └── widgets/                     # Tasarım sistemi (AppButton, AppCard, AppToast...)
-│       └── widgets.dart             # Barrel export
-│
-├── models/                          # Dart model sınıfları
-│
+├── core/           ← Altyapı — sıfır business logic
+├── shared/         ← 3+ feature kullanan cross-cutting concerns
+└── features/       ← Her business domain kendi klasöründe
+```
+
+### 1a. core/ — Altyapı Katmanı
+
+```
+lib/core/
+├── api/
+│   └── api_client.dart          # Dio + apiClientProvider (tüm servisler buradan inject alır)
+├── config/
+│   └── sector_config.dart       # SectorConfig, SectorType, sectorConfigProvider
+├── constants/
+│   └── app_constants.dart
+├── di/
+│   └── service_locator.dart     # Aggregator — feature DI dosyalarını re-export eder
+├── layouts/
+│   ├── adaptive_bottom_nav.dart
+│   ├── adaptive_sidebar.dart
+│   ├── responsive_layout.dart
+│   └── right_menu_drawer.dart
+├── router/
+│   └── app_router.dart          # GoRouter — routerProvider
+├── theme/
+│   ├── app_colors.dart          # Tüm renkler buradan — direkt Color() yasak
+│   ├── app_theme.dart
+│   └── app_gradients.dart
+├── utils/
+│   ├── i18n_helper.dart         # i18nOf(ref) → t('key')
+│   ├── validation_helper.dart
+│   ├── app_logger.dart
+│   └── responsive.dart
+└── widgets/                     # Tasarım sistemi
+    ├── app_*.dart               # AppButton, AppCard, AppToast, AppInput...
+    ├── section_header.dart      # Bölüm başlığı widget
+    ├── stat_card.dart           # İstatistik kartı widget
+    └── widgets.dart             # Barrel export — TÜM widget'ları buradan import et
+```
+
+### 1b. shared/ — Paylaşılan Katman
+
+```
+lib/shared/
+├── models/
+│   ├── auth_state.dart          # AuthState
+│   ├── user_model.dart          # User (JWT'den parse)
+│   └── menu_models.dart         # MenuItem, MenuCategory
 ├── providers/
-│   ├── auth_provider.dart           # AuthNotifier, User modeli, JWT parse
-│   └── sector_provider.dart         # sectorConfigProvider
-│
-├── services/
-│   └── service_locator.dart         # Tüm Provider tanımları — tek dosya
-│
-└── screens/                         # 76+ ekran
-    ├── auth/                        # login, register
-    ├── dashboard/
-    ├── pos/                         # POS satış ekranı
-    ├── inventory/                   # Ürün yönetimi, toplu giriş, wizard
-    │   ├── add_product/             # Adım adım wizard
-    │   └── batch_entry/             # Toplu ürün girişi (CLAUDE.md var)
-    ├── stock/                       # Stok, transfer, hareketler
-    ├── sales/                       # Satış listesi, iade
-    ├── purchases/                   # Satın alma
-    ├── customers/                   # Müşteri, cari hesap
-    ├── suppliers/                   # Tedarikçi
-    ├── finance/                     # Giderler
-    ├── accounts/                    # Cari hesap ekstresi
-    ├── reports/                     # Günlük kapanış, satış analizi
-    └── settings/                    # Firma, kullanıcı ayarları
+│   ├── auth_provider.dart       # AuthNotifier — JWT parse, login/logout
+│   ├── i18n_provider.dart       # i18nProvider
+│   ├── menu_provider.dart       # menuProvider
+│   ├── navigation_provider.dart
+│   ├── sector_provider.dart     # sectorConfigProvider
+│   └── theme_provider.dart
+└── services/
+    ├── auth_service.dart
+    ├── i18n_service.dart
+    ├── menu_service.dart
+    └── registration_service.dart
+```
+
+### 1c. features/ — Business Katmanı (20 Feature)
+
+```
+lib/features/
+├── auth/               login, company registration
+├── dashboard/          modern_dashboard
+├── menu/               menu_screen
+├── pos/                POS satış — providers/, widgets/ alt yapısı var
+├── inventory/          Ürün, barkod, marka, birim
+│   ├── di/             inventory_di.dart (productServiceProvider vs.)
+│   ├── services/       product, brand, unit, category, company_category
+│   ├── screens/
+│   │   ├── add_product/   ← Wizard (CLAUDE.md, models/, steps/, widgets/ alt yapısı KORUNUR)
+│   │   └── batch_entry/   ← Batch (CLAUDE.md, models/, providers/, widgets/ KORUNUR)
+│   └── widgets/        quick_add_product_modal.dart
+├── catalog/            Kategori yönetimi (category, company_category ekranları)
+├── stock/              Stok, transfer, sayım, hareketler
+│   ├── models/         stock_management_models.dart
+│   └── services/       stock_service, stock_report_service
+├── sales/              Satış listesi, detay, iade
+├── purchases/          Alım listesi, detay, iade
+├── suppliers/          Tedarikçi + upload/ (supplier_upload merge edildi)
+│   └── models/         supplier_document, supplier_upload_* modelleri
+├── customers/          Müşteri, cari hesap
+├── accounts/           Hesap ekstresi, gecikmiş takip
+├── finance/            Gider, gelir, nakit akışı
+├── reports/            Satış, kâr, ürün analizleri
+├── import/             Toplu veri aktarımı (bulk_import + scanner merge)
+│   └── models/         backend_product_import, bulk_import_models
+├── autoparts/          OEM, çapraz ref, araç uyumu, parça arama
+│   └── services/       oem, cross_reference, vehicle, part_search
+├── warehouse/          Depo yönetimi
+├── store/              Mağaza yönetimi
+├── hrm/                Çalışan yönetimi
+└── settings/           Ayarlar, profil, kullanıcı yönetimi, admin panel
 ```
 
 ---
 
-## 2. STATE MANAGEMENT — RİVERPOD
+## 2. FEATURE KLASÖRÜ KURALLARI
+
+Her feature klasörü aşağıdaki standart yapıyı takip eder:
+
+```
+features/<name>/
+├── di/<name>_di.dart     → Provider<XService> tanımları BURADA. Logic yok.
+├── models/               → Bu feature'a özgü data class'lar. Başka feature import ETMEZ.
+├── providers/            → StateNotifier'lar. autoDispose ZORUNLU.
+├── services/             → ApiClient constructor inject. Riverpod import etmez.
+├── screens/              → ConsumerStatefulWidget ekranlar
+└── widgets/              → 2+ screen tarafından kullanılan widget'lar
+```
+
+**Yasaklar:**
+```dart
+// ❌ Feature-A bir Feature-B dosyasını direkt import etmez
+import 'package:project_pos/features/inventory/services/product_service.dart'; // POS'tan yapma
+
+// ✅ Cross-feature paylaşım → shared/ veya DI üzerinden
+import 'package:project_pos/core/di/service_locator.dart'; // provider alır
+import 'package:project_pos/shared/providers/auth_provider.dart'; // shared'dan alır
+
+// ❌ Servisi direkt new'leme YASAK
+final service = ProductService(ApiClient()); // initState içinde YAPMA
+
+// ✅ Her zaman DI'dan
+final service = ref.read(productServiceProvider);
+```
+
+---
+
+## 3. DI (DEPENDENCY INJECTION) YAPISI
+
+```dart
+// core/api/api_client.dart — apiClientProvider burada tanımlı
+final apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
+
+// features/inventory/di/inventory_di.dart
+final productServiceProvider = Provider<ProductService>(
+  (ref) => ProductService(ref.watch(apiClientProvider)),
+);
+final brandServiceProvider = Provider<BrandService>(
+  (ref) => BrandService(ref.watch(apiClientProvider)),
+);
+
+// core/di/service_locator.dart — SADECE aggregator (tanım yok, re-export)
+export 'package:project_pos/features/inventory/di/inventory_di.dart';
+export 'package:project_pos/features/sales/di/sales_di.dart';
+// ...
+
+// Her ekranda:
+import 'package:project_pos/core/di/service_locator.dart'; // tek import
+// sonra ref.read(productServiceProvider) kullan
+```
+
+**Eski `lib/services/service_locator.dart` ve `lib/services/*.dart` dosyaları:**  
+Backward compat için re-export shim olarak kaldı. Yeni kod bu eski path'lere import EKLEMEMELI.
+
+---
+
+## 4. STATE MANAGEMENT — RİVERPOD
 
 **Kural:** Her feature için ayrı `StateNotifier` + `autoDispose`.
 
@@ -95,29 +213,22 @@ class MyNotifier extends StateNotifier<MyState> {
   }
 }
 
-// Provider
+// Provider — features/<name>/di/<name>_di.dart içinde tanımla
 final myProvider = StateNotifierProvider.autoDispose<MyNotifier, MyState>(
   (ref) => MyNotifier(ref),
 );
 ```
 
-**Basit, salt-okunur veri için:**
-```dart
-final myCategoriesProvider = FutureProvider.autoDispose<List<Map<String,dynamic>>>(
-  (ref) => ref.read(categoryServiceProvider).getCategories(),
-);
-```
-
 ---
 
-## 3. TENANT KONFİGÜRASYON — NASIL ÇALIŞIR
+## 5. TENANT KONFİGÜRASYON
 
 ```
 Login → JWT alınır → payload parse edilir → User nesnesi oluşturulur
 User.selectedCompanyCode → ApiClient interceptor → X-Company-Code header
 ```
 
-**JWT Parse (AuthNotifier içinde):**
+**JWT Parse (AuthNotifier içinde — shared/providers/auth_provider.dart):**
 ```dart
 final payload      = jwtDecode(token);
 final sessionStr   = payload['sessionInstance'] as String;
@@ -136,25 +247,9 @@ User(
 )
 ```
 
-**Çoklu firma desteği:**
-```dart
-// Kullanıcı firma değiştirdiğinde:
-ref.read(authProvider.notifier).switchCompany(newCompanyCode);
-// ApiClient interceptor otomatik güncellenir
-```
-
-**Sektör konfigürasyonu:**
-```dart
-final config = ref.watch(sectorConfigProvider);
-// config.type          → SectorType (autoParts / general / technology / footwear)
-// config.fields        → SectorFields (hangi alanlar görünür)
-// config.labels        → SectorLabels (alan etiketleri)
-// config.type.apiValue → backend'e gönderilen string
-```
-
 ---
 
-## 4. KULLANILAN PAKETLER
+## 6. KULLANILAN PAKETLER
 
 ```yaml
 flutter_riverpod: "^2.6.1"   # State management
@@ -171,7 +266,7 @@ file_picker: "^8.x"           # PDF / dosya seçimi
 
 ---
 
-## 5. EKRAN ŞABLONU
+## 7. EKRAN ŞABLONU
 
 ```dart
 class MyScreen extends ConsumerStatefulWidget {
@@ -210,12 +305,13 @@ class _MyScreenState extends ConsumerState<MyScreen> {
 
 ---
 
-## 6. SERVİS ŞABLONU
+## 8. SERVİS ŞABLONU
 
 ```dart
+// lib/features/<name>/services/my_service.dart
 class MyService {
   final ApiClient _apiClient;
-  MyService(this._apiClient);
+  MyService(this._apiClient);  // Constructor inject — direkt new'leme YASAK
 
   Future<List<Map<String,dynamic>>> getItems() async {
     try {
@@ -228,7 +324,7 @@ class MyService {
   }
 }
 
-// service_locator.dart'a ekle:
+// lib/features/<name>/di/<name>_di.dart'a ekle:
 final myServiceProvider = Provider<MyService>(
   (ref) => MyService(ref.watch(apiClientProvider)),
 );
@@ -236,12 +332,10 @@ final myServiceProvider = Provider<MyService>(
 
 ---
 
-## 6a. BATCH ÜRÜN GİRİŞİ — SERVİS VE PROVIDER
-
-### ProductService.batchCreate()
+## 8a. BATCH ÜRÜN GİRİŞİ — SERVİS VE PROVIDER
 
 ```dart
-// lib/services/product_service.dart
+// lib/features/inventory/services/product_service.dart
 Future<Map<String, dynamic>> batchCreate(Map<String, dynamic> request) async {
   try {
     final response = await _apiClient.post(
@@ -256,64 +350,30 @@ Future<Map<String, dynamic>> batchCreate(Map<String, dynamic> request) async {
 }
 ```
 
-### BatchEntryNotifier.submitAll() — Tek HTTP Çağrısı
+`batch_entry/` klasörü (`features/inventory/screens/batch_entry/`) kendi CLAUDE.md, models/, providers/, widgets/ alt yapısını korur.
+
+---
+
+## 9. ROUTER
 
 ```dart
-// Önceki davranış: Her satır için ayrı HTTP çağrısı (N çağrı)
-// Yeni davranış: Tüm satırlar tek BatchCreateRequest içinde gönderilir
+// lib/core/router/app_router.dart — routerProvider (GoRouter)
+// Yeni route eklemek:
+GoRoute(
+  path: '/my-screen',
+  builder: (ctx, state) => const MyScreen(),
+  // import: package:project_pos/features/<name>/screens/my_screen.dart
+),
 
-Future<BatchSaveResult> submitAll() async {
-  // 1. Satırları "saving" durumuna al (_markRowsAsSaving)
-  // 2. newProductItems listesi oluştur:
-  //    - Footwear: her varyant satırı → ayrı ProductVariantRequest
-  //    - Diğer sektörler: her satır → tek variant
-  //    - tempId: satırın UUID'si (sonuç eşlemesi için)
-  // 3. existingItems listesi oluştur (BatchExistingItem)
-  // 4. Tek çağrı: _productService.batchCreate(batchRequest)
-  // 5. Sonuçları tempId ile eşle → RowStatus.saved / RowStatus.error
-}
-```
-
-**Önemli notlar:**
-- `tempId` = `BatchEntryRow.id` (UUID) — backend `BatchItemResult.tempId` ile döner
-- Footwear sektöründe her `BatchVariantRow` → ayrı `ProductVariantRequest` (aynı `tempId`)
-- Partial success desteklenir — bazı satırlar başarısız olabilir, diğerleri kaydedilir
-
-### Sektör String Tutarlılığı
-
-```dart
-// ✅ DOĞRU — sectorType.apiValue kullan
-// 'AUTO_PARTS' | 'FOOTWEAR' | 'TECHNOLOGY' | 'GENERAL'
-String get sector => sectorType.apiValue;
-
-// ❌ YANLIŞ — eski Türkçe legacy stringler
-// 'parcaci', 'giyim', 'genel' — KULLANMA
-```
-
-Bu kural hem wizard (`wizard_state.dart`) hem batch provider için geçerlidir.
-
-### CompanyCategoryService — Key Normalizasyonu
-
-```dart
-// getMyCategoryList() — API yanıtı normalize edilir
-// Backend 'categoryId'/'categoryName' döner, UI 'id'/'name' bekler
-return data.map((raw) {
-  final m = raw as Map<String, dynamic>;
-  return <String, dynamic>{
-    'id':       m['categoryId'] ?? m['id'] ?? '',
-    'name':     m['categoryName'] ?? m['name'] ?? '',
-    'parentId': m['categoryParentId'] ?? m['parentId'],
-    'level':    m['categoryLevel'] ?? m['level'],
-    'sortOrder':m['displayOrder'] ?? m['sortOrder'] ?? 0,
-    'icon':     m['categoryIcon'] ?? m['icon'],
-  };
-}).toList();
-// Hem wizard hem batch bu normalize edilmiş key'leri bekler
+// Navigasyon:
+context.go('/my-screen');
+context.push('/my-screen');
+context.pop();
 ```
 
 ---
 
-## 7. TASARIM SİSTEMİ
+## 10. TASARIM SİSTEMİ
 
 ```dart
 // Layout
@@ -337,6 +397,10 @@ AppEmptyState.noData(title: t('common.no_data'))
 AppEmptyState.error(title: t('common.error'), description: _error!)
 AppBadge(text: '...', color: AppColors.success)
 AppInput(label: '...', controller: _ctrl, validator: ...)
+
+// Ortak widgetlar (core/widgets/ barrel'ından import et)
+SectionHeader(title: '...', subtitle: '...')  // Bölüm başlığı
+StatCard(title: '...', value: '...', icon: ...) // İstatistik kartı
 ```
 
 **Renkler — sadece AppColors kullan:**
@@ -352,25 +416,7 @@ AppColors.bgLight / border
 
 ---
 
-## 8. ROUTER
-
-```dart
-// router.dart — routerProvider (GoRouter)
-// Yeni route eklemek:
-GoRoute(
-  path: '/my-screen',
-  builder: (ctx, state) => const MyScreen(),
-),
-
-// Navigasyon:
-context.go('/my-screen');
-context.push('/my-screen');
-context.pop();
-```
-
----
-
-## 9. i18n — ZORUNLU
+## 11. i18n — ZORUNLU
 
 ```dart
 // Kullanım
@@ -382,53 +428,49 @@ AppToast.success(context, t('common.saved'))
 // ✅ t('key') her zaman
 ```
 
+**Her yeni ekranda data.sql'e anahtar eklenmeli** (bkz. kök CLAUDE.md §11 ve project_pos CLAUDE.md §11a).
+
 ---
 
-## 9a. i18n KAYIT ZORUNLULUĞU — HER EKRAN
+## 11a. i18n KAYIT ZORUNLULUĞU
 
-**Her yeni ekran veya bileşen tasarlandığında aşağıdakiler ZORUNLUDUR:**
+**Her yeni ekran tasarlandığında:**
+1. Ekrandaki tüm `t('prefix.key')` anahtarlarını listele
+2. `security/src/main/resources/data.sql`'e ekle (INSERT INTO bloğu içine)
+3. security servisini restart et
 
-1. Ekrandaki tüm `t('prefix.key')` anahtarları `security/src/main/resources/data.sql`'e kayıt olarak eklenmelidir.
-2. Kayıt formatı:
+**Kayıt formatı:**
 ```sql
 ('bnd-XX000-0000-0000-NNNNNNNNNNNN', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
  'prefix.key', 'Türkçe Metin', 'English Text'),
 ```
-3. ID format kuralı:
-   - `bnd-` prefix'i sabit
-   - `XX` = modül kodu (bt=batch, wz=wizard, pd=product, st=stock, sl=sale, ...)
-   - Sıra numarası mevcut son kayıttan devam eder
-4. Aynı prefix altındaki tüm mevcut kayıtlar kontrol edilmeli, **sadece eksik olanlar** eklenmeli.
 
 **Modül prefix kodları:**
 ```
-bt  → batch (toplu ürün girişi)
-wz  → wizard (ürün ekleme sihirbazı)
-pd  → product (ürün genel)
-st  → stock (stok)
-sl  → sale (satış)
-pu  → purchase (satın alma)
-cu  → customer (müşteri)
-su  → supplier (tedarikçi)
-rp  → report (rapor)
-fn  → finance (cari/finans)
-se  → settings (ayarlar)
-au  → auth (giriş/kimlik)
-cm  → common (ortak)
-db  → dashboard
-```
-
-**Kontrol adımları (yeni ekran eklerken):**
-```
-1. Ekrandaki tüm t('X.Y') anahtarlarını listele
-2. grep 'X.Y' security/src/main/resources/data.sql → eksikleri bul
-3. Eksikleri data.sql'e ekle (INSERT INTO blok içine)
-4. security servisini restart et → cache temizlenir
+bt=batch, wz=wizard, pd=product, st=stock, sl=sale, pu=purchase
+cu=customer, su=supplier, rp=report, fn=finance, se=settings
+au=auth, cm=common, db=dashboard
 ```
 
 ---
 
-## 10. DARK MODE
+## 12. YENİ FEATURE EKLEME AKIŞI
+
+```
+1. features/<name>/ klasörünü oluştur
+2. di/<name>_di.dart — Provider tanımları
+3. services/<name>_service.dart — ApiClient inject
+4. models/ — feature'a özgü data class'lar (cross-feature ise shared/'a)
+5. providers/<name>_provider.dart — StateNotifier (gerekirse)
+6. screens/<name>_screen.dart — ConsumerStatefulWidget
+7. core/di/service_locator.dart'a DI export ekle
+8. core/router/app_router.dart'a GoRoute ekle
+9. data.sql'e i18n anahtarları ekle
+```
+
+---
+
+## 13. DARK MODE
 
 ```dart
 final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -438,7 +480,7 @@ final isDark = Theme.of(context).brightness == Brightness.dark;
 
 ---
 
-## 11. SIK YAPILAN HATALAR
+## 14. SIK YAPILAN HATALAR
 
 | Hata | Çözüm |
 |------|-------|
@@ -451,3 +493,10 @@ final isDark = Theme.of(context).brightness == Brightness.dark;
 | `response.data['items']` | `response.data['data']` |
 | Hardcode Türkçe metin | `t('key')` |
 | Provider `dispose` unutmak | `autoDispose` kullan |
+| `XService(ApiClient())` new'leme | `ref.read(xServiceProvider)` kullan |
+| Feature-A → Feature-B import | Yalnızca `shared/` veya DI üzerinden |
+| `lib/services/` servis import | `features/<name>/services/` veya `core/di/service_locator.dart` |
+| `lib/screens/` ekran import | `features/<name>/screens/` kullan |
+| `lib/providers/` provider import | `shared/providers/` kullan |
+| Sektör string hardcode `'genel'` | `sectorType.apiValue` → `'GENERAL'` |
+| Birim default farklı | Her yerde `'adet'` kullan |

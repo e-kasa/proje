@@ -114,6 +114,7 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
     Map<String, String>? attributes,
     List<Map<String, String>>? oemList,
     List<Map<String, String>>? crossRefList,
+    List<BatchVariantRow>? variantRows,
   }) {
     final rows = state.rows.map((r) {
       if (r.id != rowId) return r;
@@ -138,6 +139,7 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
         attributes: attributes,
         oemList: oemList,
         crossRefList: crossRefList,
+        variantRows: variantRows,
       );
     }).toList();
     state = state.copyWith(rows: rows);
@@ -321,14 +323,7 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
             'sector': _sectorConfig.type.apiValue,
             'metadata': _buildMetadata(row),
           },
-          'oemNumbers': row.oemList
-              .where((o) => (o['oemNumber'] ?? '').isNotEmpty)
-              .map((o) => {
-                    'oemNumber': o['oemNumber'],
-                    'manufacturer': o['manufacturer'] ?? '',
-                    'isPrimary': row.oemList.isNotEmpty && o == row.oemList.first,
-                  })
-              .toList(),
+          'oemNumbers': _buildOemList(row),
           'crossReferences': row.crossRefList
               .where((c) => (c['crossRefNumber'] ?? '').isNotEmpty)
               .map((c) => {
@@ -342,6 +337,7 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
               'name': row.productName,
               'shelfLocationCode': row.shelfLocation,
               'attributes': row.attributes,
+              'minStockLevel': row.minStockLevel,
               'pricing': {
                 'purchasePrice': row.purchasePrice,
                 'salePrice': row.salePrice,
@@ -412,6 +408,30 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
       return r.copyWith(status: status, errorMessage: errorMessage);
     }).toList();
     state = state.copyWith(rows: rows);
+  }
+
+  /// oemList doluysa ondan, değilse tek oemNumber field'ından oluşturur
+  List<Map<String, dynamic>> _buildOemList(BatchEntryRow row) {
+    if (row.oemList.isNotEmpty) {
+      return row.oemList
+          .where((o) => (o['oemNumber'] ?? '').isNotEmpty)
+          .map((o) => {
+                'oemNumber': o['oemNumber'],
+                'manufacturer': o['manufacturer'] ?? '',
+                'isPrimary': o == row.oemList.first,
+              })
+          .toList();
+    }
+    if (row.oemNumber != null && row.oemNumber!.trim().isNotEmpty) {
+      return [
+        {
+          'oemNumber': row.oemNumber!.trim(),
+          'manufacturer': '',
+          'isPrimary': true,
+        }
+      ];
+    }
+    return [];
   }
 
   Map<String, dynamic>? _buildMetadata(BatchEntryRow row) {

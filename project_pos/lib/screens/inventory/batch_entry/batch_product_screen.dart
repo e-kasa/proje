@@ -118,84 +118,43 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
     final t = i18nOf(ref);
     final state = ref.watch(batchEntryProvider);
     final cfg = ref.watch(sectorConfigProvider);
-    final isDesktop = MediaQuery.sizeOf(context).width > 800;
 
     return AppScaffold(
+      appBar: AppAppBar.standard(
+        title: state.supplierName != null
+            ? '${t('batch.bulk_product_entry')} · ${state.supplierName}'
+            : t('batch.bulk_product_entry'),
+        actions: [
+          if (state.rows.isNotEmpty) ...[
+            _AppBarChip(
+              label: '${state.totalItems}',
+              icon: Icons.inventory_2_outlined,
+              color: AppColors.info,
+            ),
+            const SizedBox(width: 6),
+            _AppBarChip(
+              label: '${state.newItems} ${t('batch.new').toLowerCase()}',
+              icon: Icons.add_circle_outline,
+              color: AppColors.primary,
+            ),
+            const SizedBox(width: 4),
+            IconButton(
+              onPressed: _confirmClear,
+              icon: const Icon(Icons.delete_sweep_outlined),
+              tooltip: t('batch.clear_list'),
+              color: AppColors.danger,
+            ),
+          ],
+        ],
+      ),
       body: Column(
         children: [
-          _buildTopBar(state, isDesktop, t),
           const BatchHeaderForm(),
           _buildSearchBar(cfg, t),
           _buildTabBar(state, t),
-          Expanded(child: _buildBody(state, cfg, isDesktop, t)),
+          Expanded(child: _buildBody(state, cfg, t)),
           _buildSummaryBar(state, t),
         ],
-      ),
-    );
-  }
-
-  // ── TOP BAR ─────────────────────────────────────────────────────────────────
-  Widget _buildTopBar(BatchEntryState state, bool isDesktop, Function(String) t) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: AppGradients.primaryGradient,
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
-          child: Row(
-            children: [
-              IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                    color: Colors.white, size: 20),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      t('batch.bulk_product_entry'),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (state.supplierName != null)
-                      Text(
-                        state.supplierName!,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 12,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              // Stats chips
-              if (state.rows.isNotEmpty) ...[
-                _TopChip(
-                    label: '${state.totalItems}',
-                    icon: Icons.list_alt_rounded),
-                const SizedBox(width: 8),
-                _TopChip(
-                    label: '${state.newItems} ${t('batch.new').toLowerCase()}',
-                    icon: Icons.add_circle_outline),
-              ],
-              const SizedBox(width: 8),
-              // Clear button
-              if (state.rows.isNotEmpty)
-                IconButton(
-                  onPressed: _confirmClear,
-                  icon: const Icon(Icons.delete_sweep_outlined,
-                      color: Colors.white),
-                  tooltip: t('batch.clear_list'),
-                ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -214,52 +173,61 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
   Widget _buildSearchBar(SectorConfig cfg, Function(String) t) {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
       child: Row(
         children: [
           Expanded(
-            child: Container(
-              height: 46,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0F2F8),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: TextField(
-                controller: _barcodeController,
-                focusNode: _barcodeFocus,
-                onSubmitted: (_) => _addByBarcode(),
-                style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w500),
-                decoration: InputDecoration(
-                  hintText: cfg.barcodeHint,
-                  hintStyle: const TextStyle(
-                      color: AppColors.textMuted, fontSize: 13),
-                  prefixIcon: const Icon(Icons.qr_code_scanner_rounded,
-                      color: AppColors.primary, size: 22),
-                  border: InputBorder.none,
-                  contentPadding:
-                      const EdgeInsets.symmetric(vertical: 13, horizontal: 4),
+            child: TextField(
+              controller: _barcodeController,
+              focusNode: _barcodeFocus,
+              onSubmitted: (_) => _addByBarcode(),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              decoration: InputDecoration(
+                hintText: cfg.barcodeHint,
+                hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                prefixIcon: const Icon(Icons.qr_code_scanner_rounded,
+                    color: AppColors.primary, size: 20),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.search_rounded, color: AppColors.primary),
+                  onPressed: _addByBarcode,
+                  tooltip: t('batch.search_and_add'),
                 ),
+                isDense: true,
+                filled: true,
+                fillColor: const Color(0xFFF4F5F8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
               ),
             ),
           ),
           const SizedBox(width: 8),
-          // Search button
-          _ActionBtn(
-            icon: Icons.search_rounded,
-            color: AppColors.primary,
-            onTap: _addByBarcode,
-            tooltip: t('batch.search_and_add'),
-          ),
-          const SizedBox(width: 8),
-          // Manual add button
-          _ActionBtn(
-            icon: Icons.add_rounded,
-            color: AppColors.success,
-            onTap: () =>
-                ref.read(batchEntryProvider.notifier).addManualRow(),
-            tooltip: t('batch.add_manual_row'),
+          Tooltip(
+            message: t('batch.add_manual_row'),
+            child: Material(
+              color: AppColors.success,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                onTap: () => ref.read(batchEntryProvider.notifier).addManualRow(),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: 46,
+                  height: 46,
+                  alignment: Alignment.center,
+                  child: const Icon(Icons.add_rounded, color: Colors.white, size: 22),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -345,17 +313,21 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
   }
 
   // ── BODY ─────────────────────────────────────────────────────────────────
-  Widget _buildBody(BatchEntryState state, SectorConfig cfg, bool isDesktop, Function(String) t) {
+  Widget _buildBody(BatchEntryState state, SectorConfig cfg, Function(String) t) {
     return TabBarView(
       controller: _tabController,
       children: _tabs.map((tab) {
         final rows = _filteredRows(state.rows, tab.status);
         if (rows.isEmpty) return _buildEmptyState(tab.status, t);
         return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
           itemCount: rows.length,
-          itemBuilder: (_, i) =>
-              _BatchRowCard(row: rows[i], currency: _currency, cfg: cfg),
+          itemBuilder: (_, i) => _BatchRowCard(
+            row: rows[i],
+            rowIndex: i,
+            currency: _currency,
+            cfg: cfg,
+          ),
         );
       }).toList(),
     );
@@ -410,11 +382,26 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
 
   // ── SUMMARY BAR ──────────────────────────────────────────────────────────
   Widget _buildSummaryBar(BatchEntryState state, Function(String) t) {
-    final totalQty =
-        state.rows.fold(0, (s, r) => s + r.quantity);
+    final cfg = ref.read(sectorConfigProvider);
+    final totalQty = state.rows.fold(0, (s, r) => s + r.quantity);
     final margin = state.totalSale > 0
         ? (state.totalProfit / state.totalSale * 100)
         : 0.0;
+    final readyCount = state.rows.where((r) {
+      if (r.isSaved || r.status == RowStatus.saving) return false;
+      final c = BatchRowCompletion.compute(
+        r,
+        isExisting: r.isExisting,
+        brandRequired: cfg.fields.brandRequired,
+        oemRequired: cfg.fields.oemRequired,
+        shelfRequired: cfg.fields.shelfRequired,
+        showOem: cfg.fields.showOem,
+        showShelf: cfg.fields.showShelf,
+      );
+      return c.readiness == CardReadiness.ready;
+    }).length;
+    final pendingCount =
+        state.rows.where((r) => !r.isSaved && r.status != RowStatus.saving).length;
 
     return Container(
       decoration: BoxDecoration(
@@ -429,8 +416,45 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-          child: Row(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Hazır / toplam göstergesi
+              if (state.rows.isNotEmpty) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: pendingCount > 0
+                              ? readyCount / pendingCount
+                              : 0,
+                          minHeight: 4,
+                          backgroundColor:
+                              AppColors.border.withValues(alpha: 0.5),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                              AppColors.success),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      '$readyCount/$pendingCount ${t('batch.ready')}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: readyCount == pendingCount && pendingCount > 0
+                            ? AppColors.success
+                            : AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
+              Row(
             children: [
               // Metrics
               Expanded(
@@ -518,7 +542,9 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
                                   color: Colors.white, size: 18),
                               const SizedBox(width: 8),
                               Text(
-                                t('common.save'),
+                                readyCount > 0 && readyCount < pendingCount
+                                    ? '${t('common.save')} ($readyCount)'
+                                    : t('common.save'),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -532,6 +558,8 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
               ),
             ],
           ),
+            ],
+          ),
         ),
       ),
     );
@@ -541,9 +569,15 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
 // ── BATCH ROW CARD ────────────────────────────────────────────────────────────
 class _BatchRowCard extends ConsumerStatefulWidget {
   final BatchEntryRow row;
+  final int rowIndex;
   final NumberFormat currency;
   final SectorConfig cfg;
-  const _BatchRowCard({required this.row, required this.currency, required this.cfg});
+  const _BatchRowCard({
+    required this.row,
+    required this.rowIndex,
+    required this.currency,
+    required this.cfg,
+  });
 
   @override
   ConsumerState<_BatchRowCard> createState() => _BatchRowCardState();
@@ -557,6 +591,8 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
   late final TextEditingController _saleCtrl;
   late final TextEditingController _brandCtrl;
   late final TextEditingController _shelfCtrl;
+  late final TextEditingController _descCtrl;
+  late final TextEditingController _minStockCtrl;
 
   @override
   void initState() {
@@ -571,13 +607,15 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
         text: r.salePrice > 0 ? r.salePrice.toString() : '');
     _brandCtrl = TextEditingController(text: r.brandName ?? '');
     _shelfCtrl = TextEditingController(text: r.shelfLocation ?? '');
+    _descCtrl = TextEditingController(text: r.description ?? '');
+    _minStockCtrl = TextEditingController(text: r.minStockLevel.toString());
   }
 
   @override
   void dispose() {
     for (final c in [
       _nameCtrl, _barcodeCtrl, _oemCtrl, _purchaseCtrl,
-      _saleCtrl, _brandCtrl, _shelfCtrl
+      _saleCtrl, _brandCtrl, _shelfCtrl, _descCtrl, _minStockCtrl,
     ]) {
       c.dispose();
     }
@@ -588,43 +626,65 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
     String? productName,
     String? barcode,
     String? oemNumber,
+    List<Map<String, String>>? oemList,
     double? purchasePrice,
     double? salePrice,
     int? quantity,
     String? categoryId,
     String? categoryName,
     String? brandName,
+    String? unitId,
     String? shelfLocation,
+    int? minStockLevel,
     bool? isExpanded,
     double? vatRate,
     bool? vatIncluded,
+    String? description,
     Map<String, String>? attributes,
+    List<BatchVariantRow>? variantRows,
   }) {
     ref.read(batchEntryProvider.notifier).updateRow(
           widget.row.id,
           productName: productName,
           barcode: barcode,
           oemNumber: oemNumber,
+          oemList: oemList,
           purchasePrice: purchasePrice,
           salePrice: salePrice,
           quantity: quantity,
           categoryId: categoryId,
           categoryName: categoryName,
           brandName: brandName,
+          unitId: unitId,
           shelfLocation: shelfLocation,
+          minStockLevel: minStockLevel,
           isExpanded: isExpanded,
           vatRate: vatRate,
           vatIncluded: vatIncluded,
+          description: description,
           attributes: attributes,
+          variantRows: variantRows,
         );
   }
 
-  Color get _statusColor => switch (widget.row.status) {
-        RowStatus.newProduct => AppColors.info,
-        RowStatus.existing || RowStatus.matched => AppColors.success,
-        RowStatus.error => AppColors.danger,
-        RowStatus.saving => AppColors.warning,
-        RowStatus.saved => AppColors.success,
+  BatchRowCompletion get _completion => BatchRowCompletion.compute(
+        widget.row,
+        isExisting: widget.row.isExisting,
+        brandRequired: widget.cfg.fields.brandRequired,
+        oemRequired: widget.cfg.fields.oemRequired,
+        shelfRequired: widget.cfg.fields.shelfRequired,
+        showOem: widget.cfg.fields.showOem,
+        showShelf: widget.cfg.fields.showShelf,
+        showVariantTable: widget.cfg.fields.showVariantSize,
+      );
+
+  Color get _statusColor => switch (_completion.readiness) {
+        CardReadiness.draft => AppColors.textMuted,
+        CardReadiness.incomplete => AppColors.warning,
+        CardReadiness.ready => AppColors.success,
+        CardReadiness.saving => AppColors.warning,
+        CardReadiness.saved => AppColors.success,
+        CardReadiness.error => AppColors.danger,
       };
 
   @override
@@ -636,16 +696,21 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
         : 0.0;
     final isExpanded = row.isExpanded;
 
+    final accentColor = _accentColor;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _statusColor.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: _statusColor.withValues(alpha: isExpanded ? 0.5 : 0.25),
+          width: isExpanded ? 1.5 : 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
+            color: _statusColor.withValues(alpha: isExpanded ? 0.08 : 0.04),
+            blurRadius: isExpanded ? 14 : 6,
             offset: const Offset(0, 3),
           ),
         ],
@@ -653,298 +718,521 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
       child: Column(
         children: [
           // ── Collapsed header ──────────────────────────────────────────────
-          InkWell(
-            onTap: () => _update(isExpanded: !isExpanded),
+          Material(
+            color: Colors.transparent,
             borderRadius: BorderRadius.circular(16),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Status indicator
-                  Container(
-                    width: 4,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: _statusColor,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Product info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+            child: InkWell(
+              onTap: () => _update(isExpanded: !isExpanded),
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(0, 12, 12, 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Left status bar + row number
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Row(
-                          children: [
-                            _StatusBadge(status: row.status, t: t),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                row.productName.isNotEmpty
-                                    ? row.productName
-                                    : row.barcode.isNotEmpty
-                                        ? row.barcode
-                                        : t('batch.enter_product_name'),
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: row.productName.isEmpty
-                                      ? AppColors.textMuted
-                                      : AppColors.textPrimary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                        Container(
+                          width: 4,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: _statusColor,
+                            borderRadius: const BorderRadius.only(
+                              topRight: Radius.circular(2),
+                              bottomRight: Radius.circular(2),
                             ),
-                          ],
+                          ),
                         ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            if (row.barcode.isNotEmpty) ...[
-                              Icon(Icons.qr_code_rounded,
-                                  size: 12,
-                                  color: AppColors.textMuted),
-                              const SizedBox(width: 3),
-                              Text(row.barcode,
-                                  style: const TextStyle(
-                                      fontSize: 11,
-                                      color: AppColors.textMuted)),
-                              const SizedBox(width: 10),
-                            ],
-                            if (row.categoryName != null &&
-                                row.categoryName!.isNotEmpty) ...[
-                              Icon(Icons.category_outlined,
-                                  size: 12,
-                                  color: AppColors.textMuted),
-                              const SizedBox(width: 3),
-                              Text(row.categoryName!,
-                                  style: const TextStyle(
-                                      fontSize: 11,
-                                      color: AppColors.textMuted)),
-                            ],
-                          ],
+                      ],
+                    ),
+                    const SizedBox(width: 10),
+                    // Row number badge
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: _statusColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '${widget.rowIndex + 1}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: _statusColor,
                         ),
-                        if (row.errorMessage != null) ...[
-                          const SizedBox(height: 4),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Product info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Üst satır: hazırlık badge + ürün adı
                           Row(
                             children: [
-                              const Icon(Icons.error_outline,
-                                  size: 12, color: AppColors.danger),
-                              const SizedBox(width: 4),
+                              _ReadinessBadge(
+                                  completion: _completion, t: t),
+                              const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
-                                  row.errorMessage!,
-                                  style: const TextStyle(
-                                      fontSize: 11,
-                                      color: AppColors.danger),
+                                  row.productName.isNotEmpty
+                                      ? row.productName
+                                      : row.barcode.isNotEmpty
+                                          ? row.barcode
+                                          : t('batch.enter_product_name'),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: row.productName.isEmpty
+                                        ? AppColors.textMuted
+                                        : AppColors.textPrimary,
+                                  ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
                           ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Right side: prices + quantity control
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      // Prices row
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (row.purchasePrice > 0)
-                            Text(
-                              widget.currency.format(row.purchasePrice),
-                              style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textMuted,
-                                  decoration: TextDecoration.none),
+                          const SizedBox(height: 5),
+                          // Alt satır: meta chip'ler + wizard dots
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Wrap(
+                                  spacing: 6,
+                                  runSpacing: 3,
+                                  children: [
+                                    if (row.barcode.isNotEmpty)
+                                      _MetaChip(
+                                        icon: Icons.qr_code_rounded,
+                                        label: row.barcode,
+                                      ),
+                                    if (row.categoryName != null &&
+                                        row.categoryName!.isNotEmpty)
+                                      _MetaChip(
+                                        icon: Icons.category_outlined,
+                                        label: row.categoryName!,
+                                        color: accentColor,
+                                      ),
+                                    if (row.brandName != null &&
+                                        row.brandName!.isNotEmpty)
+                                      _MetaChip(
+                                        icon: Icons.business_outlined,
+                                        label: row.brandName!,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              _WizardStepDots(completion: _completion),
+                            ],
+                          ),
+                          // Eksik alan uyarısı (sadece incomplete)
+                          if (_completion.readiness == CardReadiness.incomplete &&
+                              _completion.missingFields.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(Icons.warning_amber_rounded,
+                                    size: 11, color: AppColors.warning),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    _completion.missingFields.join(', '),
+                                    style: const TextStyle(
+                                        fontSize: 10,
+                                        color: AppColors.warning,
+                                        fontWeight: FontWeight.w500),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
-                          if (row.purchasePrice > 0 && row.salePrice > 0)
-                            const Text(' → ',
-                                style: TextStyle(
+                          ],
+                          // Hata mesajı
+                          if (row.errorMessage != null) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(Icons.error_outline,
+                                    size: 11, color: AppColors.danger),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    row.errorMessage!,
+                                    style: const TextStyle(
+                                        fontSize: 10,
+                                        color: AppColors.danger),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Right: prices + margin + quantity
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (row.salePrice > 0) ...[
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (row.purchasePrice > 0) ...[
+                                Text(
+                                  widget.currency.format(row.purchasePrice),
+                                  style: const TextStyle(
+                                    fontSize: 11,
                                     color: AppColors.textMuted,
-                                    fontSize: 12)),
-                          if (row.salePrice > 0)
-                            Text(
-                              widget.currency.format(row.salePrice),
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.success,
+                                  ),
+                                ),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 3),
+                                  child: Icon(Icons.arrow_forward_rounded,
+                                      size: 10, color: AppColors.textMuted),
+                                ),
+                              ],
+                              Text(
+                                widget.currency.format(row.salePrice),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.success,
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (margin > 0) ...[
+                            const SizedBox(height: 3),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: (margin >= 20
+                                        ? AppColors.success
+                                        : AppColors.warning)
+                                    .withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                'Kâr %${margin.toStringAsFixed(0)}',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: margin >= 20
+                                      ? AppColors.success
+                                      : AppColors.warning,
+                                ),
                               ),
                             ),
+                          ],
+                          const SizedBox(height: 6),
                         ],
-                      ),
-                      const SizedBox(height: 4),
-                      // Margin badge
-                      if (margin > 0)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: (margin >= 20
-                                    ? AppColors.success
-                                    : AppColors.warning)
-                                .withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            '${t('batch.profit')} %${margin.toStringAsFixed(1)}',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: margin >= 20
-                                  ? AppColors.success
-                                  : AppColors.warning,
-                            ),
-                          ),
+                        _QuantityControl(
+                          quantity: row.quantity,
+                          onChanged: (q) => _update(quantity: q),
                         ),
-                      const SizedBox(height: 6),
-                      // Quantity control
-                      _QuantityControl(
-                        quantity: row.quantity,
-                        onChanged: (q) => _update(quantity: q),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    isExpanded
-                        ? Icons.keyboard_arrow_up_rounded
-                        : Icons.keyboard_arrow_down_rounded,
-                    color: AppColors.textMuted,
-                    size: 20,
-                  ),
-                ],
+                      ],
+                    ),
+                    const SizedBox(width: 6),
+                    AnimatedRotation(
+                      turns: isExpanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 200),
+                      child: const Icon(Icons.keyboard_arrow_down_rounded,
+                          color: AppColors.textMuted, size: 22),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
 
           // ── Expanded form ─────────────────────────────────────────────────
           if (isExpanded) ...[
-            Divider(
-                height: 1,
-                color: _statusColor.withValues(alpha: 0.2)),
+            Divider(height: 1, color: _statusColor.withValues(alpha: 0.2)),
+
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 6),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Row 1: Ürün adı + Barkod
-                  _FormRow(children: [
-                    _Field(
-                      label: '${t('product.product_name')} *',
-                      ctrl: _nameCtrl,
-                      onChanged: (v) => _update(productName: v),
-                      hint: t('batch.enter_product_name'),
-                    ),
-                    _Field(
-                      label: widget.cfg.labels.barcodeLabel,
-                      ctrl: _barcodeCtrl,
-                      onChanged: (v) => _update(barcode: v),
-                      hint: 'EAN13 / QR',
-                    ),
-                  ]),
-                  const SizedBox(height: 10),
-                  // Row 2: Alış / Satış
-                  _FormRow(children: [
-                    _Field(
-                      label: '${t('batch.purchase_price')} ₺',
-                      ctrl: _purchaseCtrl,
-                      onChanged: (v) =>
-                          _update(purchasePrice: double.tryParse(v) ?? 0),
-                      keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
-                      hint: '0.00',
-                    ),
-                    _Field(
-                      label: '${widget.cfg.labels.salePriceLabel} ₺ *',
-                      ctrl: _saleCtrl,
-                      onChanged: (v) =>
-                          _update(salePrice: double.tryParse(v) ?? 0),
-                      keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
-                      hint: '0.00',
-                    ),
-                  ]),
-                  const SizedBox(height: 10),
-                  // Row 2b: KDV oranı + KDV dahil mi
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _VatDropdown(
-                          label: t('batch.vat'),
-                          value: widget.row.vatRate,
-                          onChanged: (v) => _update(vatRate: v),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _VatIncludedSwitch(
-                          label: t('batch.vat_included'),
-                          value: widget.row.vatIncluded,
-                          onChanged: (v) => _update(vatIncluded: v),
-                        ),
-                      ),
-                    ],
+                  // ── Bölüm 1: Ürün Bilgileri ──────────────────────────────
+                  _WizardSectionHeader(
+                    stepNumber: 1,
+                    title: t('product.basic_info'),
+                    section: _completion.sectionA,
+                    isRequired: true,
+                    t: t,
                   ),
-                  const SizedBox(height: 10),
-                  // Row 3: OEM (sektöre göre) + Raf
-                  _FormRow(children: [
-                    if (widget.cfg.fields.showOem)
-                      _Field(
-                        label: widget.cfg.labels.oemField +
-                            (widget.cfg.fields.oemRequired ? ' *' : ''),
-                        ctrl: _oemCtrl,
-                        onChanged: (v) => _update(oemNumber: v),
-                        hint: widget.cfg.type == SectorType.technology
-                            ? t('batch.hint_imei_serial')
-                            : t('batch.hint_original_part_no'),
-                      )
-                    else
-                      const SizedBox.shrink(),
-                    if (widget.cfg.fields.showShelf)
-                      _Field(
-                        label: widget.cfg.labels.shelfField +
-                            (widget.cfg.fields.shelfRequired ? ' *' : ''),
-                        ctrl: _shelfCtrl,
-                        onChanged: (v) => _update(shelfLocation: v),
-                        hint: 'A-12-3',
-                      )
-                    else
-                      const SizedBox.shrink(),
-                  ]),
-                  const SizedBox(height: 10),
-                  // Row 4: Kategori + Marka
-                  _FormRow(children: [
-                    _CategoryDropdown(
-                      label: '${widget.cfg.labels.categoryName} *',
-                      selectedId: widget.row.categoryId,
-                      onSelected: (id, name) =>
-                          _update(categoryId: id, categoryName: name),
+                  const SizedBox(height: 8),
+
+                  // Mevcut ürün → read-only bilgi kartı
+                  if (row.isExisting)
+                    _ExistingProductInfoCard(row: row, accentColor: accentColor, t: t)
+                  else
+                    _SectionCard(
+                      icon: Icons.inventory_2_outlined,
+                      title: t('product.basic_info'),
+                      color: AppColors.info,
+                      showHeader: false,
+                      child: Column(
+                        children: [
+                          _FormRow(children: [
+                            _Field(
+                              label: '${t('product.product_name')} *',
+                              ctrl: _nameCtrl,
+                              onChanged: (v) => _update(productName: v),
+                              hint: t('batch.enter_product_name'),
+                            ),
+                            _Field(
+                              label: widget.cfg.labels.barcodeLabel,
+                              ctrl: _barcodeCtrl,
+                              onChanged: (v) => _update(barcode: v),
+                              hint: 'EAN13 / QR',
+                            ),
+                          ]),
+                          const SizedBox(height: 10),
+                          _FormRow(children: [
+                            _CategoryDropdown(
+                              label: '${widget.cfg.labels.categoryName} *',
+                              selectedId: widget.row.categoryId,
+                              onSelected: (id, name) =>
+                                  _update(categoryId: id, categoryName: name),
+                            ),
+                            if (widget.cfg.fields.showBrand)
+                              _Field(
+                                label: t('product.brand') +
+                                    (widget.cfg.fields.brandRequired ? ' *' : ''),
+                                ctrl: _brandCtrl,
+                                onChanged: (v) => _update(brandName: v),
+                                hint: widget.cfg.type == SectorType.autoParts
+                                    ? t('batch.hint_auto_brand')
+                                    : t('batch.hint_brand_name'),
+                              )
+                            else
+                              const SizedBox.shrink(),
+                          ]),
+                          const SizedBox(height: 10),
+                          _UnitDropdown(
+                            label: t('product.unit'),
+                            value: widget.row.unitId ?? 'adet',
+                            onChanged: (v) => _update(unitId: v),
+                          ),
+                          const SizedBox(height: 10),
+                          _DescField(
+                            label: t('product.description'),
+                            ctrl: _descCtrl,
+                            onChanged: (v) => _update(description: v),
+                          ),
+                        ],
+                      ),
                     ),
-                    if (widget.cfg.fields.showBrand)
-                      _Field(
-                        label: t('product.brand') +
-                            (widget.cfg.fields.brandRequired ? ' *' : ''),
-                        ctrl: _brandCtrl,
-                        onChanged: (v) => _update(brandName: v),
-                        hint: widget.cfg.type == SectorType.autoParts
-                            ? t('batch.hint_auto_brand')
-                            : t('batch.hint_brand_name'),
-                      )
-                    else
-                      const SizedBox.shrink(),
-                  ]),
-                  // Row 5: Varyant Özellikleri (yeni ürünler için)
+
+                  const SizedBox(height: 14),
+
+                  // ── Bölüm 2: Fiyat & Stok ────────────────────────────────
+                  _WizardSectionHeader(
+                    stepNumber: 2,
+                    title: t('batch.price_and_stock'),
+                    section: _completion.sectionB,
+                    isRequired: true,
+                    t: t,
+                  ),
+                  const SizedBox(height: 8),
+                  _SectionCard(
+                    icon: Icons.attach_money_rounded,
+                    title: t('batch.price_and_stock'),
+                    color: AppColors.success,
+                    showHeader: false,
+                    child: Column(
+                      children: [
+                        _FormRow(children: [
+                          _Field(
+                            label: '${t('batch.purchase_price')} ₺' +
+                                (row.isExisting ? ' *' : ''),
+                            ctrl: _purchaseCtrl,
+                            onChanged: (v) =>
+                                _update(purchasePrice: double.tryParse(v) ?? 0),
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            hint: '0,00',
+                          ),
+                          _Field(
+                            label: '${widget.cfg.labels.salePriceLabel} ₺ *',
+                            ctrl: _saleCtrl,
+                            onChanged: (v) =>
+                                _update(salePrice: double.tryParse(v) ?? 0),
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            hint: '0,00',
+                          ),
+                        ]),
+                        const SizedBox(height: 10),
+                        Row(children: [
+                          Expanded(
+                            child: _VatDropdown(
+                              label: t('batch.vat'),
+                              value: widget.row.vatRate,
+                              onChanged: (v) => _update(vatRate: v),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _VatIncludedSwitch(
+                              label: t('batch.vat_included'),
+                              value: widget.row.vatIncluded,
+                              onChanged: (v) => _update(vatIncluded: v),
+                            ),
+                          ),
+                        ]),
+                        if (row.salePrice > 0 && row.purchasePrice > 0) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: AppColors.success.withValues(alpha: 0.07),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                  color: AppColors.success
+                                      .withValues(alpha: 0.2)),
+                            ),
+                            child: Row(children: [
+                              const Icon(Icons.trending_up_rounded,
+                                  size: 15, color: AppColors.success),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text.rich(
+                                  TextSpan(children: [
+                                    TextSpan(
+                                      text: t('batch.unit_profit') + ': ',
+                                      style: const TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.textSecondary),
+                                    ),
+                                    TextSpan(
+                                      text: widget.currency.format(
+                                              row.salePrice -
+                                                  row.purchasePrice) +
+                                          '  •  ',
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.success),
+                                    ),
+                                    TextSpan(
+                                      text: t('common.total') + ': ',
+                                      style: const TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.textSecondary),
+                                    ),
+                                    TextSpan(
+                                      text: widget.currency
+                                          .format(row.lineProfit),
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.success),
+                                    ),
+                                    TextSpan(
+                                      text:
+                                          '  •  Marj: %${margin.toStringAsFixed(1)}',
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          color: margin >= 20
+                                              ? AppColors.success
+                                              : AppColors.warning,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                  ]),
+                                ),
+                              ),
+                            ]),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+
+                  // ── Bölüm 3: Detaylar (Sektöre Özgü) ────────────────────
+                  if (widget.cfg.fields.showOem ||
+                      widget.cfg.fields.showShelf) ...[
+                    const SizedBox(height: 14),
+                    _WizardSectionHeader(
+                      stepNumber: 3,
+                      title: '${widget.cfg.type.displayName} ${t('batch.fields')}',
+                      section: _completion.sectionC,
+                      isRequired: widget.cfg.fields.oemRequired ||
+                          widget.cfg.fields.shelfRequired,
+                      t: t,
+                    ),
+                    const SizedBox(height: 8),
+                    _SectionCard(
+                      icon: accentIcon,
+                      title: '${widget.cfg.type.displayName} ${t('batch.fields')}',
+                      color: accentColor,
+                      showHeader: false,
+                      child: Column(
+                        children: [
+                          _FormRow(children: [
+                            if (widget.cfg.fields.showOem)
+                              _Field(
+                                label: widget.cfg.labels.oemField +
+                                    (widget.cfg.fields.oemRequired ? ' *' : ''),
+                                ctrl: _oemCtrl,
+                                onChanged: (v) => _update(
+                                  oemNumber: v,
+                                  oemList: v.trim().isEmpty
+                                      ? []
+                                      : [{'oemNumber': v.trim(), 'manufacturer': ''}],
+                                ),
+                                hint: widget.cfg.type == SectorType.technology
+                                    ? t('batch.hint_imei_serial')
+                                    : t('batch.hint_original_part_no'),
+                              )
+                            else
+                              const SizedBox.shrink(),
+                            if (widget.cfg.fields.showShelf)
+                              _Field(
+                                label: widget.cfg.labels.shelfField +
+                                    (widget.cfg.fields.shelfRequired ? ' *' : ''),
+                                ctrl: _shelfCtrl,
+                                onChanged: (v) => _update(shelfLocation: v),
+                                hint: 'A-12-3',
+                              )
+                            else
+                              const SizedBox.shrink(),
+                          ]),
+                          const SizedBox(height: 10),
+                          _FormRow(children: [
+                            _Field(
+                              label: t('batch.min_stock_level'),
+                              ctrl: _minStockCtrl,
+                              keyboardType: TextInputType.number,
+                              onChanged: (v) =>
+                                  _update(minStockLevel: int.tryParse(v) ?? 10),
+                              hint: '10',
+                            ),
+                            const SizedBox.shrink(),
+                          ]),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  // ── Bölüm 4: Varyant Özellikleri ─────────────────────────
                   if (row.isNew) ...[
                     const SizedBox(height: 10),
                     _BatchAttributesSection(
@@ -953,40 +1241,13 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                       onChanged: (attrs) => _update(attributes: attrs),
                     ),
                   ],
-                  const SizedBox(height: 14),
-                  // Actions
+
+                  const SizedBox(height: 12),
+
+                  // ── Footer actions ────────────────────────────────────────
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      // Profit summary
-                      if (row.salePrice > 0 && row.purchasePrice > 0)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: AppColors.success.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.trending_up_rounded,
-                                  size: 14, color: AppColors.success),
-                              const SizedBox(width: 6),
-                              Text(
-                                '${t('batch.unit_profit')}: ${widget.currency.format(row.salePrice - row.purchasePrice)}  •  ${t('common.total')}: ${widget.currency.format(row.lineProfit)}',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.success,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      else
-                        const SizedBox.shrink(),
-                      // Remove button
                       TextButton.icon(
                         onPressed: () => ref
                             .read(batchEntryProvider.notifier)
@@ -994,14 +1255,21 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                         icon: const Icon(Icons.delete_outline_rounded,
                             size: 16, color: AppColors.danger),
                         label: Text(t('common.remove'),
-                            style: const TextStyle(color: AppColors.danger)),
+                            style:
+                                const TextStyle(color: AppColors.danger, fontSize: 13)),
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
+                              horizontal: 14, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: BorderSide(
+                                color: AppColors.danger.withValues(alpha: 0.3)),
+                          ),
                         ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 4),
                 ],
               ),
             ),
@@ -1010,6 +1278,20 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
       ),
     );
   }
+
+  Color get _accentColor => switch (widget.cfg.type) {
+        SectorType.autoParts => AppColors.orange,
+        SectorType.footwear => AppColors.pink,
+        SectorType.technology => AppColors.info,
+        SectorType.general => AppColors.primary,
+      };
+
+  IconData get accentIcon => switch (widget.cfg.type) {
+        SectorType.autoParts => Icons.build_circle_outlined,
+        SectorType.footwear => Icons.shopping_bag_outlined,
+        SectorType.technology => Icons.devices_outlined,
+        SectorType.general => Icons.store_outlined,
+      };
 }
 
 // ── QUANTITY CONTROL ──────────────────────────────────────────────────────────
@@ -1264,6 +1546,147 @@ class _CategoryDropdown extends ConsumerWidget {
   }
 }
 
+// ── UNIT DROPDOWN ─────────────────────────────────────────────────────────────
+class _UnitDropdown extends StatelessWidget {
+  final String label;
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  const _UnitDropdown({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  static const _units = [
+    ('adet', 'Adet'),
+    ('kg', 'Kilogram (kg)'),
+    ('lt', 'Litre (lt)'),
+    ('mt', 'Metre (mt)'),
+    ('m2', 'Metrekare (m²)'),
+    ('kutu', 'Kutu'),
+    ('paket', 'Paket'),
+    ('takim', 'Takım'),
+    ('cift', 'Çift'),
+    ('set', 'Set'),
+    ('pcs', 'Piece (pcs)'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final safeValue = _units.any((u) => u.$1 == value) ? value : 'adet';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        SizedBox(
+          height: 40,
+          child: DropdownButtonFormField<String>(
+            value: safeValue,
+            isExpanded: true,
+            style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+            decoration: InputDecoration(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              filled: true,
+              fillColor: const Color(0xFFF7F8FC),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(9),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(9),
+                borderSide: const BorderSide(color: Color(0xFFE8E9F0)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(9),
+                borderSide:
+                    const BorderSide(color: AppColors.primary, width: 1.5),
+              ),
+            ),
+            items: _units
+                .map((u) => DropdownMenuItem<String>(
+                      value: u.$1,
+                      child: Text(u.$2, overflow: TextOverflow.ellipsis),
+                    ))
+                .toList(),
+            onChanged: (v) {
+              if (v != null) onChanged(v);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── DESCRIPTION FIELD ─────────────────────────────────────────────────────────
+class _DescField extends StatelessWidget {
+  final String label;
+  final TextEditingController ctrl;
+  final ValueChanged<String> onChanged;
+
+  const _DescField({
+    required this.label,
+    required this.ctrl,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        TextField(
+          controller: ctrl,
+          onChanged: onChanged,
+          maxLines: 2,
+          style: const TextStyle(fontSize: 13),
+          decoration: InputDecoration(
+            hintText: '…',
+            hintStyle:
+                const TextStyle(fontSize: 12, color: AppColors.textMuted),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            filled: true,
+            fillColor: const Color(0xFFF7F8FC),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(9),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(9),
+              borderSide: const BorderSide(color: Color(0xFFE8E9F0)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(9),
+              borderSide:
+                  const BorderSide(color: AppColors.primary, width: 1.5),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 // ── VAT DROPDOWN ──────────────────────────────────────────────────────────────
 class _VatDropdown extends StatelessWidget {
   final String label;
@@ -1388,21 +1811,193 @@ class _VatIncludedSwitch extends StatelessWidget {
   }
 }
 
-// ── STATUS BADGE ──────────────────────────────────────────────────────────────
-class _StatusBadge extends StatelessWidget {
-  final RowStatus status;
-  final Function(String) t;
-  const _StatusBadge({required this.status, required this.t});
+// ── APP BAR CHIP ──────────────────────────────────────────────────────────────
+class _AppBarChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  const _AppBarChip(
+      {required this.label, required this.icon, required this.color});
 
   @override
   Widget build(BuildContext context) {
-    final (label, color, icon) = switch (status) {
-      RowStatus.newProduct => (t('batch.status_new'), AppColors.info, Icons.add_circle_outline),
-      RowStatus.existing => (t('batch.status_existing'), AppColors.success, Icons.check_circle_outline),
-      RowStatus.matched => (t('batch.status_matched'), AppColors.primary, Icons.link_rounded),
-      RowStatus.error => (t('batch.status_error'), AppColors.danger, Icons.error_outline),
-      RowStatus.saving => ('...', AppColors.warning, Icons.hourglass_top_rounded),
-      RowStatus.saved => ('✓ OK', AppColors.success, Icons.check_circle),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 5),
+          Text(label,
+              style: TextStyle(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+}
+
+// ── META CHIP ─────────────────────────────────────────────────────────────────
+class _MetaChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color? color;
+  const _MetaChip(
+      {required this.icon, required this.label, this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color ?? AppColors.textMuted;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: c.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: c.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 9, color: c),
+          const SizedBox(width: 4),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 90),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                color: c,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── SECTION CARD ──────────────────────────────────────────────────────────────
+class _SectionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final Color color;
+  final Widget child;
+  final bool showHeader;
+  const _SectionCard({
+    required this.icon,
+    required this.title,
+    required this.color,
+    required this.child,
+    this.showHeader = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+        boxShadow: [
+          BoxShadow(
+              color: color.withValues(alpha: 0.05),
+              blurRadius: 6,
+              offset: const Offset(0, 2)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (showHeader) ...[
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.07),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(12)),
+              ),
+              child: Row(children: [
+                Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.13),
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: Icon(icon, size: 14, color: color),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ]),
+            ),
+          ],
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: child,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── READINESS BADGE ───────────────────────────────────────────────────────────
+class _ReadinessBadge extends StatelessWidget {
+  final BatchRowCompletion completion;
+  final Function(String) t;
+  const _ReadinessBadge({required this.completion, required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color, icon) = switch (completion.readiness) {
+      CardReadiness.draft => (
+          t('batch.status_draft'),
+          AppColors.textMuted,
+          Icons.circle_outlined
+        ),
+      CardReadiness.incomplete => (
+          t('batch.status_incomplete'),
+          AppColors.warning,
+          Icons.warning_amber_rounded
+        ),
+      CardReadiness.ready => (
+          t('batch.status_ready'),
+          AppColors.success,
+          Icons.check_circle_outline_rounded
+        ),
+      CardReadiness.saving => (
+          '...',
+          AppColors.warning,
+          Icons.hourglass_top_rounded
+        ),
+      CardReadiness.saved => (
+          t('batch.status_saved'),
+          AppColors.success,
+          Icons.check_circle
+        ),
+      CardReadiness.error => (
+          t('batch.status_error'),
+          AppColors.danger,
+          Icons.error_outline
+        ),
     };
 
     return Container(
@@ -1422,7 +2017,7 @@ class _StatusBadge extends StatelessWidget {
               fontSize: 9,
               fontWeight: FontWeight.bold,
               color: color,
-              letterSpacing: 0.5,
+              letterSpacing: 0.4,
             ),
           ),
         ],
@@ -1431,74 +2026,293 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
-// ── SMALL WIDGETS ─────────────────────────────────────────────────────────────
-class _TopChip extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  const _TopChip({required this.label, required this.icon});
+// ── WIZARD STEP DOTS ──────────────────────────────────────────────────────────
+class _WizardStepDots extends StatelessWidget {
+  final BatchRowCompletion completion;
+  const _WizardStepDots({required this.completion});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _Dot(section: completion.sectionA),
+        const SizedBox(width: 3),
+        _Dot(section: completion.sectionB),
+        const SizedBox(width: 3),
+        _Dot(section: completion.sectionC),
+      ],
+    );
+  }
+}
+
+class _Dot extends StatelessWidget {
+  final SectionStatus section;
+  const _Dot({required this.section});
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (section) {
+      SectionStatus.complete => Container(
+          width: 8,
+          height: 8,
+          decoration: const BoxDecoration(
+            color: AppColors.success,
+            shape: BoxShape.circle,
+          ),
+        ),
+      SectionStatus.partial => Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: AppColors.warning.withValues(alpha: 0.3),
+            shape: BoxShape.circle,
+            border: Border.all(color: AppColors.warning, width: 1.5),
+          ),
+        ),
+      SectionStatus.empty => Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: AppColors.border, width: 1.5),
+          ),
+        ),
+    };
+  }
+}
+
+// ── WIZARD SECTION HEADER ─────────────────────────────────────────────────────
+class _WizardSectionHeader extends StatelessWidget {
+  final int stepNumber;
+  final String title;
+  final SectionStatus section;
+  final bool isRequired;
+  final Function(String) t;
+  const _WizardSectionHeader({
+    required this.stepNumber,
+    required this.title,
+    required this.section,
+    required this.isRequired,
+    required this.t,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final (chipLabel, chipColor) = switch (section) {
+      SectionStatus.complete => (t('batch.section_complete'), AppColors.success),
+      SectionStatus.partial => (t('batch.section_partial'), AppColors.warning),
+      SectionStatus.empty => isRequired
+          ? (t('batch.section_required'), AppColors.danger)
+          : (t('batch.section_optional'), AppColors.textMuted),
+    };
+
+    return Row(
+      children: [
+        // Step number circle
+        Container(
+          width: 22,
+          height: 22,
+          decoration: BoxDecoration(
+            color: chipColor.withValues(alpha: 0.15),
+            shape: BoxShape.circle,
+            border: Border.all(color: chipColor.withValues(alpha: 0.4)),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            '$stepNumber',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: chipColor,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Title
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+        // Completion chip
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: chipColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            chipLabel,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: chipColor,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── EXISTING PRODUCT INFO CARD ────────────────────────────────────────────────
+class _ExistingProductInfoCard extends StatelessWidget {
+  final BatchEntryRow row;
+  final Color accentColor;
+  final Function(String) t;
+  const _ExistingProductInfoCard({
+    required this.row,
+    required this.accentColor,
+    required this.t,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(20),
+        color: AppColors.success.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.25)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 13, color: Colors.white),
-          const SizedBox(width: 5),
-          Text(label,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600)),
+          // Mevcut ürün etiketi
+          Row(
+            children: [
+              const Icon(Icons.inventory_2_rounded,
+                  size: 13, color: AppColors.success),
+              const SizedBox(width: 6),
+              Text(
+                t('batch.status_existing'),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.success,
+                ),
+              ),
+              const Spacer(),
+              if (row.existingVariantSku != null)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.textMuted.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Text(
+                    'SKU: ${row.existingVariantSku}',
+                    style: const TextStyle(
+                      fontSize: 9,
+                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Ürün adı
+          Text(
+            row.productName,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          // Kategori / marka chip'leri
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              if (row.categoryName != null && row.categoryName!.isNotEmpty)
+                _InfoChip(
+                  icon: Icons.category_outlined,
+                  label: row.categoryName!,
+                  color: accentColor,
+                ),
+              if (row.brandName != null && row.brandName!.isNotEmpty)
+                _InfoChip(
+                  icon: Icons.business_outlined,
+                  label: row.brandName!,
+                  color: AppColors.textSecondary,
+                ),
+              if (row.barcode.isNotEmpty)
+                _InfoChip(
+                  icon: Icons.qr_code_rounded,
+                  label: row.barcode,
+                  color: AppColors.textMuted,
+                ),
+            ],
+          ),
+          // Stok alanı bilgisi
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.info.withValues(alpha: 0.07),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline_rounded,
+                    size: 12, color: AppColors.info),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    t('batch.existing_stock_note'),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppColors.info,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _ActionBtn extends StatelessWidget {
+class _InfoChip extends StatelessWidget {
   final IconData icon;
+  final String label;
   final Color color;
-  final VoidCallback onTap;
-  final String tooltip;
-  const _ActionBtn(
-      {required this.icon,
-      required this.color,
-      required this.onTap,
-      required this.tooltip});
+  const _InfoChip(
+      {required this.icon, required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 46,
-          height: 46,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Icon(icon, color: Colors.white, size: 22),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 11, color: color),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(
+              fontSize: 11,
+              color: color,
+              fontWeight: FontWeight.w500),
         ),
-      ),
+      ],
     );
   }
 }
 
+// ── METRIC ────────────────────────────────────────────────────────────────────
 class _Metric extends StatelessWidget {
   final String label;
   final String value;

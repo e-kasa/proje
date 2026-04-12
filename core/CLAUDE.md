@@ -1,0 +1,323 @@
+# CLAUDE.md — core (Paylaşılan Java Kütüphanesi)
+
+Genel kurallar için kök `CLAUDE.md`'e bak.  
+**Maven koordinatı:** `com.towpen:base` · `security` ve `pos-product-manager` bu kütüphaneye bağımlıdır.  
+**Build komutu:** `mvn install -q` — diğer servislerden ÖNCE build edilmeli.
+
+---
+
+## 1. KÜTÜPHANENIN AMACI
+
+`core`, `security` ve `pos-product-manager` modülleri arasında paylaşılan:
+- Entity base class'ları (kalıtım şablonu)
+- Multi-tenant izolasyon altyapısı (Hibernate filter)
+- JWT/session modelleri
+- Base service ve repository soyutlamaları
+- i18n yönetim sınıfları
+
+---
+
+## 2. TEMEL SINIF HİYERARŞİSİ
+
+```
+TOpenDbEntity (abstract)
+  │  id: String (UUID, @Id @GeneratedValue UUID)
+  └─ TOpenSimpleDbEntity
+       │  createTime: Date
+       │  lastModifiedTime: Date
+       │  createUser: String
+       │  updateUser: String
+       └─ TOpenSimpleCompanyEntity
+              companyCode: String  ← Tenant izolasyon anahtarı
+              @Filter(name = "companyFilter", condition = "company_code = :companyCode")
+```
+
+**Kural:** Tüm entity'ler `TOpenSimpleCompanyEntity`'den extend eder.  
+`Company` entity'si `TOpenDbEntity`'den extend eder (companyCode yoktur, firmalar arası değildir).
+
+---
+
+## 3. ENTITY ŞABLONU (Tüm Servislerde Standart)
+
+```java
+@Entity
+@Table(name = "my_table")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@FilterDef(name = "companyFilter", parameters = @ParamDef(name = "companyCode", type = String.class))
+@Filter(name = "companyFilter", condition = "company_code = :companyCode")
+public class MyEntity extends TOpenSimpleCompanyEntity {
+
+    @Column(nullable = false, length = 500)
+    private String name;
+
+    @Enumerated(EnumType.STRING)
+    private MyStatus status;
+
+    // İlişkiler — HER ZAMAN LAZY
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private ParentEntity parent;
+
+    @OneToMany(mappedBy = "myEntity", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChildEntity> children = new ArrayList<>();
+
+    // JSONB için (PostgreSQL)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, Object> metadata;
+
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
+
+    @Version
+    private Long version;  // Optimistic locking — concurrent düzenleme koruması
+}
+```
+
+---
+
+## 4. BASE SERVICE — BaseDbServiceImp
+
+```java
+// Tüm servisler bu sınıftan extend eder
+public abstract class BaseDbServiceImp<R extends BaseDaoRepository<T, String>, T extends TOpenSimpleDbEntity>
+        implements BaseDbService<T> {
+
+    protected R repository;   // inject edilir
+
+    // CRUD metotları:
+    T save(T entity)
+    T update(T entity)
+    void delete(String id)
+    Optional<T> findById(String id)
+    List<T> findAll()
+
+    // Dönüşüm — her servis override eder:
+    abstract Object toDTO(T entity)
+    abstract Class<?> getDTOClassForService()
+
+    // Yardımcı:
+    T findAndCheckById(String id)   // bulamazsa NotFoundException fırlatır
+    boolean existsById(String id)
+}
+```
+
+**Kullanım:**
+```java
+@Service
+@Transactional
+public class MyServiceImpl extends BaseDbServiceImp<MyRepository, MyEntity>
+        implements MyService {
+
+    @Override
+    public Class<?> getDTOClassForService() {
+        return MyResponseDto.class;
+    }
+
+    @Override
+    protected MyResponseDto toDTO(MyEntity entity) {
+        return MyResponseDto.builder()
+            .id(entity.getId())
+            .name(entity.getName())
+            .build();
+    }
+}
+```
+
+---
+
+## 5. BASE REPOSITORY — BaseDaoRepository
+
+```java
+// Tüm repository'ler bu interface'den extend eder
+public interface BaseDaoRepository<T extends TOpenDbEntity, ID>
+        extends PagingAndSortingRepository<T, ID>,
+                CrudRepository<T, ID> {
+    // Spring Data JPA metotlarının tamamı kullanılabilir
+}
+
+// Uygulama:
+@Repository
+public interface MyRepository extends BaseDaoRepository<MyEntity, String> {
+
+    // HER sorguda companyCode zorunlu — istisnasız
+    List<MyEntity> findByCompanyCodeAndIsDeletedFalse(String companyCode);
+
+    Optional<MyEntity> findByIdAndCompanyCodeAndIsDeletedFalse(String id, String companyCode);
+
+    @Query("SELECT e FROM MyEntity e " +
+           "WHERE e.companyCode = :cc AND e.name LIKE %:q% AND e.isDeleted = false " +
+           "ORDER BY e.createTime DESC")
+    List<MyEntity> searchByName(@Param("cc") String cc, @Param("q") String q);
+}
+```
+
+---
+
+## 6. GÜVENLİK MODELLERİ
+
+### TOpenSessionInstance
+JWT payload'unun `sessionInstance` alanına yazılan nesne:
+
+```java
+TOpenSessionInstance {
+    TOpenLoginUser userInformation;
+    List<RoleInfo> roles;
+}
+
+TOpenLoginUser {
+    String id;
+    String username;
+    String displayName;
+    String companyCode;         // selectedCompanyCode
+    String languageVal;         // "tr" | "en"
+    String email;
+    Map<String, Object> dynamicLoginParameters;
+    // dynamicLoginParameters: {"storeId": "uuid", "sectorType": "AUTO_PARTS"}
+}
+
+RoleInfo {
+    String roleName;            // "ADMIN" | "STORE_ADMIN" | "CASHIER" | "WAREHOUSE"
+}
+
+TOpenCompanyInfo {
+    boolean isSelected;
+    String companyCode;
+    String companyName;
+}
+```
+
+---
+
+## 7. HİBERNATE MULTI-TENANT FİLTRESİ
+
+```java
+// CompanyHibernateFilterActivator — her Hibernate Session'da çalışır
+// Interceptor veya AOP ile otomatik aktive edilir:
+public class CompanyHibernateFilterActivator {
+    public void activateFilters(Session session) {
+        session.enableFilter("companyFilter")
+               .setParameter("companyCode", CompanyContext.get());
+    }
+}
+
+// CompanyContext — ThreadLocal wrapper
+public class CompanyContext {
+    private static final ThreadLocal<String> context = new ThreadLocal<>();
+
+    public static void set(String companyCode) { context.set(companyCode); }
+    public static String get() { return context.get(); }
+    public static void clear() { context.remove(); }  // Request bittikten sonra çağrılır
+}
+
+// CompanyFilterStatics — filter adı sabiti
+// CompanyFilterInterceptor — interceptor implementasyonu
+```
+
+---
+
+## 8. i18n ALTYAPISI
+
+```java
+// TOpenMessageManager — mesaj kayıt ve alma
+// AbstractMessageManager — temel i18n implementasyonu
+
+// Kullanım (security servisinde):
+@Autowired
+private TOpenMessageManager messageManager;
+
+// data.sql'den yüklenen mesajlara erişim:
+String msg = messageManager.getMessage("batch.save_success", "TR");
+```
+
+---
+
+## 9. EXCEPTION SİSTEMİ
+
+```java
+// TOpenException — temel exception (checked)
+// Tüm custom exception'lar buradan türer
+
+// pos-product-manager'da bu exception'lar tanımlıdır:
+BusinessException              → 400
+NotFoundException              → 404
+ConflictException              → 409
+DataConflictException          → 409
+OperationNotAllowedException   → 403
+CompanyIsolationViolationException → 403 (kritik — tenant sızıntısı)
+
+// ExceptionMapper — TOpenException'ı business exception'a çevirir:
+public class ExceptionMapper {
+    public static BusinessException map(TOpenException e) {
+        return new BusinessException(e.getMessage());
+    }
+}
+
+// Controller'da kullanım:
+try {
+    return ResponseEntity.ok(ApiResponse.success(service.doSomething()));
+} catch (TOpenException e) {
+    throw ExceptionMapper.map(e);
+}
+```
+
+---
+
+## 10. GELİŞTİRME KURALLARI
+
+### Core'a EKLENECEK şeyler:
+- Tüm servislerde paylaşılan utility'ler
+- Yeni bir entity base class gereksinimi
+- Ortak interceptor veya filter
+
+### Core'a EKLENMEYECEKler:
+- Business logic (servis özgü kurallar)
+- Feature'e özgü entity'ler
+- Controller veya DTO'lar
+
+### Değişiklik sonrası:
+```bash
+cd core && mvn install -q   # Her değişiklikten sonra install et
+# Bağımlı servisleri restart et
+```
+
+---
+
+## 11. PAKET YAPISI (99 Java Dosyası)
+
+```
+com.towpen.base/
+├── db/
+│   ├── model/
+│   │   ├── TOpenDbEntity.java
+│   │   ├── TOpenSimpleDbEntity.java
+│   │   ├── TOpenSimpleCompanyEntity.java
+│   │   └── security/
+│   │       ├── UserDef.java
+│   │       ├── UserDefAccess.java
+│   │       ├── RoleDef.java
+│   │       ├── UserRole.java
+│   │       ├── Company.java
+│   │       ├── Menu.java
+│   │       ├── MenuItem.java
+│   │       └── MenuCategory.java
+│   └── repository/
+│       └── BaseDaoRepository.java
+│
+├── security/
+│   ├── BaseDbServiceImp.java
+│   ├── TOpenSessionInstance.java
+│   ├── TOpenLoginUser.java
+│   ├── TOpenCompanyInfo.java
+│   └── model/
+│       └── (DTO sınıfları)
+│
+├── i18n/
+│   ├── TOpenMessageManager.java
+│   └── AbstractMessageManager.java
+│
+└── hibernate/
+    ├── CompanyFilterInterceptor.java
+    ├── CompanyFilterStatics.java
+    └── CompanyHibernateFilterActivator.java
+```

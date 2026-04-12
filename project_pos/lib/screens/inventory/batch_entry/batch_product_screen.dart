@@ -930,8 +930,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
               ),
             ),
           ),
-        ),
-      );
+        );
   }
 
   Color get _accentColor => switch (widget.cfg.type) {

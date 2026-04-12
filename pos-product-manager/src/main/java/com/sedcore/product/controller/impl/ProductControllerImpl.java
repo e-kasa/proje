@@ -1,6 +1,8 @@
 package com.sedcore.product.controller.impl;
 
 import com.sedcore.product.controller.ProductController;
+import com.sedcore.product.model.BatchCreateRequest;
+import com.sedcore.product.model.BatchCreateResponse;
 import com.sedcore.product.model.ProductResponse;
 import com.sedcore.product.model.CreateProductRequest;
 import com.sedcore.product.model.DtoProduct;
@@ -195,6 +197,33 @@ public class ProductControllerImpl implements ProductController {
 
         } catch (Exception e) {
             log.error("Ürün silme hatası: id={}", id, e);
+            throw ExceptionMapper.map(e);
+        }
+    }
+
+    /**
+     * Toplu Ürün Girişi
+     * POST /api/v1/products/batch
+     *
+     * Tek fatura altında N yeni + M mevcut ürünü kaydeder.
+     * Her kalem bağımsız işlenir — kısmi başarı desteklenir.
+     */
+    @PostMapping("/batch")
+    public ResponseEntity<ApiResponse<BatchCreateResponse>> batchCreate(
+            @Valid @RequestBody BatchCreateRequest request
+    ) {
+        try {
+            log.info("Toplu ürün girişi isteği: yeni={}, mevcut={}, fatura={}",
+                    request.getNewProducts() != null ? request.getNewProducts().size() : 0,
+                    request.getExistingProducts() != null ? request.getExistingProducts().size() : 0,
+                    request.getInvoiceNumber());
+            BatchCreateResponse response = productService.batchCreateProducts(request);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.success("Toplu ürün girişi tamamlandı", response));
+        } catch (TOpenException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Toplu ürün girişi hatası: ", e);
             throw ExceptionMapper.map(e);
         }
     }

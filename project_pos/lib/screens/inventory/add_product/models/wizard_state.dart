@@ -52,13 +52,8 @@ class WizardState extends ChangeNotifier {
   // Sector — kullanıcının şirket sektörüne göre otomatik belirlenir
   SectorType sectorType = SectorType.general;
 
-  /// API/payload'a gönderilecek sektör string'i
-  String get sector => switch (sectorType) {
-    SectorType.autoParts  => 'parcaci',
-    SectorType.footwear   => 'giyim',
-    SectorType.technology => 'genel',
-    SectorType.general    => 'genel',
-  };
+  /// API/payload'a gönderilecek sektör string'i — SectorTypeExt.apiValue ile tutarlı
+  String get sector => sectorType.apiValue;
 
   /// Parçacı sektörü mü?
   bool get isParcaci => sectorType == SectorType.autoParts;

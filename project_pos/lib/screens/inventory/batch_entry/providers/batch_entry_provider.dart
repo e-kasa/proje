@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../services/product_service.dart';
-import '../../../../services/purchase_service.dart';
 import '../../../../services/oem_service.dart';
 import '../../../../services/service_locator.dart';
 import '../../../../core/utils/app_logger.dart';
@@ -11,14 +10,12 @@ import 'package:intl/intl.dart';
 
 class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
   final ProductService _productService;
-  final PurchaseService _purchaseService;
   // ignore: unused_field
   final OemService _oemService;
   final SectorConfig _sectorConfig;
 
   BatchEntryNotifier(
     this._productService,
-    this._purchaseService,
     this._oemService,
     this._sectorConfig,
   ) : super(BatchEntryState());
@@ -243,172 +240,193 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
     if (error != null) throw Exception(error);
 
     state = state.copyWith(isSubmitting: true);
-    int newCreated = 0;
-    int stockUpdated = 0;
-    int errors = 0;
-    final errorMessages = <String>[];
-    String? purchaseId;
 
     final pendingRows = state.rows.where((r) => !r.isSaved).toList();
+    final invoiceNumber = state.invoiceNumber ??
+        'INV-${DateFormat('yyyyMMdd-HHmmss').format(DateTime.now())}';
+    final purchaseDate = DateFormat('yyyy-MM-dd').format(state.purchaseDate);
+    final isFootwear = _sectorConfig.type == SectorType.footwear;
 
-    // 1. Mevcut urunler icin satin alma olustur
-    final existingRows = pendingRows.where((r) => r.isExisting).toList();
-    if (existingRows.isNotEmpty) {
-      try {
-        final purchaseData = {
-          'supplierId': state.supplierId,
-          'invoiceNumber': state.invoiceNumber ??
-              'INV-${DateFormat('yyyyMMdd-HHmmss').format(DateTime.now())}',
-          'purchaseDate':
-              DateFormat('yyyy-MM-dd').format(state.purchaseDate),
-          'storeId': state.storeId,
-          'warehouseId': state.warehouseId,
-          'deliveryNoteNumber': state.deliveryNoteNumber,
-          'items': existingRows
-              .map((r) => {
-                    'variantId': r.existingVariantId,
-                    'quantity': r.quantity,
-                    'unitPrice': r.purchasePrice,
-                  })
-              .toList(),
-        };
-        final result = await _purchaseService.createPurchase(purchaseData);
-        purchaseId = result['id']?.toString();
+    // Tüm satırları saving durumuna al
+    _markRowsAsSaving(pendingRows.map((r) => r.id).toList());
 
-        // Basarili olanlari isaretle
-        final updatedRows = List<BatchEntryRow>.from(state.rows);
-        for (final row in existingRows) {
-          final idx = updatedRows.indexWhere((r) => r.id == row.id);
-          if (idx != -1) {
-            updatedRows[idx] = row.copyWith(status: RowStatus.saved);
-            stockUpdated++;
-          }
-        }
-        state = state.copyWith(rows: updatedRows);
-      } catch (e) {
-        // Mevcut urunler toplu hata
-        final updatedRows = List<BatchEntryRow>.from(state.rows);
-        for (final row in existingRows) {
-          final idx = updatedRows.indexWhere((r) => r.id == row.id);
-          if (idx != -1) {
-            updatedRows[idx] = row.copyWith(
-              status: RowStatus.error,
-              errorMessage: 'Satin alma olusturulamadi: $e',
-            );
-            errors++;
-            errorMessages.add('${row.productName}: $e');
-          }
-        }
-        state = state.copyWith(rows: updatedRows);
-      }
-    }
-
-    // 2. Yeni urunler icin tek tek olustur
+    // ── Yeni ürün kalemlerini oluştur ─────────────────────────────────────
     final newRows = pendingRows.where((r) => r.isNew).toList();
-    for (final row in newRows) {
-      try {
-        // Satiri saving durumuna al
-        _updateRowStatus(row.id, RowStatus.saving);
+    final newProductItems = newRows.map((row) {
+      final sku = _generateSku();
 
-        final sku =
-            'SKU-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
-        final payload = {
-          'product': {
-            'name': row.productName,
-            'sku': sku,
-            'categoryId': row.categoryId,
-            'brand': row.brandName ?? '',
-            'unit': row.unitId ?? 'pcs',
-            'description': row.description ?? '',
-            'sector': _sectorConfig.type.apiValue,
-            'metadata': _buildMetadata(row),
-          },
-          'oemNumbers': _buildOemList(row),
-          'crossReferences': row.crossRefList
-              .where((c) => (c['crossRefNumber'] ?? '').isNotEmpty)
-              .map((c) => {
-                    'crossRefNumber': c['crossRefNumber'],
-                    'crossRefBrand': c['crossRefBrand'] ?? '',
-                  })
-              .toList(),
-          'variants': [
-            {
-              'sku': sku,
-              'name': row.productName,
-              'shelfLocationCode': row.shelfLocation,
-              'attributes': row.attributes,
-              'minStockLevel': row.minStockLevel,
-              'pricing': {
-                'purchasePrice': row.purchasePrice,
-                'salePrice': row.salePrice,
-                'vatRate': row.vatRate,
-                'vatIncluded': row.vatIncluded,
-                'taxExempt': false,
-                'specialTaxRate': null,
-                'withholdingTaxRate': null,
-              },
-              'initialStocks': [
-                {
-                  'storeId': state.storeId,
-                  'warehouseId': state.warehouseId,
-                  'quantity': row.quantity,
+      // Footwear: variantRows → çoklu variant; diğerleri: tek variant
+      final variants = (isFootwear && row.variantRows.isNotEmpty)
+          ? row.variantRows.map((vr) => {
+                'sku': _generateSku(),
+                'name': '${row.productName} - ${vr.size}'
+                    '${vr.color.isNotEmpty ? " ${vr.color}" : ""}',
+                'shelfLocationCode': row.shelfLocation,
+                'attributes': {
+                  'Numara': vr.size,
+                  if (vr.color.isNotEmpty) 'Renk': vr.color,
                 },
-              ],
-              'barcodes': row.barcode.isNotEmpty
-                  ? [
-                      {
-                        'code': row.barcode,
-                        'type': 'EAN13',
-                        'isPrimary': true,
-                      }
-                    ]
-                  : [],
-            },
-          ],
-          'purchase': {
-            'supplierId': state.supplierId,
-            'invoiceNumber': state.invoiceNumber ??
-                'INV-${DateFormat('yyyyMMdd-HHmmss').format(DateTime.now())}',
-            'purchaseDate':
-                DateFormat('yyyy-MM-dd').format(state.purchaseDate),
-            'storeId': state.storeId,
-            'warehouseId': state.warehouseId,
-            'deliveryNoteNumber': state.deliveryNoteNumber,
-            'notes': null,
-          },
-        };
+                'pricing': {
+                  'purchasePrice': vr.purchasePrice ?? row.purchasePrice,
+                  'salePrice': vr.salePrice ?? row.salePrice,
+                  'vatRate': row.vatRate,
+                  'vatIncluded': row.vatIncluded,
+                  'taxExempt': false,
+                },
+                'initialStocks': [
+                  {
+                    'storeId': state.storeId,
+                    'warehouseId': state.warehouseId,
+                    'quantity': vr.quantity,
+                  }
+                ],
+                'barcodes': vr.barcode.isNotEmpty
+                    ? [{'code': vr.barcode, 'type': 'EAN13', 'isPrimary': true}]
+                    : [],
+              }).toList()
+          : [
+              {
+                'sku': sku,
+                'name': row.productName,
+                'shelfLocationCode': row.shelfLocation,
+                'attributes': row.attributes,
+                'pricing': {
+                  'purchasePrice': row.purchasePrice,
+                  'salePrice': row.salePrice,
+                  'vatRate': row.vatRate,
+                  'vatIncluded': row.vatIncluded,
+                  'taxExempt': false,
+                },
+                'initialStocks': [
+                  {
+                    'storeId': state.storeId,
+                    'warehouseId': state.warehouseId,
+                    'quantity': row.quantity,
+                  }
+                ],
+                'barcodes': row.barcode.isNotEmpty
+                    ? [{'code': row.barcode, 'type': 'EAN13', 'isPrimary': true}]
+                    : [],
+              }
+            ];
 
-        await _productService.createProduct(payload);
-
-        _updateRowStatus(row.id, RowStatus.saved);
-        newCreated++;
-      } catch (e) {
-        _updateRowStatus(row.id, RowStatus.error, errorMessage: '$e');
-        errors++;
-        errorMessages.add('${row.productName}: $e');
-      }
-    }
-
-    state = state.copyWith(isSubmitting: false);
-
-    return BatchSaveResult(
-      totalProcessed: pendingRows.length,
-      newCreated: newCreated,
-      stockUpdated: stockUpdated,
-      errors: errors,
-      errorMessages: errorMessages,
-      purchaseId: purchaseId,
-    );
-  }
-
-  void _updateRowStatus(String rowId, RowStatus status,
-      {String? errorMessage}) {
-    final rows = state.rows.map((r) {
-      if (r.id != rowId) return r;
-      return r.copyWith(status: status, errorMessage: errorMessage);
+      return {
+        'tempId': row.id,
+        'product': {
+          'name': row.productName,
+          'sku': sku,
+          'categoryId': row.categoryId,
+          'brand': row.brandName ?? '',
+          'unit': row.unitId ?? 'adet',
+          'description': row.description ?? '',
+          'sector': _sectorConfig.type.apiValue,
+          'metadata': _buildMetadata(row),
+        },
+        'variants': variants,
+        'oemNumbers': _buildOemList(row),
+        'crossReferences': row.crossRefList
+            .where((c) => (c['crossRefNumber'] ?? '').isNotEmpty)
+            .map((c) => {
+                  'crossRefNumber': c['crossRefNumber'],
+                  'crossRefBrand': c['crossRefBrand'] ?? '',
+                })
+            .toList(),
+      };
     }).toList();
-    state = state.copyWith(rows: rows);
+
+    // ── Mevcut ürün kalemlerini oluştur ───────────────────────────────────
+    final existingRows = pendingRows.where((r) => r.isExisting).toList();
+    final existingItems = existingRows.map((row) => {
+          'tempId': row.id,
+          'variantId': row.existingVariantId,
+          'quantity': row.quantity,
+          'unitPrice': row.purchasePrice,
+          'taxRate': row.vatRate,
+        }).toList();
+
+    // ── Tek toplu istek ───────────────────────────────────────────────────
+    final batchRequest = {
+      'supplierId': state.supplierId,
+      'invoiceNumber': invoiceNumber,
+      'purchaseDate': purchaseDate,
+      'storeId': state.storeId,
+      'warehouseId': state.warehouseId,
+      'deliveryNoteNumber': state.deliveryNoteNumber,
+      'newProducts': newProductItems,
+      'existingProducts': existingItems,
+    };
+
+    try {
+      final response = await _productService.batchCreate(batchRequest);
+
+      final results = List<Map<String, dynamic>>.from(
+        (response['results'] as List?) ?? [],
+      );
+      final purchaseId = response['purchaseId']?.toString();
+
+      // Sonuçları satırlara eşle
+      int newCreated = 0;
+      int stockUpdated = 0;
+      int errors = 0;
+      final errorMessages = <String>[];
+      final updatedRows = List<BatchEntryRow>.from(state.rows);
+
+      for (final result in results) {
+        final tempId = result['tempId']?.toString();
+        final success = result['success'] as bool? ?? false;
+        final message = result['message']?.toString();
+        final idx = updatedRows.indexWhere((r) => r.id == tempId);
+        if (idx == -1) continue;
+
+        final originalRow = updatedRows[idx];
+        if (success) {
+          updatedRows[idx] = originalRow.copyWith(status: RowStatus.saved);
+          if (originalRow.isExisting) stockUpdated++;
+          else newCreated++;
+        } else {
+          updatedRows[idx] = originalRow.copyWith(
+            status: RowStatus.error,
+            errorMessage: message ?? 'Bilinmeyen hata',
+          );
+          errors++;
+          errorMessages.add('${originalRow.productName}: ${message ?? ""}');
+        }
+      }
+
+      state = state.copyWith(rows: updatedRows, isSubmitting: false);
+
+      return BatchSaveResult(
+        totalProcessed: pendingRows.length,
+        newCreated: newCreated,
+        stockUpdated: stockUpdated,
+        errors: errors,
+        errorMessages: errorMessages,
+        purchaseId: purchaseId,
+      );
+    } catch (e) {
+      // Tüm satırları error yap
+      final updatedRows = state.rows.map((r) {
+        if (!pendingRows.any((p) => p.id == r.id)) return r;
+        return r.copyWith(status: RowStatus.error, errorMessage: '$e');
+      }).toList();
+      state = state.copyWith(rows: updatedRows, isSubmitting: false);
+      rethrow;
+    }
   }
+
+  /// Satırları saving durumuna al
+  void _markRowsAsSaving(List<String> rowIds) {
+    final updatedRows = state.rows.map((r) {
+      if (!rowIds.contains(r.id)) return r;
+      return r.copyWith(status: RowStatus.saving);
+    }).toList();
+    state = state.copyWith(rows: updatedRows);
+  }
+
+  String _generateSku() =>
+      'SKU-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}'
+      '-${(DateTime.now().microsecond % 1000).toString().padLeft(3, '0')}';
+
 
   /// oemList doluysa ondan, değilse tek oemNumber field'ından oluşturur
   List<Map<String, dynamic>> _buildOemList(BatchEntryRow row) {
@@ -441,7 +459,10 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
         if (row.shelfLocation != null) meta['shelfLocation'] = row.shelfLocation;
         if (row.oemList.isNotEmpty) meta['oemCount'] = row.oemList.length;
       case SectorType.technology:
-        if (row.shelfLocation != null) meta['imeiSerial'] = row.shelfLocation;
+        // IMEI attributes['imei'] alanında saklanır (ayrı SerialNumber entity yok)
+        if (row.oemNumber != null && row.oemNumber!.isNotEmpty)
+          meta['imei'] = row.oemNumber;
+        if (row.shelfLocation != null) meta['shelfLocation'] = row.shelfLocation;
       case SectorType.footwear:
         // fabric, season fields can be added here in future
         break;
@@ -467,7 +488,6 @@ final batchEntryProvider =
     StateNotifierProvider.autoDispose<BatchEntryNotifier, BatchEntryState>(
   (ref) => BatchEntryNotifier(
     ref.read(productServiceProvider),
-    ref.read(purchaseServiceProvider),
     ref.read(oemServiceProvider),
     ref.read(sectorConfigProvider),
   ),

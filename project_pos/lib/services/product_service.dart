@@ -182,9 +182,9 @@ class ProductService {
     }
   }
 
-  /// Yeni urun olusturur.
+  /// Yeni urun olusturur (tekil).
   ///
-  /// [data] backend `ProductRequest` formatinda olmalidir.
+  /// [data] backend `CreateProductRequest` formatinda olmalidir.
   Future<Map<String, dynamic>> createProduct(
       Map<String, dynamic> data) async {
     try {
@@ -194,6 +194,46 @@ class ProductService {
           as Map<String, dynamic>;
       return _mapProduct(raw);
     } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Toplu ürün girişi — tek fatura altında N yeni + M mevcut ürün.
+  ///
+  /// [request] backend `BatchCreateRequest` formatında olmalıdır:
+  /// ```dart
+  /// {
+  ///   'supplierId': '...',
+  ///   'invoiceNumber': '...',
+  ///   'purchaseDate': 'yyyy-MM-dd',
+  ///   'storeId': '...',
+  ///   'warehouseId': '...',
+  ///   'newProducts': [ { 'tempId', 'product', 'variants', 'oemNumbers', 'crossReferences' } ],
+  ///   'existingProducts': [ { 'tempId', 'variantId', 'quantity', 'unitPrice' } ],
+  /// }
+  /// ```
+  /// Dönen [BatchCreateResponse]:
+  /// ```dart
+  /// {
+  ///   'purchaseId': '...',
+  ///   'invoiceNumber': '...',
+  ///   'successCount': 5,
+  ///   'failCount': 1,
+  ///   'totalAmount': 1250.00,
+  ///   'results': [ { 'tempId', 'success', 'productId', 'variantId', 'message' } ]
+  /// }
+  /// ```
+  Future<Map<String, dynamic>> batchCreate(
+      Map<String, dynamic> request) async {
+    try {
+      final response = await _apiClient.post(
+        'product/api/v1/products/batch',
+        data: request,
+      );
+      return (response.data as Map<String, dynamic>)['data']
+          as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('ProductService.batchCreate hata: $e');
       rethrow;
     }
   }

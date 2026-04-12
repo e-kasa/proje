@@ -34,7 +34,19 @@ class CompanyCategoryService {
     try {
       final response = await _apiClient.get('$_basePath/list');
       final data = response.data['data'] as List<dynamic>? ?? [];
-      return data.cast<Map<String, dynamic>>();
+      // 'id' / 'name' key'lerini normalize et — wizard ve batch her ikisi de
+      // bu key'leri bekler. Backend 'categoryId' / 'categoryName' dönebilir.
+      return data.map((raw) {
+        final m = raw as Map<String, dynamic>;
+        return <String, dynamic>{
+          'id': m['categoryId'] ?? m['id'] ?? '',
+          'name': m['categoryName'] ?? m['name'] ?? '',
+          'parentId': m['categoryParentId'] ?? m['parentId'],
+          'level': m['categoryLevel'] ?? m['level'],
+          'sortOrder': m['displayOrder'] ?? m['sortOrder'] ?? 0,
+          'icon': m['categoryIcon'] ?? m['icon'],
+        };
+      }).toList();
     } catch (e) {
       throw Exception('Kategori listesi getirilemedi: $e');
     }

@@ -23,3 +23,7 @@ export 'app_confirmation_dialog.dart';
 // Performance Optimized Components
 export 'app_optimized_list.dart';
 export 'app_cached_image.dart';
+
+// Common Widgets (moved from lib/widgets/)
+export 'section_header.dart';
+export 'stat_card.dart';

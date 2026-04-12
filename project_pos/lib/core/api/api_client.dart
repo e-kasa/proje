@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../auth_events.dart';
@@ -361,3 +362,7 @@ class ApiClient {
     return Exception(message);
   }
 }
+
+/// Riverpod provider for ApiClient — defined here to avoid circular imports.
+/// Import from package:project_pos/core/api/api_client.dart in feature DI files.
+final apiClientProvider = Provider<ApiClient>((ref) => ApiClient());

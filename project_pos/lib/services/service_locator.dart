@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/api/api_client.dart';
+
+// Re-export apiClientProvider from api_client.dart
+export '../core/api/api_client.dart' show apiClientProvider;
 import 'auth_service.dart';
 import 'product_service.dart';
 import 'category_service.dart';
@@ -30,11 +33,6 @@ import 'i18n_service.dart';
 import 'recommendation_service.dart';
 import 'hrm_service.dart';
 import 'finance_service.dart';
-
-// API Client Provider
-final apiClientProvider = Provider<ApiClient>((ref) {
-  return ApiClient();
-});
 
 // Service Providers
 final authServiceProvider = Provider<AuthService>((ref) {

@@ -11,8 +11,8 @@ import java.util.Optional;
 @Service
 public class UserDefAccessServiceImpl extends BaseDbServiceImp<UserDefAccessRepository,UserDefAccess> implements IUserDefAccessService {
     @Override
-    public Optional<UserDefAccess> findByUserDef(UserDef userDef) {
-        return dao.findByUserDef(userDef);
+    public Optional<UserDefAccess> findFirstByUserDef(UserDef userDef) {
+        return dao.findFirstByUserDefOrderByCreateTimeAsc(userDef);
     }
 
     @Override

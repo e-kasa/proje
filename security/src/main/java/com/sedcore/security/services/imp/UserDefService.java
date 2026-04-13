@@ -53,7 +53,7 @@ public class UserDefService extends BaseDbServiceImp<UserDefRepository, UserDef>
             UserDef userDef = dao.findByUserDefName(userName)
                     .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.USERNAME_PASSWORD_ERROR_1010)));
 
-            UserDefAccess access = userDefAccessRepository.findByUserDef(userDef)
+            UserDefAccess access = userDefAccessRepository.findFirstByUserDefOrderByCreateTimeAsc(userDef)
                     .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.USERNAME_PASSWORD_ERROR_1010)));
 
             validateUserAccess(access);
@@ -195,7 +195,7 @@ public class UserDefService extends BaseDbServiceImp<UserDefRepository, UserDef>
         user.setIsActive(newStatus);
 
         // UserDefAccess.canLogin'i de senkronize et
-        userDefAccessRepository.findByUserDef(user).ifPresent(access -> {
+        userDefAccessRepository.findFirstByUserDefOrderByCreateTimeAsc(user).ifPresent(access -> {
             access.setCanLogin(newStatus);
             userDefAccessRepository.save(access);
         });
@@ -214,7 +214,7 @@ public class UserDefService extends BaseDbServiceImp<UserDefRepository, UserDef>
         UserDef user = dao.findById(userId)
                 .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
 
-        UserDefAccess access = userDefAccessRepository.findByUserDef(user)
+        UserDefAccess access = userDefAccessRepository.findFirstByUserDefOrderByCreateTimeAsc(user)
                 .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
 
         // Mevcut şifreyi doğrula
@@ -235,7 +235,7 @@ public class UserDefService extends BaseDbServiceImp<UserDefRepository, UserDef>
         UserDef user = dao.findById(userId)
                 .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
 
-        UserDefAccess access = userDefAccessRepository.findByUserDef(user)
+        UserDefAccess access = userDefAccessRepository.findFirstByUserDefOrderByCreateTimeAsc(user)
                 .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
 
         updatePasswordHash(access, request.newPassword());
@@ -440,7 +440,7 @@ public class UserDefService extends BaseDbServiceImp<UserDefRepository, UserDef>
         dto.setUserType(user.getUserType() != null ? user.getUserType().name() : "USER");
 
         // canLogin — UserDef'te değil, UserDefAccess'ten gelir
-        Boolean canLogin = userDefAccessRepository.findByUserDef(user)
+        Boolean canLogin = userDefAccessRepository.findFirstByUserDefOrderByCreateTimeAsc(user)
                 .map(UserDefAccess::getCanLogin)
                 .orElse(false);
         dto.setCanLogin(canLogin);

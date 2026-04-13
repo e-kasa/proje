@@ -7,5 +7,5 @@ import com.towpen.base.security.BaseDbService;
 import java.util.Optional;
 
 public interface IUserDefAccessService extends BaseDbService<UserDefAccess> {
-    Optional<UserDefAccess> findByUserDef(UserDef userDef);
+    Optional<UserDefAccess> findFirstByUserDef(UserDef userDef);
 }

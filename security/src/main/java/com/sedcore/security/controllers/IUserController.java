@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RequestMapping("/api/users")
+@RequestMapping({"/api/users", "/api/v1/users"})   // v1 alias — backward compat
 public interface IUserController {
 
     @GetMapping

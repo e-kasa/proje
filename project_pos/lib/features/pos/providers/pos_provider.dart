@@ -127,12 +127,15 @@ class PosState {
   /// İçerik: {product, variant, productName, otherLocations}
   final Map<String, dynamic>? crossLocationAlert;
 
-  /// Aktif mağaza ID'si — JWT'den veya kullanıcı seçiminden gelir.
-  /// null ise PosScreen mağaza seçici gösterir.
-  final String? activeStoreId;
+  /// Aktif lokasyon ID'si (Store.code veya Warehouse.code) — JWT'den veya kullanıcı seçiminden gelir.
+  /// null ise PosScreen lokasyon seçici gösterir.
+  final String? activeLocationId;
 
-  /// Ürünlerin inventories'inden çıkarılan benzersiz mağaza listesi
-  final List<String> availableStoreIds;
+  /// Aktif lokasyon tipi: 'STORE' veya 'WAREHOUSE' — varsayılan 'STORE'
+  final String activeLocationType;
+
+  /// Ürünlerin inventories'inden çıkarılan benzersiz lokasyon listesi
+  final List<String> availableLocationIds;
 
   /// ─── RECOMMENDATION SYSTEM ───
   /// Önerilecek ürünler (Hybrid: Frequently Bought Together + Similar Products)
@@ -161,8 +164,9 @@ class PosState {
     this.lastSaleId,
     this.lastSaleData,
     this.crossLocationAlert,
-    this.activeStoreId,
-    this.availableStoreIds = const [],
+    this.activeLocationId,
+    this.activeLocationType = 'STORE',
+    this.availableLocationIds = const [],
     this.recommendations = const [],
     this.isLoadingRecommendations = false,
   });
@@ -238,9 +242,10 @@ class PosState {
     Map<String, dynamic>? lastSaleData,
     Map<String, dynamic>? crossLocationAlert,
     bool clearCrossLocationAlert = false,
-    String? activeStoreId,
-    bool clearActiveStoreId = false,
-    List<String>? availableStoreIds,
+    String? activeLocationId,
+    bool clearActiveLocationId = false,
+    String? activeLocationType,
+    List<String>? availableLocationIds,
     List<Map<String, dynamic>>? recommendations,
     bool? isLoadingRecommendations,
   }) {
@@ -266,8 +271,9 @@ class PosState {
       crossLocationAlert: clearCrossLocationAlert
           ? null
           : (crossLocationAlert ?? this.crossLocationAlert),
-      activeStoreId: clearActiveStoreId ? null : (activeStoreId ?? this.activeStoreId),
-      availableStoreIds: availableStoreIds ?? this.availableStoreIds,
+      activeLocationId: clearActiveLocationId ? null : (activeLocationId ?? this.activeLocationId),
+      activeLocationType: activeLocationType ?? this.activeLocationType,
+      availableLocationIds: availableLocationIds ?? this.availableLocationIds,
       recommendations: recommendations ?? this.recommendations,
       isLoadingRecommendations: isLoadingRecommendations ?? this.isLoadingRecommendations,
     );
@@ -295,40 +301,40 @@ class PosNotifier extends StateNotifier<PosState> {
         'parentId': c['categoryParentId']?.toString(),
       }).toList();
 
-      // Ürünlerin inventories'inden benzersiz mağaza ID'lerini çıkar
-      final storeIdSet = <String>{};
+      // Ürünlerin inventories'inden benzersiz lokasyon ID'lerini çıkar
+      final locationIdSet = <String>{};
       for (final p in products) {
         for (final v in (p['variants'] as List?)?.cast<Map<String, dynamic>>() ?? []) {
           for (final inv in (v['inventories'] as List?)?.cast<Map<String, dynamic>>() ?? []) {
-            final sid = inv['storeId'] as String?;
-            if (sid != null && sid.isNotEmpty) storeIdSet.add(sid);
+            final lid = inv['locationId'] as String?;
+            if (lid != null && lid.isNotEmpty) locationIdSet.add(lid);
           }
         }
       }
-      final availableStores = storeIdSet.toList()..sort();
+      final availableLocations = locationIdSet.toList()..sort();
 
-      // Mağaza bazlı stok normalizasyonu:
+      // Lokasyon bazlı stok normalizasyonu:
       //   1. JWT'den gelen storeId (kasiyer kendi mağazasına atanmış)
-      //   2. Mevcut activeStoreId (kullanıcı daha önce seçtiyse)
-      //   3. Tek mağaza varsa otomatik seç
+      //   2. Mevcut activeLocationId (kullanıcı daha önce seçtiyse)
+      //   3. Tek lokasyon varsa otomatik seç
       final jwtStoreId = _ref.read(authProvider).user?.storeId;
-      final currentStoreId = state.activeStoreId;
-      String? effectiveStoreId = jwtStoreId?.isNotEmpty == true
+      final currentLocationId = state.activeLocationId;
+      String? effectiveLocationId = jwtStoreId?.isNotEmpty == true
           ? jwtStoreId
-          : (currentStoreId?.isNotEmpty == true
-              ? currentStoreId
-              : (availableStores.length == 1 ? availableStores.first : null));
+          : (currentLocationId?.isNotEmpty == true
+              ? currentLocationId
+              : (availableLocations.length == 1 ? availableLocations.first : null));
 
-      final normalizedProducts = (effectiveStoreId != null && effectiveStoreId.isNotEmpty)
-          ? products.map((p) => _normalizeProductStock(p, effectiveStoreId)).toList()
+      final normalizedProducts = (effectiveLocationId != null && effectiveLocationId.isNotEmpty)
+          ? products.map((p) => _normalizeProductStock(p, effectiveLocationId)).toList()
           : products;
 
       state = state.copyWith(
         products: normalizedProducts,
         categories: categories,
         isLoadingProducts: false,
-        activeStoreId: effectiveStoreId,
-        availableStoreIds: availableStores,
+        activeLocationId: effectiveLocationId,
+        availableLocationIds: availableLocations,
       );
     } catch (e) {
       state = state.copyWith(isLoadingProducts: false, error: e.toString());
@@ -444,9 +450,9 @@ class PosNotifier extends StateNotifier<PosState> {
     loadRecommendations();
   }
 
-  /// Mağaza bazlı stok normalizasyonu — her varyanta myStoreStock/availableElsewhere ekler
+  /// Lokasyon bazlı stok normalizasyonu — her varyanta myLocationStock/availableElsewhere ekler
   Map<String, dynamic> _normalizeProductStock(
-      Map<String, dynamic> product, String storeId) {
+      Map<String, dynamic> product, String locationId) {
     final variants =
         (product['variants'] as List?)?.cast<Map<String, dynamic>>() ?? [];
 
@@ -459,15 +465,15 @@ class PosNotifier extends StateNotifier<PosState> {
       List<Map<String, dynamic>> otherLocations = [];
 
       if (vInventories.isNotEmpty) {
-        // Kendi mağazasının stoğu
+        // Aktif lokasyonun stoğu
         myStoreStock = vInventories
-            .where((inv) => inv['storeId'] == storeId)
+            .where((inv) => inv['locationId'] == locationId)
             .fold(0,
                 (sum, inv) => sum + ((inv['physicalQuantity'] as num?)?.toInt() ?? 0));
         // Diğer lokasyonlar (stoku > 0 olanlar)
         otherLocations = vInventories
             .where((inv) =>
-                inv['storeId'] != storeId &&
+                inv['locationId'] != locationId &&
                 ((inv['physicalQuantity'] as num?)?.toInt() ?? 0) > 0)
             .toList();
         availableElsewhere = myStoreStock <= 0 && otherLocations.isNotEmpty;
@@ -639,8 +645,10 @@ class PosNotifier extends StateNotifier<PosState> {
         'customerId': state.selectedCustomer?['id']?.toString(),
         'paymentMethod': state.paymentMethod.apiValue,
         'notes': state.note,
-        if (state.activeStoreId != null && state.activeStoreId!.isNotEmpty)
-          'storeId': state.activeStoreId,
+        if (state.activeLocationId != null && state.activeLocationId!.isNotEmpty)
+          'locationId': state.activeLocationId,
+        if (state.activeLocationId != null && state.activeLocationId!.isNotEmpty)
+          'locationType': state.activeLocationType,
         'items': state.cartItems.map((item) => {
           'variantId': item.variantId,
           'quantity': item.quantity,
@@ -701,17 +709,21 @@ class PosNotifier extends StateNotifier<PosState> {
   }
   void clearMessages() => state = state.copyWith(clearError: true, clearSuccess: true);
 
-  /// Aktif mağazayı değiştirir ve tüm ürünlerin stok bilgisini yeniden normalize eder.
-  void setActiveStore(String storeId) {
-    if (storeId.isEmpty) return;
+  /// Aktif lokasyonu değiştirir ve tüm ürünlerin stok bilgisini yeniden normalize eder.
+  void setActiveLocation(String locationId, {String locationType = 'STORE'}) {
+    if (locationId.isEmpty) return;
     final normalizedProducts = state.products.isNotEmpty
-        ? state.products.map((p) => _normalizeProductStock(p, storeId)).toList()
+        ? state.products.map((p) => _normalizeProductStock(p, locationId)).toList()
         : state.products;
     state = state.copyWith(
-      activeStoreId: storeId,
+      activeLocationId: locationId,
+      activeLocationType: locationType,
       products: normalizedProducts,
     );
   }
+
+  /// Geriye dönük uyumluluk — eski çağrılar için
+  void setActiveStore(String storeId) => setActiveLocation(storeId, locationType: 'STORE');
 
   // ─── Recommendation System Methods ──────────────────────────────
   /// Sepetteki ürünlere göre akıllı öneriler yükle

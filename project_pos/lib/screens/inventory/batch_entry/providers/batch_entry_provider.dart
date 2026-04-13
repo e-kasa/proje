@@ -156,10 +156,9 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
     String? invoiceNumber,
     String? deliveryNoteNumber,
     DateTime? purchaseDate,
-    String? storeId,
-    String? storeName,
-    String? warehouseId,
-    String? warehouseName,
+    String? locationId,
+    String? locationName,
+    String? locationType,
     bool? headerCollapsed,
   }) {
     state = state.copyWith(
@@ -168,10 +167,9 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
       invoiceNumber: invoiceNumber,
       deliveryNoteNumber: deliveryNoteNumber,
       purchaseDate: purchaseDate,
-      storeId: storeId,
-      storeName: storeName,
-      warehouseId: warehouseId,
-      warehouseName: warehouseName,
+      locationId: locationId,
+      locationName: locationName,
+      locationType: locationType,
       headerCollapsed: headerCollapsed,
     );
   }
@@ -212,8 +210,7 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
   String? validateAll() {
     if (state.rows.isEmpty) return 'En az bir urun ekleyin';
     if (state.supplierId == null) return 'Tedarikci secimi zorunludur';
-    if (state.warehouseId == null) return 'Depo secimi zorunludur';
-    if (state.storeId == null) return 'Magaza secimi zorunludur';
+    if (state.locationId == null) return 'Lokasyon secimi zorunludur';
 
     for (int i = 0; i < state.rows.length; i++) {
       final r = state.rows[i];
@@ -275,8 +272,8 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
                 },
                 'initialStocks': [
                   {
-                    'storeId': state.storeId,
-                    'warehouseId': state.warehouseId,
+                    'locationId': state.locationId,
+                    'locationType': state.locationType ?? 'STORE',
                     'quantity': vr.quantity,
                   }
                 ],
@@ -299,8 +296,8 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
                 },
                 'initialStocks': [
                   {
-                    'storeId': state.storeId,
-                    'warehouseId': state.warehouseId,
+                    'locationId': state.locationId,
+                    'locationType': state.locationType ?? 'STORE',
                     'quantity': row.quantity,
                   }
                 ],
@@ -349,8 +346,8 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
       'supplierId': state.supplierId,
       'invoiceNumber': invoiceNumber,
       'purchaseDate': purchaseDate,
-      'storeId': state.storeId,
-      'warehouseId': state.warehouseId,
+      'locationId': state.locationId,
+      'locationType': state.locationType ?? 'STORE',
       'deliveryNoteNumber': state.deliveryNoteNumber,
       'newProducts': newProductItems,
       'existingProducts': existingItems,

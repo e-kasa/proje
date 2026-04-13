@@ -32,15 +32,15 @@ public class StockTransferControllerImpl {
     // GET /product/api/v1/stock-transfers
     @GetMapping
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> list(
-            @RequestParam(required = false) String fromStoreId,
-            @RequestParam(required = false) String toStoreId
+            @RequestParam(required = false) String fromLocationId,
+            @RequestParam(required = false) String toLocationId
     ) {
         try {
             List<StockTransfer> transfers;
-            if (fromStoreId != null) {
-                transfers = stockTransferRepository.findByFromStoreId(fromStoreId);
-            } else if (toStoreId != null) {
-                transfers = stockTransferRepository.findByToStoreId(toStoreId);
+            if (fromLocationId != null) {
+                transfers = stockTransferRepository.findByFromLocationId(fromLocationId);
+            } else if (toLocationId != null) {
+                transfers = stockTransferRepository.findByToLocationId(toLocationId);
             } else {
                 transfers = (List<StockTransfer>) stockTransferRepository.findAll();
             }
@@ -80,7 +80,7 @@ public class StockTransferControllerImpl {
         try {
             StockTransfer transfer = transferService.createTransfer(request);
             log.info("Transfer tamamlandi: ID={}, {} -> {}",
-                    transfer.getId(), transfer.getFromWarehouseId(), transfer.getToWarehouseId());
+                    transfer.getId(), transfer.getFromLocationId(), transfer.getToLocationId());
             return ResponseEntity.ok(ApiResponse.success(toMap(transfer)));
         } catch (TOpenException e) {
 
@@ -95,10 +95,10 @@ public class StockTransferControllerImpl {
     private Map<String, Object> toMap(StockTransfer t) {
         Map<String, Object> m = new HashMap<>();
         m.put("id", t.getId());
-        m.put("fromStoreId", t.getFromStoreId());
-        m.put("fromWarehouseId", t.getFromWarehouseId());
-        m.put("toStoreId", t.getToStoreId());
-        m.put("toWarehouseId", t.getToWarehouseId());
+        m.put("fromLocationId", t.getFromLocationId());
+        m.put("fromLocationType", t.getFromLocationType());
+        m.put("toLocationId", t.getToLocationId());
+        m.put("toLocationType", t.getToLocationType());
         m.put("companyCode", t.getCompanyCode());
         if (t.getMovements() != null) {
             m.put("movementCount", t.getMovements().size());

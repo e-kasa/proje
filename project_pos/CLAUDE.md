@@ -437,6 +437,48 @@ AppToast.success(context, t('common.saved'))
 
 **Her yeni ekranda data.sql'e anahtar eklenmeli** (bkz. kök CLAUDE.md §11 ve project_pos CLAUDE.md §11a).
 
+### i18n — KRİTİK HATALAR
+
+**`t()` `const` context içinde kullanılamaz — derleme hatası verir:**
+
+```dart
+// ❌ YANLIŞ — const içinde t() çağrısı
+const Expanded(
+  child: Column(children: [
+    Text(t('nav.app_name')),   // HATA: Not a constant expression
+  ]),
+)
+
+// ✅ DOĞRU — const kaldırılır, TextStyle'lar const kalabilir
+Expanded(
+  child: Column(children: [
+    Text(t('nav.app_name'), style: const TextStyle(...)),
+  ]),
+)
+```
+
+**Private helper method'larda `t` erişimi yoktur — parametre olarak geçilmeli:**
+
+```dart
+// ❌ YANLIŞ — _buildHeader() içinde t tanımlı değil
+Widget build(BuildContext context, WidgetRef ref) {
+  final t = i18nOf(ref);
+  return Column(children: [_buildHeader()]);  // t geçilmedi
+}
+Widget _buildHeader() {
+  return Text(t('nav.title'));  // HATA: t tanımlı değil
+}
+
+// ✅ DOĞRU — t parametre olarak geçilir
+Widget build(BuildContext context, WidgetRef ref) {
+  final t = i18nOf(ref);
+  return Column(children: [_buildHeader(t)]);
+}
+Widget _buildHeader(String Function(String) t) {
+  return Text(t('nav.title'));  // ✓
+}
+```
+
 ---
 
 ## 11a. i18n KAYIT ZORUNLULUĞU
@@ -487,7 +529,84 @@ final isDark = Theme.of(context).brightness == Brightness.dark;
 
 ---
 
-## 14. SIK YAPILAN HATALAR
+## 14. LOKASYONİD MİMARİSİ (2026-04-13)
+
+Eski `storeId + warehouseId` ikili alanı kaldırıldı. Tüm stok lokasyonları tek alanla temsil edilir:
+
+```dart
+// ✅ DOĞRU — yeni mimari
+'locationId': 'STORE-01'    // Store.code veya Warehouse.code
+'locationType': 'STORE'     // 'STORE' | 'WAREHOUSE'
+
+// ❌ YANLIŞ — eski mimari, artık backend'de bu alanlar yok
+'storeId': 'STORE-01'
+'warehouseId': 'WH-01'
+```
+
+**Etkilenen yerler:**
+
+| Alan | Eski | Yeni |
+|------|------|------|
+| initialStocks payload | `storeId + warehouseId` | `locationId + locationType` |
+| BatchCreateRequest | `storeId + warehouseId` | `locationId + locationType` |
+| PurchaseRequest | `storeId + warehouseId` | `locationId + locationType` |
+| SaleRequest | `storeId` | `locationId + locationType` |
+| InventoryResponse | `storeId + warehouseId` | `locationId + locationType` |
+| PosState | `activeStoreId + availableStoreIds` | `activeLocationId + availableLocationIds` |
+| BatchEntryState | `storeId + warehouseId` | `locationId + locationType` |
+
+**Unified location dropdown — store + warehouse birlikte:**
+
+```dart
+// _loadData() içinde store ve warehouse listesi birleştirilir:
+final combined = [
+  ...stores.map((s) => {'code': s['code'], 'name': s['name'], 'type': 'STORE'}),
+  ...warehouses.map((w) => {'code': w['code'], 'name': w['name'], 'type': 'WAREHOUSE'}),
+];
+
+// Dropdown value = loc['code'], onChanged:
+ref.read(provider.notifier).updateHeader(
+  locationId: val,
+  locationName: loc['name'],
+  locationType: loc['type'],  // 'STORE' | 'WAREHOUSE'
+);
+```
+
+**User.storeId (JWT) farklı — karıştırma:**
+
+```dart
+// user.storeId → kasiyerin atandığı mağaza (JWT'den gelir, DEĞİŞMEDİ)
+final jwtStoreId = ref.read(authProvider).user?.storeId;  // ✅ hâlâ geçerli
+
+// stock locationId → stok hareketi yapılan lokasyon (yeni mimari)
+'locationId': state.activeLocationId  // ✅
+```
+
+---
+
+## 15. AKTİF PATH'LER — ÖNEMLİ
+
+Router'da hâlâ `lib/screens/` path'ini kullanan aktif dosyalar:
+
+```dart
+// app_router.dart — bu import'lar lib/screens/ altından geliyor (henüz geçiş yapılmadı):
+import 'package:project_pos/screens/inventory/add_product/add_product_wizard_screen.dart';
+import 'package:project_pos/screens/inventory/batch_entry/batch_product_screen.dart';
+```
+
+Bu dosyalarda değişiklik yaparken **`lib/screens/inventory/`** path'ini düzenle, `lib/features/inventory/` değil.
+
+POS ekranı ise `lib/features/` altından geliyor:
+
+```dart
+import 'package:project_pos/features/pos/screens/pos_screen.dart';  // ✅ features/
+```
+
+`lib/screens/pos/` → dead code, dokunma.
+
+---
+
+## 16. SIK YAPILAN HATALAR
 
 > **URL prefix kuralı:** Backend controller `/api/...` yazar, Flutter `security/api/...` veya `product/api/...` şeklinde service prefix ekler.  
 > Tüm istekler api-manager (8080) üzerinden geçer — direkt 8001/8002 kullanılmaz.
@@ -522,6 +641,14 @@ final isDark = Theme.of(context).brightness == Brightness.dark;
 | `payload['sessionId'] as String` | `sessionId` null olabilir → `as String? ?? ''` kullan |
 | `session['roles'].map((e) => e.toString())` | Roller `{roleName: ADMIN}` map → `e['roleName']` oku |
 | Refresh URL yanlış | `security/api/v1/auth/refresh-token` — eski `security/refresh` değil |
+| `'storeId': ...` payload göndermek | `'locationId' + 'locationType'` kullan — backend storeId kabul etmiyor |
+| `'warehouseId': ...` payload göndermek | `'locationId' + 'locationType': 'WAREHOUSE'` kullan |
+| `state.activeStoreId` PosState'ten okumak | `state.activeLocationId` kullan |
+| `state.availableStoreIds` PosState'ten okumak | `state.availableLocationIds` kullan |
+| `state.storeId / state.warehouseId` BatchEntryState | `state.locationId + state.locationType` kullan |
+| `const Column(children: [Text(t('...'))])` | `const` kaldır — `t()` runtime çağrısı, const olamaz |
+| Private method içinde `t()` kullanmak | `Widget _buildX(String Function(String) t)` — parametre geç |
+| `lib/screens/inventory/` yerine `lib/features/inventory/` düzenlemek | Wizard + batch_entry router `lib/screens/` kullanıyor |
 
 ---
 

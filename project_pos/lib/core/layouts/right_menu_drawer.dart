@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_confirmation_dialog.dart';
 import '../../providers/auth_provider.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 /// Mobilde sag taraftan acilan tam menu drawer
 class RightMenuDrawer extends ConsumerWidget {
@@ -11,6 +12,7 @@ class RightMenuDrawer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
     final user = ref.watch(authProvider).user;
     final displayName = user?.displayName ?? 'Admin';
     final email = user?.email ?? '';

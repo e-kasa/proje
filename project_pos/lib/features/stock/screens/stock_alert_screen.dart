@@ -146,7 +146,7 @@ class _StockAlertScreenState extends ConsumerState<StockAlertScreen> {
     final variantSku = alert['variantSku']?.toString() ?? '';
     final currentQty = alert['currentQuantity'] as num? ?? 0;
     final minThreshold = alert['minimumThreshold'] as num? ?? 0;
-    final warehouseId = alert['warehouseId']?.toString() ?? '-';
+    final warehouseId = alert['locationId']?.toString() ?? alert['warehouseId']?.toString() ?? '-';
     final isOutOfStock = level == 'OUT_OF_STOCK';
 
     Color qtyColor;

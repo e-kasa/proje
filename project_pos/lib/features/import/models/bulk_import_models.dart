@@ -1013,8 +1013,8 @@ class BulkSavePayloadBuilder {
           },
           'initialStocks': [
             {
-              'storeId': null,
-              'warehouseId': 'WH-001',
+              'locationId': 'WH-01',
+              'locationType': 'WAREHOUSE',
               'quantity': product.stock,
             }
           ],
@@ -1120,8 +1120,8 @@ class BulkSavePayloadBuilder {
         },
         'initialStocks': [
           {
-            'storeId': null,
-            'warehouseId': 'WH-001',
+            'locationId': 'WH-01',
+            'locationType': 'WAREHOUSE',
             'quantity': product.stock,
           }
         ],

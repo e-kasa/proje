@@ -56,13 +56,13 @@ public class InventoryService extends BaseDbServiceImp<InventoryRepository, Inve
     }
 
     /**
-     * Belirli depo + mağazadaki stok.
-     * POS satışta: "Bu mağazada/depoda yeterli stok var mı?"
+     * Belirli lokasyondaki stok.
+     * POS satışta: "Bu lokasyonda yeterli stok var mı?"
      */
     @Override
     public Optional<InventoryResponse> getStockByVariantAndLocation(
-            String variantId, String storeId, String warehouseId) {
-        return dao.findByVariantIdAndStoreIdAndWarehouseId(variantId, storeId, warehouseId)
+            String variantId, String locationId) {
+        return dao.findByVariantIdAndLocationId(variantId, locationId)
                 .map(this::toResponse);
     }
 
@@ -80,7 +80,7 @@ public class InventoryService extends BaseDbServiceImp<InventoryRepository, Inve
     // -------------------------------------------------------------------------
 
     private InventoryResponse toResponse(InventoryView iv) {
-        // toDTO(): id, variantId, storeId, warehouseId, physicalQuantity kopyalanır
+        // toDTO(): id, variantId, locationId, locationType, physicalQuantity kopyalanır
         // minStockLevel InventoryView'da yok — ProductVariant'tan ayrıca set edilir (ProductServiceImpl)
         return toDTO(iv);
     }

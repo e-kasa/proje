@@ -4,11 +4,10 @@ import com.sedcore.common.context.CompanyContext;
 import com.sedcore.product.entity.ProductVariant;
 import com.sedcore.inventory.entity.StockMovement;
 import com.sedcore.inventory.entity.StockTransfer;
-import com.sedcore.inventory.entity.InventoryView;
 import com.sedcore.common.enums.StockMovementType;
 import com.sedcore.inventory.model.StockTransferItemRequest;
 import com.sedcore.inventory.model.StockTransferRequest;
-import com.sedcore.inventory.repository.InventoryRepository;
+import com.sedcore.inventory.service.StockLevelService;
 import com.sedcore.product.repository.ProductVariantRepository;
 import com.sedcore.inventory.repository.StockMovementRepository;
 import com.sedcore.inventory.repository.StockTransferRepository;
@@ -25,16 +24,16 @@ import java.util.List;
 
 /**
  * ENTEGRE TRANSFER SERVICE
- * Depo/mağaza arası ürün transferi.
+ * Lokasyonlar arası ürün transferi (Store ↔ Warehouse, Store ↔ Store, Warehouse ↔ Warehouse).
  *
  * Akış:
  * 1. StockTransfer kaydı oluştur
- * 2. Her kalem için stok yeterliliği kontrol et (kaynak depo)
- * 3. TRANSFER_OUT → kaynak depo/mağazadan düş
- * 4. TRANSFER_IN  → hedef depo/mağazaya ekle
+ * 2. Her kalem: StockLevel.deductStock(kaynak) — yetersizse exception
+ * 3. Her kalem: TRANSFER_OUT hareketi (audit)
+ * 4. Her kalem: StockLevel.addStock(hedef)
+ * 5. Her kalem: TRANSFER_IN hareketi (audit)
  *
- * inventory_view bir DB view'ıdır (read-only).
- * Stok miktarı StockMovement kayıtlarından otomatik hesaplanır.
+ * Tüm adımlar tek @Transactional içinde — hepsi başarılı olur ya da hiçbiri.
  */
 @Service
 @RequiredArgsConstructor
@@ -44,94 +43,70 @@ public class StockTransferServiceIntegrated {
     private final StockTransferRepository stockTransferRepository;
     private final StockMovementRepository stockMovementRepository;
     private final ProductVariantRepository variantRepository;
-    private final InventoryRepository inventoryRepository;
+    private final StockLevelService stockLevelService;
     @Autowired private ISessionInstanceService sessionInstanceService;
 
     @Transactional
     public StockTransfer createTransfer(StockTransferRequest request) {
-        log.info("Transfer islemi baslatiliyor - Kaynak: {}/{} -> Hedef: {}/{}",
-                request.getFromStoreId(), request.getFromWarehouseId(),
-                request.getToStoreId(), request.getToWarehouseId());
+        log.info("Transfer başlatılıyor: {} ({}) → {} ({})",
+                request.getFromLocationId(), request.getFromLocationType(),
+                request.getToLocationId(), request.getToLocationType());
 
-        // 1. TRANSFER KAYDI OLUŞTUR
+        // 1. TRANSFER KAYDI
         StockTransfer transfer = new StockTransfer();
-        transfer.setFromStoreId(request.getFromStoreId());
-        transfer.setFromWarehouseId(request.getFromWarehouseId());
-        transfer.setToStoreId(request.getToStoreId());
-        transfer.setToWarehouseId(request.getToWarehouseId());
-
+        transfer.setFromLocationId(request.getFromLocationId());
+        transfer.setFromLocationType(request.getFromLocationType());
+        transfer.setToLocationId(request.getToLocationId());
+        transfer.setToLocationType(request.getToLocationType());
+        transfer.setNotes(request.getNotes());
         transfer = prepareAndSave(stockTransferRepository, transfer);
         log.info("StockTransfer kaydedildi: ID={}", transfer.getId());
 
-        // 2. HER KALEM İÇİN TRANSFER_OUT + TRANSFER_IN
         List<StockMovement> movements = new ArrayList<>();
+
         for (StockTransferItemRequest item : request.getItems()) {
-
             ProductVariant variant = variantRepository.findById(item.getVariantId())
-                    .orElseThrow(() -> new RuntimeException("Varyant bulunamadi: " + item.getVariantId()));
+                    .orElseThrow(() -> new RuntimeException("Varyant bulunamadı: " + item.getVariantId()));
 
-            // Stok yeterliliği kontrolü (kaynak depo)
-            checkStockAvailability(variant.getId(),
-                    request.getFromStoreId(), request.getFromWarehouseId(),
-                    item.getQuantity());
+            // 2. StockLevel: kaynaktan düş (yetersizse BusinessException)
+            stockLevelService.deductStock(variant.getId(), request.getFromLocationId(), item.getQuantity());
 
-            // TRANSFER_OUT — kaynaktan çıkar
-            StockMovement outMovement = StockMovement.builder()
+            // 3. TRANSFER_OUT hareketi (audit kaydı)
+            StockMovement out = StockMovement.builder()
                     .variant(variant)
-                    .storeId(request.getFromStoreId())
-                    .warehouseId(request.getFromWarehouseId())
+                    .locationId(request.getFromLocationId())
+                    .locationType(request.getFromLocationType())
                     .movementType(StockMovementType.TRANSFER_OUT)
                     .quantity(item.getQuantity())
                     .transfer(transfer)
                     .build();
-            movements.add(prepareAndSave(stockMovementRepository, outMovement));
+            movements.add(prepareAndSave(stockMovementRepository, out));
 
-            // TRANSFER_IN — hedefe ekle
-            StockMovement inMovement = StockMovement.builder()
+            // 4. StockLevel: hedefe ekle
+            stockLevelService.addStock(variant.getId(), request.getToLocationId(),
+                    request.getToLocationType(), item.getQuantity());
+
+            // 5. TRANSFER_IN hareketi (audit kaydı)
+            StockMovement in = StockMovement.builder()
                     .variant(variant)
-                    .storeId(request.getToStoreId())
-                    .warehouseId(request.getToWarehouseId())
+                    .locationId(request.getToLocationId())
+                    .locationType(request.getToLocationType())
                     .movementType(StockMovementType.TRANSFER_IN)
                     .quantity(item.getQuantity())
                     .transfer(transfer)
                     .build();
-            movements.add(prepareAndSave(stockMovementRepository, inMovement));
+            movements.add(prepareAndSave(stockMovementRepository, in));
 
-            log.info("Transfer hareketi: Variant={}, Miktar={}, {} -> {}",
+            log.info("Transfer: Variant={}, Miktar={}, {} → {}",
                     variant.getSku(), item.getQuantity(),
-                    request.getFromWarehouseId(), request.getToWarehouseId());
+                    request.getFromLocationId(), request.getToLocationId());
         }
 
         transfer.setMovements(movements);
-        log.info("Transfer tamamlandi - Transfer ID: {}, Toplam hareket: {}",
-                transfer.getId(), movements.size());
+        log.info("Transfer tamamlandı: ID={}, {} hareket", transfer.getId(), movements.size());
         return transfer;
     }
 
-    /**
-     * Stok yeterliliği kontrolü.
-     * InventoryView bir DB view'ıdır (read-only) — sadece okuma yapılır.
-     * Stok yoksa RuntimeException fırlatır.
-     */
-    private void checkStockAvailability(String variantId, String storeId,
-                                        String warehouseId, Integer quantity) {
-        InventoryView inventory = inventoryRepository
-                .findByVariantIdAndStoreIdAndWarehouseId(variantId, storeId, warehouseId)
-                .orElseThrow(() -> new RuntimeException(
-                        "Stok bulunamadi - Variant: " + variantId
-                        + ", Depo: " + warehouseId));
-
-        int available = inventory.getPhysicalQuantity() != null ? inventory.getPhysicalQuantity() : 0;
-        if (available < quantity) {
-            throw new RuntimeException(String.format(
-                    "Transfer icin stok yetersiz! Mevcut: %d, Istenen: %d (Variant: %s)",
-                    available, quantity, variantId));
-        }
-    }
-
-    /**
-     * Herhangi bir entity için audit alanları + companyCode set ederek kaydeder.
-     */
     private <E extends TOpenSimpleCompanyEntity> E prepareAndSave(
             org.springframework.data.repository.CrudRepository<E, String> repo, E entity) {
         String companyCode = CompanyContext.get();

@@ -34,10 +34,18 @@ public class CompanyHibernateFilterActivator {
     private final EntityManager entityManager;
 
     /**
-     * com.sedcore.service paketindeki tüm public metodları yakalar.
-     * İhtiyaca göre paket adı değiştirilebilir.
+     * com.sedcore altındaki tüm modül servis paketlerini yakalar.
+     *
+     * Doğru pattern: com.sedcore..service..
+     *   → com.sedcore.inventory.service.impl.StoreServiceImpl      ✓
+     *   → com.sedcore.product.service.impl.ProductServiceImpl       ✓
+     *   → com.sedcore.catalog.service.impl.CompanyCategoryServiceImpl ✓
+     *   → com.sedcore.sales.service.impl.SaleServiceIntegrated      ✓
+     *
+     * YANLIŞ pattern (ESKİ): com.sedcore.service..
+     *   → Hiçbir servis bu pakette değil → filter hiç aktif edilmiyordu!
      */
-    @Around("execution(public * com.sedcore.service..*(..))")
+    @Around("execution(public * com.sedcore..service..*(..))")
     public Object applyCompanyFilter(ProceedingJoinPoint joinPoint) throws Throwable {
         String companyCode = CompanyContext.get();
 

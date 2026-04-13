@@ -22,30 +22,47 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * StockMovement — Stok hareketi audit kaydı.
+ *
+ * Her giriş/çıkış hareketi buraya yazılır (satış, alım, transfer, sayım, iade).
+ * Anlık bakiye için StockLevel tablosunu kullan — bu tablo sadece tarihsel kayıt içindir.
+ *
+ * locationId: Store.code veya Warehouse.code (örn. "STORE-01", "WH-01")
+ * locationType: "STORE" veya "WAREHOUSE"
+ */
 @Entity
 @Table(name = "stock_movements",
        indexes = {
-           @Index(name = "idx_sm_variant", columnList = "variant_id"),
-           @Index(name = "idx_sm_store", columnList = "store_id")
+           @Index(name = "idx_sm_variant",  columnList = "variant_id"),
+           @Index(name = "idx_sm_location", columnList = "location_id"),
+           @Index(name = "idx_sm_company",  columnList = "company_code")
        }
 )
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class StockMovement extends TOpenSimpleCompanyEntity{
- 
+public class StockMovement extends TOpenSimpleCompanyEntity {
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "variant_id", nullable = false)
     private ProductVariant variant;
 
-    @Column(nullable = true)
-    private String storeId;
+    /**
+     * Lokasyon kodu — Store.code veya Warehouse.code.
+     * Örn: "STORE-01" (mağaza) veya "WH-01" (depo)
+     */
+    @Column(name = "location_id", length = 50)
+    private String locationId;
 
-    @Column(nullable = true)
-    private String warehouseId;
+    /**
+     * Lokasyon tipi: "STORE" veya "WAREHOUSE"
+     * locationId ile birlikte hangi tip lokasyon olduğunu belirtir.
+     */
+    @Column(name = "location_type", length = 10)
+    private String locationType;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private StockMovementType movementType;
-    // IN, OUT
 
     @Column(nullable = false)
     private Integer quantity;
@@ -68,5 +85,4 @@ public class StockMovement extends TOpenSimpleCompanyEntity{
 
     @Version
     private Long version;
-
 }

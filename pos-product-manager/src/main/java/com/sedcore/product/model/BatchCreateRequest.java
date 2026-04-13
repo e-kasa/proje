@@ -38,11 +38,15 @@ public class BatchCreateRequest {
     @NotNull(message = "Satın alma tarihi zorunludur")
     private LocalDate purchaseDate;
 
-    @NotBlank(message = "Mağaza ID zorunludur")
-    private String storeId;
+    /**
+     * Malın teslim alındığı lokasyon kodu: Store.code veya Warehouse.code
+     * Örn: "STORE-01" (mağazaya) veya "WH-01" (depoya)
+     */
+    @NotBlank(message = "Lokasyon ID zorunludur")
+    private String locationId;
 
-    @NotBlank(message = "Depo ID zorunludur")
-    private String warehouseId;
+    /** "STORE" veya "WAREHOUSE" */
+    private String locationType;
 
     private String notes;
 

@@ -120,12 +120,18 @@ extension WizardPayload on WizardState {
           'taxExempt': taxExempt,
         },
         'initialStocks': selectedWarehouses.isNotEmpty
-            ? selectedWarehouses.expand((wh) =>
-                selectedStores.isNotEmpty
-                    ? selectedStores.map((st) => {'storeId': st, 'warehouseId': wh, 'quantity': v.inventory?.physicalQuantity ?? 0})
-                    : [{'storeId': null, 'warehouseId': wh, 'quantity': v.inventory?.physicalQuantity ?? 0}]
-              ).toList()
-            : [{'storeId': selectedStores.isNotEmpty ? selectedStores.first : null, 'warehouseId': v.inventory?.warehouseCode ?? '', 'quantity': v.inventory?.physicalQuantity ?? 0}],
+            ? selectedWarehouses.map((wh) => {
+                'locationId': wh,
+                'locationType': 'WAREHOUSE',
+                'quantity': v.inventory?.physicalQuantity ?? 0,
+              }).toList()
+            : selectedStores.isNotEmpty
+                ? selectedStores.map((st) => {
+                    'locationId': st,
+                    'locationType': 'STORE',
+                    'quantity': v.inventory?.physicalQuantity ?? 0,
+                  }).toList()
+                : [{'locationId': v.inventory?.warehouseCode ?? '', 'locationType': 'STORE', 'quantity': v.inventory?.physicalQuantity ?? 0}],
         'barcodes': v.barcodes.map((b) => {'code': b.code, 'type': b.type, 'isPrimary': b.isPrimary}).toList(),
       }).toList(),
       'purchase': hasPurchase
@@ -133,8 +139,10 @@ extension WizardPayload on WizardState {
               'supplierId': selectedSupplier, 'invoiceNumber': invoiceNumberController.text,
               'deliveryNoteNumber': deliveryNoteController.text.isEmpty ? null : deliveryNoteController.text,
               'purchaseDate': purchaseDateController.text,
-              'storeId': selectedStores.isNotEmpty ? selectedStores.first : null,
-              'warehouseId': selectedWarehouses.isNotEmpty ? selectedWarehouses.first : null,
+              'locationId': selectedWarehouses.isNotEmpty
+                  ? selectedWarehouses.first
+                  : (selectedStores.isNotEmpty ? selectedStores.first : null),
+              'locationType': selectedWarehouses.isNotEmpty ? 'WAREHOUSE' : 'STORE',
               'notes': globalNotesController.text.isEmpty ? null : globalNotesController.text,
             }
           : null,

@@ -9,7 +9,9 @@ import java.util.List;
 @Repository
 public interface StockTransferRepository extends BaseDaoRepository<StockTransfer> {
 
-    List<StockTransfer> findByFromStoreId(String fromStoreId);
+    List<StockTransfer> findByFromLocationId(String fromLocationId);
 
-    List<StockTransfer> findByToStoreId(String toStoreId);
+    List<StockTransfer> findByToLocationId(String toLocationId);
+
+    List<StockTransfer> findByFromLocationIdOrToLocationId(String fromLocationId, String toLocationId);
 }

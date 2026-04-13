@@ -76,12 +76,12 @@ public class StockReportControllerImpl {
         }
     }
 
-    // GET /product/api/v1/reports/stock/warehouse-breakdown?warehouseId=...
+    // GET /product/api/v1/reports/stock/warehouse-breakdown?locationId=...
     @GetMapping("/warehouse-breakdown")
     public ResponseEntity<ApiResponse<StockValueSummary>> getWarehouseBreakdown(
-            @RequestParam String warehouseId) {
+            @RequestParam String locationId) {
         try {
-            StockValueSummary summary = stockReportService.getWarehouseBreakdown(warehouseId);
+            StockValueSummary summary = stockReportService.getWarehouseBreakdown(locationId);
             return ResponseEntity.ok(ApiResponse.success(summary));
         } catch (TOpenException e) {
 

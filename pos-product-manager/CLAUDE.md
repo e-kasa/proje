@@ -116,9 +116,10 @@ com.sedcore/
 ## 2. ENTITY ŞABLONU
 
 ```java
+// @Filter/@FilterDef entity'ye EKLENMEZ — TOpenSimpleCompanyEntity superclass'ında tanımlı,
+// miras yoluyla tüm extend eden entity'lere otomatik uygulanır.
 @Entity
 @Table(name = "my_table")
-@Filter(name = "companyFilter", condition = "company_code = :companyCode")
 public class MyEntity extends TOpenSimpleCompanyEntity {
 
     @Id
@@ -200,31 +201,44 @@ public class MyServiceImpl extends BaseDbServiceImp<MyEntity, MyRepository>
 
 ## 5. CONTROLLER ŞABLONU
 
+**companyCode JWT token içinden gelir — `@RequestHeader("X-Company-Code")` gereksizdir.**  
+Servis, `CompanyContext.get()` ile alır. Hibernate `@Filter` read sorgularını otomatik izole eder.
+
 ```java
 @RestController
-@RequestMapping("/product/api/v1/my-resource")
+@RequestMapping("/api/v1/my-resource")   // Flutter'dan: product/api/v1/my-resource
 @RequiredArgsConstructor
 public class MyControllerImpl implements MyController {
 
     private final MyService myService;
 
+    // READ — @Filter otomatik WHERE company_code = 'X' ekler, companyCode parametresi gereksiz
     @GetMapping
-    public ResponseEntity<ApiResponse<List<MyResponseDto>>> getAll(
-            @RequestHeader("X-Company-Code") String companyCode) {
+    public ResponseEntity<ApiResponse<List<MyResponseDto>>> getAll() {
         try {
-            return ResponseEntity.ok(ApiResponse.success(myService.getAll(companyCode)));
+            return ResponseEntity.ok(ApiResponse.success(myService.getAll()));
         } catch (TOpenException e) {
-            throw ExceptionMapper.map(e);  // TOpenException → BusinessException
+            throw ExceptionMapper.map(e);
         }
     }
 
+    // WRITE — service içinde CompanyContext.get() ile companyCode alınır
     @PostMapping
     public ResponseEntity<ApiResponse<MyResponseDto>> create(
-            @RequestHeader("X-Company-Code") String companyCode,
             @RequestBody @Valid MyRequestDto request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(myService.create(companyCode, request)));
+                .body(ApiResponse.success(myService.create(request)));
     }
+}
+```
+
+**Servis içinde yazma:**
+```java
+public MyResponseDto create(MyRequestDto request) {
+    MyEntity entity = new MyEntity();
+    entity.setCompanyCode(CompanyContext.get());  // ✅ context'ten — header'dan değil
+    entity.setName(request.getName());
+    return toDTO(repository.save(entity));
 }
 ```
 

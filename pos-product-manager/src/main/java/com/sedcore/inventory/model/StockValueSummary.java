@@ -24,8 +24,8 @@ public class StockValueSummary {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class WarehouseBreakdown {
-        private String warehouseId;
-        private String warehouseName;
+        private String locationId;
+        private String locationName;
         private Long itemCount;
         private Integer totalQuantity;
         private BigDecimal totalValue;

@@ -129,37 +129,112 @@ Kalıtım: Tüm entity'ler TOpenSimpleCompanyEntity → TOpenSimpleDbEntity → 
 
 Bu kurallar **tüm servisler** için geçerlidir — istisnası yoktur.
 
+### 5a. CompanyCode Kaynağı — Tek Doğruluk Noktası
+
+**companyCode JWT token içinde zaten vardır** (`sessionInstance → userInformation → selectedCompanyCode`).  
+`JwtXUserInfoFilter` → JWT'yi parse eder → `TOpenContextHolder.set(companyCode)` → ThreadLocal'e yazar.  
+`CompanyHibernateFilterActivator` → `TOpenContextHolder.get()` → Hibernate `@Filter` parametresini set eder.
+
 ```
-Her HTTP isteğinde   : X-Company-Code: {companyCode} header'ı zorunlu
-Backend ThreadLocal  : CompanyContext.get() → mevcut firmayı verir
-Repository           : HER sorguda companyCode filtresi — Hibernate @Filter
-Veri sızıntısı       : CompanyIsolationViolationException fırlatılır
+JWT (sessionInstance.userInformation.selectedCompanyCode)
+  └─ JwtXUserInfoFilter.createAuthToken()
+       └─ TOpenContextHolder.setContext(companyCode)
+            └─ CompanyHibernateFilterActivator (her Session'da)
+                 └─ session.enableFilter("companyFilter").setParameter("companyCode", ...)
+                      └─ TÜM find* sorgularına otomatik WHERE company_code = 'X' eklenir
 ```
 
-**Hibernate Filter (tüm entity'lerde zorunlu):**
+**Controller'da `@RequestHeader("X-Company-Code")` gereksizdir** — companyCode zaten context'te.  
+Servis katmanında `CompanyContext.get()` ile alınır.
+
 ```java
+// ❌ GEREKSIZ — token'da zaten var
+public ResponseEntity<?> getAll(@RequestHeader("X-Company-Code") String companyCode) { ... }
+
+// ✅ DOĞRU — context'ten al
+public ResponseEntity<?> getAll() {
+    return ResponseEntity.ok(service.getAll());
+    // service içinde: CompanyContext.get() veya Hibernate @Filter otomatik
+}
+```
+
+**Yazma işlemlerinde (entity oluştururken):**
+```java
+// ✅ DOĞRU — context'ten al
+entity.setCompanyCode(CompanyContext.get());
+```
+
+### 5b. Hibernate @Filter — TOpenSimpleCompanyEntity'de Tanımlı, Her Subclass Miras Alır
+
+`@FilterDef` ve `@Filter` **`TOpenSimpleCompanyEntity` superclass'ında** tanımlıdır.  
+Extend eden her entity otomatik olarak bu filtreyi miras alır — **entity'lere tekrar eklenmez.**
+
+```java
+// core kütüphanesinde (TOpenSimpleCompanyEntity):
+@MappedSuperclass
+@FilterDef(name = "filterByCompanyCode",
+           parameters = @ParamDef(name = "cpCode", type = String.class),
+           defaultCondition = "company_code in(:cpCode)")
+@Filter(name = "filterByCompanyCode", condition = "company_code in(:cpCode)")
+public class TOpenSimpleCompanyEntity extends TOpenSimpleDbEntity { ... }
+
+// Entity'de TEKRAR eklenmez — miras yeterli:
 @Entity
-@Filter(name = "companyFilter", condition = "company_code = :companyCode")
+public class Store extends TOpenSimpleCompanyEntity { ... }  // ✓ filter miras alındı
+
+// ❌ YANLIŞ — entity'ye tekrar @Filter/@FilterDef ekleme → çakışma!
+@FilterDef(...)  // GEREKSIZ
+@Filter(...)     // GEREKSIZ
+@Entity
+public class Store extends TOpenSimpleCompanyEntity { ... }
+```
+
+**Filter parametreleri:**
+- Filter adı: `filterByCompanyCode` (`CompanyFilterStatics.FILTER_COMPANY`)
+- Parametre: `cpCode` (dikkat: `companyCode` değil!)
+- Koşul: `company_code in(:cpCode)`
+
+**`CompanyHibernateFilterActivator` — AOP ile tüm servis metodlarını yakalar:**
+```java
+// Doğru pointcut — com.sedcore altındaki tüm modül servisleri:
+@Around("execution(public * com.sedcore..service..*(..))")
+// ✓ com.sedcore.inventory.service.impl.StoreServiceImpl
+// ✓ com.sedcore.product.service.impl.ProductServiceImpl
+
+// ❌ YANLIŞ (eski hatalı pattern):
+@Around("execution(public * com.sedcore.service..*(..))")
+// → com.sedcore.service.* paketi yok → filter hiç çalışmaz → TÜM firmalar görünür!
+```
+
+**Repository — companyCode parametresi GEREKMEZ (Hibernate halleder):**
+```java
+List<Store> findByIsActiveTrue();     // → WHERE is_active=true AND company_code IN('X')
+Optional<Store> findById(String id);  // → WHERE id=? AND company_code IN('X')
+```
+
+### 5c. Tenant İzolasyon Akışı
+
+```
+1. HTTP Request → CompanyContextFilter: X-Company-Code header → CompanyContext.set(code)
+2. Service metodu çağrılır → CompanyHibernateFilterActivator AOP devreye girer
+3. session.enableFilter("filterByCompanyCode").setParameter("cpCode", companyCode)
+4. Tüm find* sorguları: WHERE company_code IN('X') otomatik eklenir
+5. Yazma: entity.setCompanyCode(CompanyContext.get())
+6. Metod biter → session.disableFilter() (AOP finally bloğu)
+7. Request biter → CompanyContext.clear() (ThreadLocal temizlenir)
+```
+
+### 5d. Yeni Entity Eklerken Kontrol Listesi
+
+```java
+// ✓ TOpenSimpleCompanyEntity extend et — @Filter miras alınır, tekrar yazma
+@Entity
 public class MyEntity extends TOpenSimpleCompanyEntity { ... }
-// CompanyHibernateFilterActivator → her Session'da otomatik aktif edilir
-```
 
-**Flutter / React (her request'e otomatik eklenir):**
-```dart
-// ApiClient interceptor → X-Company-Code: user.selectedCompanyCode
-```
-```typescript
-// axiosClient interceptor → config.headers['X-Company-Code'] = companyCode
-```
-
-**Tenant izolasyon akışı (pos-product-manager):**
-```
-1. HTTP Request → CompanyContextFilter: X-Company-Code → CompanyContext.set(code)
-2. JPA Session açılır → CompanyHibernateFilterActivator: @Filter parametresi set edilir
-3. Tüm Entity sorguları: WHERE company_code = 'X' otomatik eklenir
-4. Servis katmanı da companyCode parametresiyle çalışır (double safety)
-5. CompanyIsolationViolationException: farklı firmaya erişilirse fırlatılır
-6. Request biter → CompanyContext.clear() (ThreadLocal temizlenir)
+// ✓ Servis paketi com.sedcore.{modul}.service altında olmalı
+// → CompanyHibernateFilterActivator AOP pointcut'u yakalar
+package com.sedcore.mymodule.service.impl;  // ✓
+package com.sedcore.service.impl;           // ❌ böyle paket yok
 ```
 
 ---

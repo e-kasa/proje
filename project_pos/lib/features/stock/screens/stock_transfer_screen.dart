@@ -717,20 +717,20 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
 
     try {
       final data = {
-        'sourceType': _sourceType == _LocationType.warehouse
-            ? 'warehouse'
-            : 'store',
-        'sourceId': _sourceId,
-        'destinationType': _destType == _LocationType.warehouse
-            ? 'warehouse'
-            : 'store',
-        'destinationId': _destId,
+        'fromLocationId': _sourceId,
+        'fromLocationType': _sourceType == _LocationType.warehouse
+            ? 'WAREHOUSE'
+            : 'STORE',
+        'toLocationId': _destId,
+        'toLocationType': _destType == _LocationType.warehouse
+            ? 'WAREHOUSE'
+            : 'STORE',
         'notes': _notesCtrl.text.trim().isEmpty
             ? null
             : _notesCtrl.text.trim(),
         'items': _items
             .map((item) => {
-                  'productId': item.productId,
+                  'variantId': item.productId,
                   'quantity': item.quantity,
                 })
             .toList(),

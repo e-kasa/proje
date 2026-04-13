@@ -43,16 +43,16 @@ public class StockCountControllerImpl {
             List<StockMovement> adjustments = stockCountService.processStockCount(request);
 
             Map<String, Object> result = new HashMap<>();
-            result.put("storeId", request.getStoreId());
-            result.put("warehouseId", request.getWarehouseId());
+            result.put("locationId", request.getLocationId());
+            result.put("locationType", request.getLocationType());
             result.put("countedItems", request.getItems().size());
             result.put("adjustmentCount", adjustments.size());
             result.put("adjustments", adjustments.stream()
                     .map(this::toMap)
                     .collect(Collectors.toList()));
 
-            log.info("Stok sayimi islendi - Magaza: {}, Depo: {}, Duzeltme: {}",
-                    request.getStoreId(), request.getWarehouseId(), adjustments.size());
+            log.info("Stok sayimi islendi - Lokasyon: {}, Duzeltme: {}",
+                    request.getLocationId(), adjustments.size());
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (TOpenException e) {
 
@@ -69,8 +69,8 @@ public class StockCountControllerImpl {
         map.put("id", m.getId());
         map.put("movementType", m.getMovementType());
         map.put("quantity", m.getQuantity());
-        map.put("storeId", m.getStoreId());
-        map.put("warehouseId", m.getWarehouseId());
+        map.put("locationId", m.getLocationId());
+        map.put("locationType", m.getLocationType());
         if (m.getVariant() != null) {
             map.put("variantId", m.getVariant().getId());
             map.put("variantSku", m.getVariant().getSku());

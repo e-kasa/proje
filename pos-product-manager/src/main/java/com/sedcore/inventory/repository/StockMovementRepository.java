@@ -6,7 +6,6 @@ import com.towpen.base.db.repository.BaseDaoRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
@@ -15,58 +14,55 @@ import java.util.Optional;
 @Repository
 public interface StockMovementRepository extends BaseDaoRepository<StockMovement> {
 
-    // Purchase ilişkisi üzerinden (purchase.id navigasyonu)
     List<StockMovement> findByPurchaseId(String purchaseId);
 
-    // Variant + Store kombine filtre (company scoped) — JOIN FETCH ile LAZY ilişkiler yüklenir
-    @Query("SELECT sm FROM StockMovement sm JOIN FETCH sm.variant v LEFT JOIN FETCH v.product LEFT JOIN FETCH sm.sale LEFT JOIN FETCH sm.purchase LEFT JOIN FETCH sm.transfer WHERE v.id = :variantId AND sm.storeId = :storeId AND sm.companyCode = :companyCode ORDER BY sm.createTime DESC")
-    List<StockMovement> findByVariantIdAndStoreId(@Param("variantId") String variantId, @Param("storeId") String storeId, @Param("companyCode") String companyCode);
+    /** Variant + lokasyon bazlı hareketler (audit / rapor) */
+    @Query("SELECT sm FROM StockMovement sm JOIN FETCH sm.variant v LEFT JOIN FETCH v.product LEFT JOIN FETCH sm.sale LEFT JOIN FETCH sm.purchase LEFT JOIN FETCH sm.transfer WHERE v.id = :variantId AND sm.locationId = :locationId AND sm.companyCode = :companyCode ORDER BY sm.createTime DESC")
+    List<StockMovement> findByVariantIdAndLocationId(
+            @Param("variantId") String variantId,
+            @Param("locationId") String locationId,
+            @Param("companyCode") String companyCode);
 
-    // Variant hareketleri — JOIN FETCH ile controller'da LazyInitializationException önlenir
+    /** Variant'ın tüm lokasyonlardaki hareketleri */
     @Query("SELECT sm FROM StockMovement sm JOIN FETCH sm.variant v LEFT JOIN FETCH v.product LEFT JOIN FETCH sm.sale LEFT JOIN FETCH sm.purchase LEFT JOIN FETCH sm.transfer WHERE v.id = :variantId AND sm.companyCode = :companyCode ORDER BY sm.createTime DESC")
-    List<StockMovement> findByVariantId(@Param("variantId") String variantId, @Param("companyCode") String companyCode);
+    List<StockMovement> findByVariantId(
+            @Param("variantId") String variantId,
+            @Param("companyCode") String companyCode);
 
-    // Eski imza (deprecated - backward compatibility için)
-    @Query("SELECT sm FROM StockMovement sm JOIN FETCH sm.variant v LEFT JOIN FETCH v.product LEFT JOIN FETCH sm.sale LEFT JOIN FETCH sm.purchase LEFT JOIN FETCH sm.transfer WHERE v.id = :variantId ORDER BY sm.createTime DESC")
-    List<StockMovement> findByVariantIdWithoutCompanyFilter(@Param("variantId") String variantId);
-
-    // Satış hareketleri (sale.id navigasyonu - company scoped)
+    /** Satış hareketleri */
     @Query("SELECT sm FROM StockMovement sm WHERE sm.sale.id = :saleId AND sm.companyCode = :companyCode")
-    List<StockMovement> findBySaleId(@Param("saleId") String saleId, @Param("companyCode") String companyCode);
+    List<StockMovement> findBySaleId(
+            @Param("saleId") String saleId,
+            @Param("companyCode") String companyCode);
 
-    // Transfer hareketleri (transfer.id navigasyonu)
+    /** Transfer hareketleri */
     @Query("SELECT sm FROM StockMovement sm WHERE sm.transfer.id = :transferId")
     List<StockMovement> findByTransferId(@Param("transferId") String transferId);
 
-    // Mağaza bazlı hareketler (doğrudan String field)
-    List<StockMovement> findByStoreId(String storeId);
+    /** Lokasyon bazlı hareketler */
+    List<StockMovement> findByLocationId(String locationId);
 
-    // Depo bazlı hareketler (doğrudan String field)
-    List<StockMovement> findByWarehouseId(String warehouseId);
-
-    // Satış + hareket tipi (iptal/iade doğrulama için - company scoped)
+    /** Satış + hareket tipi */
     @Query("SELECT sm FROM StockMovement sm WHERE sm.sale.id = :saleId AND sm.movementType = :movementType AND sm.companyCode = :companyCode")
     List<StockMovement> findBySaleIdAndMovementType(
             @Param("saleId") String saleId,
             @Param("movementType") StockMovementType movementType,
             @Param("companyCode") String companyCode);
 
-    // Varyant + satış (iade miktarı hesaplama için)
+    /** Varyant + satış + hareket tipi (iade miktarı hesaplama) */
     @Query("SELECT sm FROM StockMovement sm WHERE sm.sale.id = :saleId AND sm.variant.id = :variantId AND sm.movementType = :movementType")
     List<StockMovement> findBySaleIdAndVariantIdAndMovementType(
             @Param("saleId") String saleId,
             @Param("variantId") String variantId,
             @Param("movementType") StockMovementType movementType);
 
-    // Belirli varyant + hareket tipi için ilk kaydı döner (store/warehouse fallback için)
+    /** İlk PURCHASE_IN kaydı (fallback lokasyon tespiti) */
     @Query("SELECT sm FROM StockMovement sm WHERE sm.variant.id = :variantId AND sm.movementType = :movementType ORDER BY sm.createTime ASC")
     Optional<StockMovement> findFirstByVariantIdAndMovementType(
             @Param("variantId") String variantId,
             @Param("movementType") StockMovementType movementType);
 
-    // Birlikte satılan ürünleri getir (Recommendation için)
-    // Aynı satışta yer alan diğer ürünleri sıklığa göre sırala
-    // Company scoping explicit olarak uygulanır
+    /** Birlikte satılan ürünler — Recommendation engine */
     @Query(value = """
             SELECT p.id, p.name, p.sku, pv.id as variantId, COUNT(*) as frequency
             FROM stock_movements sm1

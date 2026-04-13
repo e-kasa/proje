@@ -16,8 +16,8 @@ class BatchHeaderForm extends ConsumerStatefulWidget {
 
 class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
   List<Map<String, dynamic>> _suppliers = [];
-  List<Map<String, dynamic>> _warehouses = [];
-  List<Map<String, dynamic>> _stores = [];
+  /// Birleşik lokasyon listesi: stores (type=STORE) + warehouses (type=WAREHOUSE)
+  List<Map<String, dynamic>> _locations = [];
   bool _loading = true;
 
   final _invoiceCtrl = TextEditingController();
@@ -43,11 +43,21 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
         ref.read(warehouseServiceProvider).getWarehouses(isActive: true),
         ref.read(storeServiceProvider).getStores(isActive: true),
       ]);
+      // Mağaza ve depoları birleştir — her kalem {code, name, type} formatında
+      final warehouses = (results[1] as List<Map<String, dynamic>>).map((w) => {
+        'code': w['code']?.toString() ?? w['warehouseCode']?.toString() ?? w['id']?.toString() ?? '',
+        'name': w['name']?.toString() ?? '-',
+        'type': 'WAREHOUSE',
+      }).toList();
+      final stores = (results[2] as List<Map<String, dynamic>>).map((s) => {
+        'code': s['code']?.toString() ?? s['storeCode']?.toString() ?? s['id']?.toString() ?? '',
+        'name': s['name']?.toString() ?? '-',
+        'type': 'STORE',
+      }).toList();
       if (mounted) {
         setState(() {
           _suppliers = results[0];
-          _warehouses = results[1];
-          _stores = results[2];
+          _locations = [...stores, ...warehouses];
           _loading = false;
         });
       }
@@ -135,8 +145,7 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
                   ),
                   // Validation indicator
                   if (state.supplierId != null &&
-                      state.warehouseId != null &&
-                      state.storeId != null)
+                      state.locationId != null)
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 3),
@@ -223,7 +232,7 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
     if (state.supplierName != null) parts.add(state.supplierName!);
     if (state.invoiceNumber != null)
       parts.add('${t('batch.invoice')}: ${state.invoiceNumber}');
-    if (state.warehouseName != null) parts.add(state.warehouseName!);
+    if (state.locationName != null) parts.add(state.locationName!);
     parts.add(dateFmt.format(state.purchaseDate));
 
     return Text(
@@ -297,7 +306,7 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
           ),
           const SizedBox(height: 10),
 
-          // Date + Warehouse + Store
+          // Date + Location
           Row(
             children: [
               // Date picker
@@ -346,55 +355,45 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
                 ),
               ),
               const SizedBox(width: 10),
-              // Warehouse
+              // Unified Location (Store OR Warehouse)
               Expanded(
+                flex: 2,
                 child: _DropdownField<String>(
-                  label: '${t('batch.warehouse')} *',
+                  label: '${t('batch.location')} *',
                   icon: Icons.warehouse_outlined,
-                  value: state.warehouseId,
-                  items: _warehouses.map((w) {
+                  value: state.locationId,
+                  items: _locations.map((loc) {
+                    final code = loc['code'] as String;
+                    final name = loc['name'] as String;
+                    final type = loc['type'] as String;
                     return DropdownMenuItem<String>(
-                      value: w['id']?.toString(),
-                      child: Text(w['name']?.toString() ?? '',
-                          overflow: TextOverflow.ellipsis),
+                      value: code,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            type == 'STORE' ? Icons.store_outlined : Icons.warehouse_outlined,
+                            size: 14,
+                            color: AppColors.textMuted,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
+                          ),
+                        ],
+                      ),
                     );
                   }).toList(),
                   onChanged: (val) {
                     if (val == null) return;
-                    final wh = _warehouses.firstWhere(
-                      (w) => w['id']?.toString() == val,
+                    final loc = _locations.firstWhere(
+                      (l) => l['code'] == val,
                       orElse: () => {},
                     );
                     ref.read(batchEntryProvider.notifier).updateHeader(
-                          warehouseId: val,
-                          warehouseName: wh['name']?.toString(),
-                        );
-                  },
-                ),
-              ),
-              const SizedBox(width: 10),
-              // Store
-              Expanded(
-                child: _DropdownField<String>(
-                  label: '${t('batch.store')} *',
-                  icon: Icons.store_outlined,
-                  value: state.storeId,
-                  items: _stores.map((s) {
-                    return DropdownMenuItem<String>(
-                      value: s['id']?.toString(),
-                      child: Text(s['name']?.toString() ?? '',
-                          overflow: TextOverflow.ellipsis),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    if (val == null) return;
-                    final st = _stores.firstWhere(
-                      (s) => s['id']?.toString() == val,
-                      orElse: () => {},
-                    );
-                    ref.read(batchEntryProvider.notifier).updateHeader(
-                          storeId: val,
-                          storeName: st['name']?.toString(),
+                          locationId: val,
+                          locationName: loc['name']?.toString(),
+                          locationType: loc['type']?.toString() ?? 'STORE',
                         );
                   },
                 ),

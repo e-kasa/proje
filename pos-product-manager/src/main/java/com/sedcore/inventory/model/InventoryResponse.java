@@ -23,11 +23,11 @@ public class InventoryResponse extends DtoBaseModel {
     /** Hangi varyanta ait */
     private String variantId;
 
-    /** Mağaza ID (null → tüm mağazaların toplamı) */
-    private String storeId;
+    /** Lokasyon kodu: Store.code veya Warehouse.code */
+    private String locationId;
 
-    /** Depo ID */
-    private String warehouseId;
+    /** "STORE" veya "WAREHOUSE" */
+    private String locationType;
 
     /** Fiziksel stok: SUM(IN hareketler) - SUM(OUT hareketler) */
     private Integer physicalQuantity;

@@ -14,11 +14,11 @@ import java.util.List;
 @Builder
 public class StockCountRequest {
 
-    @NotBlank(message = "Mağaza ID zorunludur")
-    private String storeId;
+    @NotBlank(message = "Lokasyon ID zorunludur")
+    private String locationId;
 
-    @NotBlank(message = "Depo ID zorunludur")
-    private String warehouseId;
+    /** "STORE" veya "WAREHOUSE" */
+    private String locationType;
 
     @Valid
     @NotEmpty(message = "En az bir ürün kalemi girilmelidir")

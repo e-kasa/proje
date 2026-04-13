@@ -43,11 +43,11 @@ class StockReportService {
     }
   }
 
-  Future<Map<String, dynamic>?> getWarehouseBreakdown(String warehouseId) async {
+  Future<Map<String, dynamic>?> getWarehouseBreakdown(String locationId) async {
     try {
       final resp = await _apiClient.get(
         '$_base/warehouse-breakdown',
-        queryParameters: {'warehouseId': warehouseId},
+        queryParameters: {'locationId': locationId},
       );
       final data = resp.data['data'];
       return data is Map<String, dynamic> ? data : null;

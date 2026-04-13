@@ -20,10 +20,15 @@ public class SaleRequest {
     // Opsiyonel: backend otomatik üretir (POS'tan gönderilmeyebilir)
     private String saleNumber;
 
-    // Opsiyonel: POS, mağaza/depo yapılandırması olmadan çalışabilir
-    private String storeId;
+    /**
+     * Satışın yapıldığı lokasyon kodu (genellikle Store.code).
+     * Kasiyer için JWT storeId → POS provider'dan gelir.
+     * Admin için POS ekranındaki mağaza seçiminden gelir.
+     */
+    private String locationId;
 
-    private String warehouseId;
+    /** STORE veya WAREHOUSE (genellikle STORE) */
+    private String locationType;
 
     @Valid
     @NotEmpty(message = "En az bir ürün kalemi girilmelidir")

@@ -46,13 +46,13 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
 
   // Dropdown verileri
   List<Map<String, dynamic>> _suppliers = [];
-  List<Map<String, dynamic>> _warehouses = [];
-  List<Map<String, dynamic>> _stores = [];
+  /// Birleşik lokasyon listesi: stores (type=STORE) + warehouses (type=WAREHOUSE)
+  List<Map<String, dynamic>> _locations = [];
 
   // Seçimler
   String? _selectedSupplierId;
-  String? _selectedWarehouseId;
-  String? _selectedStoreId;
+  String? _selectedLocationId;
+  String? _selectedLocationType;
   DateTime _purchaseDate = DateTime.now();
 
   // Kalemler
@@ -92,10 +92,21 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
         ref.read(productServiceProvider).getProducts(),
       ]);
 
+      // Mağaza ve depoları birleştir — her kalem {code, name, type} şeklinde
+      final warehouses = (results[1] as List<Map<String, dynamic>>).map((w) => {
+        'code': w['code']?.toString() ?? w['warehouseCode']?.toString() ?? w['id']?.toString() ?? '',
+        'name': w['name']?.toString() ?? '-',
+        'type': 'WAREHOUSE',
+      }).toList();
+      final stores = (results[2] as List<Map<String, dynamic>>).map((s) => {
+        'code': s['code']?.toString() ?? s['storeCode']?.toString() ?? s['id']?.toString() ?? '',
+        'name': s['name']?.toString() ?? '-',
+        'type': 'STORE',
+      }).toList();
+
       setState(() {
         _suppliers = results[0];
-        _warehouses = results[1];
-        _stores = results[2];
+        _locations = [...stores, ...warehouses];
         _searchResults = results[3]; // ilk yüklemede tüm ürünler
         _isLoading = false;
       });
@@ -156,13 +167,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
                   const SizedBox(height: 20),
                   _buildSectionTitle(t('purchases.location'), Icons.warehouse_rounded, theme),
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(child: _buildWarehouseDropdown(theme)),
-                      const SizedBox(width: 12),
-                      Expanded(child: _buildStoreDropdown(theme)),
-                    ],
-                  ),
+                  _buildLocationDropdown(theme),
                   const SizedBox(height: 20),
                   _buildSectionTitle(t('purchases.products'), Icons.inventory_2_rounded, theme),
                   const SizedBox(height: 12),
@@ -242,41 +247,47 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
     );
   }
 
-  Widget _buildWarehouseDropdown(ThemeData theme) {
+  Widget _buildLocationDropdown(ThemeData theme) {
     return DropdownButtonFormField<String>(
-      value: _selectedWarehouseId,
-      decoration: _inputDeco(t('purchases.warehouse_required'), Icons.warehouse_outlined, theme),
-      hint: Text(t('warehouses.title')),
+      value: _selectedLocationId,
+      decoration: _inputDeco(t('purchases.location_required'), Icons.warehouse_outlined, theme),
+      hint: Text(t('purchases.select_location')),
       isExpanded: true,
-      items: _warehouses.map((w) {
-        // backend PurchaseRequest.warehouseId = plain code ("WH-01"), not UUID
-        final code = w['code']?.toString() ?? w['warehouseCode']?.toString() ?? w['id']?.toString();
+      items: _locations.map((loc) {
+        final code = loc['code'] as String;
+        final name = loc['name'] as String;
+        final type = loc['type'] as String;
+        final typeLabel = type == 'STORE' ? t('stores.title') : t('warehouses.title');
         return DropdownMenuItem<String>(
           value: code,
-          child: Text(w['name']?.toString() ?? code ?? '-', overflow: TextOverflow.ellipsis),
+          child: Row(
+            children: [
+              Icon(
+                type == 'STORE' ? Icons.store_outlined : Icons.warehouse_outlined,
+                size: 16,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  '$name ($typeLabel)',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
+            ],
+          ),
         );
       }).toList(),
-      onChanged: (v) => setState(() => _selectedWarehouseId = v),
-      validator: (v) => v == null ? t('purchases.select_warehouse') : null,
-    );
-  }
-
-  Widget _buildStoreDropdown(ThemeData theme) {
-    return DropdownButtonFormField<String>(
-      value: _selectedStoreId,
-      decoration: _inputDeco(t('purchases.store_required'), Icons.store_outlined, theme),
-      hint: Text(t('stores.title')),
-      isExpanded: true,
-      items: _stores.map((s) {
-        // backend PurchaseRequest.storeId = plain code ("STORE-01"), not UUID
-        final code = s['code']?.toString() ?? s['storeCode']?.toString() ?? s['id']?.toString();
-        return DropdownMenuItem<String>(
-          value: code,
-          child: Text(s['name']?.toString() ?? code ?? '-', overflow: TextOverflow.ellipsis),
-        );
-      }).toList(),
-      onChanged: (v) => setState(() => _selectedStoreId = v),
-      validator: (v) => v == null ? t('purchases.select_store') : null,
+      onChanged: (v) {
+        if (v == null) return;
+        final loc = _locations.firstWhere((l) => l['code'] == v, orElse: () => {});
+        setState(() {
+          _selectedLocationId = v;
+          _selectedLocationType = loc['type'] as String? ?? 'STORE';
+        });
+      },
+      validator: (v) => v == null ? t('purchases.select_location') : null,
     );
   }
 
@@ -664,8 +675,8 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
       'supplierId': _selectedSupplierId,
       'invoiceNumber': _invoiceCtrl.text.trim(),
       'purchaseDate': DateFormat('yyyy-MM-dd').format(_purchaseDate),
-      'storeId': _selectedStoreId,
-      'warehouseId': _selectedWarehouseId,
+      'locationId': _selectedLocationId,
+      'locationType': _selectedLocationType ?? 'STORE',
       'notes': _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
       'items': _items
           .map((i) => {

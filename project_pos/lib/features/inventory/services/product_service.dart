@@ -84,8 +84,8 @@ class ProductService {
       'stock': totalStock,
       'lowStockThreshold': firstInventory['minStockLevel'] ?? 10,
       'warehouseCode': firstInventory['warehouseCode'],
-      'warehouseId': firstInventory['warehouseId'],
-      'storeId': firstInventory['storeId'],
+      'locationId': firstInventory['locationId'],
+      'locationType': firstInventory['locationType'],
 
       // Barkod -- variants[0].barcodes icindeki primary barkod
       'barcode': _extractBarcode(firstVariant),

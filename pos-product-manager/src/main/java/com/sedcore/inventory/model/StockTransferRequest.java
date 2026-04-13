@@ -14,17 +14,24 @@ import java.util.List;
 @Builder
 public class StockTransferRequest {
 
-    @NotBlank(message = "Kaynak mağaza ID zorunludur")
-    private String fromStoreId;
+    /**
+     * Kaynak lokasyon kodu: Store.code veya Warehouse.code
+     * Örn: "STORE-01", "WH-01"
+     */
+    @NotBlank(message = "Kaynak lokasyon zorunludur")
+    private String fromLocationId;
 
-    @NotBlank(message = "Kaynak depo ID zorunludur")
-    private String fromWarehouseId;
+    /** Kaynak lokasyon tipi: STORE veya WAREHOUSE */
+    private String fromLocationType;
 
-    @NotBlank(message = "Hedef mağaza ID zorunludur")
-    private String toStoreId;
+    /**
+     * Hedef lokasyon kodu: Store.code veya Warehouse.code
+     */
+    @NotBlank(message = "Hedef lokasyon zorunludur")
+    private String toLocationId;
 
-    @NotBlank(message = "Hedef depo ID zorunludur")
-    private String toWarehouseId;
+    /** Hedef lokasyon tipi: STORE veya WAREHOUSE */
+    private String toLocationType;
 
     @Valid
     @NotEmpty(message = "En az bir ürün kalemi girilmelidir")

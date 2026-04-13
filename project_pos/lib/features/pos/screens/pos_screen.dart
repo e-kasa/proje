@@ -66,8 +66,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       }
 
       // 3. Mağaza Seçimi (Eğer mağaza atanmamışsa)
-      if (!next.isLoadingProducts && next.activeStoreId == null && next.availableStoreIds.length > 1 && !_storePickerShown) {
-        _showStorePicker(context, next.availableStoreIds);
+      if (!next.isLoadingProducts && next.activeLocationId == null && next.availableLocationIds.length > 1 && !_storePickerShown) {
+        _showStorePicker(context, next.availableLocationIds);
       }
 
       // 4. Çapraz Lokasyon Stok Uyarısı
@@ -120,8 +120,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         ),
       ),
       title: GestureDetector(
-        onTap: posState.availableStoreIds.length > 1
-            ? () => _showStorePicker(context, posState.availableStoreIds)
+        onTap: posState.availableLocationIds.length > 1
+            ? () => _showStorePicker(context, posState.availableLocationIds)
             : null,
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -135,10 +135,10 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     Icon(Icons.store_outlined, size: 11, color: Colors.white.withValues(alpha: 0.8)),
                     const SizedBox(width: 3),
                     Text(
-                      posState.activeStoreId ?? 'Mağaza Seçilmedi',
+                      posState.activeLocationId ?? 'Mağaza Seçilmedi',
                       style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.85)),
                     ),
-                    if (posState.availableStoreIds.length > 1) ...[
+                    if (posState.availableLocationIds.length > 1) ...[
                       const SizedBox(width: 4),
                       Icon(Icons.expand_more, size: 13, color: Colors.white.withValues(alpha: 0.7)),
                     ],

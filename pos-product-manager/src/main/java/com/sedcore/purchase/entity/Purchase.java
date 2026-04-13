@@ -62,10 +62,18 @@ public class Purchase extends TOpenSimpleCompanyEntity {
     @OneToMany(mappedBy = "purchase", cascade = CascadeType.ALL)
     private List<StockMovement> movements;
 
-    // ===== MAĞAZA =====
+    // ===== LOKASYON =====
 
-    @Column(name = "store_id", length = 36)
-    private String storeId; // Alımın yapıldığı mağaza (FK yok — soft ref)
+    /**
+     * Malın teslim alındığı lokasyon: Store.code veya Warehouse.code
+     * Örn: "WH-01" (depoya giriş) veya "STORE-01" (direkt mağazaya)
+     */
+    @Column(name = "location_id", length = 50)
+    private String locationId;
+
+    /** "STORE" veya "WAREHOUSE" */
+    @Column(name = "location_type", length = 10)
+    private String locationType;
 
     // ===== DURUM =====
 

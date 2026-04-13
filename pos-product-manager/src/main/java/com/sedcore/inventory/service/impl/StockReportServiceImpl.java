@@ -67,9 +67,9 @@ public class StockReportServiceImpl implements StockReportService {
             totalValue = totalValue.add(itemValue);
             totalSku++;
 
-            String whKey = inv.getWarehouseId() != null ? inv.getWarehouseId() : "unknown";
+            String whKey = inv.getLocationId() != null ? inv.getLocationId() : "unknown";
             warehouseMap.computeIfAbsent(whKey, k -> StockValueSummary.WarehouseBreakdown.builder()
-                            .warehouseId(k).warehouseName(k).itemCount(0L).totalQuantity(0).totalValue(BigDecimal.ZERO).build())
+                            .locationId(k).locationName(k).itemCount(0L).totalQuantity(0).totalValue(BigDecimal.ZERO).build())
                     .setItemCount(warehouseMap.get(whKey).getItemCount() + 1);
             StockValueSummary.WarehouseBreakdown wb = warehouseMap.get(whKey);
             wb.setTotalQuantity(wb.getTotalQuantity() + inv.getPhysicalQuantity());
@@ -178,8 +178,8 @@ public class StockReportServiceImpl implements StockReportService {
                         .productName(productName)
                         .currentQuantity(qty)
                         .minimumThreshold(minStock)
-                        .warehouseId(inv.getWarehouseId())
-                        .storeId(inv.getStoreId())
+                        .locationId(inv.getLocationId())
+                        .locationType(inv.getLocationType())
                         .alertLevel(alertLevel)
                         .build());
             }
@@ -190,10 +190,10 @@ public class StockReportServiceImpl implements StockReportService {
     }
 
     @Override
-    public StockValueSummary getWarehouseBreakdown(String warehouseId) {
-        log.info("Depo stok detayi: warehouseId={}", warehouseId);
+    public StockValueSummary getWarehouseBreakdown(String locationId) {
+        log.info("Lokasyon stok detayi: locationId={}", locationId);
 
-        List<InventoryView> inventory = inventoryRepository.findByWarehouseId(warehouseId);
+        List<InventoryView> inventory = inventoryRepository.findByLocationId(locationId);
         List<ProductVariant> allVariants = (List<ProductVariant>) productVariantRepository.findAll();
 
         Map<String, ProductVariant> variantMap = allVariants.stream()
@@ -223,8 +223,8 @@ public class StockReportServiceImpl implements StockReportService {
                 .totalSkuCount(totalSku)
                 .averageItemValue(avgValue)
                 .warehouseBreakdowns(List.of(StockValueSummary.WarehouseBreakdown.builder()
-                        .warehouseId(warehouseId)
-                        .warehouseName(warehouseId)
+                        .locationId(locationId)
+                        .locationName(locationId)
                         .itemCount(totalSku)
                         .totalQuantity(totalQty)
                         .totalValue(totalValue)

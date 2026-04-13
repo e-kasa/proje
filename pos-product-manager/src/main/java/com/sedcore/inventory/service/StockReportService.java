@@ -15,5 +15,5 @@ public interface StockReportService {
 
     List<CriticalStockAlert> getCriticalAlerts();
 
-    StockValueSummary getWarehouseBreakdown(String warehouseId);
+    StockValueSummary getWarehouseBreakdown(String locationId);
 }

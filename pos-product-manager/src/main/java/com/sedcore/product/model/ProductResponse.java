@@ -38,8 +38,8 @@ public class ProductResponse extends DtoBaseModel {
     private Map<String, Object> metadata;
 
     // Stok & Konum bilgileri
-    private String storeId;
-    private String warehouseId;
+    private String locationId;
+    private String locationType;
     private String stockLocation;
     private String shelfNumber;
 

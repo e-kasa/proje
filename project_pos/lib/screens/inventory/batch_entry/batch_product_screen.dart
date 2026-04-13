@@ -2624,8 +2624,8 @@ class _ConfirmDialog extends StatelessWidget {
               bold: true),
           if (state.supplierName != null)
             _ConfirmRow(t('batch.supplier'), state.supplierName!),
-          if (state.warehouseName != null)
-            _ConfirmRow(t('batch.warehouse'), state.warehouseName!),
+          if (state.locationName != null)
+            _ConfirmRow(t('batch.warehouse'), state.locationName!),
         ],
       ),
       actions: [

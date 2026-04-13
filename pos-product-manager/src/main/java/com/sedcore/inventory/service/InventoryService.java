@@ -15,8 +15,8 @@ public interface InventoryService extends BaseDbService<InventoryView> {
     /** Bir varyantın toplam fiziksel stoku (tüm depolar toplamı) */
     int getTotalStock(String variantId);
 
-    /** Belirli depo+mağazadaki stok */
-    Optional<InventoryResponse> getStockByVariantAndLocation(String variantId, String storeId, String warehouseId);
+    /** Belirli lokasyondaki stok */
+    Optional<InventoryResponse> getStockByVariantAndLocation(String variantId, String locationId);
 
     /**
      * Yeni bağımsız transaction'da varyantın stok kayıtlarını getirir.

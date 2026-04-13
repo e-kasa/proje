@@ -57,16 +57,16 @@ public class StockMovementControllerImpl {
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> list(
             @Parameter(description = "Product variant ID")
             @RequestParam(required = false) String variantId,
-            @Parameter(description = "Store ID filter")
-            @RequestParam(required = false) String storeId,
+            @Parameter(description = "Location ID filter (Store.code or Warehouse.code)")
+            @RequestParam(required = false) String locationId,
             @Parameter(description = "Movement type filter (SALE_OUT, PURCHASE_IN, etc.)")
             @RequestParam(required = false) String movementType
     ) {
         try {
             final String companyCode = CompanyContext.get();
             List<StockMovement> movements;
-            if (variantId != null && storeId != null) {
-                movements = stockMovementRepository.findByVariantIdAndStoreId(variantId, storeId, companyCode);
+            if (variantId != null && locationId != null) {
+                movements = stockMovementRepository.findByVariantIdAndLocationId(variantId, locationId, companyCode);
             } else if (variantId != null) {
                 movements = stockMovementRepository.findByVariantId(variantId, companyCode);
             } else {
@@ -116,8 +116,8 @@ public class StockMovementControllerImpl {
 
             StockMovement movement = StockMovement.builder()
                 .variant(variant)
-                .storeId(dto.getStoreId())
-                .warehouseId(dto.getWarehouseId())
+                .locationId(dto.getLocationId())
+                .locationType(dto.getLocationType() != null ? dto.getLocationType() : "STORE")
                 .movementType(StockMovementType.valueOf(dto.getMovementType()))
                 .quantity(dto.getQuantity())
                 .build();
@@ -163,8 +163,8 @@ public class StockMovementControllerImpl {
     private Map<String, Object> toMap(StockMovement m) {
         Map<String, Object> map = new HashMap<>();
         map.put("id",           m.getId());
-        map.put("storeId",      m.getStoreId());
-        map.put("warehouseId",  m.getWarehouseId());
+        map.put("locationId",   m.getLocationId());
+        map.put("locationType", m.getLocationType());
         map.put("movementType", m.getMovementType());
         map.put("quantity",     m.getQuantity());
         map.put("unitPrice",    m.getUnitPrice());
@@ -200,9 +200,9 @@ public class StockMovementControllerImpl {
         @NotBlank
         private String variantId;
         @NotBlank
-        private String storeId;
-        @NotBlank
-        private String warehouseId;
+        private String locationId;
+        /** "STORE" veya "WAREHOUSE" */
+        private String locationType;
         @NotBlank
         private String movementType;
         @NotNull

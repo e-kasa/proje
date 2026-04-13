@@ -12,10 +12,9 @@ public interface InventoryRepository extends BaseDaoRepository<InventoryView> {
 
     List<InventoryView> findByVariantId(String variantId);
 
-    Optional<InventoryView> findByVariantIdAndStoreIdAndWarehouseId(
-            String variantId, String storeId, String warehouseId);
+    Optional<InventoryView> findByVariantIdAndLocationId(String variantId, String locationId);
 
-    List<InventoryView> findByStoreId(String storeId);
+    List<InventoryView> findByLocationId(String locationId);
 
-    List<InventoryView> findByWarehouseId(String warehouseId);
+    List<InventoryView> findByLocationType(String locationType);
 }

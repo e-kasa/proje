@@ -223,29 +223,87 @@ else                            → chain.filter() // /authenticate gibi non-/ap
 
 ---
 
+## 6b. COMPANYCODE KAYNAĞI — MİMARİ KURAL
+
+**companyCode JWT içinde zaten vardır.** `@RequestHeader("X-Company-Code")` controller'larda gereksizdir.
+
+```
+JWT sessionInstance.userInformation.selectedCompanyCode
+  └─ JwtXUserInfoFilter.createAuthToken()
+       └─ TOpenContextHolder.setContext(ctx)   ← companyCode ThreadLocal'e yazılır
+            └─ CompanyHibernateFilterActivator  ← her Session'da @Filter'ı aktive eder
+                 └─ find* sorguları            ← otomatik WHERE company_code = 'X'
+```
+
+**@Filter olan entity'de find* = otomatik izolasyon:**
+```java
+// @Filter var → tüm sorgulara WHERE company_code=? otomatik eklenir
+List<Store> findByIsActiveTrue();       // → WHERE is_active=true AND company_code='SEDCORE'
+Optional<Product> findById(String id); // → WHERE id=? AND company_code='SEDCORE'
+
+// ❌ @Filter YOKSA → tüm firmaların verisi döner → tenant sızıntısı!
+```
+
+**Yazma işlemleri — CompanyContext.get() kullan:**
+```java
+entity.setCompanyCode(CompanyContext.get());  // ✅ context'ten
+// entity.setCompanyCode(companyCodeFromHeader);  // ❌ gereksiz
+```
+
 ## 7. HİBERNATE MULTI-TENANT FİLTRESİ
 
+### TOpenSimpleCompanyEntity — Filter Tanımı Burada
+
 ```java
-// CompanyHibernateFilterActivator — her Hibernate Session'da çalışır
-// Interceptor veya AOP ile otomatik aktive edilir:
-public class CompanyHibernateFilterActivator {
-    public void activateFilters(Session session) {
-        session.enableFilter("companyFilter")
-               .setParameter("companyCode", CompanyContext.get());
+// core/TOpenSimpleCompanyEntity.java — tüm subclass'lar bu filtreyi miras alır
+@MappedSuperclass
+@FilterDef(
+    name = "filterByCompanyCode",                        // CompanyFilterStatics.FILTER_COMPANY
+    parameters = @ParamDef(name = "cpCode", type = String.class),
+    defaultCondition = "company_code in(:cpCode)"
+)
+@Filter(name = "filterByCompanyCode", condition = "company_code in(:cpCode)")
+public class TOpenSimpleCompanyEntity extends TOpenSimpleDbEntity {
+    @Column(name = "company_code", nullable = false, updatable = false, length = 8)
+    protected String companyCode;
+}
+```
+
+**Kritik bilgiler:**
+- Filter adı: `"filterByCompanyCode"` (`CompanyFilterStatics.FILTER_COMPANY` sabiti)
+- Parametre adı: `"cpCode"` ← dikkat: `"companyCode"` değil!
+- Entity'lere **tekrar eklenmez** — `extends TOpenSimpleCompanyEntity` yeterli
+
+### CompanyHibernateFilterActivator — AOP ile Aktive Edilir
+
+```java
+// pos-product-manager/CompanyHibernateFilterActivator.java
+@Around("execution(public * com.sedcore..service..*(..))")  // tüm modül servisleri
+public Object applyCompanyFilter(ProceedingJoinPoint jp) throws Throwable {
+    session.enableFilter(CompanyFilterStatics.FILTER_COMPANY)
+           .setParameter("cpCode", CompanyContext.get());  // ← "cpCode" parametresi
+    try {
+        return jp.proceed();
+    } finally {
+        session.disableFilter(CompanyFilterStatics.FILTER_COMPANY);
     }
 }
 
-// CompanyContext — ThreadLocal wrapper
-public class CompanyContext {
-    private static final ThreadLocal<String> context = new ThreadLocal<>();
+// ⚠️ AOP pointcut kritik — yanlış paket adı filter'ı tamamen devre dışı bırakır:
+// ✓ DOĞRU: "execution(public * com.sedcore..service..*(..)) "
+//   → com.sedcore.inventory.service.impl.StoreServiceImpl ✓
+//   → com.sedcore.product.service.impl.ProductServiceImpl ✓
+// ❌ YANLIŞ: "execution(public * com.sedcore.service..*(..)) "
+//   → com.sedcore.service.* paketi mevcut değil → filter hiç aktif olmaz!
+```
 
-    public static void set(String companyCode) { context.set(companyCode); }
-    public static String get() { return context.get(); }
-    public static void clear() { context.remove(); }  // Request bittikten sonra çağrılır
-}
+### CompanyContext — ThreadLocal Wrapper
 
-// CompanyFilterStatics — filter adı sabiti
-// CompanyFilterInterceptor — interceptor implementasyonu
+```java
+// pos-product-manager/CompanyContext.java — X-Company-Code header'dan set edilir
+CompanyContext.set(companyCode);  // CompanyContextFilter tarafından
+CompanyContext.get();             // CompanyHibernateFilterActivator tarafından
+CompanyContext.clear();           // Request sonunda CompanyContextFilter finally bloğu
 ```
 
 ---

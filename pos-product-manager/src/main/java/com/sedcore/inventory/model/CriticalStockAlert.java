@@ -18,8 +18,8 @@ public class CriticalStockAlert {
     private String productName;
     private Integer currentQuantity;
     private Integer minimumThreshold;
-    private String warehouseId;
-    private String storeId;
+    private String locationId;
+    private String locationType;
     private LocalDateTime lastMovementDate;
     private String alertLevel; // CRITICAL, LOW, OUT_OF_STOCK
 }

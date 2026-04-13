@@ -11,7 +11,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class InitialStocksRequest {
 
-    private String storeId;
-    private String warehouseId;
+    /** Lokasyon kodu: Store.code veya Warehouse.code (örn. "STORE-01", "WH-01") */
+    private String locationId;
+    /** "STORE" veya "WAREHOUSE" */
+    private String locationType;
     private int quantity;
 }

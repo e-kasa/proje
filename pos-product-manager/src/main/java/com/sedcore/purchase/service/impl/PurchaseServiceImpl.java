@@ -20,9 +20,9 @@ import com.sedcore.product.service.ProductVariantService;
 import com.sedcore.purchase.service.PurchaseService;
 import com.sedcore.supplier.service.SupplierService;
 import com.sedcore.supplier.service.SupplierAccountService;
+import com.sedcore.inventory.service.StockLevelService;
 import com.sedcore.inventory.service.StockMovementService;
 import com.sedcore.finance.service.AccountTransactionService;
-import com.sedcore.inventory.service.StockMovementService;
 import com.towpen.base.security.BaseDbServiceImp;
 import lombok.extern.slf4j.Slf4j;
 import com.towpen.base.enums.model.TMessageType;
@@ -52,6 +52,7 @@ public class PurchaseServiceImpl
     @Autowired private AccountTransactionService accountTransactionService;
     @Autowired private StockMovementService stockMovementService;
     @Autowired private ProductVariantService productVariantService;
+    @Autowired private StockLevelService stockLevelService;
 
     @Override
     public Class<?> getDTOClassForService() {
@@ -85,7 +86,8 @@ public class PurchaseServiceImpl
                 .purchaseDate(request.getPurchaseDate())
                 .invoiceNumber(request.getInvoiceNumber())
                 .deliveryNoteNumber(request.getDeliveryNoteNumber())
-                .storeId(request.getStoreId())
+                .locationId(request.getLocationId())
+                .locationType(request.getLocationType())
                 .totalAmount(totalAmount)
                 .paidAmount(BigDecimal.ZERO)
                 .isCancelled(false)
@@ -94,17 +96,25 @@ public class PurchaseServiceImpl
         purchase = save(purchase);
         log.info("Purchase kaydedildi: id={}, tutar={}", purchase.getId(), totalAmount);
 
-        // 3. Stok hareketleri (PURCHASE_IN)
+        // 3. Stok hareketleri (PURCHASE_IN) + StockLevel güncelle
         List<StockMovement> movements = new ArrayList<>();
         for (PurchaseItemRequest item : request.getItems()) {
             ProductVariant variant = productVariantService.findById(item.getVariantId())
                     .orElseThrow(() -> new RuntimeException(
                             "Varyant bulunamadi: " + item.getVariantId()));
 
+            // 3a. Anlık stok bakiyesini artır (upsert)
+            stockLevelService.addStock(
+                    variant.getId(),
+                    request.getLocationId(),
+                    request.getLocationType(),
+                    item.getQuantity());
+
+            // 3b. Hareket kaydı (audit)
             StockMovement movement = StockMovement.builder()
                     .variant(variant)
-                    .storeId(request.getStoreId())
-                    .warehouseId(request.getWarehouseId())
+                    .locationId(request.getLocationId())
+                    .locationType(request.getLocationType())
                     .movementType(StockMovementType.PURCHASE_IN)
                     .quantity(item.getQuantity())
                     .unitPrice(item.getUnitPrice())
@@ -166,10 +176,17 @@ public class PurchaseServiceImpl
         List<StockMovement> originals = stockMovementService.findByPurchaseId(id);
         for (StockMovement orig : originals) {
             if (orig.getMovementType() == StockMovementType.PURCHASE_IN) {
+                // 2a. Anlık stok bakiyesini düş (iptal = stok geri gider)
+                stockLevelService.deductStock(
+                        orig.getVariant().getId(),
+                        orig.getLocationId(),
+                        orig.getQuantity());
+
+                // 2b. Ters hareket kaydı (audit)
                 StockMovement reversal = StockMovement.builder()
                         .variant(orig.getVariant())
-                        .storeId(orig.getStoreId())
-                        .warehouseId(orig.getWarehouseId())
+                        .locationId(orig.getLocationId())
+                        .locationType(orig.getLocationType())
                         .movementType(StockMovementType.PURCHASE_RETURN_OUT)
                         .quantity(orig.getQuantity())
                         .purchase(purchase)
@@ -287,14 +304,14 @@ public class PurchaseServiceImpl
                         "Tedarikci bulunamadi: " + purchase.getSupplier().getId()));
 
         // 2. Stok hareketleri (PURCHASE_RETURN_OUT)
-        // Orijinal alımın PURCHASE_IN hareketinden storeId/warehouseId al
-        String originalStoreId = null;
-        String originalWarehouseId = null;
-        if (purchase.getMovements() != null) {
+        // Orijinal alımın PURCHASE_IN hareketinden locationId/locationType al
+        String originalLocationId = purchase.getLocationId();
+        String originalLocationType = purchase.getLocationType();
+        if (originalLocationId == null && purchase.getMovements() != null) {
             for (StockMovement m : purchase.getMovements()) {
                 if (m.getMovementType() == StockMovementType.PURCHASE_IN) {
-                    originalStoreId = m.getStoreId();
-                    originalWarehouseId = m.getWarehouseId();
+                    originalLocationId = m.getLocationId();
+                    originalLocationType = m.getLocationType();
                     break;
                 }
             }
@@ -312,10 +329,15 @@ public class PurchaseServiceImpl
             BigDecimal unitPrice = item.getUnitPrice() != null ? item.getUnitPrice() : BigDecimal.ZERO;
             int qty = item.getQuantity() != null ? item.getQuantity() : 0;
 
+            // Anlık stok bakiyesini düş (iade = stok geri gider)
+            if (originalLocationId != null && qty > 0) {
+                stockLevelService.deductStock(variant.getId(), originalLocationId, qty);
+            }
+
             StockMovement movement = StockMovement.builder()
                     .variant(variant)
-                    .storeId(originalStoreId)
-                    .warehouseId(originalWarehouseId)
+                    .locationId(originalLocationId)
+                    .locationType(originalLocationType)
                     .movementType(StockMovementType.PURCHASE_RETURN_OUT)
                     .quantity(qty)
                     .unitPrice(unitPrice)
@@ -390,6 +412,10 @@ public class PurchaseServiceImpl
             dto.setSupplierId(purchase.getSupplier().getId());
             dto.setSupplierName(purchase.getSupplier().getName());
         }
+
+        // Lokasyon
+        dto.setLocationId(purchase.getLocationId());
+        dto.setLocationType(purchase.getLocationType());
 
         // Kalemler — StockMovement ilişkisinden derlenir
         List<PurchaseResponse.PurchaseItemResponse> items = new ArrayList<>();

@@ -25,11 +25,15 @@ public class PurchaseRequest {
     @NotNull(message = "Satın alma tarihi zorunludur")
     private LocalDate purchaseDate;
 
-    @NotBlank(message = "Mağaza ID zorunludur")
-    private String storeId;
+    /**
+     * Malın teslim alındığı lokasyon kodu: Store.code veya Warehouse.code
+     * Örn: "WH-01" (depoya), "STORE-01" (direkt mağazaya)
+     */
+    @NotBlank(message = "Lokasyon ID zorunludur")
+    private String locationId;
 
-    @NotBlank(message = "Depo ID zorunludur")
-    private String warehouseId;
+    /** STORE veya WAREHOUSE */
+    private String locationType;
 
     private List<PurchaseItemRequest> items;
 

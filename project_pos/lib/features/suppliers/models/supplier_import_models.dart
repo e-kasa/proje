@@ -230,28 +230,35 @@ class VariantPricing {
 }
 
 class VariantStock {
-  final String storeId;
-  final String? warehouseId;
+  final String locationId;
+  final String locationType;
   final int quantity;
 
   VariantStock({
-    required this.storeId,
-    this.warehouseId,
+    required this.locationId,
+    this.locationType = 'STORE',
     required this.quantity,
   });
 
   factory VariantStock.fromJson(Map<String, dynamic> json) {
+    // Geriye dönük uyumluluk: eski format storeId/warehouseId → yeni locationId
+    final locationId = json['locationId'] as String?
+        ?? json['storeId'] as String?
+        ?? json['warehouseId'] as String?
+        ?? '';
+    final locationType = json['locationType'] as String?
+        ?? (json['warehouseId'] != null ? 'WAREHOUSE' : 'STORE');
     return VariantStock(
-      storeId: json['storeId'] as String,
-      warehouseId: json['warehouseId'] as String?,
+      locationId: locationId,
+      locationType: locationType,
       quantity: json['quantity'] as int,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'storeId': storeId,
-      'warehouseId': warehouseId,
+      'locationId': locationId,
+      'locationType': locationType,
       'quantity': quantity,
     };
   }

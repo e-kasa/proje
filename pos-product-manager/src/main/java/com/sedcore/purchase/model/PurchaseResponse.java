@@ -35,6 +35,10 @@ public class PurchaseResponse extends DtoBaseModel {
     private BigDecimal paidAmount;
     private BigDecimal remainingDebt;
 
+    // Lokasyon
+    private String locationId;
+    private String locationType;
+
     // Durum
     private Boolean isCancelled;
     private String notes;

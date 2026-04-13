@@ -78,6 +78,19 @@ public class Sale extends TOpenSimpleCompanyEntity {
     @Builder.Default
     private Boolean hasReturn = false; // İade kaydı var mı? (hızlı sorgu için)
 
+    // ===== LOKASYON =====
+
+    /**
+     * Satışın yapıldığı lokasyon: genellikle Store.code
+     * Kasiyer JWT'deki storeId'den alınır.
+     */
+    @Column(name = "location_id", length = 50)
+    private String locationId;
+
+    /** "STORE" veya "WAREHOUSE" */
+    @Column(name = "location_type", length = 10)
+    private String locationType;
+
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 

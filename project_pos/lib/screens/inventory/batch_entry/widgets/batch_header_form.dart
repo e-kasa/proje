@@ -16,8 +16,7 @@ class BatchHeaderForm extends ConsumerStatefulWidget {
 
 class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
   List<Map<String, dynamic>> _suppliers = [];
-  List<Map<String, dynamic>> _warehouses = [];
-  List<Map<String, dynamic>> _stores = [];
+  List<Map<String, dynamic>> _locations = []; // stores + warehouses combined
   bool _loading = true;
 
   final _invoiceCtrl = TextEditingController();
@@ -44,10 +43,23 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
         ref.read(storeServiceProvider).getStores(isActive: true),
       ]);
       if (mounted) {
+        final warehouses = results[1] as List<Map<String, dynamic>>;
+        final stores = results[2] as List<Map<String, dynamic>>;
+        final combined = [
+          ...stores.map((s) => {
+            'code': s['code']?.toString() ?? s['id']?.toString() ?? '',
+            'name': s['name']?.toString() ?? '',
+            'type': 'STORE',
+          }),
+          ...warehouses.map((w) => {
+            'code': w['code']?.toString() ?? w['id']?.toString() ?? '',
+            'name': w['name']?.toString() ?? '',
+            'type': 'WAREHOUSE',
+          }),
+        ];
         setState(() {
           _suppliers = results[0];
-          _warehouses = results[1];
-          _stores = results[2];
+          _locations = combined;
           _loading = false;
         });
       }
@@ -135,8 +147,7 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
                   ),
                   // Validation indicator
                   if (state.supplierId != null &&
-                      state.warehouseId != null &&
-                      state.storeId != null)
+                      state.locationId != null)
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 3),
@@ -223,7 +234,7 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
     if (state.supplierName != null) parts.add(state.supplierName!);
     if (state.invoiceNumber != null)
       parts.add('${t('batch.invoice')}: ${state.invoiceNumber}');
-    if (state.warehouseName != null) parts.add(state.warehouseName!);
+    if (state.locationName != null) parts.add(state.locationName!);
     parts.add(dateFmt.format(state.purchaseDate));
 
     return Text(
@@ -346,55 +357,43 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
                 ),
               ),
               const SizedBox(width: 10),
-              // Warehouse
+              // Unified Location (Store + Warehouse)
               Expanded(
+                flex: 2,
                 child: _DropdownField<String>(
-                  label: '${t('batch.warehouse')} *',
-                  icon: Icons.warehouse_outlined,
-                  value: state.warehouseId,
-                  items: _warehouses.map((w) {
+                  label: '${t('batch.location')} *',
+                  icon: Icons.location_on_outlined,
+                  value: state.locationId,
+                  items: _locations.map((loc) {
+                    final isWarehouse = loc['type'] == 'WAREHOUSE';
                     return DropdownMenuItem<String>(
-                      value: w['id']?.toString(),
-                      child: Text(w['name']?.toString() ?? '',
-                          overflow: TextOverflow.ellipsis),
+                      value: loc['code']?.toString(),
+                      child: Row(
+                        children: [
+                          Icon(
+                            isWarehouse ? Icons.warehouse_outlined : Icons.store_outlined,
+                            size: 13,
+                            color: AppColors.textMuted,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(loc['name']?.toString() ?? '',
+                                overflow: TextOverflow.ellipsis),
+                          ),
+                        ],
+                      ),
                     );
                   }).toList(),
                   onChanged: (val) {
                     if (val == null) return;
-                    final wh = _warehouses.firstWhere(
-                      (w) => w['id']?.toString() == val,
+                    final loc = _locations.firstWhere(
+                      (l) => l['code']?.toString() == val,
                       orElse: () => {},
                     );
                     ref.read(batchEntryProvider.notifier).updateHeader(
-                          warehouseId: val,
-                          warehouseName: wh['name']?.toString(),
-                        );
-                  },
-                ),
-              ),
-              const SizedBox(width: 10),
-              // Store
-              Expanded(
-                child: _DropdownField<String>(
-                  label: '${t('batch.store')} *',
-                  icon: Icons.store_outlined,
-                  value: state.storeId,
-                  items: _stores.map((s) {
-                    return DropdownMenuItem<String>(
-                      value: s['id']?.toString(),
-                      child: Text(s['name']?.toString() ?? '',
-                          overflow: TextOverflow.ellipsis),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    if (val == null) return;
-                    final st = _stores.firstWhere(
-                      (s) => s['id']?.toString() == val,
-                      orElse: () => {},
-                    );
-                    ref.read(batchEntryProvider.notifier).updateHeader(
-                          storeId: val,
-                          storeName: st['name']?.toString(),
+                          locationId: val,
+                          locationName: loc['name']?.toString(),
+                          locationType: loc['type']?.toString() ?? 'STORE',
                         );
                   },
                 ),

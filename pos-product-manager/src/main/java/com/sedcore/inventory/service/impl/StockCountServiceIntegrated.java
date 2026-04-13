@@ -54,8 +54,8 @@ public class StockCountServiceIntegrated {
      */
     @Transactional
     public List<StockMovement> processStockCount(StockCountRequest request) {
-        log.info("Stok sayimi baslatiliyor - Magaza: {}, Depo: {}, Kalem sayisi: {}",
-                request.getStoreId(), request.getWarehouseId(), request.getItems().size());
+        log.info("Stok sayimi baslatiliyor - Lokasyon: {}, Kalem sayisi: {}",
+                request.getLocationId(), request.getItems().size());
 
         List<StockMovement> adjustments = new ArrayList<>();
 
@@ -65,7 +65,7 @@ public class StockCountServiceIntegrated {
                     .orElseThrow(() -> new RuntimeException("Varyant bulunamadi: " + item.getVariantId()));
 
             // Sistemdeki mevcut fiziksel stok
-            int systemStock = getSystemStock(variant.getId(), request.getStoreId(), request.getWarehouseId());
+            int systemStock = getSystemStock(variant.getId(), request.getLocationId());
             int physicalCount = item.getPhysicalCount();
             int diff = physicalCount - systemStock;
 
@@ -81,16 +81,16 @@ public class StockCountServiceIntegrated {
 
             StockMovement adjustment = StockMovement.builder()
                     .variant(variant)
-                    .storeId(request.getStoreId())
-                    .warehouseId(request.getWarehouseId())
+                    .locationId(request.getLocationId())
+                    .locationType(request.getLocationType() != null ? request.getLocationType() : "STORE")
                     .movementType(type)
                     .quantity(adjustQty)
                     .build();
 
             adjustments.add(prepareAndSave(stockMovementRepository, adjustment));
 
-            log.info("Duzeltme hareketi - Variant: {}, Tip: {}, Miktar: {} (Sistem: {}, Sayim: {})",
-                    variant.getSku(), type, adjustQty, systemStock, physicalCount);
+            log.info("Duzeltme hareketi - Variant: {}, Lokasyon: {}, Tip: {}, Miktar: {} (Sistem: {}, Sayim: {})",
+                    variant.getSku(), request.getLocationId(), type, adjustQty, systemStock, physicalCount);
         }
 
         log.info("Stok sayimi tamamlandi - Duzeltme yapilan kalem: {}", adjustments.size());
@@ -101,9 +101,9 @@ public class StockCountServiceIntegrated {
      * inventory_view'dan mevcut fiziksel stok miktarını okur.
      * Kayıt yoksa 0 döner (hiç stok hareketi olmamış).
      */
-    private int getSystemStock(String variantId, String storeId, String warehouseId) {
+    private int getSystemStock(String variantId, String locationId) {
         return inventoryRepository
-                .findByVariantIdAndStoreIdAndWarehouseId(variantId, storeId, warehouseId)
+                .findByVariantIdAndLocationId(variantId, locationId)
                 .map(iv -> iv.getPhysicalQuantity() != null ? iv.getPhysicalQuantity() : 0)
                 .orElse(0);
     }

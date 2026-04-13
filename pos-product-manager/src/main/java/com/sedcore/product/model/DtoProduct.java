@@ -36,8 +36,8 @@ public class DtoProduct extends DtoBaseModel {
     private String description;
 
     // Stok & Konum bilgileri
-    private String storeId;
-    private String warehouseId;
+    private String locationId;
+    private String locationType;
     private String stockLocation;
     private String shelfNumber;
 

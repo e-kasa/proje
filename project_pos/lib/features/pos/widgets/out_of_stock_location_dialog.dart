@@ -161,20 +161,20 @@ class OutOfStockLocationDialog extends StatelessWidget {
 
   Widget _buildLocationRow(Map<String, dynamic> loc) {
     final qty = (loc['physicalQuantity'] as num?)?.toInt() ?? 0;
-    final storeId = loc['storeId']?.toString();
-    final warehouseId = loc['warehouseId']?.toString();
+    final locationId = loc['locationId']?.toString();
+    final locationType = loc['locationType']?.toString() ?? 'STORE';
 
-    // Lokasyon etiketi: store ID'nin son segmentini göster
+    // Lokasyon etiketi: location ID'nin son segmentini göster
     String locationLabel;
     IconData locationIcon;
-    if (storeId != null && storeId.isNotEmpty) {
-      locationLabel = 'Mağaza (${storeId.split('-').last.toUpperCase()})';
+    if (locationType == 'STORE' && locationId != null && locationId.isNotEmpty) {
+      locationLabel = 'Mağaza ($locationId)';
       locationIcon = Icons.store_outlined;
-    } else if (warehouseId != null && warehouseId.isNotEmpty) {
-      locationLabel = 'Depo (${warehouseId.split('-').last.toUpperCase()})';
+    } else if (locationType == 'WAREHOUSE' && locationId != null && locationId.isNotEmpty) {
+      locationLabel = 'Depo ($locationId)';
       locationIcon = Icons.warehouse_outlined;
     } else {
-      locationLabel = 'Diğer Konum';
+      locationLabel = locationId ?? 'Diğer Konum';
       locationIcon = Icons.location_on_outlined;
     }
 

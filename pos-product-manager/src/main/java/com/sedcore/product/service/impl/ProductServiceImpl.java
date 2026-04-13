@@ -57,6 +57,7 @@ import com.sedcore.product.service.ProductVariantAttributeValueService;
 import com.sedcore.product.service.ProductVariantService;
 import com.sedcore.purchase.service.PurchaseService;
 import com.sedcore.inventory.service.StockMovementService;
+import com.sedcore.inventory.service.StockLevelService;
 import com.sedcore.common.context.CompanyContext;
 import com.sedcore.company.repository.CompanySettingRepository;
 import com.towpen.base.security.BaseDbServiceImp;
@@ -87,6 +88,7 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
     private final OemNumberService oemNumberService;
     private final CrossReferenceService crossReferenceService;
     private final CompanySettingRepository companySettingRepository;
+    private final StockLevelService stockLevelService;
 
     /**
      * Ürün Oluştur (Tüm Detaylarıyla)
@@ -147,7 +149,8 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
             purchase.setSupplier(supplier);
             purchase.setInvoiceNumber(dto.getPurchase().getInvoiceNumber());
             purchase.setPurchaseDate(dto.getPurchase().getPurchaseDate());
-            purchase.setStoreId(dto.getPurchase().getStoreId());
+            purchase.setLocationId(dto.getPurchase().getLocationId());
+            purchase.setLocationType(dto.getPurchase().getLocationType());
             purchase.setTotalAmount(totalAmount);
             purchase.setPaidAmount(BigDecimal.ZERO);
             purchase.setIsCancelled(false);
@@ -199,17 +202,22 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                     }
                 }
 
-                // INITIAL STOCK → STOCK MOVEMENT
+                // INITIAL STOCK → STOCK MOVEMENT + STOCK LEVEL
                 if (v.getInitialStocks() != null) {
                     for (InitialStocksRequest stock : v.getInitialStocks()) {
                         StockMovement sm = new StockMovement();
                         sm.setVariant(variant);
-                        sm.setStoreId(stock.getStoreId());
-                        sm.setWarehouseId(stock.getWarehouseId());
+                        sm.setLocationId(stock.getLocationId());
+                        sm.setLocationType(stock.getLocationType() != null ? stock.getLocationType() : "STORE");
                         sm.setMovementType(StockMovementType.PURCHASE_IN);
                         sm.setQuantity(stock.getQuantity());
                         sm.setPurchase(purchase);
                         stockMovementService.save(sm);
+                        // Anlık bakiyeyi güncelle
+                        if (stock.getLocationId() != null && stock.getQuantity() > 0) {
+                            stockLevelService.addStock(variant.getId(), stock.getLocationId(),
+                                    sm.getLocationType(), stock.getQuantity());
+                        }
                     }
                 }
             }
@@ -319,7 +327,7 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
             for (BatchProductItem item : req.getNewProducts()) {
                 try {
                     // Mevcut createProduct mantığını yeniden kullan
-                    // Flutter initialStocks içinde storeId/warehouseId zaten gönderir.
+                    // Flutter initialStocks içinde locationId/locationType gönderir.
                     CreateProductRequest cpr = CreateProductRequest.builder()
                             .product(item.getProduct())
                             .variants(item.getVariants())
@@ -374,12 +382,16 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
 
                     StockMovement sm = new StockMovement();
                     sm.setVariant(variant);
-                    sm.setStoreId(req.getStoreId());
-                    sm.setWarehouseId(req.getWarehouseId());
+                    sm.setLocationId(req.getLocationId());
+                    sm.setLocationType(req.getLocationType() != null ? req.getLocationType() : "STORE");
                     sm.setMovementType(StockMovementType.PURCHASE_IN);
                     sm.setQuantity(item.getQuantity());
                     sm.setPurchase(purchase);
                     stockMovementService.save(sm);
+                    // Anlık bakiyeyi güncelle
+                    if (req.getLocationId() != null) {
+                        stockLevelService.addStock(variant.getId(), req.getLocationId(), sm.getLocationType(), item.getQuantity());
+                    }
 
                     BigDecimal lineTotal = item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
                     totalAmount = totalAmount.add(lineTotal);
@@ -488,12 +500,17 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                     for (InitialStocksRequest stock : v.getInitialStocks()) {
                         StockMovement sm = new StockMovement();
                         sm.setVariant(variant);
-                        sm.setStoreId(stock.getStoreId());
-                        sm.setWarehouseId(stock.getWarehouseId());
+                        sm.setLocationId(stock.getLocationId());
+                        sm.setLocationType(stock.getLocationType() != null ? stock.getLocationType() : "STORE");
                         sm.setMovementType(StockMovementType.PURCHASE_IN);
                         sm.setQuantity(stock.getQuantity());
                         sm.setPurchase(purchase);
                         stockMovementService.save(sm);
+                        // Anlık bakiyeyi güncelle
+                        if (stock.getLocationId() != null && stock.getQuantity() > 0) {
+                            stockLevelService.addStock(variant.getId(), stock.getLocationId(),
+                                    sm.getLocationType(), stock.getQuantity());
+                        }
                     }
                 }
             }
@@ -710,16 +727,16 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                 inventoryResponse = InventoryResponse.builder()
                         .id(first.getId())
                         .variantId(first.getVariantId())
-                        .warehouseId(first.getWarehouseId())
-                        .storeId(first.getStoreId())
+                        .locationId(first.getLocationId())
+                        .locationType(first.getLocationType())
                         .physicalQuantity(totalQty)
                         .minStockLevel(variant.getMinStockLevel())
                         .build();
                 inventoryList = inventories.stream()
                         .map(iv -> InventoryResponse.builder()
                                 .variantId(iv.getVariantId())
-                                .storeId(iv.getStoreId())
-                                .warehouseId(iv.getWarehouseId())
+                                .locationId(iv.getLocationId())
+                                .locationType(iv.getLocationType())
                                 .physicalQuantity(iv.getPhysicalQuantity() != null ? iv.getPhysicalQuantity() : 0)
                                 .minStockLevel(variant.getMinStockLevel())
                                 .build())

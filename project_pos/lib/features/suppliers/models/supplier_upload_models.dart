@@ -164,20 +164,26 @@ class VariantPricing {
 }
 
 class InitialStock {
-  final String storeId;
-  final String warehouseId;
+  final String locationId;
+  final String locationType;
   final int quantity;
 
   InitialStock({
-    required this.storeId,
-    required this.warehouseId,
+    required this.locationId,
+    this.locationType = 'STORE',
     required this.quantity,
   });
 
   factory InitialStock.fromJson(Map<String, dynamic> json) {
+    final locationId = json['locationId'] as String?
+        ?? json['storeId'] as String?
+        ?? json['warehouseId'] as String?
+        ?? '';
+    final locationType = json['locationType'] as String?
+        ?? (json['warehouseId'] != null ? 'WAREHOUSE' : 'STORE');
     return InitialStock(
-      storeId: json['storeId'] as String,
-      warehouseId: json['warehouseId'] as String,
+      locationId: locationId,
+      locationType: locationType,
       quantity: json['quantity'] as int,
     );
   }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import 'responsive_layout.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 /// Profesyonel desktop/web sidebar
 class AdaptiveSidebar extends ConsumerWidget {
@@ -23,6 +24,7 @@ class AdaptiveSidebar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeInOut,
@@ -33,7 +35,7 @@ class AdaptiveSidebar extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          _buildHeader(),
+          _buildHeader(t),
           Expanded(
             child: _buildNavList(),
           ),
@@ -47,7 +49,7 @@ class AdaptiveSidebar extends ConsumerWidget {
   // HEADER: Logo + toggle butonu
   // ──────────────────────────────────────────────────────────────────────────
 
-  Widget _buildHeader() {
+  Widget _buildHeader(String Function(String) t) {
     return Container(
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -80,14 +82,14 @@ class AdaptiveSidebar extends ConsumerWidget {
 
           if (isExpanded) ...[
             const SizedBox(width: 11),
-            const Expanded(
+            Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Parçacı',
-                    style: TextStyle(
+                    t('nav.app_name'),
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimary,
@@ -95,8 +97,8 @@ class AdaptiveSidebar extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    'Stok & Cari Yönetimi',
-                    style: TextStyle(
+                    t('nav.app_tagline'),
+                    style: const TextStyle(
                       fontSize: 10,
                       color: AppColors.textMuted,
                       letterSpacing: 0.2,
@@ -121,7 +123,7 @@ class AdaptiveSidebar extends ConsumerWidget {
               ),
               color: AppColors.textSecondary,
               onPressed: onToggle,
-              tooltip: isExpanded ? 'Daralt' : 'Genişlet',
+              tooltip: isExpanded ? t('settings.collapse') : t('settings.expand'),
             ),
           ),
         ],

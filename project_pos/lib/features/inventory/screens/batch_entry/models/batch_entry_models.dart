@@ -377,10 +377,11 @@ class BatchEntryState {
   final String? invoiceNumber;
   final String? deliveryNoteNumber;
   final DateTime purchaseDate;
-  final String? storeId;
-  final String? storeName;
-  final String? warehouseId;
-  final String? warehouseName;
+  /// Malın teslim alındığı lokasyon kodu: Store.code veya Warehouse.code
+  final String? locationId;
+  final String? locationName;
+  /// 'STORE' veya 'WAREHOUSE'
+  final String? locationType;
   final List<BatchEntryRow> rows;
   final bool isSubmitting;
   final bool headerCollapsed;
@@ -391,10 +392,9 @@ class BatchEntryState {
     this.invoiceNumber,
     this.deliveryNoteNumber,
     DateTime? purchaseDate,
-    this.storeId,
-    this.storeName,
-    this.warehouseId,
-    this.warehouseName,
+    this.locationId,
+    this.locationName,
+    this.locationType,
     this.rows = const [],
     this.isSubmitting = false,
     this.headerCollapsed = false,
@@ -413,8 +413,7 @@ class BatchEntryState {
   bool get isValid =>
       rows.isNotEmpty &&
       supplierId != null &&
-      warehouseId != null &&
-      storeId != null;
+      locationId != null;
 
   BatchEntryState copyWith({
     String? supplierId,
@@ -422,10 +421,9 @@ class BatchEntryState {
     String? invoiceNumber,
     String? deliveryNoteNumber,
     DateTime? purchaseDate,
-    String? storeId,
-    String? storeName,
-    String? warehouseId,
-    String? warehouseName,
+    String? locationId,
+    String? locationName,
+    String? locationType,
     List<BatchEntryRow>? rows,
     bool? isSubmitting,
     bool? headerCollapsed,
@@ -436,10 +434,9 @@ class BatchEntryState {
       invoiceNumber: invoiceNumber ?? this.invoiceNumber,
       deliveryNoteNumber: deliveryNoteNumber ?? this.deliveryNoteNumber,
       purchaseDate: purchaseDate ?? this.purchaseDate,
-      storeId: storeId ?? this.storeId,
-      storeName: storeName ?? this.storeName,
-      warehouseId: warehouseId ?? this.warehouseId,
-      warehouseName: warehouseName ?? this.warehouseName,
+      locationId: locationId ?? this.locationId,
+      locationName: locationName ?? this.locationName,
+      locationType: locationType ?? this.locationType,
       rows: rows ?? this.rows,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       headerCollapsed: headerCollapsed ?? this.headerCollapsed,

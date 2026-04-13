@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
@@ -15,8 +14,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -26,28 +24,32 @@ public class SecurityConfiguration {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, @Autowired ApiErrorBeanController api) throws Exception {
 
-            http
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/authenticate",
-                                "/register/company",
-                                "/i18n/**"
-                        ).permitAll().requestMatchers(
-                                "/api/v1/auth/refresh-token",
-                                "/api/refresh-token",
-                                "/api/ldap-authentication",
-                                "/api/sso-log",
-                                "/actuator/**",
-                                "/h2-console/**"
-                        ).permitAll()
-                        .anyRequest().authenticated()
-                )
-                .httpBasic(Customizer.withDefaults());
-        http = http.addFilterBefore(new JwtXUserInfoFilter(api), BasicAuthenticationFilter.class);
-        return http.build();
+        http
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                    .requestMatchers(
+                            AntPathRequestMatcher.antMatcher("/authenticate"),
+                            AntPathRequestMatcher.antMatcher("/register/company"),
+                            AntPathRequestMatcher.antMatcher("/i18n/**"),
+                            AntPathRequestMatcher.antMatcher("/api/v1/auth/refresh-token"),
+                            AntPathRequestMatcher.antMatcher("/api/refresh-token"),
+                            AntPathRequestMatcher.antMatcher("/api/ldap-authentication"),
+                            AntPathRequestMatcher.antMatcher("/api/sso-log"),
+                            AntPathRequestMatcher.antMatcher("/actuator/**"),
+                            AntPathRequestMatcher.antMatcher("/h2-console/**")
+                    ).permitAll()
+                    .anyRequest().authenticated()
+            )
+            .exceptionHandling(ex -> ex
+                    .authenticationEntryPoint(
+                            (request, response, authException) ->
+                                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, authException.getMessage())
+                    )
+            );
 
+        http.addFilterBefore(new JwtXUserInfoFilter(api), BasicAuthenticationFilter.class);
+        return http.build();
     }
 
     @Bean
@@ -57,7 +59,11 @@ public class SecurityConfiguration {
 
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
-        return web -> web.ignoring().requestMatchers("/swagger-ui/**", "/error", "/v3/**","/h2-console/**");
+        return web -> web.ignoring().requestMatchers(
+                AntPathRequestMatcher.antMatcher("/swagger-ui/**"),
+                AntPathRequestMatcher.antMatcher("/error"),
+                AntPathRequestMatcher.antMatcher("/v3/**"),
+                AntPathRequestMatcher.antMatcher("/h2-console/**")
+        );
     }
-   
 }

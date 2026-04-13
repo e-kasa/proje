@@ -263,7 +263,31 @@ try {
 
 ---
 
-## 10. GELİŞTİRME KURALLARI
+## 10. MULTI-TENANT UNIQUE CONSTRAINT KURALI
+
+Entity'lerdeki unique constraint'ler **HER ZAMAN `(company_code, alan)` ikilisi** üzerinde olmalıdır.  
+Tek kolon `unique = true` → global unique → farklı firmalar aynı değeri kullanamaz → **YANLIŞ**.
+
+```java
+// ❌ YANLIŞ — global unique, multi-tenant kırar
+@Column(name = "name", unique = true)
+private String name;
+
+// ✅ DOĞRU — firma bazlı unique
+@Table(name = "my_table",
+       uniqueConstraints = @UniqueConstraint(columnNames = {"company_code", "name"}))
+// @Column(name = "name") → unique = true OLMADAN
+```
+
+**Gerçek hata:** `RoleDef.name` alanı `unique = true` ile tanımlıydı.  
+SEDCORE rolleri ('Yönetici', 'Kasiyer'...) insert edilince SEDCORE1 aynı isimleri `ON CONFLICT DO NOTHING` ile atlıyordu → role_def satırları oluşmuyordu → `user_role` FK violation.  
+**Düzeltme (2026-04-13):** `@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"company_code", "name"}))` eklendi.
+
+**Core değişince:** `mvn install -q` → bağımlı tüm servisleri restart et.
+
+---
+
+## 10a. GELİŞTİRME KURALLARI
 
 ### Core'a EKLENECEK şeyler:
 - Tüm servislerde paylaşılan utility'ler

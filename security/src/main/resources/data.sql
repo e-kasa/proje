@@ -4,6 +4,15 @@
 -- ============================================================
 
 -- ============================================================
+-- ŞİRKET KAYITLARI
+-- ============================================================
+INSERT INTO company (id, company_code, company_name, is_main_company, sector_type)
+VALUES
+    ('cmp-0001-0000-0000-0000-000000000001', 'SEDCORE',  'Sedcore Oto Parça A.Ş.',     true,  'AUTO_PARTS'),
+    ('cmp-0002-0000-0000-0000-000000000001', 'SEDCORE1', 'Sedcore Giyim Mağazası',      false, 'FOOTWEAR')
+ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================
 -- ROL TANIMLAMALARI
 -- ============================================================
 INSERT INTO role_def (id, create_time, create_user, last_modified_time, update_user,
@@ -228,6 +237,38 @@ VALUES
     -- giyim_depo → WAREHOUSE rolü (SEDCORE1)
     ('urol-gdep0-0000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'SEDCORE1', 'role-s1dep-0000-0000-0000-000000000003', 'udef-gdep0-0000-0000-0000-000000000006')
+ON CONFLICT DO NOTHING;
+
+-- ============================================================
+-- EK KULLANICI: kasiyer2 — SEDCORE Şube Mağaza (SUBE-01)
+-- Şifre: kasiyer123  (kasiyer ile aynı hash)
+-- store_id SUBE-01 — pos-product-manager data.sql'de UPDATE ile set edilir
+-- ============================================================
+INSERT INTO user_def (id, create_time, create_user, last_modified_time, update_user,
+                      company_code, generic_identifier, is_active, language_val,
+                      user_def_generic_id_type, user_display_name, user_name, user_type)
+VALUES
+    ('udef-kas2-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'SEDCORE', 'kasiyer2', true, 'TR', 'AGENCY_ID', 'Kasiyer 2 - Şube', 'kasiyer2', 'USER')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO user_def_access (id, create_time, create_user, last_modified_time, update_user,
+                             company_code, access_type, can_login, has_ip_restriction,
+                             ip_restriction, is_force_password_change, last_change_time,
+                             password_hash, salt_key, user_def_id)
+VALUES
+    ('uacc-kas2-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'SEDCORE', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
+     'bfV/PaJuohhVbz7cLZzThRiawQ/W4o7ohh+qdvvnvc4=',
+     'a2FzaXllcnNhbHQxMjM0',
+     'udef-kas2-0000-0000-0000-000000000002')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO user_role (id, create_time, create_user, last_modified_time, update_user,
+                       company_code, role_def_id, user_def_id)
+VALUES
+    ('urol-kas2-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'SEDCORE', 'role-kasiy-0000-0000-0000-000000000002', 'udef-kas2-0000-0000-0000-000000000002')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================

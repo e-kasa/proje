@@ -325,7 +325,43 @@ au=auth  cm=common  db=dashboard
 
 ---
 
-## 12. USERDEFACCESS — MULTI-TENANT SORGU KURALI
+## 12. DDL STRATEJİSİ VE DATA.SQL SORUMLULUKLARI
+
+### DDL Modu
+
+```properties
+# security/application.properties
+spring.jpa.hibernate.ddl-auto=create
+```
+
+`create` → her startup'ta tüm tablolar **DROP + CREATE** → data.sql temiz INSERT'lerle çalışır.
+
+| Mod | Startup | Shutdown | Kullanım |
+|-----|---------|----------|----------|
+| `create` | DROP+CREATE | — | **Dev** (şu an) |
+| `create-drop` | CREATE | DROP | ⚠️ Crash sonrası eski data kalır — KULLANMA |
+| `update` | Sadece yeni kolon | — | Production |
+
+### data.sql Sorumlulukları
+
+security/data.sql **tek yer** olmalıdır:
+- `company` (SEDCORE, SEDCORE1)
+- `role_def` (her firma için tüm roller)
+- `user_def` (tüm kullanıcılar — admin, kasiyer, depo, kasiyer2, magaza_admin, giyim_kasiyer, giyim_depo)
+- `user_def_access` (tüm şifre hash'leri)
+- `user_role` (tüm rol atamaları)
+- `ext_messages`, `ext_bundles` (i18n ve menü seed)
+
+**Kural:** pos-product-manager/data.sql'e kullanıcı/rol INSERT'i ekleme. Çift INSERT → çakışma.
+
+### ON CONFLICT + Unique Constraint Tuzağı
+
+`ON CONFLICT DO NOTHING` sadece PK değil **tüm UNIQUE constraint** ihlallerini sessizce yutar.  
+Eğer bir tabloda tek kolon unique varsa (ör. `name unique`), farklı firmalar aynı ismi insert edemez → satır atlanır → FK kırılır.
+
+**Kural:** Her entity'deki unique → `(company_code, alan)` compound unique olmalı. (Bkz. core/CLAUDE.md §10)
+
+### 13. USERDEFACCESS — MULTI-TENANT SORGU KURALI
 
 `user_def_access` tablosunda `UNIQUE(user_def_id, company_code)` constraint var.  
 Aynı kullanıcı birden fazla firmada erişim kaydına sahip olabilir.

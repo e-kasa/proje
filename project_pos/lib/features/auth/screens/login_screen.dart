@@ -455,86 +455,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               Expanded(child: Divider(color: AppColors.border, thickness: 1)),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
-          // Oto / Parça sektörü
-          _buildSectorLabel(Icons.car_repair, 'Yedek Parça'),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _QuickUserCard(
-                  name: 'Admin',
-                  role: 'Yönetici',
-                  icon: Icons.admin_panel_settings_outlined,
-                  color: const Color(0xFF667eea),
-                  isLoading: authState.isLoading,
-                  onTap: () => _fillQuickLogin('admin', 'admin123'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _QuickUserCard(
-                  name: 'Kasiyer',
-                  role: 'Satış',
-                  icon: Icons.point_of_sale_outlined,
-                  color: const Color(0xFF11998e),
-                  isLoading: authState.isLoading,
-                  onTap: () => _fillQuickLogin('kasiyer', 'kasiyer123'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _QuickUserCard(
-                  name: 'Depo',
-                  role: 'Stok',
-                  icon: Icons.warehouse_outlined,
-                  color: const Color(0xFFf7971e),
-                  isLoading: authState.isLoading,
-                  onTap: () => _fillQuickLogin('depo', 'depo123'),
-                ),
-              ),
+          _buildCompanyGroup(
+            icon: Icons.car_repair,
+            companyName: 'Sedcore Oto Parça',
+            sector: 'AUTO PARTS',
+            color: const Color(0xFF667eea),
+            isLoading: authState.isLoading,
+            users: const [
+              _UserEntry('admin',        'admin123',   'Admin',      'YÖNETİCİ', Icons.admin_panel_settings_outlined),
+              _UserEntry('kasiyer',      'kasiyer123', 'Kasiyer',    'KASİYER',  Icons.point_of_sale_outlined),
+              _UserEntry('kasiyer2',     'kasiyer123', 'Kasiyer 2',  'KASİYER',  Icons.point_of_sale_outlined),
+              _UserEntry('depo',         'depo123',    'Depo',       'DEPO',     Icons.warehouse_outlined),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
 
-          // Giyim sektörü
-          _buildSectorLabel(Icons.checkroom_outlined, 'Giyim / Tekstil'),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _QuickUserCard(
-                  name: 'Mağaza',
-                  role: 'Yönetici',
-                  icon: Icons.storefront_outlined,
-                  color: const Color(0xFFe91e8c),
-                  isLoading: authState.isLoading,
-                  onTap: () => _fillQuickLogin('magaza_admin', 'magaza123'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _QuickUserCard(
-                  name: 'Kasiyer',
-                  role: 'Satış',
-                  icon: Icons.shopping_bag_outlined,
-                  color: const Color(0xFF9c27b0),
-                  isLoading: authState.isLoading,
-                  onTap: () => _fillQuickLogin('giyim_kasiyer', 'giyim123'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _QuickUserCard(
-                  name: 'Depo',
-                  role: 'Stok',
-                  icon: Icons.inventory_2_outlined,
-                  color: const Color(0xFFff6b6b),
-                  isLoading: authState.isLoading,
-                  onTap: () => _fillQuickLogin('giyim_depo', 'giyim456'),
-                ),
-              ),
+          _buildCompanyGroup(
+            icon: Icons.checkroom_outlined,
+            companyName: 'Sedcore Giyim',
+            sector: 'FOOTWEAR',
+            color: const Color(0xFFe91e8c),
+            isLoading: authState.isLoading,
+            users: const [
+              _UserEntry('magaza_admin',  'magaza123', 'Mağaza Adm', 'MGZ ADM',  Icons.storefront_outlined),
+              _UserEntry('giyim_kasiyer', 'giyim123',  'Kasiyer',    'KASİYER',  Icons.shopping_bag_outlined),
+              _UserEntry('giyim_depo',    'giyim456',  'Depo',       'DEPO',     Icons.inventory_2_outlined),
             ],
           ),
 
@@ -558,21 +505,87 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     return form;
   }
 
-  Widget _buildSectorLabel(IconData icon, String label) {
-    return Row(
-      children: [
-        Icon(icon, size: 13, color: AppColors.textMuted),
-        const SizedBox(width: 5),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textMuted,
-            letterSpacing: 0.4,
+  Widget _buildCompanyGroup({
+    required IconData icon,
+    required String companyName,
+    required String sector,
+    required Color color,
+    required bool isLoading,
+    required List<_UserEntry> users,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.15), width: 1.2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Şirket başlığı
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, size: 15, color: color),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    companyName,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: color,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    sector,
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: color,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+          Divider(height: 1, color: color.withValues(alpha: 0.1)),
+          // Kullanıcı kartları
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+            child: Row(
+              children: users.map((u) => Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: _UserLoginCard(
+                    entry: u,
+                    color: color,
+                    isLoading: isLoading,
+                    onTap: () => _fillQuickLogin(u.username, u.password),
+                  ),
+                ),
+              )).toList(),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -709,33 +722,41 @@ class _GradientButtonState extends State<_GradientButton> {
   }
 }
 
-// ── QUICK USER CARD ──────────────────────────────────────────────────────────
-class _QuickUserCard extends StatefulWidget {
-  final String name;
-  final String role;
+// ── USER ENTRY (data) ────────────────────────────────────────────────────────
+class _UserEntry {
+  final String username;
+  final String password;
+  final String displayName;
+  final String roleLabel;
   final IconData icon;
+  const _UserEntry(this.username, this.password, this.displayName,
+      this.roleLabel, this.icon);
+}
+
+// ── USER LOGIN CARD ──────────────────────────────────────────────────────────
+class _UserLoginCard extends StatefulWidget {
+  final _UserEntry entry;
   final Color color;
   final bool isLoading;
   final VoidCallback onTap;
 
-  const _QuickUserCard({
-    required this.name,
-    required this.role,
-    required this.icon,
+  const _UserLoginCard({
+    required this.entry,
     required this.color,
     required this.isLoading,
     required this.onTap,
   });
 
   @override
-  State<_QuickUserCard> createState() => _QuickUserCardState();
+  State<_UserLoginCard> createState() => _UserLoginCardState();
 }
 
-class _QuickUserCardState extends State<_QuickUserCard> {
+class _UserLoginCardState extends State<_UserLoginCard> {
   bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
+    final c = widget.color;
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) {
@@ -744,45 +765,74 @@ class _QuickUserCardState extends State<_QuickUserCard> {
       },
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedScale(
-        scale: _pressed ? 0.95 : 1.0,
-        duration: const Duration(milliseconds: 120),
+        scale: _pressed ? 0.93 : 1.0,
+        duration: const Duration(milliseconds: 100),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          duration: const Duration(milliseconds: 120),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
           decoration: BoxDecoration(
             color: _pressed
-                ? widget.color.withValues(alpha: 0.08)
-                : widget.color.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(14),
+                ? c.withValues(alpha: 0.12)
+                : c.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: widget.color.withValues(alpha: _pressed ? 0.5 : 0.2),
-              width: 1.5,
+              color: c.withValues(alpha: _pressed ? 0.45 : 0.18),
+              width: 1.2,
             ),
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
+              // İkon dairesi
               Container(
-                width: 38,
-                height: 38,
+                width: 34,
+                height: 34,
                 decoration: BoxDecoration(
-                  color: widget.color.withValues(alpha: 0.12),
+                  color: c.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(widget.icon, size: 19, color: widget.color),
+                child: Icon(widget.entry.icon, size: 17, color: c),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 5),
+              // Görünen ad
               Text(
-                widget.name,
+                widget.entry.displayName,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: widget.color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: c,
                 ),
               ),
+              const SizedBox(height: 3),
+              // Rol rozeti
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: c.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  widget.entry.roleLabel,
+                  style: TextStyle(
+                    fontSize: 8,
+                    fontWeight: FontWeight.w700,
+                    color: c,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 3),
+              // Kullanıcı adı
               Text(
-                widget.role,
+                widget.entry.username,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontSize: 10,
+                  fontSize: 9,
                   color: AppColors.textMuted,
                 ),
               ),

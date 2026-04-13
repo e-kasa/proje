@@ -257,7 +257,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                             ),
                           ),
                           ..._stores.map((store) => DropdownMenuItem<String>(
-                                value: store['id']?.toString(),
+                                value: store['code']?.toString() ?? store['storeCode']?.toString(),
                                 child: Text(store['name']?.toString() ??
                                     store['storeName']?.toString() ??
                                     ''),
@@ -634,7 +634,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     String? storeName;
     if (storeId != null) {
       final store = _stores.firstWhere(
-        (s) => s['id']?.toString() == storeId,
+        (s) => s['code']?.toString() == storeId || s['storeCode']?.toString() == storeId,
         orElse: () => {},
       );
       storeName = store['name']?.toString() ?? store['storeName']?.toString();

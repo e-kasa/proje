@@ -455,3 +455,55 @@ Firma sektörü kurulumda belirlenir, sonradan değiştirilemez.
 //   → StoreRepository.findByIdAndCompanyCode(id, companyCode)
 //   → store.setIsActive(false) — fiziksel silme yasak
 ```
+
+---
+
+## 11. DATA.SQL SORUMLULUKLARI VE KURALLARI
+
+### Bu servise ait seed verileri
+```
+company          → ON CONFLICT DO NOTHING (security zaten insert eder — FK güvencesi)
+stores           → Ana ve şube mağazalar
+warehouses       → Depolar
+categories       → Global kategori ağacı
+company_categories
+brands, units
+products, product_variants, vb.
+stock_movements  → Test senaryosu verisi
+```
+
+### Bu servise AİT DEĞİL — security/data.sql'e eklenmeli
+```
+role_def         ← EKLEME
+user_def         ← EKLEME
+user_def_access  ← EKLEMA
+user_role        ← EKLEME
+```
+
+### inventory_view Yönetimi
+
+```sql
+-- data.sql'in ilk 3 satırı — sıra önemli:
+DROP TABLE IF EXISTS inventory_view;   -- Hibernate bazen tablo olarak oluşturur
+DROP VIEW IF EXISTS inventory_view;    -- Önceki run'da view olarak oluşturulmuşsa
+CREATE VIEW inventory_view AS ...;
+```
+
+### store_id Ataması
+
+```sql
+-- Kasiyerlerin store_id'si mağazalar oluşturulduktan SONRA set edilir
+-- user_def kaydı security'de, store_id ataması burada yapılır
+UPDATE user_def SET store_id = 'STORE-01' WHERE user_name = 'kasiyer';
+UPDATE user_def SET store_id = 'SUBE-01'  WHERE user_name = 'kasiyer2';
+UPDATE user_def SET store_id = 'STORE-02' WHERE user_name = 'giyim_kasiyer';
+```
+
+### DDL Not
+
+```properties
+# pos-product-manager/application.properties
+spring.jpa.hibernate.ddl-auto=create   # Her startup'ta DROP+CREATE
+```
+
+`ALTER TABLE ... ADD COLUMN` ifadelerini data.sql'e **ekleme** — Hibernate schema'yı yönetir.

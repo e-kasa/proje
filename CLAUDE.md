@@ -414,3 +414,28 @@ String companySector = companySettingRepository
 | `STORE_MANAGER` | ESKİ — data.sql migrasyon ile STORE_ADMIN'e geçirilir | false |
 
 `data.sql` sonunda `UPDATE user_role SET role_def_id=STORE_ADMIN WHERE role_def_id=STORE_MANAGER` çalışır.
+
+### DDL Stratejisi (Dev)
+
+```properties
+spring.jpa.hibernate.ddl-auto=create   # Her startup DROP+CREATE → data.sql temiz çalışır
+```
+
+`create-drop` **KULLANMA** — sadece startup'ta CREATE, shutdown'da DROP yapar. Crash sonrası eski data kalır → ON CONFLICT tuzakları tetiklenir.
+
+### Multi-Tenant Unique Constraint
+
+Entity'lerde `unique = true` → **global unique** → farklı firmalar aynı değeri kullanamaz → multi-tenant kırar.  
+Her unique constraint **`(company_code, alan)` compound** olmalı. Bkz. `core/CLAUDE.md §10`.
+
+**Örnek hata:** `RoleDef.name unique=true` → SEDCORE1 rolleri SEDCORE'dan sonra `ON CONFLICT DO NOTHING` ile atlandı → FK violation. Düzeltildi: `@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"company_code", "name"}))`.
+
+### Seed Data Sorumlulukları
+
+| Tablo | Hangi servis |
+|-------|-------------|
+| company, role_def, user_def, user_def_access, user_role | **security/data.sql** |
+| stores, warehouses, products, categories, vb. | **pos-product-manager/data.sql** |
+| UPDATE user_def SET store_id | **pos-product-manager/data.sql** (mağazalar sonra) |
+
+pos-product-manager/data.sql'e **kullanıcı/rol INSERT'i ekleme.**

@@ -77,9 +77,10 @@ ON CONFLICT DO NOTHING;
 -- giyim_kasiyer→ giyim123
 -- giyim_depo   → giyim456
 -- ============================================================
--- Eski hatalı kayıtları (SEDCORE1 typo) düzelt — idempotent UPDATE
-UPDATE user_def_access
-SET company_code = 'SEDCORE', ip_restriction = ''
+-- Eski hatalı kayıtları (SEDCORE1 typo) sil — idempotent DELETE
+-- SEDCORE company_code'lu kayıtlar zaten varsa UPDATE unique constraint'i ihlal eder.
+-- Silme işlemi sonrası ON CONFLICT DO NOTHING ile doğru kayıtlar korunur.
+DELETE FROM user_def_access
 WHERE company_code = 'SEDCORE1'
   AND id IN (
     'uacc-admin-0000-0000-0000-000000000001',

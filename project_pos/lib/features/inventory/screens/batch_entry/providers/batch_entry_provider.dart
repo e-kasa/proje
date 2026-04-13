@@ -5,6 +5,7 @@ import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/app_logger.dart';
 import 'package:project_pos/core/config/sector_config.dart';
 import 'package:project_pos/providers/sector_provider.dart';
+import 'package:project_pos/features/inventory/services/document_analyze_service.dart';
 import '../models/batch_entry_models.dart';
 import 'package:intl/intl.dart';
 
@@ -78,6 +79,57 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
     state = state.copyWith(rows: [row, ...state.rows]);
     return 'Yeni urun satiri acildi — bilgileri doldurun';
   }
+
+  // --- Döküman Analizi'nden Satır Ekle ----------------------------------------
+  void addFromDocumentItems(List<DocumentAnalyzeItem> items) {
+    final newRows = items.map((item) {
+      final vat = item.vatRate ?? 20.0;
+      final vatIncluded = item.vatIncluded ?? false;
+      final unitId = _mapUnit(item.unit);
+
+      if (item.isFound && item.matchedVariantId != null) {
+        return BatchEntryRow(
+          productName: item.matchedProductName ??
+              item.extractedName ??
+              item.rawText,
+          barcode: item.extractedCode ?? '',
+          quantity: item.extractedQuantity?.toInt() ?? 1,
+          purchasePrice: item.extractedUnitPrice ?? 0,
+          salePrice: item.extractedUnitPrice ?? 0,
+          vatRate: vat,
+          vatIncluded: vatIncluded,
+          unitId: unitId,
+          status: RowStatus.existing,
+          existingVariantId: item.matchedVariantId,
+          existingProductId: item.matchedProductId,
+          existingVariantSku: item.matchedSku,
+        );
+      } else {
+        return BatchEntryRow(
+          productName: item.extractedName ?? item.rawText,
+          barcode: item.extractedCode ?? '',
+          quantity: item.extractedQuantity?.toInt() ?? 1,
+          purchasePrice: item.extractedUnitPrice ?? 0,
+          salePrice: item.extractedUnitPrice ?? 0,
+          vatRate: vat,
+          vatIncluded: vatIncluded,
+          unitId: unitId,
+          status: RowStatus.newProduct,
+        );
+      }
+    }).toList();
+    state = state.copyWith(rows: [...newRows, ...state.rows]);
+  }
+
+  String? _mapUnit(String? unit) => switch (unit?.toUpperCase()) {
+    'ADET' || 'ADT' || 'PCS' => 'adet',
+    'KG'   || 'KGR'          => 'kg',
+    'LT'   || 'LTR'          => 'lt',
+    'MT'   || 'MTR'          => 'mt',
+    'M2'                     => 'm2',
+    'GR'   || 'GRAM'         => 'gr',
+    _                        => 'adet',
+  };
 
   // --- Manuel Satir Ekle -----------------------------------------------------
   void addManualRow() {

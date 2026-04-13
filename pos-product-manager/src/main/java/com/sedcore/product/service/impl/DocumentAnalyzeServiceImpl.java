@@ -1,0 +1,424 @@
+package com.sedcore.product.service.impl;
+
+import com.sedcore.common.context.CompanyContext;
+import com.sedcore.common.exception.BusinessException;
+import com.sedcore.product.model.DocumentAnalyzeResponse;
+import com.sedcore.product.model.DocumentItemResult;
+import com.sedcore.product.repository.BarcodeRepository;
+import com.sedcore.product.repository.ProductRepository;
+import com.sedcore.product.repository.ProductVariantRepository;
+import com.sedcore.product.service.DocumentAnalyzeService;
+import com.sedcore.product.service.impl.invoice.*;
+import com.sedcore.autoparts.repository.OemNumberRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.*;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.regex.*;
+import java.util.stream.Collectors;
+
+/**
+ * Fatura/İrsaliye PDF + Görüntü analiz servisi.
+ *
+ * Akış (PDF):
+ * 1. PDFBox ile PDF'ten metin çıkar
+ * 2. InvoiceHeaderDetector → başlık var mı? → ColumnAwareLineParser / regex fallback
+ * 3. MultiLineAggregator → çok satırlı ürün birleştirme
+ * 4. Barkod → OEM → İsim sıralamasıyla sistemde eşleştir
+ * 5. DocumentAnalyzeResponse döner
+ *
+ * Akış (Görüntü JPG/PNG):
+ * 1. Python OCR servisine HTTP ile gönder → metin al
+ * 2. Aynı metin parse mantığı
+ */
+@Service
+@Slf4j
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
+
+    private final BarcodeRepository barcodeRepository;
+    private final OemNumberRepository oemNumberRepository;
+    private final ProductRepository productRepository;
+    private final ProductVariantRepository productVariantRepository;
+
+    @Value("${ocr.service.url:http://localhost:8003}")
+    private String ocrServiceUrl;
+
+    // EAN13 barkod: tam olarak 13 rakam
+    private static final Pattern BARCODE_PATTERN = Pattern.compile("\\b(\\d{13})\\b");
+    // OEM: harf+rakam karışımı, 4-20 karakter (boşluk/tire içerebilir)
+    private static final Pattern OEM_PATTERN =
+            Pattern.compile("\\b([A-Z0-9][A-Z0-9 .\\-]{3,18}[A-Z0-9])\\b");
+    // Birim: ADET, KG, LT vb.
+    private static final Pattern UNIT_PATTERN =
+            Pattern.compile("\\b(ADET|ADT|KG|KGR|LT|LTR|MT|MTR|M2|PAKET|PKT|KUTU|KTU|PCS|GR|GRAM)\\b",
+                    Pattern.CASE_INSENSITIVE);
+    // KDV oranı: "%18", "18%", "% 18" gibi
+    private static final Pattern VAT_PATTERN =
+            Pattern.compile("(?:%\\s*(1|8|10|18|20)\\b|\\b(1|8|10|18|20)\\s*%)");
+
+    // Faturada atlanan satır başlangıçları (Türkçe fatura başlıkları)
+    private static final List<String> SKIP_PREFIXES = List.of(
+            "sıra", "sira", "satır", "satir", "birim", "toplam", "genel",
+            "kdv", "vergi", "iban", "banka", "sayfa", "page", "tarih",
+            "fatura", "irsaliye", "alıcı", "alici", "satıcı", "satici",
+            "müşteri", "musteri", "tc kimlik", "adres", "telefon",
+            "e-posta", "email", "web"
+    );
+
+    @Override
+    public DocumentAnalyzeResponse analyze(MultipartFile file) throws IOException {
+        String fileName = Optional.ofNullable(file.getOriginalFilename()).orElse("belge");
+        String ext = fileName.toLowerCase();
+
+        List<DocumentItemResult> items;
+        if (ext.endsWith(".pdf")) {
+            items = parsePdf(file);
+        } else if (isImage(ext)) {
+            String ocrText = callOcrService(file);
+            items = parseText(ocrText, fileName);
+        } else {
+            throw new BusinessException(
+                    "Desteklenmeyen dosya formatı. Lütfen PDF veya görüntü (JPG, PNG) yükleyin. Alınan: " + fileName);
+        }
+
+        long found = items.stream().filter(i -> "FOUND".equals(i.getMatchStatus())).count();
+
+        return DocumentAnalyzeResponse.builder()
+                .fileName(fileName)
+                .totalItems(items.size())
+                .foundItems((int) found)
+                .notFoundItems(items.size() - (int) found)
+                .items(items)
+                .build();
+    }
+
+    private boolean isImage(String ext) {
+        return ext.endsWith(".jpg") || ext.endsWith(".jpeg")
+                || ext.endsWith(".png") || ext.endsWith(".webp")
+                || ext.endsWith(".bmp");
+    }
+
+    // ── OCR SERVİSİ ÇAĞRISI ─────────────────────────────────────────────────
+
+    private String callOcrService(MultipartFile file) throws IOException {
+        RestTemplate rest = new RestTemplate();
+
+        LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        byte[] bytes = file.getBytes();
+        body.add("file", new ByteArrayResource(bytes) {
+            @Override
+            public String getFilename() {
+                return file.getOriginalFilename();
+            }
+        });
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        try {
+            ResponseEntity<Map> response = rest.exchange(
+                    ocrServiceUrl + "/ocr/extract",
+                    HttpMethod.POST,
+                    new HttpEntity<>(body, headers),
+                    Map.class
+            );
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                String text = (String) response.getBody().get("text");
+                return text != null ? text : "";
+            }
+        } catch (Exception e) {
+            log.error("OCR servisi çağrılamadı: {}", e.getMessage());
+            throw new BusinessException("OCR servisi yanıt vermedi: " + e.getMessage());
+        }
+        throw new BusinessException("OCR servisi boş yanıt döndürdü");
+    }
+
+    // ── PDF PARSE ────────────────────────────────────────────────────────────
+
+    private List<DocumentItemResult> parsePdf(MultipartFile file) throws IOException {
+        try (PDDocument doc = Loader.loadPDF(file.getBytes())) {
+            PDFTextStripper stripper = new PDFTextStripper();
+            stripper.setSortByPosition(true);
+            String fullText = stripper.getText(doc);
+            return parseText(fullText, file.getOriginalFilename());
+        }
+    }
+
+    // ── METİN PARSE (PDF + OCR ortak) ────────────────────────────────────────
+
+    private List<DocumentItemResult> parseText(String text, String fileName) {
+        List<DocumentItemResult> results = new ArrayList<>();
+
+        String[] lines = text.split("\\r?\\n");
+
+        // 1. Başlık satırını tara (ilk 20 satır içinde)
+        ColumnPositionMapper columnMapper = null;
+        ColumnAwareLineParser columnParser = null;
+        int headerLineIndex = -1;
+
+        for (int i = 0; i < Math.min(lines.length, 20); i++) {
+            String line = lines[i].trim();
+            if (InvoiceHeaderDetector.isHeader(line)) {
+                Set<ColumnType> matchedColumns = InvoiceHeaderDetector.detect(line);
+                columnMapper = new ColumnPositionMapper(line, matchedColumns);
+                columnParser = new ColumnAwareLineParser(columnMapper);
+                headerLineIndex = i;
+                log.info("DocumentAnalyze: Başlık satırı tespit edildi (satır {}): '{}'", i, line);
+                break;
+            }
+        }
+
+        // 2. Satırları parse et
+        MultiLineAggregator aggregator = new MultiLineAggregator();
+        int rowIndex = 0;
+
+        for (int i = 0; i < lines.length; i++) {
+            String rawLine = lines[i];
+            String line = rawLine.trim();
+
+            // Başlık satırını ve öncesini atla
+            if (headerLineIndex >= 0 && i <= headerLineIndex) continue;
+            if (line.isBlank() || line.length() < 4) continue;
+            if (shouldSkipLine(line)) continue;
+
+            ParsedLine parsed;
+            if (columnParser != null && !columnMapper.isEmpty()) {
+                // Sütun bazlı parse (başlık tespit edildi)
+                parsed = columnParser.parse(rawLine);
+            } else {
+                // Regex fallback (başlık yok)
+                parsed = extractLineInfo(line);
+            }
+
+            if (parsed.name == null || parsed.name.isBlank()) continue;
+
+            // MultiLine aggregator
+            List<ParsedLine> ready = aggregator.process(parsed);
+            for (ParsedLine p : ready) {
+                DocumentItemResult result = matchToProduct(p, ++rowIndex, line);
+                results.add(result);
+            }
+        }
+
+        // Kalan pending satırları yayınla
+        for (ParsedLine p : aggregator.flush()) {
+            DocumentItemResult result = matchToProduct(p, ++rowIndex, p.name);
+            results.add(result);
+        }
+
+        log.info("DocumentAnalyze [{}]: {} satır analiz edildi, {} eşleşme",
+                fileName, results.size(),
+                results.stream().filter(r -> "FOUND".equals(r.getMatchStatus())).count());
+        return results;
+    }
+
+    // ── SATIR PARSE (Regex Fallback) ─────────────────────────────────────────
+
+    private boolean shouldSkipLine(String line) {
+        String lower = line.toLowerCase().trim();
+        if (lower.length() < 5) return true;
+        for (String prefix : SKIP_PREFIXES) {
+            if (lower.startsWith(prefix)) return true;
+        }
+        // Sadece rakam/özel karakter içeren satırlar
+        if (lower.replaceAll("[^a-zğüşıöça-z]", "").isBlank()) return true;
+        return false;
+    }
+
+    private ParsedLine extractLineInfo(String line) {
+        ParsedLine result = new ParsedLine();
+
+        // 1. EAN13 barkod ara
+        Matcher barcodeMatcher = BARCODE_PATTERN.matcher(line);
+        if (barcodeMatcher.find()) {
+            result.code = barcodeMatcher.group(1);
+            result.codeType = "BARCODE";
+        }
+
+        // 2. OEM kodu ara (barkod bulunamadıysa)
+        if (result.code == null) {
+            String upper = line.toUpperCase();
+            Matcher oemMatcher = OEM_PATTERN.matcher(upper);
+            while (oemMatcher.find()) {
+                String candidate = oemMatcher.group(1).trim();
+                boolean hasLetter = candidate.matches(".*[A-Z].*");
+                boolean hasDigit = candidate.matches(".*[0-9].*");
+                if (hasLetter && hasDigit && candidate.length() >= 4) {
+                    result.code = candidate;
+                    result.codeType = "OEM";
+                    break;
+                }
+            }
+        }
+
+        // 3. Birim çıkar
+        Matcher unitMatcher = UNIT_PATTERN.matcher(line);
+        if (unitMatcher.find()) {
+            result.unit = unitMatcher.group(1).toUpperCase();
+        }
+
+        // 4. KDV oranı çıkar
+        Matcher vatMatcher = VAT_PATTERN.matcher(line);
+        if (vatMatcher.find()) {
+            String vatGroup = vatMatcher.group(1) != null ? vatMatcher.group(1) : vatMatcher.group(2);
+            try {
+                result.vatRate = Double.parseDouble(vatGroup);
+            } catch (NumberFormatException ignored) {}
+        }
+
+        // 5. Sayıları çıkar (miktar ve fiyat)
+        List<Double> numbers = extractNumbers(line);
+        if (!numbers.isEmpty()) {
+            for (Double n : numbers) {
+                if (n == Math.floor(n) && n >= 1 && n <= 9999 && result.quantity == null) {
+                    result.quantity = n;
+                }
+            }
+            List<Double> prices = numbers.stream()
+                    .filter(n -> n > 0 && !n.equals(result.quantity))
+                    .sorted()
+                    .collect(Collectors.toList());
+            if (!prices.isEmpty()) {
+                result.unitPrice = prices.get(0);
+            }
+        }
+
+        // 6. Ürün adını çıkar — kodu, sayıları ve birimi temizle
+        String nameStr = line;
+        if (result.code != null) nameStr = nameStr.replace(result.code, " ");
+        nameStr = nameStr.replaceAll("\\b\\d+[.,]?\\d*\\b", " ");
+        nameStr = nameStr.replaceAll("(?i)\\b(ADT|ADET|KG|KGR|LT|LTR|MT|MTR|M2|PAKET|PKT|KUTU|KTU|PCS|GR|GRAM)\\b", " ");
+        nameStr = nameStr.replaceAll("[%₺$€@#*]", " ");
+        nameStr = nameStr.replaceAll("\\s+", " ").trim();
+        nameStr = nameStr.replaceAll("^\\d{1,3}\\s+", "").trim();
+
+        if (nameStr.length() >= 3 && nameStr.matches(".*[a-zA-ZğüşıöçĞÜŞİÖÇ].*")) {
+            result.name = nameStr.substring(0, Math.min(nameStr.length(), 200));
+        }
+
+        return result;
+    }
+
+    private List<Double> extractNumbers(String line) {
+        List<Double> numbers = new ArrayList<>();
+        String normalized = line.replaceAll("(\\d)\\.(\\d{3})", "$1$2");
+        normalized = normalized.replace(",", ".");
+        Matcher m = Pattern.compile("\\b(\\d{1,8}(?:\\.\\d{1,4})?)\\b").matcher(normalized);
+        while (m.find()) {
+            try {
+                double val = Double.parseDouble(m.group(1));
+                if (val > 0) numbers.add(val);
+            } catch (NumberFormatException ignored) {}
+        }
+        return numbers;
+    }
+
+    // ── ÜRÜN EŞLEŞTİRME ─────────────────────────────────────────────────────
+
+    private DocumentItemResult matchToProduct(ParsedLine parsed, int rowIndex, String rawText) {
+        DocumentItemResult.DocumentItemResultBuilder builder = DocumentItemResult.builder()
+                .rowIndex(rowIndex)
+                .rawText(rawText)
+                .extractedName(parsed.name)
+                .extractedCode(parsed.code)
+                .extractedQuantity(parsed.quantity)
+                .extractedUnitPrice(parsed.unitPrice)
+                .unit(parsed.unit)
+                .vatRate(parsed.vatRate)
+                .vatIncluded(parsed.vatIncluded)
+                .totalPrice(parsed.totalPrice);
+
+        // 1. EAN13 barkod ile eşleştir
+        if ("BARCODE".equals(parsed.codeType) && parsed.code != null) {
+            var barcodeOpt = barcodeRepository.findByBarcodeCode(parsed.code);
+            if (barcodeOpt.isPresent() && barcodeOpt.get().getVariant() != null) {
+                return enrichFromVariant(builder, barcodeOpt.get().getVariant(), "BARCODE");
+            }
+        }
+
+        // 2. OEM numarası ile eşleştir
+        if (parsed.code != null && !"BARCODE".equals(parsed.codeType)) {
+            var oemList = oemNumberRepository.findByOemNumberIgnoreCase(parsed.code);
+            if (!oemList.isEmpty() && oemList.get(0).getVariant() != null) {
+                return enrichFromVariant(builder, oemList.get(0).getVariant(), "OEM");
+            }
+        }
+
+        // 3. İsim ile ara
+        if (parsed.name != null && parsed.name.length() >= 3) {
+            String keyword = extractKeywords(parsed.name);
+            var products = productRepository.searchProducts(keyword);
+            if (!products.isEmpty()) {
+                var product = products.get(0);
+                var variants = productVariantRepository
+                        .findByProductIdAndIsDeleted(product.getId(), false);
+                if (!variants.isEmpty()) {
+                    var variant = variants.get(0);
+                    return builder
+                            .matchStatus("FOUND")
+                            .matchType("NAME")
+                            .matchedProductId(product.getId())
+                            .matchedProductName(product.getName())
+                            .matchedVariantId(variant.getId())
+                            .matchedSku(variant.getSku())
+                            .build();
+                }
+            }
+        }
+
+        // 4. Bulunamadı
+        return builder.matchStatus("NOT_FOUND").build();
+    }
+
+    private DocumentItemResult enrichFromVariant(
+            DocumentItemResult.DocumentItemResultBuilder builder,
+            com.sedcore.product.entity.ProductVariant variant, String matchType) {
+
+        String productName = variant.getName();
+        String productId = null;
+
+        if (variant.getProduct() != null) {
+            productId = variant.getProduct().getId();
+            if (variant.getProduct().getName() != null) {
+                productName = variant.getProduct().getName();
+            }
+        }
+
+        return builder
+                .matchStatus("FOUND")
+                .matchType(matchType)
+                .matchedProductId(productId)
+                .matchedProductName(productName)
+                .matchedVariantId(variant.getId())
+                .matchedSku(variant.getSku())
+                .matchedCurrentStock(0.0)
+                .build();
+    }
+
+    private String extractKeywords(String name) {
+        String[] words = name.trim().split("\\s+");
+        int limit = Math.min(words.length, 3);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < limit; i++) {
+            if (words[i].length() >= 3) {
+                if (sb.length() > 0) sb.append(" ");
+                sb.append(words[i]);
+            }
+        }
+        return sb.length() >= 3 ? sb.toString() : name;
+    }
+}

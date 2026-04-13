@@ -1,275 +1,83 @@
--- ============================================================
--- Security Module - Seed Data
--- Şifre algoritması: PBKDF2WithHmacSHA1, 1024 iterasyon, 256-bit
--- ============================================================
+-- data.sql — Security Module
+-- Tüm seed verisi (company, role, user, i18n) burada yönetilir.
+-- spring.jpa.hibernate.ddl-auto=create + spring.sql.init.mode=always
+-- Her startup'ta tablolar DROP+CREATE → bu script temiz INSERT'lerle çalışır.
 
 -- ============================================================
--- ŞİRKET KAYITLARI
+-- COMPANY
 -- ============================================================
 INSERT INTO company (id, company_code, company_name, is_main_company, sector_type)
 VALUES
-    ('cmp-0001-0000-0000-0000-000000000001', 'SEDCORE',  'Sedcore Oto Parça A.Ş.',     true,  'AUTO_PARTS'),
-    ('cmp-0002-0000-0000-0000-000000000001', 'SEDCORE1', 'Sedcore Giyim Mağazası',      false, 'FOOTWEAR')
+    ('comp-sed1-0000-0000-0000-000000000001', 'SEDCORE',  'Sedcore Oto Parça A.Ş.',   true,  'AUTO_PARTS'),
+    ('comp-sed2-0000-0000-0000-000000000002', 'SEDCORE1', 'Sedcore Giyim Mağazası',   false, 'FOOTWEAR')
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
--- ROL TANIMLAMALARI
+-- ROLE_DEF
 -- ============================================================
 INSERT INTO role_def (id, create_time, create_user, last_modified_time, update_user,
-                      company_code, code, description, is_active, is_system_role, name)
+                      company_code, code, name, description, is_active, is_system_role)
 VALUES
-    -- Yönetici rolü
-    ('role-admin-0000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'ADMIN', 'Tam yetkili yönetici rolü', true, true, 'Yönetici'),
-
-    -- Kasiyer rolü
-    ('role-kasiy-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'CASHIER', 'POS satış ve müşteri işlemleri', true, false, 'Kasiyer'),
-
-    -- Depo sorumlusu rolü
-    ('role-depo0-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'WAREHOUSE', 'Stok ve depo yönetimi', true, false, 'Depo Sorumlusu'),
-
-    -- Mağaza yöneticisi rolü (eski kod — backward compat)
-    ('role-mgzyn-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'STORE_MANAGER', 'Mağaza yönetimi ve raporlama (eski)', true, false, 'Mağaza Yöneticisi'),
-
-    -- Mağaza yöneticisi rolü (yeni standart kod)
-    ('role-mgzad-0000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'STORE_ADMIN', 'Mağaza yönetimi, raporlar ve personel yönetimi', true, true, 'Mağaza Yöneticisi'),
-
-    -- Süper Admin rolü (platform geneli)
-    ('role-super-0000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'SUPER_ADMIN', 'Platform geneli tüm firma yetkisi', true, true, 'Süper Admin')
-ON CONFLICT DO NOTHING;
+    -- SEDCORE rolleri
+    ('role-sc-adm-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE',  'ADMIN',       'Yönetici',         'Tam yetkili yönetici rolü',          true, true),
+    ('role-sc-cas-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE',  'CASHIER',     'Kasiyer',           'POS satış ve müşteri işlemleri',     true, false),
+    ('role-sc-wrh-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE',  'WAREHOUSE',   'Depo Sorumlusu',    'Stok ve depo yönetimi',              true, false),
+    ('role-sc-sad-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE',  'STORE_ADMIN', 'Mağaza Yöneticisi', 'Mağaza yönetimi ve raporlar',        true, true),
+    ('role-sc-sup-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE',  'SUPER_ADMIN', 'Süper Admin',       'Platform geneli tüm firma yetkisi',  true, true),
+    -- SEDCORE1 rolleri
+    ('role-s1-adm-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'ADMIN',       'Yönetici',          'Tam yetkili yönetici rolü',         true, true),
+    ('role-s1-cas-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'CASHIER',     'Kasiyer',           'POS satış ve müşteri işlemleri',    true, false),
+    ('role-s1-wrh-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'WAREHOUSE',   'Depo Sorumlusu',    'Stok ve depo yönetimi',             true, false),
+    ('role-s1-sad-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'STORE_ADMIN', 'Mağaza Yöneticisi', 'Mağaza yönetimi ve raporlar',       true, true)
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
--- ROL TANIMLAMALARI — SEDCORE1 (Giyim / Footwear)
--- ============================================================
-INSERT INTO role_def (id, create_time, create_user, last_modified_time, update_user,
-                      company_code, code, description, is_active, is_system_role, name)
-VALUES
-    ('role-s1adm-0000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE1', 'ADMIN', 'Tam yetkili yönetici rolü', true, true, 'Yönetici'),
-
-    ('role-s1kas-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE1', 'CASHIER', 'POS satış ve müşteri işlemleri', true, false, 'Kasiyer'),
-
-    ('role-s1dep-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE1', 'WAREHOUSE', 'Stok ve depo yönetimi', true, false, 'Depo Sorumlusu'),
-
-    ('role-s1mgz-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE1', 'STORE_ADMIN', 'Mağaza yönetimi, raporlar ve personel yönetimi', true, true, 'Mağaza Yöneticisi')
-ON CONFLICT DO NOTHING;
-
--- ============================================================
--- KULLANICI TANIMLAMALARI (user_def)
+-- USER_DEF
 -- ============================================================
 INSERT INTO user_def (id, create_time, create_user, last_modified_time, update_user,
-                      company_code, generic_identifier, is_active, language_val,
-                      user_def_generic_id_type, user_display_name, user_name, user_type)
+                      company_code, user_name, user_display_name, is_active,
+                      language_val, user_type, generic_identifier, user_def_generic_id_type)
 VALUES
-    -- 1. Admin — Yedek Parça sektörü yöneticisi
-    ('udef-admin-0000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'admin', true, 'TR', 'AGENCY_ID', 'Admin Kullanıcı', 'admin', 'USER'),
-
-    -- 2. Kasiyer — Yedek Parça sektörü kasiyeri
-    ('udef-kasiy-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'kasiyer', true, 'TR', 'AGENCY_ID', 'Kasiyer Kullanıcı', 'kasiyer', 'USER'),
-
-    -- 3. Depo — Yedek Parça sektörü depo sorumlusu
-    ('udef-depo-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'depo', true, 'TR', 'AGENCY_ID', 'Depo Sorumlusu', 'depo', 'USER'),
-
-    -- 4. Mağaza Admin — SEDCORE1 (Giyim) yöneticisi
-    ('udef-mgzad-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE1', 'magaza_admin', true, 'TR', 'AGENCY_ID', 'Mağaza Yöneticisi', 'magaza_admin', 'USER'),
-
-    -- 5. Giyim Kasiyer — SEDCORE1 kasiyeri
-    ('udef-gkasy-0000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE1', 'giyim_kasiyer', true, 'TR', 'AGENCY_ID', 'Giyim Kasiyer', 'giyim_kasiyer', 'USER'),
-
-    -- 6. Giyim Depo — SEDCORE1 depo sorumlusu
-    ('udef-gdep0-0000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE1', 'giyim_depo', true, 'TR', 'AGENCY_ID', 'Giyim Depo Sorumlusu', 'giyim_depo', 'USER')
-ON CONFLICT DO NOTHING;
+    ('udef-admin-sed-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE',  'admin',         'Admin Kullanıcı',        true, 'TR', 'USER', 'admin',         'AGENCY_ID'),
+    ('udef-kasiy-sed-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE',  'kasiyer',       'Kasiyer Kullanıcı',      true, 'TR', 'USER', 'kasiyer',       'AGENCY_ID'),
+    ('udef-kas2-sed-0000-0000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE',  'kasiyer2',      'Kasiyer 2 - Şube',       true, 'TR', 'USER', 'kasiyer2',      'AGENCY_ID'),
+    ('udef-depo-sed-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE',  'depo',          'Depo Sorumlusu',         true, 'TR', 'USER', 'depo',          'AGENCY_ID'),
+    ('udef-mgzad-s1-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'magaza_admin',  'Mağaza Yöneticisi',      true, 'TR', 'USER', 'magaza_admin',  'AGENCY_ID'),
+    ('udef-gkasy-s1-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'giyim_kasiyer', 'Giyim Kasiyer',          true, 'TR', 'USER', 'giyim_kasiyer', 'AGENCY_ID'),
+    ('udef-gdep0-s1-0000-000000000007', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'giyim_depo',    'Giyim Depo Sorumlusu',   true, 'TR', 'USER', 'giyim_depo',    'AGENCY_ID')
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
--- ERİŞİM BİLGİLERİ (user_def_access)
--- Şifre: PBKDF2WithHmacSHA1 · 1024 iter · 256-bit
---
--- admin        → admin123
--- kasiyer      → kasiyer123
--- depo         → depo123
--- magaza_admin → magaza123
--- giyim_kasiyer→ giyim123
--- giyim_depo   → giyim456
+-- USER_DEF_ACCESS (PBKDF2WithHmacSHA1 — DevHashGenerator ile üretildi)
 -- ============================================================
-
 INSERT INTO user_def_access (id, create_time, create_user, last_modified_time, update_user,
-                             company_code, access_type, can_login, has_ip_restriction,
-                             ip_restriction, is_force_password_change, last_change_time,
-                             password_hash, salt_key, user_def_id)
+                              company_code, access_type, can_login, has_ip_restriction,
+                              ip_restriction, is_force_password_change, last_change_time,
+                              password_hash, salt_key, user_def_id)
 VALUES
-    ('uacc-admin-0000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
-     'JI1KzWlPRvgcsVO/Y/dR7gDxxDuFlAHbxiQxj7QGjcw=',
-     'YWRtaW5zYWx0MTIzNDU2',
-     'udef-admin-0000-0000-0000-000000000001'),
-
-    ('uacc-kasiy-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
-     'bfV/PaJuohhVbz7cLZzThRiawQ/W4o7ohh+qdvvnvc4=',
-     'a2FzaXllcnNhbHQxMjM0',
-     'udef-kasiy-0000-0000-0000-000000000002'),
-
-    ('uacc-depo0-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
-     'waEXHxvD4c7l7iGYPXbIbzHkS8Z2JM/8D7eQrKSjxrg=',
-     'ZGVwb3NhbHQxMjM0NTY3',
-     'udef-depo-0000-0000-0000-000000000003'),
-
-    ('uacc-mgzad-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE1', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
-     'Y/p9TrRU1R5JyK63MNVb3d6fVrxxFQJL2NVMjJ4QGtY=',
-     'bWFnYXphc2FsdDEyMzQ1',
-     'udef-mgzad-0000-0000-0000-000000000004'),
-
-    ('uacc-gkasy-0000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE1', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
-     '5HnDv9SwRQHjg+aDu37NhtSOa3AteGYzfFNVIsB1ipo=',
-     'Z2l5aW1zYWx0MTIzNDU2',
-     'udef-gkasy-0000-0000-0000-000000000005'),
-
-    ('uacc-gdep0-0000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE1', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
-     'ESsw/Y8pJi1jdeSAIwXfwiewoWPRAvIX/oDtnbmZvyA=',
-     'Z2l5aW1kZXBvc2FsdDEy',
-     'udef-gdep0-0000-0000-0000-000000000006')
-ON CONFLICT DO NOTHING;
+    ('uacc-admin-sed-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE',  'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP, 'M9bMoLOaKkoV+rp+VRb+oOFpZXMJPCdJU5WssGDFOsY=', 'QUJDREVGR0hJSktMTU5P', 'udef-admin-sed-0000-000000000001'),
+    ('uacc-kasiy-sed-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE',  'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP, 'czisdagSOPocciEq+inqDviycyvhty2j1EYzpfDmvc0=',  'UFJPU1RVVldYWVoxMjM0', 'udef-kasiy-sed-0000-000000000002'),
+    ('uacc-kas2-sed-0000-0000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE',  'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP, 'EYAdV/L9vCdShMCyHepA9CiLAfKTBCTSuAtCrT47W+0=',  'NTYXODKWQUJDREVGR0hJ', 'udef-kas2-sed-0000-0000000000003'),
+    ('uacc-depo-sed-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE',  'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP, 'mrpHOHXBtoZ4UYx9iYb+6XOOKq0OnDyl8NCdH6zMfIY=',  'S0tMTU5PUFFSU1RVVldY', 'udef-depo-sed-0000-000000000004'),
+    ('uacc-mgzad-s1-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP, 'sqmT9AAcnoV/mUy+wMOWDKAnADIXPXQgBDcKvsitLHI=',  'WFlaQUJDREVGR0hJSktM', 'udef-mgzad-s1-0000-000000000005'),
+    ('uacc-gkasy-s1-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP, 'NsE3IhDlQym0z0QuzDXM/mViOJTcMURQWZdoLQmCmug=',  'TU5PUFFSU1RVVldYWVow', 'udef-gkasy-s1-0000-000000000006'),
+    ('uacc-gdep0-s1-0000-000000000007', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP, 'PMsOAWxzVIuMDhIsGQKH8mKf1pLiZd6d1Fgd0KpH8Wo=',  'QUJDREVGR0hJSktMTU5Q', 'udef-gdep0-s1-0000-000000000007')
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
--- MİGRASYON: Mevcut DB'deki yanlış company_code düzeltmeleri
--- ============================================================
-
--- 1. SEDCORE kullanıcılarının hâlâ SEDCORE1 company_code'lu erişim
---    kayıtlarını temizle (önceki yanlış seed'den kalan)
-DELETE FROM user_def_access
-WHERE id IN (
-    'uacc-admin-0000-0000-0000-000000000001',
-    'uacc-kasiy-0000-0000-0000-000000000002',
-    'uacc-depo0-0000-0000-0000-000000000003'
-)
-AND company_code = 'SEDCORE1';
-
--- 2. Giyim kullanıcılarını (4-6) SEDCORE → SEDCORE1'e taşı
-UPDATE user_def
-SET company_code = 'SEDCORE1'
-WHERE id IN (
-    'udef-mgzad-0000-0000-0000-000000000004',
-    'udef-gkasy-0000-0000-0000-000000000005',
-    'udef-gdep0-0000-0000-0000-000000000006'
-)
-AND company_code = 'SEDCORE';
-
--- 3. Giyim kullanıcılarının erişim kayıtları: SEDCORE → SEDCORE1
---    Eğer SEDCORE1 kaydı yoksa güvenle UPDATE yapılır
-UPDATE user_def_access
-SET company_code = 'SEDCORE1'
-WHERE id IN (
-    'uacc-mgzad-0000-0000-0000-000000000004',
-    'uacc-gkasy-0000-0000-0000-000000000005',
-    'uacc-gdep0-0000-0000-0000-000000000006'
-)
-AND company_code = 'SEDCORE'
-AND NOT EXISTS (
-    SELECT 1 FROM user_def_access x
-    WHERE x.user_def_id = user_def_access.user_def_id
-      AND x.company_code = 'SEDCORE1'
-      AND x.id != user_def_access.id
-);
-
--- 4. Giyim user_role kayıtları: SEDCORE rolleri → SEDCORE1 rolleri
-UPDATE user_role
-SET company_code = 'SEDCORE1',
-    role_def_id  = 'role-s1mgz-0000-0000-0000-000000000004'
-WHERE id = 'urol-mgzad-0000-0000-0000-000000000004'
-  AND company_code = 'SEDCORE';
-
-UPDATE user_role
-SET company_code = 'SEDCORE1',
-    role_def_id  = 'role-s1kas-0000-0000-0000-000000000002'
-WHERE id = 'urol-gkasy-0000-0000-0000-000000000005'
-  AND company_code = 'SEDCORE';
-
-UPDATE user_role
-SET company_code = 'SEDCORE1',
-    role_def_id  = 'role-s1dep-0000-0000-0000-000000000003'
-WHERE id = 'urol-gdep0-0000-0000-0000-000000000006'
-  AND company_code = 'SEDCORE';
-
--- ============================================================
--- ROL ATAMALARI (user_role)
+-- USER_ROLE
 -- ============================================================
 INSERT INTO user_role (id, create_time, create_user, last_modified_time, update_user,
                        company_code, role_def_id, user_def_id)
 VALUES
-    -- admin → ADMIN rolü
-    ('urol-admin-0000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'role-admin-0000-0000-0000-000000000001', 'udef-admin-0000-0000-0000-000000000001'),
-
-    -- kasiyer → CASHIER rolü
-    ('urol-kasiy-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'role-kasiy-0000-0000-0000-000000000002', 'udef-kasiy-0000-0000-0000-000000000002'),
-
-    -- depo → WAREHOUSE rolü
-    ('urol-depo0-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'role-depo0-0000-0000-0000-000000000003', 'udef-depo-0000-0000-0000-000000000003'),
-
-    -- magaza_admin → STORE_ADMIN rolü (SEDCORE1)
-    ('urol-mgzad-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE1', 'role-s1mgz-0000-0000-0000-000000000004', 'udef-mgzad-0000-0000-0000-000000000004'),
-
-    -- giyim_kasiyer → CASHIER rolü (SEDCORE1)
-    ('urol-gkasy-0000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE1', 'role-s1kas-0000-0000-0000-000000000002', 'udef-gkasy-0000-0000-0000-000000000005'),
-
-    -- giyim_depo → WAREHOUSE rolü (SEDCORE1)
-    ('urol-gdep0-0000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE1', 'role-s1dep-0000-0000-0000-000000000003', 'udef-gdep0-0000-0000-0000-000000000006')
-ON CONFLICT DO NOTHING;
-
--- ============================================================
--- EK KULLANICI: kasiyer2 — SEDCORE Şube Mağaza (SUBE-01)
--- Şifre: kasiyer123  (kasiyer ile aynı hash)
--- store_id SUBE-01 — pos-product-manager data.sql'de UPDATE ile set edilir
--- ============================================================
-INSERT INTO user_def (id, create_time, create_user, last_modified_time, update_user,
-                      company_code, generic_identifier, is_active, language_val,
-                      user_def_generic_id_type, user_display_name, user_name, user_type)
-VALUES
-    ('udef-kas2-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'kasiyer2', true, 'TR', 'AGENCY_ID', 'Kasiyer 2 - Şube', 'kasiyer2', 'USER')
-ON CONFLICT DO NOTHING;
-
-INSERT INTO user_def_access (id, create_time, create_user, last_modified_time, update_user,
-                             company_code, access_type, can_login, has_ip_restriction,
-                             ip_restriction, is_force_password_change, last_change_time,
-                             password_hash, salt_key, user_def_id)
-VALUES
-    ('uacc-kas2-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
-     'bfV/PaJuohhVbz7cLZzThRiawQ/W4o7ohh+qdvvnvc4=',
-     'a2FzaXllcnNhbHQxMjM0',
-     'udef-kas2-0000-0000-0000-000000000002')
-ON CONFLICT DO NOTHING;
-
-INSERT INTO user_role (id, create_time, create_user, last_modified_time, update_user,
-                       company_code, role_def_id, user_def_id)
-VALUES
-    ('urol-kas2-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'role-kasiy-0000-0000-0000-000000000002', 'udef-kas2-0000-0000-0000-000000000002')
-ON CONFLICT DO NOTHING;
+    ('urol-admin-sed-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE',  'role-sc-adm-0000-0000-000000000001', 'udef-admin-sed-0000-000000000001'),
+    ('urol-kasiy-sed-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE',  'role-sc-cas-0000-0000-000000000002', 'udef-kasiy-sed-0000-000000000002'),
+    ('urol-kas2-sed-0000-0000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE',  'role-sc-cas-0000-0000-000000000002', 'udef-kas2-sed-0000-0000000000003'),
+    ('urol-depo-sed-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE',  'role-sc-wrh-0000-0000-000000000003', 'udef-depo-sed-0000-000000000004'),
+    ('urol-mgzad-s1-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'role-s1-sad-0000-0000-000000000004', 'udef-mgzad-s1-0000-000000000005'),
+    ('urol-gkasy-s1-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'role-s1-cas-0000-0000-000000000002', 'udef-gkasy-s1-0000-000000000006'),
+    ('urol-gdep0-s1-0000-000000000007', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'role-s1-wrh-0000-0000-000000000003', 'udef-gdep0-s1-0000-000000000007')
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
 -- MESAJ SİSTEMİ (ext_messages) — Hata kodları TR/EN
@@ -995,13 +803,34 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
--- CUSTOMER ROLÜ
+-- ROL TANIMLARI (role_def) — SEDCORE + SEDCORE1
+-- NOT: DevPasswordSeeder aynı ID'leri ON CONFLICT DO NOTHING ile insert eder → no-op
 -- ============================================================
 INSERT INTO role_def (id, create_time, create_user, last_modified_time, update_user,
                       company_code, code, description, is_active, is_system_role, name)
 VALUES
+    -- SEDCORE rolleri
+    ('role-sc-adm-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'SEDCORE', 'ADMIN', 'Tam yetkili yönetici rolü', true, true, 'Yönetici'),
+    ('role-sc-cas-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'SEDCORE', 'CASHIER', 'POS satış ve müşteri işlemleri', true, false, 'Kasiyer'),
+    ('role-sc-wrh-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'SEDCORE', 'WAREHOUSE', 'Stok ve depo yönetimi', true, false, 'Depo Sorumlusu'),
+    ('role-sc-sad-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'SEDCORE', 'STORE_ADMIN', 'Mağaza yönetimi ve raporlar', true, true, 'Mağaza Yöneticisi'),
+    ('role-sc-sup-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'SEDCORE', 'SUPER_ADMIN', 'Platform geneli tüm firma yetkisi', true, true, 'Süper Admin'),
     ('role-custr-0000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'CUSTOMER', 'E-ticaret müşteri rolü', true, true, 'Müşteri')
+     'SEDCORE', 'CUSTOMER', 'E-ticaret müşteri rolü', true, true, 'Müşteri'),
+    -- SEDCORE1 rolleri
+    ('role-s1-adm-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'SEDCORE1', 'ADMIN', 'Tam yetkili yönetici rolü', true, true, 'Yönetici'),
+    ('role-s1-cas-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'SEDCORE1', 'CASHIER', 'POS satış ve müşteri işlemleri', true, false, 'Kasiyer'),
+    ('role-s1-wrh-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'SEDCORE1', 'WAREHOUSE', 'Stok ve depo yönetimi', true, false, 'Depo Sorumlusu'),
+    ('role-s1-sad-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'SEDCORE1', 'STORE_ADMIN', 'Mağaza yönetimi ve raporlar', true, true, 'Mağaza Yöneticisi')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
@@ -1180,64 +1009,124 @@ ON CONFLICT DO NOTHING;
 -- ROL-MENÜ EŞLEMELERİ (role_menu)
 -- ============================================================
 
--- ADMIN → TÜM MENÜLER (18)
+-- SEDCORE ADMIN → TÜM MENÜLER (18)
 INSERT INTO role_menu (id, create_time, create_user, last_modified_time, update_user, role_id, menu_id)
 VALUES
-    ('rm-adm01-0000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-admin-0000-0000-0000-000000000001', 'menu-dashb-0000-0000-0000-000000000001'),
-    ('rm-adm02-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-admin-0000-0000-0000-000000000001', 'menu-menul-0000-0000-0000-000000000002'),
-    ('rm-adm03-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-admin-0000-0000-0000-000000000001', 'menu-parts-0000-0000-0000-000000000003'),
-    ('rm-adm04-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-admin-0000-0000-0000-000000000001', 'menu-possv-0000-0000-0000-000000000004'),
-    ('rm-adm05-0000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-admin-0000-0000-0000-000000000001', 'menu-saleh-0000-0000-0000-000000000005'),
-    ('rm-adm06-0000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-admin-0000-0000-0000-000000000001', 'menu-produ-0000-0000-0000-000000000006'),
-    ('rm-adm07-0000-0000-0000-000000000007', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-admin-0000-0000-0000-000000000001', 'menu-categ-0000-0000-0000-000000000007'),
-    ('rm-adm08-0000-0000-0000-000000000008', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-admin-0000-0000-0000-000000000001', 'menu-stock-0000-0000-0000-000000000008'),
-    ('rm-adm09-0000-0000-0000-000000000009', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-admin-0000-0000-0000-000000000001', 'menu-wareh-0000-0000-0000-000000000009'),
-    ('rm-adm10-0000-0000-0000-000000000010', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-admin-0000-0000-0000-000000000001', 'menu-purch-0000-0000-0000-000000000010'),
-    ('rm-adm11-0000-0000-0000-000000000011', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-admin-0000-0000-0000-000000000001', 'menu-suppl-0000-0000-0000-000000000011'),
-    ('rm-adm12-0000-0000-0000-000000000012', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-admin-0000-0000-0000-000000000001', 'menu-custo-0000-0000-0000-000000000012'),
-    ('rm-adm13-0000-0000-0000-000000000013', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-admin-0000-0000-0000-000000000001', 'menu-accnt-0000-0000-0000-000000000013'),
-    ('rm-adm14-0000-0000-0000-000000000014', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-admin-0000-0000-0000-000000000001', 'menu-finan-0000-0000-0000-000000000014'),
-    ('rm-adm15-0000-0000-0000-000000000015', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-admin-0000-0000-0000-000000000001', 'menu-reprt-0000-0000-0000-000000000015'),
-    ('rm-adm16-0000-0000-0000-000000000016', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-admin-0000-0000-0000-000000000001', 'menu-settn-0000-0000-0000-000000000016'),
-    ('rm-adm17-0000-0000-0000-000000000017', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-admin-0000-0000-0000-000000000001', 'menu-store-0000-0000-0000-000000000017'),
-    ('rm-adm18-0000-0000-0000-000000000018', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-admin-0000-0000-0000-000000000001', 'menu-users-0000-0000-0000-000000000018')
+    ('rm-adm01-0000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-adm-0000-0000-000000000001', 'menu-dashb-0000-0000-0000-000000000001'),
+    ('rm-adm02-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-adm-0000-0000-000000000001', 'menu-menul-0000-0000-0000-000000000002'),
+    ('rm-adm03-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-adm-0000-0000-000000000001', 'menu-parts-0000-0000-0000-000000000003'),
+    ('rm-adm04-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-adm-0000-0000-000000000001', 'menu-possv-0000-0000-0000-000000000004'),
+    ('rm-adm05-0000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-adm-0000-0000-000000000001', 'menu-saleh-0000-0000-0000-000000000005'),
+    ('rm-adm06-0000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-adm-0000-0000-000000000001', 'menu-produ-0000-0000-0000-000000000006'),
+    ('rm-adm07-0000-0000-0000-000000000007', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-adm-0000-0000-000000000001', 'menu-categ-0000-0000-0000-000000000007'),
+    ('rm-adm08-0000-0000-0000-000000000008', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-adm-0000-0000-000000000001', 'menu-stock-0000-0000-0000-000000000008'),
+    ('rm-adm09-0000-0000-0000-000000000009', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-adm-0000-0000-000000000001', 'menu-wareh-0000-0000-0000-000000000009'),
+    ('rm-adm10-0000-0000-0000-000000000010', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-adm-0000-0000-000000000001', 'menu-purch-0000-0000-0000-000000000010'),
+    ('rm-adm11-0000-0000-0000-000000000011', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-adm-0000-0000-000000000001', 'menu-suppl-0000-0000-0000-000000000011'),
+    ('rm-adm12-0000-0000-0000-000000000012', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-adm-0000-0000-000000000001', 'menu-custo-0000-0000-0000-000000000012'),
+    ('rm-adm13-0000-0000-0000-000000000013', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-adm-0000-0000-000000000001', 'menu-accnt-0000-0000-0000-000000000013'),
+    ('rm-adm14-0000-0000-0000-000000000014', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-adm-0000-0000-000000000001', 'menu-finan-0000-0000-0000-000000000014'),
+    ('rm-adm15-0000-0000-0000-000000000015', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-adm-0000-0000-000000000001', 'menu-reprt-0000-0000-0000-000000000015'),
+    ('rm-adm16-0000-0000-0000-000000000016', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-adm-0000-0000-000000000001', 'menu-settn-0000-0000-0000-000000000016'),
+    ('rm-adm17-0000-0000-0000-000000000017', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-adm-0000-0000-000000000001', 'menu-store-0000-0000-0000-000000000017'),
+    ('rm-adm18-0000-0000-0000-000000000018', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-adm-0000-0000-000000000001', 'menu-users-0000-0000-0000-000000000018')
 ON CONFLICT DO NOTHING;
 
--- STORE_MANAGER → 11 menü
+-- SEDCORE STORE_ADMIN → 11 menü
 INSERT INTO role_menu (id, create_time, create_user, last_modified_time, update_user, role_id, menu_id)
 VALUES
-    ('rm-mgz01-0000-0000-0000-000000000019', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-mgzyn-0000-0000-0000-000000000004', 'menu-dashb-0000-0000-0000-000000000001'),
-    ('rm-mgz02-0000-0000-0000-000000000020', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-mgzyn-0000-0000-0000-000000000004', 'menu-menul-0000-0000-0000-000000000002'),
-    ('rm-mgz03-0000-0000-0000-000000000021', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-mgzyn-0000-0000-0000-000000000004', 'menu-parts-0000-0000-0000-000000000003'),
-    ('rm-mgz04-0000-0000-0000-000000000022', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-mgzyn-0000-0000-0000-000000000004', 'menu-possv-0000-0000-0000-000000000004'),
-    ('rm-mgz05-0000-0000-0000-000000000023', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-mgzyn-0000-0000-0000-000000000004', 'menu-saleh-0000-0000-0000-000000000005'),
-    ('rm-mgz06-0000-0000-0000-000000000024', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-mgzyn-0000-0000-0000-000000000004', 'menu-produ-0000-0000-0000-000000000006'),
-    ('rm-mgz07-0000-0000-0000-000000000025', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-mgzyn-0000-0000-0000-000000000004', 'menu-categ-0000-0000-0000-000000000007'),
-    ('rm-mgz08-0000-0000-0000-000000000026', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-mgzyn-0000-0000-0000-000000000004', 'menu-stock-0000-0000-0000-000000000008'),
-    ('rm-mgz09-0000-0000-0000-000000000027', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-mgzyn-0000-0000-0000-000000000004', 'menu-custo-0000-0000-0000-000000000012'),
-    ('rm-mgz10-0000-0000-0000-000000000028', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-mgzyn-0000-0000-0000-000000000004', 'menu-reprt-0000-0000-0000-000000000015'),
-    ('rm-mgz11-0000-0000-0000-000000000029', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-mgzyn-0000-0000-0000-000000000004', 'menu-wareh-0000-0000-0000-000000000009')
+    ('rm-mgz01-0000-0000-0000-000000000019', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-sad-0000-0000-000000000004', 'menu-dashb-0000-0000-0000-000000000001'),
+    ('rm-mgz02-0000-0000-0000-000000000020', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-sad-0000-0000-000000000004', 'menu-menul-0000-0000-0000-000000000002'),
+    ('rm-mgz03-0000-0000-0000-000000000021', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-sad-0000-0000-000000000004', 'menu-parts-0000-0000-0000-000000000003'),
+    ('rm-mgz04-0000-0000-0000-000000000022', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-sad-0000-0000-000000000004', 'menu-possv-0000-0000-0000-000000000004'),
+    ('rm-mgz05-0000-0000-0000-000000000023', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-sad-0000-0000-000000000004', 'menu-saleh-0000-0000-0000-000000000005'),
+    ('rm-mgz06-0000-0000-0000-000000000024', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-sad-0000-0000-000000000004', 'menu-produ-0000-0000-0000-000000000006'),
+    ('rm-mgz07-0000-0000-0000-000000000025', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-sad-0000-0000-000000000004', 'menu-categ-0000-0000-0000-000000000007'),
+    ('rm-mgz08-0000-0000-0000-000000000026', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-sad-0000-0000-000000000004', 'menu-stock-0000-0000-0000-000000000008'),
+    ('rm-mgz09-0000-0000-0000-000000000027', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-sad-0000-0000-000000000004', 'menu-custo-0000-0000-0000-000000000012'),
+    ('rm-mgz10-0000-0000-0000-000000000028', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-sad-0000-0000-000000000004', 'menu-reprt-0000-0000-0000-000000000015'),
+    ('rm-mgz11-0000-0000-0000-000000000029', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-sad-0000-0000-000000000004', 'menu-wareh-0000-0000-0000-000000000009')
 ON CONFLICT DO NOTHING;
 
--- CASHIER → 5 menü
+-- SEDCORE CASHIER → 5 menü
 INSERT INTO role_menu (id, create_time, create_user, last_modified_time, update_user, role_id, menu_id)
 VALUES
-    ('rm-kas01-0000-0000-0000-000000000030', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-kasiy-0000-0000-0000-000000000002', 'menu-dashb-0000-0000-0000-000000000001'),
-    ('rm-kas02-0000-0000-0000-000000000031', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-kasiy-0000-0000-0000-000000000002', 'menu-menul-0000-0000-0000-000000000002'),
-    ('rm-kas03-0000-0000-0000-000000000032', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-kasiy-0000-0000-0000-000000000002', 'menu-possv-0000-0000-0000-000000000004'),
-    ('rm-kas04-0000-0000-0000-000000000033', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-kasiy-0000-0000-0000-000000000002', 'menu-saleh-0000-0000-0000-000000000005'),
-    ('rm-kas05-0000-0000-0000-000000000034', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-kasiy-0000-0000-0000-000000000002', 'menu-stock-0000-0000-0000-000000000008')
+    ('rm-kas01-0000-0000-0000-000000000030', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-cas-0000-0000-000000000002', 'menu-dashb-0000-0000-0000-000000000001'),
+    ('rm-kas02-0000-0000-0000-000000000031', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-cas-0000-0000-000000000002', 'menu-menul-0000-0000-0000-000000000002'),
+    ('rm-kas03-0000-0000-0000-000000000032', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-cas-0000-0000-000000000002', 'menu-possv-0000-0000-0000-000000000004'),
+    ('rm-kas04-0000-0000-0000-000000000033', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-cas-0000-0000-000000000002', 'menu-saleh-0000-0000-0000-000000000005'),
+    ('rm-kas05-0000-0000-0000-000000000034', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-cas-0000-0000-000000000002', 'menu-stock-0000-0000-0000-000000000008')
 ON CONFLICT DO NOTHING;
 
--- WAREHOUSE → 6 menü
+-- SEDCORE WAREHOUSE → 6 menü
 INSERT INTO role_menu (id, create_time, create_user, last_modified_time, update_user, role_id, menu_id)
 VALUES
-    ('rm-dep01-0000-0000-0000-000000000035', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-depo0-0000-0000-0000-000000000003', 'menu-dashb-0000-0000-0000-000000000001'),
-    ('rm-dep02-0000-0000-0000-000000000036', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-depo0-0000-0000-0000-000000000003', 'menu-menul-0000-0000-0000-000000000002'),
-    ('rm-dep03-0000-0000-0000-000000000037', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-depo0-0000-0000-0000-000000000003', 'menu-parts-0000-0000-0000-000000000003'),
-    ('rm-dep04-0000-0000-0000-000000000038', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-depo0-0000-0000-0000-000000000003', 'menu-stock-0000-0000-0000-000000000008'),
-    ('rm-dep05-0000-0000-0000-000000000039', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-depo0-0000-0000-0000-000000000003', 'menu-wareh-0000-0000-0000-000000000009'),
-    ('rm-dep06-0000-0000-0000-000000000040', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-depo0-0000-0000-0000-000000000003', 'menu-reprt-0000-0000-0000-000000000015')
+    ('rm-dep01-0000-0000-0000-000000000035', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-wrh-0000-0000-000000000003', 'menu-dashb-0000-0000-0000-000000000001'),
+    ('rm-dep02-0000-0000-0000-000000000036', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-wrh-0000-0000-000000000003', 'menu-menul-0000-0000-0000-000000000002'),
+    ('rm-dep03-0000-0000-0000-000000000037', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-wrh-0000-0000-000000000003', 'menu-parts-0000-0000-0000-000000000003'),
+    ('rm-dep04-0000-0000-0000-000000000038', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-wrh-0000-0000-000000000003', 'menu-stock-0000-0000-0000-000000000008'),
+    ('rm-dep05-0000-0000-0000-000000000039', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-wrh-0000-0000-000000000003', 'menu-wareh-0000-0000-0000-000000000009'),
+    ('rm-dep06-0000-0000-0000-000000000040', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-wrh-0000-0000-000000000003', 'menu-reprt-0000-0000-0000-000000000015')
+ON CONFLICT DO NOTHING;
+
+-- SEDCORE1 ADMIN → TÜM MENÜLER (18)
+INSERT INTO role_menu (id, create_time, create_user, last_modified_time, update_user, role_id, menu_id)
+VALUES
+    ('rm-s1adm1-0000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-adm-0000-0000-000000000001', 'menu-dashb-0000-0000-0000-000000000001'),
+    ('rm-s1adm2-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-adm-0000-0000-000000000001', 'menu-menul-0000-0000-0000-000000000002'),
+    ('rm-s1adm3-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-adm-0000-0000-000000000001', 'menu-parts-0000-0000-0000-000000000003'),
+    ('rm-s1adm4-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-adm-0000-0000-000000000001', 'menu-possv-0000-0000-0000-000000000004'),
+    ('rm-s1adm5-0000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-adm-0000-0000-000000000001', 'menu-saleh-0000-0000-0000-000000000005'),
+    ('rm-s1adm6-0000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-adm-0000-0000-000000000001', 'menu-produ-0000-0000-0000-000000000006'),
+    ('rm-s1adm7-0000-0000-0000-000000000007', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-adm-0000-0000-000000000001', 'menu-categ-0000-0000-0000-000000000007'),
+    ('rm-s1adm8-0000-0000-0000-000000000008', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-adm-0000-0000-000000000001', 'menu-stock-0000-0000-0000-000000000008'),
+    ('rm-s1adm9-0000-0000-0000-000000000009', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-adm-0000-0000-000000000001', 'menu-wareh-0000-0000-0000-000000000009'),
+    ('rm-s1adma-0000-0000-0000-000000000010', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-adm-0000-0000-000000000001', 'menu-purch-0000-0000-0000-000000000010'),
+    ('rm-s1admb-0000-0000-0000-000000000011', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-adm-0000-0000-000000000001', 'menu-suppl-0000-0000-0000-000000000011'),
+    ('rm-s1admc-0000-0000-0000-000000000012', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-adm-0000-0000-000000000001', 'menu-custo-0000-0000-0000-000000000012'),
+    ('rm-s1admd-0000-0000-0000-000000000013', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-adm-0000-0000-000000000001', 'menu-accnt-0000-0000-0000-000000000013'),
+    ('rm-s1adme-0000-0000-0000-000000000014', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-adm-0000-0000-000000000001', 'menu-finan-0000-0000-0000-000000000014'),
+    ('rm-s1admf-0000-0000-0000-000000000015', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-adm-0000-0000-000000000001', 'menu-reprt-0000-0000-0000-000000000015'),
+    ('rm-s1admg-0000-0000-0000-000000000016', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-adm-0000-0000-000000000001', 'menu-settn-0000-0000-0000-000000000016'),
+    ('rm-s1admh-0000-0000-0000-000000000017', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-adm-0000-0000-000000000001', 'menu-store-0000-0000-0000-000000000017'),
+    ('rm-s1admi-0000-0000-0000-000000000018', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-adm-0000-0000-000000000001', 'menu-users-0000-0000-0000-000000000018')
+ON CONFLICT DO NOTHING;
+
+-- SEDCORE1 STORE_ADMIN → 11 menü
+INSERT INTO role_menu (id, create_time, create_user, last_modified_time, update_user, role_id, menu_id)
+VALUES
+    ('rm-s1sad1-0000-0000-0000-000000000019', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-sad-0000-0000-000000000004', 'menu-dashb-0000-0000-0000-000000000001'),
+    ('rm-s1sad2-0000-0000-0000-000000000020', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-sad-0000-0000-000000000004', 'menu-menul-0000-0000-0000-000000000002'),
+    ('rm-s1sad3-0000-0000-0000-000000000021', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-sad-0000-0000-000000000004', 'menu-possv-0000-0000-0000-000000000004'),
+    ('rm-s1sad4-0000-0000-0000-000000000022', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-sad-0000-0000-000000000004', 'menu-saleh-0000-0000-0000-000000000005'),
+    ('rm-s1sad5-0000-0000-0000-000000000023', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-sad-0000-0000-000000000004', 'menu-produ-0000-0000-0000-000000000006'),
+    ('rm-s1sad6-0000-0000-0000-000000000024', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-sad-0000-0000-000000000004', 'menu-categ-0000-0000-0000-000000000007'),
+    ('rm-s1sad7-0000-0000-0000-000000000025', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-sad-0000-0000-000000000004', 'menu-stock-0000-0000-0000-000000000008'),
+    ('rm-s1sad8-0000-0000-0000-000000000026', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-sad-0000-0000-000000000004', 'menu-custo-0000-0000-0000-000000000012'),
+    ('rm-s1sad9-0000-0000-0000-000000000027', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-sad-0000-0000-000000000004', 'menu-reprt-0000-0000-0000-000000000015'),
+    ('rm-s1sada-0000-0000-0000-000000000028', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-sad-0000-0000-000000000004', 'menu-wareh-0000-0000-0000-000000000009'),
+    ('rm-s1sadb-0000-0000-0000-000000000029', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-sad-0000-0000-000000000004', 'menu-settn-0000-0000-0000-000000000016')
+ON CONFLICT DO NOTHING;
+
+-- SEDCORE1 CASHIER → 5 menü
+INSERT INTO role_menu (id, create_time, create_user, last_modified_time, update_user, role_id, menu_id)
+VALUES
+    ('rm-s1cas1-0000-0000-0000-000000000030', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-cas-0000-0000-000000000002', 'menu-dashb-0000-0000-0000-000000000001'),
+    ('rm-s1cas2-0000-0000-0000-000000000031', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-cas-0000-0000-000000000002', 'menu-menul-0000-0000-0000-000000000002'),
+    ('rm-s1cas3-0000-0000-0000-000000000032', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-cas-0000-0000-000000000002', 'menu-possv-0000-0000-0000-000000000004'),
+    ('rm-s1cas4-0000-0000-0000-000000000033', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-cas-0000-0000-000000000002', 'menu-saleh-0000-0000-0000-000000000005'),
+    ('rm-s1cas5-0000-0000-0000-000000000034', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-cas-0000-0000-000000000002', 'menu-stock-0000-0000-0000-000000000008')
+ON CONFLICT DO NOTHING;
+
+-- SEDCORE1 WAREHOUSE → 6 menü
+INSERT INTO role_menu (id, create_time, create_user, last_modified_time, update_user, role_id, menu_id)
+VALUES
+    ('rm-s1wrh1-0000-0000-0000-000000000035', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-wrh-0000-0000-000000000003', 'menu-dashb-0000-0000-0000-000000000001'),
+    ('rm-s1wrh2-0000-0000-0000-000000000036', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-wrh-0000-0000-000000000003', 'menu-menul-0000-0000-0000-000000000002'),
+    ('rm-s1wrh3-0000-0000-0000-000000000037', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-wrh-0000-0000-000000000003', 'menu-parts-0000-0000-0000-000000000003'),
+    ('rm-s1wrh4-0000-0000-0000-000000000038', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-wrh-0000-0000-000000000003', 'menu-stock-0000-0000-0000-000000000008'),
+    ('rm-s1wrh5-0000-0000-0000-000000000039', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-wrh-0000-0000-000000000003', 'menu-wareh-0000-0000-0000-000000000009'),
+    ('rm-s1wrh6-0000-0000-0000-000000000040', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-wrh-0000-0000-000000000003', 'menu-reprt-0000-0000-0000-000000000015')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
@@ -1748,6 +1637,11 @@ VALUES
     ('bnd-bt083-0000-0000-000000000083', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.details', 'Detaylar', 'Details'),
     ('bnd-bt084-0000-0000-000000000084', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.product_info', 'Ürün Bilgileri', 'Product Info'),
     ('bnd-bt085-0000-0000-000000000085', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.variants', 'Varyantlar', 'Variants'),
+    ('bnd-bt086-0000-0000-000000000086', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.upload_document', 'Fatura / İrsaliye Yükle', 'Upload Invoice / Bill'),
+    ('bnd-bt087-0000-0000-000000000087', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.document_uploading', 'Belge analiz ediliyor...', 'Analyzing document...'),
+    ('bnd-bt088-0000-0000-000000000088', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.document_no_items', 'Belgeden ürün kalemi çıkarılamadı', 'No product lines extracted from document'),
+    ('bnd-bt089-0000-0000-000000000089', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.document_items_imported', 'kalem aktarıldı', 'items imported'),
+    ('bnd-bt090-0000-0000-000000000090', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.document_analyze_error', 'Belge analizi başarısız oldu', 'Document analysis failed'),
 
     -- ── WIZARD (Ürün ekleme adımları) ─────────────────────────────
     ('bnd-wz001-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.changes_will_be_lost', 'Değişiklikler kaybolacak', 'Changes will be lost'),
@@ -2399,3 +2293,4 @@ AND NOT EXISTS (
       AND rd4.code = 'STORE_ADMIN'
       AND rd4.company_code = ur.company_code
 );
+

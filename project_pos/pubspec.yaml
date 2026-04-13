@@ -70,6 +70,7 @@ dependencies:
   # Barcode & File
   mobile_scanner: ^3.5.2
   file_picker: ^8.1.6
+  image_picker: ^1.1.2
   csv: ^5.1.1
   permission_handler: ^11.0.1
 

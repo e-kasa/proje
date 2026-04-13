@@ -33,8 +33,13 @@ import 'i18n_service.dart';
 import 'recommendation_service.dart';
 import 'hrm_service.dart';
 import 'finance_service.dart';
+import 'package:project_pos/features/inventory/services/document_analyze_service.dart';
 
 // Service Providers
+
+final documentAnalyzeServiceProvider = Provider<DocumentAnalyzeService>((ref) {
+  return DocumentAnalyzeService(ref.watch(apiClientProvider));
+});
 final authServiceProvider = Provider<AuthService>((ref) {
   final apiClient = ref.watch(apiClientProvider);
   return AuthService(apiClient);

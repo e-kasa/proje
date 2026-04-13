@@ -1,13 +1,20 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../core/config/sector_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../providers/sector_provider.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
+import 'package:project_pos/services/service_locator.dart';
+import 'package:project_pos/features/inventory/services/document_analyze_service.dart';
+import 'package:project_pos/features/inventory/screens/batch_entry/widgets/document_analyze_result_sheet.dart';
 import 'providers/batch_entry_provider.dart';
 import 'models/batch_entry_models.dart';
 import 'widgets/batch_header_form.dart';
@@ -52,6 +59,135 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
     _barcodeFocus.dispose();
     _tabController.dispose();
     super.dispose();
+  }
+
+  // ── Kaynak seçim tipi ────────────────────────────────────────────────────
+  static const _srcPdf     = 'pdf';
+  static const _srcCamera  = 'camera';
+  static const _srcGallery = 'gallery';
+
+  Future<void> _uploadDocument() async {
+    final t = i18nOf(ref);
+
+    // 1. Kaynak dialog
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(t('batch.select_source')),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, _srcPdf),
+            child: Row(children: [
+              const Icon(Icons.picture_as_pdf_rounded, color: AppColors.danger),
+              const SizedBox(width: 12),
+              Text(t('batch.upload_pdf')),
+            ]),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, _srcCamera),
+            child: Row(children: [
+              const Icon(Icons.camera_alt_rounded, color: AppColors.info),
+              const SizedBox(width: 12),
+              Text(t('batch.take_photo')),
+            ]),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, _srcGallery),
+            child: Row(children: [
+              const Icon(Icons.photo_library_rounded, color: AppColors.success),
+              const SizedBox(width: 12),
+              Text(t('batch.choose_from_gallery')),
+            ]),
+          ),
+        ],
+      ),
+    );
+    if (choice == null) return;
+
+    // 2. Dosya al
+    File? file;
+
+    if (choice == _srcPdf) {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+        allowMultiple: false,
+      );
+      if (result == null || result.files.single.path == null) return;
+      file = File(result.files.single.path!);
+    } else if (choice == _srcCamera) {
+      // Kamera izni
+      final status = await Permission.camera.request();
+      if (!mounted) return;
+      if (!status.isGranted) {
+        AppToast.error(context, t('batch.camera_permission_denied'));
+        return;
+      }
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+        maxWidth: 2048,
+      );
+      if (picked == null) return;
+      file = File(picked.path);
+    } else {
+      // Galeri
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+      file = File(picked.path);
+    }
+
+    if (!mounted) return;
+
+    // 3. Loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(t('batch.document_uploading')),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final service = ref.read(documentAnalyzeServiceProvider);
+      final analyzeResult = await service.analyzeDocument(file);
+
+      if (!mounted) return;
+      Navigator.pop(context); // loading dialog kapat
+
+      if (analyzeResult.items.isEmpty) {
+        AppToast.error(context, t('batch.document_no_items'));
+        return;
+      }
+
+      // 4. Sonuç sheet'ini göster
+      await DocumentAnalyzeResultSheet.show(
+        context: context,
+        result: analyzeResult,
+        onImport: (selected) {
+          ref.read(batchEntryProvider.notifier).addFromDocumentItems(selected);
+          AppToast.success(
+            context,
+            '${selected.length} ${t('batch.document_items_imported')}',
+          );
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // loading dialog kapat
+        AppToast.error(context, t('batch.document_analyze_error'));
+      }
+    }
   }
 
   Future<void> _addByBarcode() async {
@@ -225,6 +361,25 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
                   height: 46,
                   alignment: Alignment.center,
                   child: const Icon(Icons.add_rounded, color: Colors.white, size: 22),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Tooltip(
+            message: t('batch.upload_or_photo'),
+            child: Material(
+              color: AppColors.info,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                onTap: _uploadDocument,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: 46,
+                  height: 46,
+                  alignment: Alignment.center,
+                  child: const Icon(Icons.add_a_photo_rounded,
+                      color: Colors.white, size: 22),
                 ),
               ),
             ),

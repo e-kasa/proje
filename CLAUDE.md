@@ -554,3 +554,139 @@ Her unique constraint **`(company_code, alan)` compound** olmalı. Bkz. `core/CL
 | UPDATE user_def SET store_id | **pos-product-manager/data.sql** (mağazalar sonra) |
 
 pos-product-manager/data.sql'e **kullanıcı/rol INSERT'i ekleme.**
+
+---
+
+## 15. MİMARİ KARAR KAYITLARI (ADR) — 2026-04-13
+
+### 15.1 Flutter State Management
+
+**Karar:** Riverpod 2.x `StateNotifier` devam — `AsyncNotifier`'a kademeli geçiş.
+
+```
+StateNotifier → load() barındıran ekranlarda AsyncNotifier ile replace edilecek.
+BLoC / GetX / MobX: denenmeyecek (Riverpod yatırımı korunuyor).
+freezed paketi: copyWith() boilerplate azaltmak için sprint 3'te eklenecek.
+Riverpod 3.x (@riverpod annotation): stabil olduğunda migrate edilecek.
+```
+
+### 15.2 Flutter Mimari Pattern
+
+**Karar:** Feature-First devam + Repository Layer sprint 3'te eklenir.
+
+```
+Şu an:   Service → ApiClient (direkt)
+Sprint 3: Service → Repository → ApiClient
+         Repository: API transformation, mock testability, tek sorumluluk
+
+lib/screens/ → lib/features/ migration: batch_entry + wizard taşınacak (router güncellenecek)
+DDD: Stok hareketi domain logic için düşünülebilir (sprint 4)
+```
+
+### 15.3 Backend Servis Mimarisi
+
+**Karar:** Modular Monolith devam — Event-Driven raporlama için sprint 4.
+
+```
+api-manager (Gateway) → Spring Cloud Gateway (değişmeyecek)
+pos-product-manager   → Modular Monolith (şimdilik tek JAR)
+Event-Driven (Kafka)  → Sprint 4: satış raporlama async, batch değil
+CQRS                  → Lite (inventory_view zaten var) — full sprint 4+
+Full Microservices    → 1000+ transaction/gün olunca değerlendirilecek
+```
+
+### 15.4 Multi-Tenant Mimari
+
+**Karar:** Row-level (Hibernate @Filter) devam + PostgreSQL RLS sprint 3.
+
+```
+Şu an:    Hibernate @Filter (application-level)
+Sprint 3: PostgreSQL RLS double-safety eklenecek:
+          CREATE POLICY tenant_policy ON products
+            USING (company_code = current_setting('app.current_company_code'));
+
+Schema-per-tenant: GDPR zorunlu olursa değerlendirilecek
+Database-per-tenant: over-engineering, planlanmıyor
+Redis tenant-aware cache: Sprint 2 (kategori/marka/birim listeleri)
+```
+
+### 15.5 Stok Concurrent Update
+
+**Karar:** Optimistic Locking (@Version) — Sprint 2.
+
+```
+Şu an:  Direkt write → lost update riski (2 kasiyer aynı ürün → ghost update)
+Sprint 2: ProductVariant'a @Version Long version alanı eklenir
+          ObjectOptimisticLockingFailureException → max 3 retry + exponential backoff
+          Pessimistic Lock kullanılmayacak (POS latency problemi)
+```
+
+### 15.6 Gerçek Zamanlı Bildirim
+
+**Karar:** WebSocket (SSE fallback) — Sprint 2.
+
+```
+Şu an:  REST polling (5-10s interval)
+Sprint 2: Spring WebSocket (/topic/stock/{companyCode})
+          Flutter: web_socket_channel paketi
+          SSE: WebSocket unavailable olunca fallback
+          Multi-tenant: channel namespace = companyCode
+```
+
+### 15.7 PDF/Belge İşleme
+
+**Karar:** PDFBox (sync) → Async job + Tesseract fallback (sprint 2) → LLM (sprint 4).
+
+```
+Şu an:  PDFBox sync (metin PDF ✅, taranmış ❌)
+Sprint 1: KDV + birim extract, loading spinner, hata detayı (TAMAMLANMADI)
+Sprint 2: Async job (polling), Tesseract OCR fallback (taranmış PDF)
+Sprint 4: LLM fallback (Claude/GPT-4o) — PDFBox başarısız ise
+          Scoped: invoice data privacy → önce self-hosted (Ollama) değerlendir
+
+iText: Ticari lisans gerektirir ($$$) → kullanılmayacak
+Google Vision / AWS Textract: KVKK sorunu, maliyet → sprint 4'te değerlendirilecek
+```
+
+### 15.8 Offline Destek
+
+**Karar:** sqflite var, sync stratejisi sprint 4.
+
+```
+Şu an:  sqflite (cart local storage, sync yok)
+Sprint 4: SyncQueue tablosu → offline işlemleri kuyruğa al → online → gönder
+          Conflict resolution:
+            stok yetersiz → partial accept (kullanıcıya sor)
+            fiyat değişti → online fiyat kullan, kullanıcıya bildir
+            ürün silinmiş → sync engelle, kullanıcıya uyar
+```
+
+### 15.9 Aktif Sprint Durumu (2026-04-13)
+
+```
+SPRINT 1 — DEVAM EDİYOR:
+  ✅ PDF altyapısı (PDFBox, Flutter servis, result sheet, upload butonu)
+  🔴 KDV + birim extract (backend + flutter)
+  🔴 Loading spinner + hata detayı
+  🔴 İsim eşleşmesi kullanıcı onay UI
+  🔴 Gerçek fatura ile uçtan uca test
+
+SPRINT 2 — PLANLI:
+  - Optimistic locking (@Version)
+  - Redis cache (kategori/marka listeleri)
+  - Async PDF analiz
+  - Tesseract OCR fallback
+  - WebSocket stok alarm
+
+SPRINT 3 — PLANLI:
+  - lib/screens/ → lib/features/ migration
+  - AsyncNotifier geçişi + freezed
+  - Repository Layer
+  - PostgreSQL RLS
+
+SPRINT 4 — UZUN VADE:
+  - LLM PDF fallback
+  - Offline sync
+  - Event-Driven raporlama
+  - Full CQRS
+```

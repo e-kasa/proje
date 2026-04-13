@@ -389,13 +389,17 @@ spring.jpa.hibernate.ddl-auto=create
 
 ### data.sql Sorumlulukları
 
-security/data.sql **tek yer** olmalıdır:
+security/data.sql **tek ve tek yer**:
 - `company` (SEDCORE, SEDCORE1)
 - `role_def` (her firma için tüm roller)
 - `user_def` (tüm kullanıcılar — admin, kasiyer, depo, kasiyer2, magaza_admin, giyim_kasiyer, giyim_depo)
-- `user_def_access` (tüm şifre hash'leri)
+- `user_def_access` (PBKDF2WithHmacSHA1 hash'ler — sabit salt'larla üretildi)
 - `user_role` (tüm rol atamaları)
 - `ext_messages`, `ext_bundles` (i18n ve menü seed)
+
+**DevPasswordSeeder.java KALDIRILDI** — tüm seed data.sql'de. Yeni kullanıcı eklemek için:
+1. Python ile hash üret: `hashlib.pbkdf2_hmac('sha1', pwd.encode(), base64.b64decode(salt), 1024, dklen=32)`
+2. data.sql'e INSERT ekle
 
 **Kural:** pos-product-manager/data.sql'e kullanıcı/rol INSERT'i ekleme. Çift INSERT → çakışma.
 

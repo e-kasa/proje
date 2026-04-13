@@ -345,22 +345,25 @@ BatchEntryRow(
 
 ## 9. BİLİNEN HATALAR
 
-### P1 — Veri sorunları
+### P1 — Kritik (Veri bütünlüğü)
 
 - [ ] **Mevcut ürün `purchasePrice` = 0** — `_mapProduct` içinde `firstVariant['purchasePrice']`  
   bakıyor ama API response yapısına göre key farklı olabilir → test edilmeli.
+- [ ] **PDF aktarımında `categoryId` boş** — Yeni ürün satırları kategori olmadan oluşur → batch  
+  submit'te "Kategori zorunlu" hatası alınır. Kategori seçimi mandatory.
+- [ ] **Stok concurrent update** — `ProductVariant`'ta `@Version` alanı yok → 2 kasiyerin  
+  aynı ürünü aynı anda satması → lost update. Optimistic locking eklenmeli.
 
 ### P2 — UX sorunları
 
 - [ ] **`TextEditingController` stale** — `applyBrandToAll` vb. sonrası `_syncControllers`  
-  build'de çağrılıyor ama odak sorunları olabilir — test edilmeli.
+  build'de çağrılıyor ama odak sorunları olabilir → test edilmeli.
 - [ ] **KDV dropdown** — Section 2'de `vatRate` dropdown mevcut, ama `taxExempt` /  
   `specialTaxRate` batch modelde yok (wizard'da var).
 
 ### P3 — İleride
 
 - [ ] **`ProductEntryTable`** — Desktop modda import edilmiyor.
-- [ ] **PDF fatura parse** — `parsePdfRows()` metodu yok.
 - [ ] **OEM ile arama** — `addByBarcode` sadece barkod/isim, OEM arama yok.
 - [ ] **`categoryName` mevcut ürünlerde** — API response'a göre değişebilir.
 
@@ -380,15 +383,38 @@ BatchEntryRow(
   - metadata technology fix (imei)
   - _buildOemList oemNumber fallback
 
-SONRA:
-  Sprint 3: UX iyileştirmeleri
+🔴 SPRINT 1 — PDF FATURA ANALİZİ (DEVAM EDİYOR — TAMAMLANMADI):
+  Mevcut: Temel altyapı (PDFBox, Flutter servis, result sheet, upload butonu)
+  Eksik:
+    [ ] Backend: KDV oranı extract (fatura'dan %18, %8 gibi)
+    [ ] Backend: Birim extract ("ADET", "KG", "MT" vb. → DocumentItemResult.unit)
+    [ ] Backend: DocumentItemResult modeline unit + vatRate + vatIncluded alanı ekle
+    [ ] Backend: Fatura başlık bilgisi (fatura no, tarih) — opsiyonel
+    [ ] Flutter: addFromDocumentItems() → KDV, birim aktarımı
+    [ ] Flutter: Loading spinner (_uploadDocument sırasında dialog)
+    [ ] Flutter: İsim eşleşmesi (NAME match) için kullanıcı onay UI
+    [ ] Flutter: Yükleme hatası detaylı mesaj (ağ hatası vs. geçersiz PDF)
+    [ ] Test: Gerçek fatura PDF'i ile uçtan uca test
+
+  Sprint 2: UX iyileştirmeleri
     - taxExempt / specialTaxRate batch modele ekle
     - ProductEntryTable desktop'ta aktifleştir
     - Mevcut ürün purchasePrice edge case testi
+    - Optimistic locking (@Version) → stok concurrent update fix
+    - Async PDF analiz (polling) — büyük dosyalar için
+    - Tesseract OCR fallback (taranmış PDF desteği)
 
-  Sprint 4: PDF modu
-    - PdfInvoiceParser
-    - OEM arama desteği
+  Sprint 3: Mimari iyileştirme
+    - lib/screens/ → lib/features/ migration (batch_entry + wizard)
+    - AsyncNotifier geçişi (StateNotifier'dan)
+    - freezed paketi (copyWith boilerplate azalt)
+    - Repository Layer ekle (Services → Repo → API)
+
+  Sprint 4: Gelişmiş özellikler
+    - WebSocket stok alarm bildirimi (SSE fallback)
+    - PostgreSQL RLS + Hibernate @Filter hibrit (double-safety)
+    - LLM fallback (PDF parse başarısız → Claude/GPT-4o)
+    - Offline sync stratejisi (sqflite + conflict resolution)
 ```
 
 ---
@@ -413,6 +439,11 @@ SONRA:
 | bt083 | `batch.details` | Detaylar | Details |
 | bt084 | `batch.product_info` | Ürün Bilgileri | Product Info |
 | bt085 | `batch.variants` | Varyantlar | Variants |
+| bt086 | `batch.upload_document` | Fatura / İrsaliye Yükle | Upload Invoice / Bill |
+| bt087 | `batch.document_uploading` | Belge analiz ediliyor... | Analyzing document... |
+| bt088 | `batch.document_no_items` | Belgeden ürün kalemi çıkarılamadı | No product lines extracted from document |
+| bt089 | `batch.document_items_imported` | kalem aktarıldı | items imported |
+| bt090 | `batch.document_analyze_error` | Belge analizi başarısız oldu | Document analysis failed |
 
 ---
 
@@ -420,10 +451,11 @@ SONRA:
 
 ```dart
 // batch_entry_provider.dart — doğrudan kullanılan
-productServiceProvider     // batchCreate() + addByBarcode()
-oemServiceProvider         // (henüz aktif kullanılmıyor)
-sectorConfigProvider       // SectorConfig (type, fields, labels)
+productServiceProvider          // batchCreate() + addByBarcode()
+oemServiceProvider              // (henüz aktif kullanılmıyor)
+sectorConfigProvider            // SectorConfig (type, fields, labels)
 companyCategoryServiceProvider  // batchCategoriesProvider için
+documentAnalyzeServiceProvider  // PDF fatura analizi (lib/services/service_locator.dart)
 
 // batch_product_screen.dart — dialog ve kart içinde
 batchEntryProvider         // StateNotifierProvider.autoDispose
@@ -450,4 +482,293 @@ i18nOf(ref)               // t('key') — tüm metin zorunlu
 ✓ Tüm başarılı → BatchSaveResult.errors=0, purchaseId dolu
 ✓ Footwear: 3 variantRow → backend'e 3 ayrı variant gider
 ✓ autoParts: oemList → newProducts[].oemNumbers[] olarak gider
+```
+
+---
+
+## 14. PDF FATURA ANALİZİ — DETAY
+
+### 14.1 Dosya Lokasyonları
+
+```
+Backend:
+  pos-product-manager/
+  ├── model/DocumentItemResult.java        ← Tek satır sonuç DTO
+  ├── model/DocumentAnalyzeResponse.java   ← Tüm belge sonuç DTO
+  ├── service/DocumentAnalyzeService.java  ← Interface
+  ├── service/impl/DocumentAnalyzeServiceImpl.java  ← PDFBox parse + match
+  ├── controller/DocumentAnalyzeController.java
+  └── controller/impl/DocumentAnalyzeControllerImpl.java
+
+Flutter:
+  features/inventory/services/document_analyze_service.dart   ← API client + model
+  features/inventory/screens/batch_entry/widgets/
+    └── document_analyze_result_sheet.dart                     ← Sonuç bottom sheet
+  screens/inventory/batch_entry/
+    ├── batch_product_screen.dart  (_uploadDocument metodu)
+    └── providers/batch_entry_provider.dart  (addFromDocumentItems)
+```
+
+### 14.2 Backend: Fatura Alanları — Ne Okunuyor, Nasıl
+
+Standart Türkçe fatura formatı:
+```
+Sıra | Ürün Kodu    | Açıklama              | Miktar | Birim | Birim Fiyat | KDV % | Toplam
+  1  | 8690000123456 | MOTOR YAĞI 5W40 1 LT | 10     | ADET  | 125,50      | 18    | 1.255,00
+  2  | F123456        | HAVA FİLTRESİ SIF    | 5      | ADET  |  85,00      | 8     |   425,00
+```
+
+**Şu an okunan alanlar:**
+```
+extractedCode     → EAN13 (13 rakam) veya OEM (harf+rakam karışımı 4-20 karakter)
+extractedName     → kod ve sayılar temizlendikten sonra kalan metin
+extractedQuantity → 1-9999 arası tam sayı
+extractedUnitPrice → küçük pozitif ondalıklı sayı
+```
+
+**Regex detayları (DocumentAnalyzeServiceImpl.java):**
+```java
+// EAN13: tam 13 rakam
+BARCODE_PATTERN = Pattern.compile("\\b(\\d{13})\\b");
+
+// OEM: harf+rakam, 4-20 karakter, boşluk/tire/nokta içerebilir
+OEM_PATTERN = Pattern.compile("\\b([A-Z0-9][A-Z0-9 .\\-]{3,18}[A-Z0-9])\\b");
+
+// Sayılar: Türkçe format 1.234,56 → "1234.56" normalize edilir
+// binlik nokta kaldırılır: (\\d)\\.(\\d{3}) → $1$2
+// virgül → nokta: "," → "."
+```
+
+**Atlanan satırlar (shouldSkipLine):**
+```java
+SKIP_PREFIXES = ["sıra", "satır", "miktar", "birim", "adet", "toplam",
+                  "genel", "kdv", "vergi", "iban", "banka", "sayfa",
+                  "page", "tarih", "fatura", "irsaliye", "alıcı",
+                  "satıcı", "müşteri", "adres", "telefon", "e-posta"]
+// + sadece rakam/özel karakter içeren satırlar
+// + 5 karakterden kısa satırlar
+```
+
+**ŞU AN EKSİK — OKUNMAYAN ALANLAR:**
+```
+❌ vatRate (KDV oranı)  → DocumentItemResult'ta alan yok, Flutter'da sabit 20.0
+❌ unit (birim)         → "ADET","KG","MT" var ama temizleniyor, extract edilmiyor
+❌ vatIncluded          → Fiyat KDV dahil mi? bilinmiyor
+❌ totalPrice           → Satır toplamı (miktar × fiyat)
+❌ invoiceNo            → Fatura numarası (belge başlığı)
+❌ invoiceDate          → Fatura tarihi
+❌ supplierName         → Tedarikçi adı
+❌ rowNumber            → Belgedeki sıra numarası (1, 2, 3...)
+❌ description          → Ürün açıklaması (uzun satır)
+```
+
+### 14.3 Ürün Eşleştirme Sırası
+
+```
+1. EAN13 Barkod → barcodeRepository.findByBarcodeCode(code)
+   → Barcode.variant (ProductVariant object) → matchStatus: FOUND, matchType: BARCODE
+
+2. OEM Numarası → oemNumberRepository.findByOemNumberIgnoreCase(code)
+   → OemNumber.variant (ProductVariant object) → matchStatus: FOUND, matchType: OEM
+
+3. İsim Arama → productRepository.searchProducts(keyword)
+   → İlk 2-3 anlamlı kelime (≥3 karakter) → matchStatus: FOUND, matchType: NAME
+   ⚠️ UYARI: İsim eşleşmesi yanlış ürün bulabilir → kullanıcı onayı gerekli
+
+4. Bulunamadı → matchStatus: NOT_FOUND → Flutter'da yeni ürün olarak eklenir
+```
+
+**matchedVariantId kullanımı:**
+```dart
+// isFound=true → existingVariantId olarak BatchEntryRow'a set edilir
+// submitAll() → existingProducts[] listesine gider
+// Backend: StockMovement(IN) + SupplierAccount cari kaydı
+```
+
+### 14.4 Flutter: DocumentAnalyzeItem → BatchEntryRow Aktarım
+
+```dart
+// batch_entry_provider.dart → addFromDocumentItems()
+
+// MEVCUT ÜRÜN (isFound=true):
+BatchEntryRow(
+  productName:      item.matchedProductName ?? item.extractedName ?? item.rawText,
+  barcode:          item.extractedCode ?? '',
+  quantity:         item.extractedQuantity?.toInt() ?? 1,
+  purchasePrice:    item.extractedUnitPrice ?? 0,   // ← birim fiyat = alış fiyatı
+  salePrice:        item.extractedUnitPrice ?? 0,   // ← aynı → kullanıcı düzeltmeli
+  vatRate:          20.0,                           // ❌ sabit — faturadan gelmiyor
+  status:           RowStatus.existing,
+  existingVariantId: item.matchedVariantId,
+  existingProductId: item.matchedProductId,
+  existingVariantSku: item.matchedSku,
+)
+
+// YENİ ÜRÜN (isFound=false):
+BatchEntryRow(
+  productName:   item.extractedName ?? item.rawText,
+  barcode:       item.extractedCode ?? '',
+  quantity:      item.extractedQuantity?.toInt() ?? 1,
+  purchasePrice: item.extractedUnitPrice ?? 0,
+  salePrice:     item.extractedUnitPrice ?? 0,      // ← alış = satış → düzeltilmeli
+  vatRate:       20.0,                              // ❌ sabit
+  status:        RowStatus.newProduct,
+  // categoryId: null → ❌ KRİTİK: submit öncesi seçilmeli
+  // unitId:     null → "adet" default kullanılır
+  // brandName:  null → boş kalır
+)
+```
+
+### 14.5 Result Sheet'te Gösterilen / Gösterilmeyen Bilgiler
+
+**Gösterilen:**
+```
+✅ Dosya adı, toplam kalem, mevcut/yeni sayısı (özet bar)
+✅ Durum chip: "Mevcut" (mavi) / "Yeni" (turuncu)
+✅ Eşleşme tipi: Barkod / OEM / İsim
+✅ Ürün adı (matchedProductName veya extractedName)
+✅ Çıkarılan kod (extractedCode)
+✅ Miktar (extractedQuantity)
+✅ Birim fiyat (extractedUnitPrice) — ₺ formatında
+✅ Checkbox seçimi + Tümü Seç / Temizle
+✅ "X Kalemi Aktar" butonu
+```
+
+**Gösterilmiyor (eksik):**
+```
+❌ KDV oranı
+❌ Birim (ADET/KG vb.)
+❌ İsim eşleşmesinde güven skoru / uyarı
+❌ Loading spinner (analiz sırasında)
+❌ Kategori gereksinim uyarısı (yeni ürün seçilince)
+```
+
+### 14.6 Desteklenen PDF Tipleri ve Sınırlamalar
+
+```
+✅ Dijital/vektörel PDF (metin seçilebilir)    → PDFBox doğrudan okur
+❌ Taranmış/görüntü PDF (scanner çıktısı)       → OCR gerekli (Tesseract)
+❌ Şifreli/korumalı PDF                         → Hata verir
+❌ Excel/Word fatura                            → Desteklenmiyor (sadece PDF)
+❌ Çok sayfalı belgeler                         → Her sayfa parse edilir ama yavaş
+```
+
+**Türkçe Format Desteği:**
+```
+✅ 1.234,56  → binlik nokta kaldırılır → "1234.56"
+✅ 1234,56   → virgül nokta olur → "1234.56"
+✅ 1.234     → integer olarak algılanır (binlik nokta kaldırılır)
+⚠️ 1,234.56  → İngilizce format → yanlış parse edilir (Türkçe belge ise sorun değil)
+```
+
+### 14.7 Sonraki Geliştirmeler (Sprint 1 Tamamlama)
+
+**Backend — DocumentItemResult modeline eklenecek:**
+```java
+// DocumentItemResult.java'ya eklenecek alanlar:
+private String unit;           // "ADET" | "KG" | "MT" | "LT" vb.
+private Double vatRate;        // 8.0 | 18.0 | 20.0 — faturadan extract
+private Boolean vatIncluded;   // Fiyat KDV dahil mi?
+private Double totalPrice;     // extractedQuantity × extractedUnitPrice
+```
+
+**Backend — DocumentAnalyzeServiceImpl.java'ya eklenecek:**
+```java
+// extractLineInfo() içine:
+// Birim extract: "ADET|KG|LT|MT|M2|PAKET|KUTU|PCS|GR" → result.unit
+// KDV extract: "\\b(18|8|1|20|10)\\s*%?" → sonraki sayı → result.vatRate
+// Satır toplam: en büyük sayı (fiyat × miktar) → result.totalPrice
+```
+
+**Flutter — addFromDocumentItems() güncellemesi:**
+```dart
+BatchEntryRow(
+  // ... mevcut alanlar ...
+  vatRate:    item.vatRate ?? 20.0,         // faturadan gelen KDV
+  vatIncluded: item.vatIncluded ?? false,
+  unitId:     _mapUnit(item.unit),          // "ADET" → "adet"
+)
+
+String? _mapUnit(String? unit) => switch(unit?.toUpperCase()) {
+  'ADET' || 'ADT' || 'PCS' => 'adet',
+  'KG'  || 'KGR'           => 'kg',
+  'LT'  || 'LTR'           => 'lt',
+  'MT'  || 'MTR'           => 'mt',
+  _                        => 'adet',  // default
+};
+```
+
+**Flutter — Loading Dialog:**
+```dart
+// _uploadDocument() içinde toast yerine dialog göster
+showDialog(context: context, barrierDismissible: false,
+  builder: (_) => AlertDialog(
+    content: Column(children: [
+      CircularProgressIndicator(),
+      SizedBox(height: 16),
+      Text(t('batch.document_uploading')),
+    ]),
+  ),
+);
+final result = await service.analyzeDocument(file);
+Navigator.pop(context);  // dialog kapat
+```
+
+---
+
+## 15. MİMARİ KARARLAR (2026-04-13)
+
+### 15.1 State Management
+
+```
+Şu an: StateNotifier + autoDispose (Riverpod 2.x)
+Tavsiye: AsyncNotifier'a geçiş (load() barındıran ekranlar önce)
+Hedef: freezed paketi → copyWith() boilerplate azalt
+
+Değiştirilmeyecek: StateNotifier → Riverpod yatırımı korunacak.
+BLoC/GetX/MobX denemesi yapılmayacak.
+```
+
+### 15.2 Multi-Tenant Güvenlik
+
+```
+Şu an: Hibernate @Filter (row-level, ThreadLocal companyCode)
+Eksik: PostgreSQL RLS double-safety yok
+Hedef (Sprint 3): ALTER TABLE products ENABLE ROW LEVEL SECURITY
+                  CREATE POLICY tenant_policy ON products
+                    USING (company_code = current_setting('app.current_company_code'))
+```
+
+### 15.3 Stok Concurrent Update
+
+```
+Şu an: Direkt write → lost update riski
+Çözüm: @Version Long version alanı ProductVariant'a ekle
+       ObjectOptimisticLockingFailureException → max 3 retry + exponential backoff
+Hedef: Sprint 2
+```
+
+### 15.4 PDF Belge İşleme
+
+```
+Şu an: PDFBox sync (metin PDF ✅, taranmış ❌)
+Sprint 1: KDV + birim extract tamamlama
+Sprint 2: Async job (polling) + Tesseract OCR fallback
+Sprint 4: LLM fallback (PDFBox başarısız → Claude API)
+```
+
+### 15.5 Gerçek Zamanlı Bildirim
+
+```
+Şu an: REST polling (5s interval)
+Sprint 2: WebSocket stok alarm (/topic/stock/{companyCode})
+          SSE fallback (WebSocket bağlanmadıysa)
+```
+
+### 15.6 Mimari Geçiş
+
+```
+lib/screens/   → lib/features/  migration ZORUNLU (iki path paralel yürüyor)
+Batch entry + wizard hâlâ lib/screens/ altında (router bunu kullanıyor)
+Migration sırasında router güncellenmeli (app_router.dart)
 ```

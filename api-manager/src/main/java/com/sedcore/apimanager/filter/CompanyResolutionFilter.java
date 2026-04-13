@@ -108,7 +108,7 @@ public class CompanyResolutionFilter implements GlobalFilter, Ordered {
 
     private boolean isPublicPath(String path) {
         return path.equals("/security/authenticate")
-                || path.startsWith("/security/refresh")
+                || path.startsWith("/security/api/v1/auth/refresh-token")
                 || path.startsWith("/security/company/")
                 || path.startsWith("/actuator/");
     }

@@ -34,6 +34,18 @@ public class TokenService implements ITokenService {
         return this.gson.toJson(instance);
     }
 
+    @Override
+    public TOpenSessionInstance parseSessionFromToken(String token) {
+        // JJWT 0.12.x API — JwtXUserInfoFilter'daki çalışan kalıpla aynı
+        var claims = Jwts.parser()
+                .verifyWith(javax.crypto.SecretKey.class.cast(JwtUtil.getSigningKey()))
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+        String sessionJson = claims.get(KEY_SESSION, String.class);
+        return gson.fromJson(sessionJson, TOpenSessionInstance.class);
+    }
+
     private JWT createToken(Map<String,Object> claims,String subject,Long expiresMinutes,Long expireRefreshTokenInMinutes,TOpenSessionInstance instance){
         JWT dtoJWT = new JWT();
 

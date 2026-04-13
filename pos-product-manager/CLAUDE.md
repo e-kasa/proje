@@ -230,19 +230,53 @@ public class MyControllerImpl implements MyController {
 
 ---
 
-## 6. API NAMING CONVENTION
+## 6. API NAMING CONVENTION — KRİTİK
+
+### Backend Controller Path'i ≠ Flutter URL
+
+Tüm istekler Flutter → api-manager (8080) → pos-product-manager (8001) akışıyla gider.  
+api-manager, `product/**` path'lerini StripPrefix=0 ile 8001'e iletir.
 
 ```
-GET    /product/api/v1/{resource}           → liste
-GET    /product/api/v1/{resource}/{id}      → tekil
-POST   /product/api/v1/{resource}           → oluştur
-PUT    /product/api/v1/{resource}/{id}      → güncelle
-DELETE /product/api/v1/{resource}/{id}      → sil (soft)
-GET    /product/api/v1/{resource}/search?q= → arama
-GET    /product/api/v1/{resource}/{id}/sub  → alt kayıt listesi
-POST   /product/api/v1/{resource}/batch     → toplu oluştur
+┌───────────────────────────────────────────────────────────────────────┐
+│ Backend controller'da    │  Flutter'dan çağırırken                    │
+│ @RequestMapping yazar    │  (api-manager üzerinden — prefix eklenir)  │
+├──────────────────────────┼────────────────────────────────────────────┤
+│ /api/v1/products         │  product/api/v1/products                   │
+│ /api/v1/products/{id}    │  product/api/v1/products/{id}              │
+│ /api/v1/stores           │  product/api/v1/stores                     │
+│ /api/v1/categories       │  product/api/v1/categories                 │
+│ /api/v1/public/...       │  product/api/v1/public/...  (JWT bypass)   │
+└──────────────────────────┴────────────────────────────────────────────┘
+```
 
-Prefix: /product/**  (api-manager bu prefix'i yönlendirir)
+**Kural:** Flutter'da URL her zaman `product/` prefix'iyle başlar.  
+Backend controller'da bu prefix **yoktur** — sadece `/api/v1/...` yazar.
+
+```dart
+// ✅ DOĞRU
+await _apiClient.get('product/api/v1/products');
+await _apiClient.get('product/api/v1/stores');
+await _apiClient.post('product/api/v1/products/batch', data: ...);
+
+// ❌ YANLIŞ — prefix eksik
+await _apiClient.get('api/v1/products');
+await _apiClient.get('/product/api/v1/products');  // başta / olmamalı
+
+// ❌ YANLIŞ — direkt port
+await _apiClient.get('http://localhost:8001/api/v1/products');
+```
+
+### REST URL Şablonu
+
+```
+GET    /api/v1/{resource}           → liste      →  product/api/v1/{resource}
+GET    /api/v1/{resource}/{id}      → tekil      →  product/api/v1/{resource}/{id}
+POST   /api/v1/{resource}           → oluştur    →  product/api/v1/{resource}
+PUT    /api/v1/{resource}/{id}      → güncelle   →  product/api/v1/{resource}/{id}
+DELETE /api/v1/{resource}/{id}      → sil (soft) →  product/api/v1/{resource}/{id}
+GET    /api/v1/{resource}/search?q= → arama      →  product/api/v1/{resource}/search?q=
+POST   /api/v1/{resource}/batch     → toplu      →  product/api/v1/{resource}/batch
 ```
 
 ---

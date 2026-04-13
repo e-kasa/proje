@@ -53,6 +53,29 @@ Flutter / React (baseUrl: localhost:8080)
 | `project_pos` (Flutter) | — | — | project_pos/CLAUDE.md |
 | `template` (React) | — | — | template/CLAUDE.md |
 
+### URL Kuralı — KRİTİK
+
+**Backend controller** sadece `/api/...` yazar — service prefix olmadan.  
+**Flutter/React** her zaman service prefix ekler — api-manager (8080) üzerinden geçer.
+
+```
+Backend Controller       Flutter/React URL (api-manager üzerinden)
+────────────────────────────────────────────────────────────────────
+security:
+  @RequestMapping("/authenticate")       →  security/authenticate
+  @RequestMapping("/api/v1/auth/...")    →  security/api/v1/auth/...
+  @RequestMapping("/api/users")          →  security/api/users
+  @RequestMapping("/i18n/all")           →  security/i18n/all
+
+pos-product-manager:
+  @RequestMapping("/api/v1/products")    →  product/api/v1/products
+  @RequestMapping("/api/v1/stores")      →  product/api/v1/stores
+  @RequestMapping("/api/v1/categories")  →  product/api/v1/categories
+```
+
+**Kural:** Flutter'da hiçbir zaman `localhost:8001` veya `localhost:8002` kullanılmaz.  
+Tüm istekler `localhost:8080` (api-manager) üzerinden prefix ile gönderilir.
+
 ### Build Sırası
 
 ```bash
@@ -222,11 +245,12 @@ repo.save(entity);
   "exp": 1234567890,
   "sessionInstance": "{
     \"userInformation\": {
-      \"id\": \"uuid\",
-      \"username\": \"user\",
+      \"userId\": \"uuid\",
+      \"userName\": \"user\",
       \"displayName\": \"Ad Soyad\",
-      \"companyCode\": \"FIRMA001\",
+      \"selectedCompanyCode\": \"FIRMA001\",
       \"languageVal\": \"tr\",
+      \"sessionId\": null,
       \"dynamicLoginParameters\": {
         \"storeId\": \"store-uuid\",
         \"sectorType\": \"AUTO_PARTS\"
@@ -243,6 +267,22 @@ repo.save(entity);
 **Kritik:** `sessionInstance` string olarak JWT'ye gömülmüştür.  
 Flutter'da: `jsonDecode(payload['sessionInstance'] as String)`  
 React'te: `JSON.parse(claims.sessionInstance)`
+
+**JWT parse kritik kuralları (Flutter):**
+```dart
+// ✅ DOĞRU — JSON alan adları TOpenLoginUser Java field adlarından gelir (Gson)
+userInfo['userId']              // id değil
+userInfo['userName']            // username değil
+userInfo['selectedCompanyCode'] // companyCode değil
+userInfo['sessionId'] as String? ?? ''  // nullable — null cast YASAK
+
+// ✅ DOĞRU — roller [{roleName: "ADMIN"}] formatında gelir
+(session['roles'] as List).map((e) => (e as Map)['roleName'] as String).toList()
+
+// ❌ YANLIŞ
+payload['sessionId'] as String  // sessionId null olabilir → TypeError
+e.toString()                    // {roleName: ADMIN} string'i üretir — YANLIŞ
+```
 
 ---
 

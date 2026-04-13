@@ -80,8 +80,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       final payload = response['payload'] as Map<String, dynamic>;
       final accessToken = payload['accessToken'] as String;
-      final refreshToken = payload['refreshToken'] as String;
-      final sessionId = payload['sessionId'] as String;
+      final refreshToken = payload['refreshToken'] as String? ?? '';
+      final sessionId = payload['sessionId'] as String? ?? '';
 
       var user = _decodeUserFromJwt(accessToken);
 
@@ -131,8 +131,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       final payload = response['payload'] as Map<String, dynamic>;
       final accessToken = payload['accessToken'] as String;
-      final refreshToken = payload['refreshToken'] as String;
-      final sessionId = payload['sessionId'] as String;
+      final refreshToken = payload['refreshToken'] as String? ?? '';
+      final sessionId = payload['sessionId'] as String? ?? '';
 
       final user = _decodeUserFromJwt(accessToken);
 
@@ -204,9 +204,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
     // storeId: kasiyerlerin atandığı mağaza — JWT dynamicLoginParameters'dan gelir
     final storeId = dynamicParams?['storeId'] as String?;
 
-    // sessionInstance.roles → JWT'deki rol kodları listesi (["ADMIN"], ["CASHIER"] vb.)
+    // sessionInstance.roles → JWT'deki rol kodları listesi ([{"roleName":"ADMIN"}] formatında gelir)
     final roles = (sessionInstance['roles'] as List<dynamic>?)
-        ?.map((e) => e.toString()).toList() ?? [];
+        ?.map((e) {
+          if (e is Map) return e['roleName'] as String? ?? e.toString();
+          return e.toString();
+        })
+        .toList() ?? [];
 
     return User(
       id: userInfo['userId'] as String?        // JWT alanı: userId

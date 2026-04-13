@@ -35,6 +35,7 @@ public class SecurityConfiguration {
                                 "/register/company",
                                 "/i18n/**"
                         ).permitAll().requestMatchers(
+                                "/api/v1/auth/refresh-token",
                                 "/api/refresh-token",
                                 "/api/ldap-authentication",
                                 "/api/sso-log",

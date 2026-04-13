@@ -138,7 +138,7 @@ class ApiClient {
 
       // _tokenDio kullan — interceptor yok, 401 alırsa döngüye girmez
       final response = await _tokenDio.post(
-        'security/refresh',
+        'security/api/v1/auth/refresh-token',
         data: {'refreshToken': refreshToken},
       );
 
@@ -173,18 +173,35 @@ class ApiClient {
 
   /// Başarısız olan isteği yeni token ile tekrar dener.
   ///
-  /// Eski Authorization header'ı temizlenir — interceptor yeni token'ı ekler.
+  /// [_tokenDio] kullanılır — interceptor'süz olduğu için retry 401 alırsa
+  /// onError tekrar tetiklenmez → sonsuz refresh döngüsü oluşmaz.
+  /// Token ve X-Company-Code SharedPreferences'tan okunarak header'a manuel eklenir.
   Future<Response<dynamic>> _retry(RequestOptions requestOptions) async {
-    // Eski Authorization header'ını kaldır — interceptor güncel token'ı ekleyecek
+    final prefs = await _getPrefs();
+    final newToken = prefs.getString(AppConstants.tokenKey);
+    final companyCode = prefs.getString(AppConstants.companyCodeKey);
+
     final headers = Map<String, dynamic>.from(requestOptions.headers);
-    headers.remove('Authorization');
+
+    // Güncel token'ı header'a yaz (eski token'ı override et)
+    if (newToken != null) {
+      headers['Authorization'] = 'Bearer $newToken';
+    } else {
+      headers.remove('Authorization');
+    }
+
+    // X-Company-Code — gateway multi-tenant routing için
+    if (companyCode != null && companyCode.isNotEmpty) {
+      headers['X-Company-Code'] = companyCode;
+    }
 
     final options = Options(
       method: requestOptions.method,
       headers: headers,
     );
 
-    return _dio.request<dynamic>(
+    // _tokenDio kullan — interceptor yok, 401 alırsa onError ÇAĞRILMAZ → döngü yok
+    return _tokenDio.request<dynamic>(
       requestOptions.path,
       data: requestOptions.data,
       queryParameters: requestOptions.queryParameters,

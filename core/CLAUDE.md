@@ -166,12 +166,13 @@ TOpenSessionInstance {
 }
 
 TOpenLoginUser {
-    String id;
-    String username;
+    String userId;
+    String userName;
     String displayName;
-    String companyCode;         // selectedCompanyCode
+    String selectedCompanyCode; // JSON key: "selectedCompanyCode" (Gson field adını kullanır)
     String languageVal;         // "tr" | "en"
     String email;
+    String sessionId;           // nullable — null-safe cast zorunlu
     Map<String, Object> dynamicLoginParameters;
     // dynamicLoginParameters: {"storeId": "uuid", "sectorType": "AUTO_PARTS"}
 }
@@ -186,6 +187,39 @@ TOpenCompanyInfo {
     String companyName;
 }
 ```
+
+---
+
+## 6a. JwtXUserInfoFilter — KRITIK DAVRANIŞ KURALI
+
+`com.towpen.base.security.filter.JwtXUserInfoFilter` — tüm `/api/**` path'lerinde JWT zorunluluğu uygular.
+
+```java
+// Çalışma mantığı:
+if (isPublicPath(requestURL))   → chain.filter() // bypass
+else if (path.startsWith("/api"))
+    if (xUserInfo == null)      → 401 prepareNoAccessError()
+    else                        → SecurityContext set, devam
+else                            → chain.filter() // /authenticate gibi non-/api path'ler
+
+// PUBLIC_PATHS (token gerektirmeyen /api path'leri):
+"/api/rest/sso-log"
+"/i18n"
+"/api/v1/auth/refresh-token"   // ← Refresh endpoint — JWT olmadan erişilmeli
+// ⚠️ "/api/v1/company/" EKLEME — pos-product-manager'da CompanySetting endpointi var,
+//    eklenmesi HER İKİ SERVİSTE company endpointlerini JWT'siz açar (güvenlik açığı)!
+```
+
+**Kritik kural:** Yeni bir `/api/**` public endpoint eklendiğinde:
+1. `core/JwtXUserInfoFilter.PUBLIC_PATHS`'e ekle
+2. `security/SecurityConfiguration.requestMatchers().permitAll()`'a ekle
+3. `api-manager/JwtAuthFilter.PUBLIC_PATHS`'e ekle
+4. `api-manager/CompanyResolutionFilter.isPublicPath()`'e ekle
+5. `core` → `mvn install -q` → `security` restart
+
+**Neden `/authenticate` bu sorundan etkilenmiyor?**
+`/authenticate` `/api` ile başlamıyor → filter'ın else branch'inden direkt geçiyor.
+`/api/v1/auth/refresh-token` `/api` ile başladığı için filter aktif olur.
 
 ---
 

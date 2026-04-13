@@ -19,7 +19,7 @@ class AuthService {
 
   Future<Map<String, dynamic>> refreshToken(String refreshToken) async {
     final response = await _apiClient.post(
-      'auth/refresh',
+      'security/api/v1/auth/refresh-token',
       data: {
         'refreshToken': refreshToken,
       },

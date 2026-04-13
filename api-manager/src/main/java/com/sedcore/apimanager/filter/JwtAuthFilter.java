@@ -32,7 +32,7 @@ public class JwtAuthFilter implements GlobalFilter {
 
     private static final String[] PUBLIC_PATHS = {
             "/security/authenticate",
-            "/security/refresh",
+            "/security/api/v1/auth/refresh-token",
             "/security/company/",
             "/product/api/v1/public/",
             "/actuator/"

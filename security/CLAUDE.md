@@ -38,9 +38,8 @@ com.sedcore.security/
 │   ├── IAuthenticationService → imp/AuthenticationServiceImp
 │   │     └── authenticate(request) → JWT üretir
 │   ├── ITokenService → imp/TokenService
-│   │     ├── createToken(session, expireMin, refreshMin): TokenResponse
-│   │     ├── validateToken(token): boolean
-│   │     └── parseToken(token): TOpenSessionInstance
+│   │     ├── createToken(session, expireMin, refreshMin): JWT
+│   │     └── parseSessionFromToken(token): TOpenSessionInstance  ← refresh akışında kullanılır
 │   ├── IUserDefService → imp/UserDefService
 │   │     ├── login(userName, password): TOpenSessionInstance
 │   │     ├── createUser(companyCode, request): UserResponse
@@ -87,45 +86,88 @@ com.sedcore.security/
 
 ---
 
-## 3. TÜM ENDPOINT'LER
+## 3. URL NAMING CONVENTION — KRİTİK
+
+### Backend Controller Path'i ≠ Flutter URL
+
+Tüm istekler Flutter → api-manager (8080) → ilgili servis akışıyla gider.  
+api-manager, `security/**` path'lerini 8002'ye, `product/**` path'lerini 8001'e yönlendirir.
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ Backend controller'da    │  Flutter'dan çağırırken                  │
+│ @RequestMapping yazar    │  (api-manager prefix eklenir)             │
+├──────────────────────────┼──────────────────────────────────────────┤
+│ /authenticate            │  security/authenticate                    │
+│ /api/v1/auth/...         │  security/api/v1/auth/...                │
+│ /api/users               │  security/api/users                      │
+│ /api/get-menu-for-user   │  security/api/get-menu-for-user          │
+│ /i18n/all                │  security/i18n/all                        │
+└──────────────────────────┴──────────────────────────────────────────┘
+```
+
+**Kural:** Flutter'da URL her zaman `security/` veya `product/` prefix'iyle başlar.  
+Backend controller'da bu prefix **yoktur** — sadece `/api/...` veya `/authenticate` yazar.
+
+```dart
+// ✅ DOĞRU
+await _apiClient.post('security/authenticate', data: ...);
+await _apiClient.post('security/api/v1/auth/refresh-token', data: ...);
+await _apiClient.get('security/api/users');
+await _apiClient.get('security/i18n/all?lang=TR');
+
+// ❌ YANLIŞ — prefix eksik
+await _apiClient.post('authenticate', data: ...);
+await _apiClient.post('api/v1/auth/refresh-token', data: ...);
+
+// ❌ YANLIŞ — direkt port
+await _apiClient.post('http://localhost:8002/authenticate', data: ...);
+```
+
+---
+
+## 3a. TÜM ENDPOINT'LER
 
 ### Auth
 
-| Method | Path | Auth | Açıklama |
-|--------|------|------|---------|
-| POST | `/security/authenticate` | ✗ | Login → access + refresh token |
-| POST | `/security/api/v1/auth/refresh-token` | ✗ | Refresh → yeni access token |
+| Method | Controller Path | Flutter URL | Auth |
+|--------|----------------|-------------|------|
+| POST | `/authenticate` | `security/authenticate` | ✗ |
+| POST | `/api/v1/auth/refresh-token` | `security/api/v1/auth/refresh-token` | ✗ |
 
 ### Kullanıcı Yönetimi
 
-| Method | Path | Auth | Açıklama |
-|--------|------|------|---------|
-| GET | `/security/api/users` | ✓ | Tüm kullanıcılar (X-Company-Code gerekli) |
-| GET | `/security/api/users/{id}` | ✓ | Kullanıcı detayı |
-| POST | `/security/api/users` | ✓ | Kullanıcı oluştur |
-| PUT | `/security/api/users/{id}` | ✓ | Kullanıcı güncelle |
-| DELETE | `/security/api/users/{id}` | ✓ | Kullanıcı sil (soft delete) |
-| PATCH | `/security/api/users/{id}/toggle-status` | ✓ | Aktif/pasif toggle |
-| POST | `/security/api/users/{id}/change-password` | ✓ | Şifre değiştir (eski şifre gerekli) |
-| POST | `/security/api/users/{id}/reset-password` | ✓ | Şifre sıfırla (admin) |
-| POST | `/security/api/users/{id}/roles` | ✓ | Rol ata |
-| DELETE | `/security/api/users/{id}/roles/{roleCode}` | ✓ | Rol kaldır |
-| GET | `/security/api/users/{id}/roles` | ✓ | Kullanıcının rolleri |
-| GET | `/security/api/users/available-roles` | ✓ | Firma'ya ait tüm roller (dropdown için) |
+> **Controller path** = backend `@RequestMapping` değeri (prefix yok)  
+> **Flutter URL** = api-manager üzerinden çağrılırken kullanılan tam path
+
+| Method | Controller Path | Flutter URL | Auth |
+|--------|----------------|-------------|------|
+| GET | `/api/users` | `security/api/users` | ✓ |
+| GET | `/api/users/{id}` | `security/api/users/{id}` | ✓ |
+| POST | `/api/users` | `security/api/users` | ✓ |
+| PUT | `/api/users/{id}` | `security/api/users/{id}` | ✓ |
+| DELETE | `/api/users/{id}` | `security/api/users/{id}` | ✓ |
+| PATCH | `/api/users/{id}/toggle-status` | `security/api/users/{id}/toggle-status` | ✓ |
+| POST | `/api/users/{id}/change-password` | `security/api/users/{id}/change-password` | ✓ |
+| POST | `/api/users/{id}/reset-password` | `security/api/users/{id}/reset-password` | ✓ |
+| POST | `/api/users/{id}/roles` | `security/api/users/{id}/roles` | ✓ |
+| DELETE | `/api/users/{id}/roles/{roleCode}` | `security/api/users/{id}/roles/{roleCode}` | ✓ |
+| GET | `/api/users/{id}/roles` | `security/api/users/{id}/roles` | ✓ |
+| GET | `/api/users/available-roles` | `security/api/users/available-roles` | ✓ |
 
 ### Firma & Menü
 
-| Method | Path | Auth | Açıklama |
-|--------|------|------|---------|
-| POST | `/security/api/v1/company/register` | ✗ | Firma kaydı + admin kullanıcı |
-| POST | `/security/api/save-menu-category` | ✓ | Menü kategorisi kaydet |
-| GET | `/security/api/get-menu-for-user` | ✓ | Rol bazlı dinamik menü |
+| Method | Controller Path | Flutter URL | Auth |
+|--------|----------------|-------------|------|
+| POST | `/api/v1/company/register` | `security/api/v1/company/register` | ✗ |
+| POST | `/api/save-menu-category` | `security/api/save-menu-category` | ✓ |
+| GET | `/api/get-menu-for-user` | `security/api/get-menu-for-user` | ✓ |
 
 ### i18n
 
-| Method | Path | Auth | Açıklama |
-|--------|------|------|---------|
-| GET | `/security/i18n/all` | ✓ | Tüm çeviriler (param: `lang=TR\|EN`) |
+| Method | Controller Path | Flutter URL | Auth |
+|--------|----------------|-------------|------|
+| GET | `/i18n/all` | `security/i18n/all` | ✓ |
 
 ---
 
@@ -138,10 +180,10 @@ com.sedcore.security/
   "exp": 1234567890,
   "sessionInstance": "{
     \"userInformation\": {
-      \"id\": \"uuid\",
-      \"username\": \"user\",
+      \"userId\": \"uuid\",
+      \"userName\": \"user\",
       \"displayName\": \"Ad Soyad\",
-      \"companyCode\": \"FIRMA001\",
+      \"selectedCompanyCode\": \"FIRMA001\",
       \"languageVal\": \"tr\",
       \"email\": \"user@firma.com\",
       \"dynamicLoginParameters\": {
@@ -322,6 +364,9 @@ au=auth  cm=common  db=dashboard
 | `findByUserDef()` ile UserDefAccess sorgulamak | `IncorrectResultSizeDataAccessException`: aynı kullanıcı birden fazla firmada access kaydına sahip olabilir. Her zaman `findByUserDefAndCompanyCode(user, user.getCompanyCode())` kullan. `findFirstByUserDef` sadece login öncesi (companyCode bilinmediğinde) fallback'tir — artık login'de de `findByUserDefAndCompanyCode` kullanılıyor. |
 | Flutter'dan `security/api/v1/users` çağırmak | Path `/v1` içermiyor — doğrusu `security/api/users` |
 | data.sql'e `STORE_MANAGER` kullanıcı atamak | Standart kod `STORE_ADMIN`. `STORE_MANAGER` backward compat — data.sql sonu migrasyonla STORE_ADMIN'e çevrilir |
+| `Jwts.parserBuilder()` kullanmak | **JJWT 0.12.x'te kaldırıldı.** Doğru API: `Jwts.parser().verifyWith((SecretKey) key).build().parseSignedClaims(token).getPayload()` |
+| `parseClaimsJws().getBody()` kullanmak | 0.12.x'te: `parseSignedClaims().getPayload()` |
+| `payload['sessionId'] as String` cast etmek | Backend `sessionId` null dönebilir. Null-safe: `payload['sessionId'] as String? ?? ''` |
 
 ---
 

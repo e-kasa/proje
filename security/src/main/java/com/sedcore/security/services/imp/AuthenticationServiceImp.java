@@ -29,4 +29,10 @@ public class AuthenticationServiceImp implements IAuthenticationService {
 		TOpenSessionInstance instance = userDefService.login(loginRequestDto.getUsername(),loginRequestDto.getPassword());
 		return tokenService.createToken(instance,EXPIRE_IN_MINUTES,EXPIRE_REFRESH_TOKEN_IN_MINUTES);
 	}
+
+	@Override
+	public JWT refreshToken(String refreshToken) {
+		TOpenSessionInstance instance = tokenService.parseSessionFromToken(refreshToken);
+		return tokenService.createToken(instance, EXPIRE_IN_MINUTES, EXPIRE_REFRESH_TOKEN_IN_MINUTES);
+	}
 }

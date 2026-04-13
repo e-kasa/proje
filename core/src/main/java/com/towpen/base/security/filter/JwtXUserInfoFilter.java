@@ -45,7 +45,8 @@ public class JwtXUserInfoFilter extends GenericFilterBean {
 	/** Token gerektirmeyen public path'ler — filter bu path'leri doğrudan geçirir */
 	private static final List<String> PUBLIC_PATHS = List.of(
 		"/api/rest/sso-log",
-		"/i18n"
+		"/i18n",
+		"/api/v1/auth/refresh-token"    // JWT olmadan erişilmeli — token yenileme endpoint'i
 	);
 
 	private ApiErrorBeanController apiBeanController;

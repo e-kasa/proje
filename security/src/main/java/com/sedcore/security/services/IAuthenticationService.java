@@ -5,6 +5,8 @@ import com.towpen.base.security.JWT;
 
 public interface IAuthenticationService {
 
-	public JWT authenticate( AuthenticationRequest loginRequestDto);
+	JWT authenticate(AuthenticationRequest loginRequestDto);
+
+	JWT refreshToken(String refreshToken);
 
 }

@@ -235,16 +235,23 @@ final sessionStr   = payload['sessionInstance'] as String;
 final session      = jsonDecode(sessionStr);
 final userInfo     = session['userInformation'];
 
+// JWT alan adları TOpenLoginUser Java field adlarından gelir (Gson — getter değil field kullanır)
 User(
-  id:                   userInfo['id'],
-  username:             userInfo['username'],
-  displayName:          userInfo['displayName'],      // ← fullName DEĞİL
-  selectedCompanyCode:  userInfo['companyCode'],
-  languageVal:          userInfo['languageVal'] ?? 'tr',
-  roles:                (session['roles'] as List).map((r) => r['roleName'] as String).toList(),
-  storeId:              userInfo['dynamicLoginParameters']?['storeId'],
-  sectorType:           userInfo['dynamicLoginParameters']?['sectorType'],
+  id:                   userInfo['userId'] as String? ?? userInfo['id'] as String? ?? '',
+  username:             userInfo['userName'] as String? ?? '',  // ← 'username' değil 'userName'
+  displayName:          userInfo['displayName'] as String? ?? '',  // ← fullName DEĞİL
+  selectedCompanyCode:  userInfo['selectedCompanyCode'] as String? ?? '',  // ← 'companyCode' değil
+  languageVal:          userInfo['languageVal'] as String? ?? 'tr',
+  // roles: [{roleName: "ADMIN"}] formatında — e.toString() YANLIŞ → e['roleName'] kullan
+  roles: (session['roles'] as List?)
+      ?.map((e) => (e as Map)['roleName'] as String? ?? e.toString())
+      .toList() ?? [],
+  storeId:              userInfo['dynamicLoginParameters']?['storeId'] as String?,
+  sectorType:           userInfo['dynamicLoginParameters']?['sectorType'] as String?,
 )
+
+// ⚠️ sessionId null-safe — backend her zaman set etmez
+final sessionId = payload['sessionId'] as String? ?? '';  // as String → TypeError riski!
 ```
 
 ---
@@ -482,8 +489,14 @@ final isDark = Theme.of(context).brightness == Brightness.dark;
 
 ## 14. SIK YAPILAN HATALAR
 
+> **URL prefix kuralı:** Backend controller `/api/...` yazar, Flutter `security/api/...` veya `product/api/...` şeklinde service prefix ekler.  
+> Tüm istekler api-manager (8080) üzerinden geçer — direkt 8001/8002 kullanılmaz.
+
 | Hata | Çözüm |
 |------|-------|
+| `'api/v1/stores'` gibi prefix'siz URL | `'product/api/v1/stores'` — service prefix zorunlu |
+| `'http://localhost:8001/api/...'` | `'product/api/...'` — direkt port kullanılmaz |
+| `'http://localhost:8002/api/...'` | `'security/api/...'` — direkt port kullanılmaz |
 | `Scaffold(...)` | `AppScaffold(...)` kullan |
 | `AppAppBar(title: Text('...'))` | `title` String alır |
 | `.withOpacity(0.1)` | `.withValues(alpha: 0.1)` |
@@ -503,6 +516,12 @@ final isDark = Theme.of(context).brightness == Brightness.dark;
 | `user_service.dart` base path yanlış | `_base = 'security/api/users'` (v1 yok!) |
 | `available-roles` URL yanlış | `security/api/users/available-roles` |
 | `assignRole` body'si yanlış | `{'roleCode': roleCode}` — `roleId` değil |
+| `userInfo['id']` okumak | JWT'de alan `userId` — `userInfo['userId']` |
+| `userInfo['username']` okumak | JWT'de alan `userName` (camelCase U büyük) |
+| `userInfo['companyCode']` okumak | JWT'de alan `selectedCompanyCode` — Gson field adı |
+| `payload['sessionId'] as String` | `sessionId` null olabilir → `as String? ?? ''` kullan |
+| `session['roles'].map((e) => e.toString())` | Roller `{roleName: ADMIN}` map → `e['roleName']` oku |
+| Refresh URL yanlış | `security/api/v1/auth/refresh-token` — eski `security/refresh` değil |
 
 ---
 

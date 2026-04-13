@@ -1,6 +1,7 @@
 package com.sedcore.security.controllers;
 
 import com.sedcore.security.models.request.*;
+import com.sedcore.security.models.response.RoleResponse;
 import com.sedcore.security.models.response.UserResponse;
 import com.towpen.base.exceptions.ApiResponse;
 import org.springframework.http.ResponseEntity;
@@ -57,4 +58,9 @@ public interface IUserController {
 
     @GetMapping("/{id}/roles")
     ResponseEntity<ApiResponse<List<String>>> getRoles(@PathVariable String id);
+
+    /** Firma'ya ait tüm rolleri döner — kullanıcı oluşturma formunda dropdown için */
+    @GetMapping("/available-roles")
+    ResponseEntity<ApiResponse<List<RoleResponse>>> getAvailableRoles(
+            @RequestHeader(value = "X-Company-Code", required = false) String companyCode);
 }

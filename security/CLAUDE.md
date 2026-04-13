@@ -111,6 +111,7 @@ com.sedcore.security/
 | POST | `/security/api/users/{id}/roles` | ✓ | Rol ata |
 | DELETE | `/security/api/users/{id}/roles/{roleCode}` | ✓ | Rol kaldır |
 | GET | `/security/api/users/{id}/roles` | ✓ | Kullanıcının rolleri |
+| GET | `/security/api/users/available-roles` | ✓ | Firma'ya ait tüm roller (dropdown için) |
 
 ### Firma & Menü
 
@@ -173,11 +174,19 @@ Gateway: `JwtDecoder.parse()` → `X-User-Info` header'ına yazar → downstream
 ```
 SUPER_ADMIN    → Platform geneli (birden fazla firma yönetimi)
 ADMIN          → Firma içi tüm yetkiler, kullanıcı oluşturma
-STORE_ADMIN    → Mağaza yönetimi, raporlar, kullanıcı oluşturma
-CASHIER        → Sadece POS satış ekranı
+STORE_ADMIN    → Mağaza yönetimi, raporlar, personel oluşturma (storeId atanabilir)
+CASHIER        → Sadece POS satış ekranı — storeId ZORUNLU
 WAREHOUSE      → Stok görüntüleme ve transfer işlemleri
 USER           → Temel erişim (firma bazlı özelleştirilir)
 ```
+
+**Kullanıcı oluşturma kuralları:**
+- CASHIER → `storeId` verilmezse tüm mağazalara erişim (ideal: storeId verilmeli)
+- STORE_ADMIN → `storeId` verilirse o mağazaya kilitlenir, null ise tüm mağazalar
+- ADMIN / WAREHOUSE → `storeId` null bırakılır (tüm mağazalar)
+- `userName` platform geneli benzersiz (3-40 karakter)
+- Şifre en az 6 karakter, bcrypt ile saklanır
+- Admin sıfırladığında `isForcePasswordChange=true` → kullanıcı bir sonraki girişte değiştirmek zorunda
 
 **Menü erişimi:**
 ```

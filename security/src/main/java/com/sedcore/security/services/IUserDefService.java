@@ -1,6 +1,7 @@
 package com.sedcore.security.services;
 
 import com.sedcore.security.models.request.*;
+import com.sedcore.security.models.response.RoleResponse;
 import com.sedcore.security.models.response.UserResponse;
 import com.towpen.base.db.model.security.UserDef;
 import com.towpen.base.security.BaseDbService;
@@ -31,4 +32,7 @@ public interface IUserDefService extends BaseDbService<UserDef> {
     void assignRole(String userId, String roleCode, String companyCode);
     void removeRole(String userId, String roleCode);
     List<String> getRoles(String userId);
+
+    // ── Firma Rolleri ─────────────────────────────────────────────────────────
+    List<RoleResponse> getRolesForCompany(String companyCode);
 }

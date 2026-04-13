@@ -21,9 +21,17 @@ VALUES
     ('role-depo0-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'SEDCORE', 'WAREHOUSE', 'Stok ve depo yönetimi', true, false, 'Depo Sorumlusu'),
 
-    -- Mağaza yöneticisi rolü (giyim)
+    -- Mağaza yöneticisi rolü (eski kod — backward compat)
     ('role-mgzyn-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'STORE_MANAGER', 'Mağaza yönetimi ve raporlama', true, false, 'Mağaza Yöneticisi')
+     'SEDCORE', 'STORE_MANAGER', 'Mağaza yönetimi ve raporlama (eski)', true, false, 'Mağaza Yöneticisi'),
+
+    -- Mağaza yöneticisi rolü (yeni standart kod)
+    ('role-mgzad-0000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'SEDCORE', 'STORE_ADMIN', 'Mağaza yönetimi, raporlar ve personel yönetimi', true, true, 'Mağaza Yöneticisi'),
+
+    -- Süper Admin rolü (platform geneli)
+    ('role-super-0000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'SEDCORE', 'SUPER_ADMIN', 'Platform geneli tüm firma yetkisi', true, true, 'Süper Admin')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================

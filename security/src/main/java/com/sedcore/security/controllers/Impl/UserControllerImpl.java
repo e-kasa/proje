@@ -2,6 +2,7 @@ package com.sedcore.security.controllers.Impl;
 
 import com.sedcore.security.controllers.IUserController;
 import com.sedcore.security.models.request.*;
+import com.sedcore.security.models.response.RoleResponse;
 import com.sedcore.security.models.response.UserResponse;
 import com.sedcore.security.services.IUserDefService;
 import com.towpen.base.exceptions.ApiResponse;
@@ -177,6 +178,19 @@ public class UserControllerImpl implements IUserController {
             log.error("Roller getirilemedi: {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Roller getirilemedi"));
+        }
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<List<RoleResponse>>> getAvailableRoles(String companyCode) {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(userDefService.getRolesForCompany(companyCode)));
+        } catch (TOpenException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Firma rolleri getirilemedi: {}", companyCode, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Roller yüklenemedi"));
         }
     }
 }

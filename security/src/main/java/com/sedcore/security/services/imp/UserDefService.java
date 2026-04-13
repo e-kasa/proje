@@ -1,6 +1,7 @@
 package com.sedcore.security.services.imp;
 
 import com.sedcore.security.models.request.*;
+import com.sedcore.security.models.response.RoleResponse;
 import com.sedcore.security.models.response.UserResponse;
 import com.sedcore.security.repos.*;
 import com.sedcore.security.services.IUserDefService;
@@ -282,6 +283,21 @@ public class UserDefService extends BaseDbServiceImp<UserDefRepository, UserDef>
     @Override
     public List<String> getRoles(String userId) {
         return userRoleRepository.findByUserDef(userId);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<RoleResponse> getRolesForCompany(String companyCode) {
+        return roleDefRepository.findByCompanyCodeAndIsActiveTrue(companyCode)
+                .stream()
+                .map(role -> RoleResponse.builder()
+                        .id(role.getId())
+                        .code(role.getCode())
+                        .name(role.getName())
+                        .description(role.getDescription())
+                        .isActive(role.getIsActive())
+                        .build())
+                .toList();
     }
 
     // =========================================================================

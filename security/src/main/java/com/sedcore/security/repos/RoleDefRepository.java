@@ -16,4 +16,6 @@ public interface RoleDefRepository extends BaseDaoRepository<RoleDef> {
     List<RoleDef> findByIsSystemRoleTrue();
 
     Optional<RoleDef> findByCodeAndCompanyCode(String code, String companyCode);
+
+    List<RoleDef> findByCompanyCodeAndIsActiveTrue(String companyCode);
 }

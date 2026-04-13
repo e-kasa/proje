@@ -194,8 +194,8 @@ public class UserDefService extends BaseDbServiceImp<UserDefRepository, UserDef>
         boolean newStatus = !Boolean.TRUE.equals(user.getIsActive());
         user.setIsActive(newStatus);
 
-        // UserDefAccess.canLogin'i de senkronize et
-        userDefAccessRepository.findFirstByUserDefOrderByCreateTimeAsc(user).ifPresent(access -> {
+        // UserDefAccess.canLogin'i de senkronize et — aynı firma kaydını güncelle
+        userDefAccessRepository.findByUserDefAndCompanyCode(user, user.getCompanyCode()).ifPresent(access -> {
             access.setCanLogin(newStatus);
             userDefAccessRepository.save(access);
         });
@@ -214,7 +214,7 @@ public class UserDefService extends BaseDbServiceImp<UserDefRepository, UserDef>
         UserDef user = dao.findById(userId)
                 .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
 
-        UserDefAccess access = userDefAccessRepository.findFirstByUserDefOrderByCreateTimeAsc(user)
+        UserDefAccess access = userDefAccessRepository.findByUserDefAndCompanyCode(user, user.getCompanyCode())
                 .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
 
         // Mevcut şifreyi doğrula
@@ -235,7 +235,7 @@ public class UserDefService extends BaseDbServiceImp<UserDefRepository, UserDef>
         UserDef user = dao.findById(userId)
                 .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
 
-        UserDefAccess access = userDefAccessRepository.findFirstByUserDefOrderByCreateTimeAsc(user)
+        UserDefAccess access = userDefAccessRepository.findByUserDefAndCompanyCode(user, user.getCompanyCode())
                 .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
 
         updatePasswordHash(access, request.newPassword());
@@ -439,8 +439,8 @@ public class UserDefService extends BaseDbServiceImp<UserDefRepository, UserDef>
         // userType — entity'de UserType enum, response'da String
         dto.setUserType(user.getUserType() != null ? user.getUserType().name() : "USER");
 
-        // canLogin — UserDef'te değil, UserDefAccess'ten gelir
-        Boolean canLogin = userDefAccessRepository.findFirstByUserDefOrderByCreateTimeAsc(user)
+        // canLogin — UserDef'te değil, UserDefAccess'ten gelir (aynı firma kaydı)
+        Boolean canLogin = userDefAccessRepository.findByUserDefAndCompanyCode(user, user.getCompanyCode())
                 .map(UserDefAccess::getCanLogin)
                 .orElse(false);
         dto.setCanLogin(canLogin);

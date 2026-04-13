@@ -9,6 +9,9 @@ import java.util.Optional;
 
 @Repository
 public interface UserDefAccessRepository extends BaseDaoRepository<UserDefAccess> {
-    /** Kullanıcıya ait erişim kaydını döner. Birden fazla kayıt varsa ilkini alır (LIMIT 1). */
+    /** Kullanıcının belirli bir firmadaki erişim kaydını döner (user_def_id + company_code unique). */
+    Optional<UserDefAccess> findByUserDefAndCompanyCode(UserDef userDef, String companyCode);
+
+    /** Fallback: şirketten bağımsız ilk kaydı döner (login akışı için). */
     Optional<UserDefAccess> findFirstByUserDefOrderByCreateTimeAsc(UserDef userDef);
 }

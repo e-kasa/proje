@@ -77,19 +77,6 @@ ON CONFLICT DO NOTHING;
 -- giyim_kasiyer→ giyim123
 -- giyim_depo   → giyim456
 -- ============================================================
--- Eski hatalı kayıtları (SEDCORE1 typo) sil — idempotent DELETE
--- SEDCORE company_code'lu kayıtlar zaten varsa UPDATE unique constraint'i ihlal eder.
--- Silme işlemi sonrası ON CONFLICT DO NOTHING ile doğru kayıtlar korunur.
-DELETE FROM user_def_access
-WHERE company_code = 'SEDCORE1'
-  AND id IN (
-    'uacc-admin-0000-0000-0000-000000000001',
-    'uacc-kasiy-0000-0000-0000-000000000002',
-    'uacc-depo0-0000-0000-0000-000000000003',
-    'uacc-mgzad-0000-0000-0000-000000000004',
-    'uacc-gkasy-0000-0000-0000-000000000005',
-    'uacc-gdep0-0000-0000-0000-000000000006'
-  );
 
 INSERT INTO user_def_access (id, create_time, create_user, last_modified_time, update_user,
                              company_code, access_type, can_login, has_ip_restriction,
@@ -97,37 +84,37 @@ INSERT INTO user_def_access (id, create_time, create_user, last_modified_time, u
                              password_hash, salt_key, user_def_id)
 VALUES
     ('uacc-admin-0000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
+     'SEDCORE1', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
      'JI1KzWlPRvgcsVO/Y/dR7gDxxDuFlAHbxiQxj7QGjcw=',
      'YWRtaW5zYWx0MTIzNDU2',
      'udef-admin-0000-0000-0000-000000000001'),
 
     ('uacc-kasiy-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
+     'SEDCORE1', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
      'bfV/PaJuohhVbz7cLZzThRiawQ/W4o7ohh+qdvvnvc4=',
      'a2FzaXllcnNhbHQxMjM0',
      'udef-kasiy-0000-0000-0000-000000000002'),
 
     ('uacc-depo0-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
+     'SEDCORE1', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
      'waEXHxvD4c7l7iGYPXbIbzHkS8Z2JM/8D7eQrKSjxrg=',
      'ZGVwb3NhbHQxMjM0NTY3',
      'udef-depo-0000-0000-0000-000000000003'),
 
     ('uacc-mgzad-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
+     'SEDCORE1', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
      'Y/p9TrRU1R5JyK63MNVb3d6fVrxxFQJL2NVMjJ4QGtY=',
      'bWFnYXphc2FsdDEyMzQ1',
      'udef-mgzad-0000-0000-0000-000000000004'),
 
     ('uacc-gkasy-0000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
+     'SEDCORE1', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
      '5HnDv9SwRQHjg+aDu37NhtSOa3AteGYzfFNVIsB1ipo=',
      'Z2l5aW1zYWx0MTIzNDU2',
      'udef-gkasy-0000-0000-0000-000000000005'),
 
     ('uacc-gdep0-0000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
+     'SEDCORE1', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
      'ESsw/Y8pJi1jdeSAIwXfwiewoWPRAvIX/oDtnbmZvyA=',
      'Z2l5aW1kZXBvc2FsdDEy',
      'udef-gdep0-0000-0000-0000-000000000006')

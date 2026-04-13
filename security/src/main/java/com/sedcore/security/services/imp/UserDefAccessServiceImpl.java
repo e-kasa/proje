@@ -16,6 +16,11 @@ public class UserDefAccessServiceImpl extends BaseDbServiceImp<UserDefAccessRepo
     }
 
     @Override
+    public Optional<UserDefAccess> findByUserDefAndCompanyCode(UserDef userDef, String companyCode) {
+        return dao.findByUserDefAndCompanyCode(userDef, companyCode);
+    }
+
+    @Override
     public Class<?> getDTOClassForService() {
         return null;
     }

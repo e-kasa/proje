@@ -8,4 +8,5 @@ import java.util.Optional;
 
 public interface IUserDefAccessService extends BaseDbService<UserDefAccess> {
     Optional<UserDefAccess> findFirstByUserDef(UserDef userDef);
+    Optional<UserDefAccess> findByUserDefAndCompanyCode(UserDef userDef, String companyCode);
 }

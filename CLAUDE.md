@@ -355,3 +355,62 @@ is_deleted    BOOLEAN     DEFAULT false
 Para alanları: `DECIMAL(15,2)` — `double` veya `float` kullanma.  
 UUID primary key: `@GeneratedValue(strategy = GenerationType.UUID)`  
 Optimistic locking: `@Version Long version` — concurrent düzenleme koruması.
+
+---
+
+## 14. PRODUCTION-READY KURALLAR (2026-04-13 eklendi)
+
+### 1 Firma = 1 Sektör (Değiştirilemez)
+
+```java
+// CompanySettingServiceImpl.updateSettings() → sectorType güncellenmez
+// Firma kurulumunda (CompanyRegistrationService) bir kez set edilir
+// Değiştirmek isteyenler: firmayı yeniden kaydetmelidir
+```
+
+`sectorType` kaynağı: `CompanySetting.sectorType` (Company tablosu değil)
+
+### Ürün Sektörü Zorunlu Eşleşmesi
+
+```java
+// ProductServiceImpl.createProduct() → sector firmadan otomatik alınır
+// dto.getProduct().getSector() override edilir — cross-sector contamination önlenir
+String companySector = companySettingRepository
+    .findFirstByCompanyCodeOrderByCreateTimeDesc(CompanyContext.get())
+    .map(s -> s.getSectorType())
+    .orElse(dto.getProduct().getSector());
+```
+
+### Purchase → storeId Zorunlu
+
+`purchases` tablosunda `store_id` kolonu var.  
+`PurchaseRequest.storeId` → `Purchase.storeId` → DB'ye yazılır.  
+`ProductServiceImpl` içindeki batch Purchase'da da `setStoreId()` çağrılır.
+
+### UserDefAccess Multi-Tenant Sorgusu
+
+```java
+// GİRİŞ (login): findByUserDefAndCompanyCode(userDef, userDef.getCompanyCode())
+//   → findFirstByUserDef değil! Her user için companyCode filtresi zorunlu
+// Aynı kullanıcı birden fazla firmada UserDefAccess'e sahip olabilir (dev seed durumu)
+```
+
+### Mağaza Silme (Soft Delete)
+
+```java
+// StoreService.deleteStore(id, companyCode) → isActive = false
+// StoreRepository.findByIdAndCompanyCode(id, companyCode) kullanır
+```
+
+### Rol Kodu Standardı
+
+| Kod | Açıklama | is_system_role |
+|-----|---------|---------------|
+| `ADMIN` | Firma yöneticisi | true |
+| `STORE_ADMIN` | Mağaza yöneticisi (**standart**) | true |
+| `CASHIER` | Kasiyer | false |
+| `WAREHOUSE` | Depo sorumlusu | false |
+| `SUPER_ADMIN` | Platform geneli | true |
+| `STORE_MANAGER` | ESKİ — data.sql migrasyon ile STORE_ADMIN'e geçirilir | false |
+
+`data.sql` sonunda `UPDATE user_role SET role_def_id=STORE_ADMIN WHERE role_def_id=STORE_MANAGER` çalışır.

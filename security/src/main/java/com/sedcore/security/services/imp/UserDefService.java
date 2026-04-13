@@ -53,7 +53,7 @@ public class UserDefService extends BaseDbServiceImp<UserDefRepository, UserDef>
             UserDef userDef = dao.findByUserDefName(userName)
                     .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.USERNAME_PASSWORD_ERROR_1010)));
 
-            UserDefAccess access = userDefAccessRepository.findFirstByUserDefOrderByCreateTimeAsc(userDef)
+            UserDefAccess access = userDefAccessRepository.findByUserDefAndCompanyCode(userDef, userDef.getCompanyCode())
                     .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.USERNAME_PASSWORD_ERROR_1010)));
 
             validateUserAccess(access);

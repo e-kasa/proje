@@ -85,6 +85,7 @@ public class PurchaseServiceImpl
                 .purchaseDate(request.getPurchaseDate())
                 .invoiceNumber(request.getInvoiceNumber())
                 .deliveryNoteNumber(request.getDeliveryNoteNumber())
+                .storeId(request.getStoreId())
                 .totalAmount(totalAmount)
                 .paidAmount(BigDecimal.ZERO)
                 .isCancelled(false)

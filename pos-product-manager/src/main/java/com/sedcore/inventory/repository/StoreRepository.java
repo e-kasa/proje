@@ -12,5 +12,7 @@ public interface StoreRepository extends BaseDaoRepository<Store> {
 
     Optional<Store> findByCode(String code);
 
+    Optional<Store> findByIdAndCompanyCode(String id, String companyCode);
+
     List<Store> findByIsActive(Boolean isActive);
 }

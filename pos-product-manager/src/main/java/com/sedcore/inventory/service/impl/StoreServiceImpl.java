@@ -30,4 +30,13 @@ public class StoreServiceImpl
     public List<Store> listActive() {
         return dao.findByIsActive(true);
     }
+
+    @Override
+    public void deleteStore(String id, String companyCode) {
+        Store store = dao.findByIdAndCompanyCode(id, companyCode)
+                .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
+        store.setIsActive(false);
+        save(store);
+        log.info("Mağaza silindi (soft): id={}", id);
+    }
 }

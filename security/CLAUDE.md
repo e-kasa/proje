@@ -319,3 +319,22 @@ au=auth  cm=common  db=dashboard
 | i18n key eklemeyi unutmak | Her yeni ekranda data.sql'e kayıt ekle |
 | Token expire kontrolünü atlamak | 401 → refresh-token endpoint → yeni token |
 | data.sql'de `ON CONFLICT` olmadan INSERT | Uygulama her başlangıçta crash olur |
+| `findByUserDef()` ile UserDefAccess sorgulamak | `IncorrectResultSizeDataAccessException`: aynı kullanıcı birden fazla firmada access kaydına sahip olabilir. Her zaman `findByUserDefAndCompanyCode(user, user.getCompanyCode())` kullan. `findFirstByUserDef` sadece login öncesi (companyCode bilinmediğinde) fallback'tir — artık login'de de `findByUserDefAndCompanyCode` kullanılıyor. |
+| Flutter'dan `security/api/v1/users` çağırmak | Path `/v1` içermiyor — doğrusu `security/api/users` |
+| data.sql'e `STORE_MANAGER` kullanıcı atamak | Standart kod `STORE_ADMIN`. `STORE_MANAGER` backward compat — data.sql sonu migrasyonla STORE_ADMIN'e çevrilir |
+
+---
+
+## 12. USERDEFACCESS — MULTI-TENANT SORGU KURALI
+
+`user_def_access` tablosunda `UNIQUE(user_def_id, company_code)` constraint var.  
+Aynı kullanıcı birden fazla firmada erişim kaydına sahip olabilir.
+
+```java
+// ✅ DOĞRU — login dahil tüm durumlarda
+userDefAccessRepository.findByUserDefAndCompanyCode(userDef, userDef.getCompanyCode())
+
+// ❌ YANLIŞ — IncorrectResultSizeDataAccessException riski
+userDefAccessRepository.findByUserDef(userDef)          // ESKİ — silinmiştir
+userDefAccessRepository.findFirstByUserDef(userDef)     // Sadece gerçek fallback durumlarında
+```

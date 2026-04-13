@@ -500,3 +500,34 @@ final isDark = Theme.of(context).brightness == Brightness.dark;
 | `lib/providers/` provider import | `shared/providers/` kullan |
 | Sektör string hardcode `'genel'` | `sectorType.apiValue` → `'GENERAL'` |
 | Birim default farklı | Her yerde `'adet'` kullan |
+| `user_service.dart` base path yanlış | `_base = 'security/api/users'` (v1 yok!) |
+| `available-roles` URL yanlış | `security/api/users/available-roles` |
+| `assignRole` body'si yanlış | `{'roleCode': roleCode}` — `roleId` değil |
+
+---
+
+## KULLANICI YÖNETİMİ — SERVİS PATH'LERİ (2026-04-13)
+
+```dart
+// user_service.dart — doğru base path'ler:
+static const _base = 'security/api/users';          // ✅  (v1 yok)
+static const _rolesBase = 'security/api/users/available-roles';
+
+// getAllUsers → GET security/api/users  (header: X-Company-Code)
+// createUser  → POST security/api/users
+// assignRole  → POST security/api/users/{id}/roles  body: {'roleCode': roleCode}
+// removeRole  → DELETE security/api/users/{id}/roles/{roleCode}
+// resetPassword → POST security/api/users/{id}/reset-password body: {'newPassword': pw}
+```
+
+**Kullanıcı modeli alan adları:**
+```dart
+// ✅ DOĞRU
+user.userName        // kullanıcı adı (giriş için)
+user.displayName     // görünen ad
+user.roles           // List<String> — ['ADMIN', 'CASHIER']
+user.storeId         // nullable
+
+// ❌ YANLIŞ
+user.email  user.name  user.username  user.fullName
+```

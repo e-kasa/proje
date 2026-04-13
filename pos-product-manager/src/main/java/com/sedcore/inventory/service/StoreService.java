@@ -8,4 +8,6 @@ import java.util.List;
 public interface StoreService extends BaseDbService<Store> {
 
     List<Store> listActive();
+
+    void deleteStore(String id, String companyCode);
 }

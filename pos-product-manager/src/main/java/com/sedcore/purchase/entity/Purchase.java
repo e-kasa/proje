@@ -62,6 +62,11 @@ public class Purchase extends TOpenSimpleCompanyEntity {
     @OneToMany(mappedBy = "purchase", cascade = CascadeType.ALL)
     private List<StockMovement> movements;
 
+    // ===== MAĞAZA =====
+
+    @Column(name = "store_id", length = 36)
+    private String storeId; // Alımın yapıldığı mağaza (FK yok — soft ref)
+
     // ===== DURUM =====
 
     @Column(name = "is_cancelled")

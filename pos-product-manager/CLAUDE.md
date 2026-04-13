@@ -421,3 +421,37 @@ if (!entity.getCompanyCode().equals(companyCode)) {
     throw new CompanyIsolationViolationException("Yetkisiz erişim");
 }
 ```
+
+---
+
+## 10. PRODUCTION-READY KURALLAR (2026-04-13)
+
+### Sektör İzolasyonu
+
+```java
+// ProductServiceImpl.createProduct() — sector her zaman firmadan alınır:
+String companySector = companySettingRepository
+    .findFirstByCompanyCodeOrderByCreateTimeDesc(CompanyContext.get())
+    .map(s -> s.getSectorType())
+    .orElse(dto.getProduct().getSector()); // fallback: request'teki değer
+product.setSector(companySector); // request'teki sector override edilir
+```
+
+`CompanySettingServiceImpl.updateSettings()` → `sectorType` alanı artık güncellenmez.  
+Firma sektörü kurulumda belirlenir, sonradan değiştirilemez.
+
+### Purchase → storeId
+
+```java
+// Purchase entity'ye store_id kolonu eklendi
+// PurchaseServiceImpl.createPurchase() → purchase.setStoreId(request.getStoreId())
+// ProductServiceImpl batch flow → purchase.setStoreId(dto.getPurchase().getStoreId())
+```
+
+### Store Silme
+
+```java
+// StoreService.deleteStore(String id, String companyCode)
+//   → StoreRepository.findByIdAndCompanyCode(id, companyCode)
+//   → store.setIsActive(false) — fiziksel silme yasak
+```

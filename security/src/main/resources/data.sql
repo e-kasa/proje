@@ -2249,3 +2249,17 @@ VALUES
 ('bnd-wh051-000-0000-0000-000000000051', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'warehouses.warehouse_suffix', 'depo', 'warehouses'),
 ('bnd-wh052-000-0000-0000-000000000052', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'warehouses.warehouse_type', 'Depo Tipi', 'Warehouse Type')
 ON CONFLICT DO NOTHING;
+
+-- ============================================================
+-- MİGRASYON: STORE_MANAGER → STORE_ADMIN (rol kodu düzeltmesi)
+-- Eski STORE_MANAGER user_role kayıtları STORE_ADMIN rolüne taşınır.
+-- ON CONFLICT yerine UPDATE kullanılır — her startup'ta güvenle çalışır.
+-- ============================================================
+UPDATE user_role
+SET role_def_id = 'role-mgzad-0000-0000-0000-000000000005'
+WHERE role_def_id = 'role-mgzyn-0000-0000-0000-000000000004'
+  AND NOT EXISTS (
+      SELECT 1 FROM user_role ur2
+      WHERE ur2.user_def_id = user_role.user_def_id
+        AND ur2.role_def_id = 'role-mgzad-0000-0000-0000-000000000005'
+  );

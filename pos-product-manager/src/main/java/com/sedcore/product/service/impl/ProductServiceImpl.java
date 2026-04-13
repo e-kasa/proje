@@ -57,6 +57,8 @@ import com.sedcore.product.service.ProductVariantAttributeValueService;
 import com.sedcore.product.service.ProductVariantService;
 import com.sedcore.purchase.service.PurchaseService;
 import com.sedcore.inventory.service.StockMovementService;
+import com.sedcore.common.context.CompanyContext;
+import com.sedcore.company.repository.CompanySettingRepository;
 import com.towpen.base.security.BaseDbServiceImp;
 
 import jakarta.validation.Valid;
@@ -84,6 +86,7 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
     private final InventoryService inventoryService;
     private final OemNumberService oemNumberService;
     private final CrossReferenceService crossReferenceService;
+    private final CompanySettingRepository companySettingRepository;
 
     /**
      * Ürün Oluştur (Tüm Detaylarıyla)
@@ -93,6 +96,12 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
         log.info("Ürün oluşturuluyor: name={}", dto.getProduct().getName());
 
         // 1. Product entity oluştur
+        // Sektör: her zaman firmanın sektöründen alınır — cross-sector contamination önlenir
+        String companySector = companySettingRepository
+                .findFirstByCompanyCodeOrderByCreateTimeDesc(CompanyContext.get())
+                .map(s -> s.getSectorType())
+                .orElse(dto.getProduct().getSector());
+
         Product product = Product.builder()
                 .sku(dto.getProduct().getSku())
                 .name(dto.getProduct().getName())
@@ -100,7 +109,7 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                 .unit(dto.getProduct().getUnit())
                 .categoryId(dto.getProduct().getCategoryId())
                 .description(dto.getProduct().getDescription())
-                .sector(dto.getProduct().getSector())
+                .sector(companySector)
                 .metadata(dto.getProduct().getMetadata())
                 .status(ProductStatus.ACTIVE)
                 .isDeleted(false)
@@ -138,6 +147,7 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
             purchase.setSupplier(supplier);
             purchase.setInvoiceNumber(dto.getPurchase().getInvoiceNumber());
             purchase.setPurchaseDate(dto.getPurchase().getPurchaseDate());
+            purchase.setStoreId(dto.getPurchase().getStoreId());
             purchase.setTotalAmount(totalAmount);
             purchase.setPaidAmount(BigDecimal.ZERO);
             purchase.setIsCancelled(false);

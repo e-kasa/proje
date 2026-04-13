@@ -51,7 +51,7 @@ public class CompanySettingServiceImpl implements CompanySettingService {
         if (data.containsKey("website")) setting.setWebsite((String) data.get("website"));
         if (data.containsKey("logoUrl")) setting.setLogoUrl((String) data.get("logoUrl"));
         if (data.containsKey("currency")) setting.setCurrency((String) data.get("currency"));
-        if (data.containsKey("sectorType")) setting.setSectorType((String) data.get("sectorType"));
+        // sectorType — firma kurulumunda bir kere belirlenir, sonradan değiştirilemez (1 firma = 1 sektör kuralı)
 
         companySettingRepository.save(setting);
         log.info("Firma ayarları güncellendi: {}", cc);

@@ -2331,14 +2331,30 @@ ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- MİGRASYON: STORE_MANAGER → STORE_ADMIN (rol kodu düzeltmesi)
--- Eski STORE_MANAGER user_role kayıtları STORE_ADMIN rolüne taşınır.
--- ON CONFLICT yerine UPDATE kullanılır — her startup'ta güvenle çalışır.
+-- Hardcoded ID yerine subquery ile gerçek STORE_ADMIN ID'sini bulur.
+-- Bu şekilde farklı UUID ile oluşturulmuş rollerde de güvenle çalışır.
 -- ============================================================
-UPDATE user_role
-SET role_def_id = 'role-mgzad-0000-0000-0000-000000000005'
-WHERE role_def_id = 'role-mgzyn-0000-0000-0000-000000000004'
-  AND NOT EXISTS (
-      SELECT 1 FROM user_role ur2
-      WHERE ur2.user_def_id = user_role.user_def_id
-        AND ur2.role_def_id = 'role-mgzad-0000-0000-0000-000000000005'
-  );
+UPDATE user_role ur
+SET role_def_id = (
+    SELECT rd.id FROM role_def rd
+    WHERE rd.company_code = ur.company_code
+      AND rd.code = 'STORE_ADMIN'
+    LIMIT 1
+)
+WHERE EXISTS (
+    SELECT 1 FROM role_def rd2
+    WHERE rd2.id = ur.role_def_id
+      AND rd2.code = 'STORE_MANAGER'
+)
+AND EXISTS (
+    SELECT 1 FROM role_def rd3
+    WHERE rd3.company_code = ur.company_code
+      AND rd3.code = 'STORE_ADMIN'
+)
+AND NOT EXISTS (
+    SELECT 1 FROM user_role ur2
+    JOIN role_def rd4 ON ur2.role_def_id = rd4.id
+    WHERE ur2.user_def_id = ur.user_def_id
+      AND rd4.code = 'STORE_ADMIN'
+      AND rd4.company_code = ur.company_code
+);

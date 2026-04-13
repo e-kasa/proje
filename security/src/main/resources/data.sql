@@ -120,10 +120,9 @@ VALUES
      'udef-gdep0-0000-0000-0000-000000000006')
 ON CONFLICT DO NOTHING;
 
--- Mevcut DB'de SEDCORE1 olarak kalmış erişim kayıtlarını SEDCORE'a çek
--- (SEDCORE kullanıcılarının SEDCORE1 company_code'lu erişim kayıtlarını düzelt)
-UPDATE user_def_access
-SET company_code = 'SEDCORE'
+-- SEDCORE1 olarak kalmış eski erişim kayıtlarını sil — SEDCORE olanlar zaten mevcut
+-- UPDATE yerine DELETE: SEDCORE kaydı zaten varsa unique constraint ihlali olur
+DELETE FROM user_def_access
 WHERE id IN (
     'uacc-admin-0000-0000-0000-000000000001',
     'uacc-kasiy-0000-0000-0000-000000000002',

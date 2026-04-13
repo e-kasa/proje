@@ -35,6 +35,25 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
+-- ROL TANIMLAMALARI — SEDCORE1 (Giyim / Footwear)
+-- ============================================================
+INSERT INTO role_def (id, create_time, create_user, last_modified_time, update_user,
+                      company_code, code, description, is_active, is_system_role, name)
+VALUES
+    ('role-s1adm-0000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'SEDCORE1', 'ADMIN', 'Tam yetkili yönetici rolü', true, true, 'Yönetici'),
+
+    ('role-s1kas-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'SEDCORE1', 'CASHIER', 'POS satış ve müşteri işlemleri', true, false, 'Kasiyer'),
+
+    ('role-s1dep-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'SEDCORE1', 'WAREHOUSE', 'Stok ve depo yönetimi', true, false, 'Depo Sorumlusu'),
+
+    ('role-s1mgz-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'SEDCORE1', 'STORE_ADMIN', 'Mağaza yönetimi, raporlar ve personel yönetimi', true, true, 'Mağaza Yöneticisi')
+ON CONFLICT DO NOTHING;
+
+-- ============================================================
 -- KULLANICI TANIMLAMALARI (user_def)
 -- ============================================================
 INSERT INTO user_def (id, create_time, create_user, last_modified_time, update_user,
@@ -53,17 +72,17 @@ VALUES
     ('udef-depo-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'SEDCORE', 'depo', true, 'TR', 'AGENCY_ID', 'Depo Sorumlusu', 'depo', 'USER'),
 
-    -- 4. Mağaza Admin — Giyim sektörü yöneticisi
+    -- 4. Mağaza Admin — SEDCORE1 (Giyim) yöneticisi
     ('udef-mgzad-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'magaza_admin', true, 'TR', 'AGENCY_ID', 'Mağaza Yöneticisi', 'magaza_admin', 'USER'),
+     'SEDCORE1', 'magaza_admin', true, 'TR', 'AGENCY_ID', 'Mağaza Yöneticisi', 'magaza_admin', 'USER'),
 
-    -- 5. Giyim Kasiyer — Giyim sektörü kasiyeri
+    -- 5. Giyim Kasiyer — SEDCORE1 kasiyeri
     ('udef-gkasy-0000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'giyim_kasiyer', true, 'TR', 'AGENCY_ID', 'Giyim Kasiyer', 'giyim_kasiyer', 'USER'),
+     'SEDCORE1', 'giyim_kasiyer', true, 'TR', 'AGENCY_ID', 'Giyim Kasiyer', 'giyim_kasiyer', 'USER'),
 
-    -- 6. Giyim Depo — Giyim sektörü depo sorumlusu
+    -- 6. Giyim Depo — SEDCORE1 depo sorumlusu
     ('udef-gdep0-0000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'giyim_depo', true, 'TR', 'AGENCY_ID', 'Giyim Depo Sorumlusu', 'giyim_depo', 'USER')
+     'SEDCORE1', 'giyim_depo', true, 'TR', 'AGENCY_ID', 'Giyim Depo Sorumlusu', 'giyim_depo', 'USER')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
@@ -102,36 +121,83 @@ VALUES
      'udef-depo-0000-0000-0000-000000000003'),
 
     ('uacc-mgzad-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
+     'SEDCORE1', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
      'Y/p9TrRU1R5JyK63MNVb3d6fVrxxFQJL2NVMjJ4QGtY=',
      'bWFnYXphc2FsdDEyMzQ1',
      'udef-mgzad-0000-0000-0000-000000000004'),
 
     ('uacc-gkasy-0000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
+     'SEDCORE1', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
      '5HnDv9SwRQHjg+aDu37NhtSOa3AteGYzfFNVIsB1ipo=',
      'Z2l5aW1zYWx0MTIzNDU2',
      'udef-gkasy-0000-0000-0000-000000000005'),
 
     ('uacc-gdep0-0000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
+     'SEDCORE1', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP,
      'ESsw/Y8pJi1jdeSAIwXfwiewoWPRAvIX/oDtnbmZvyA=',
      'Z2l5aW1kZXBvc2FsdDEy',
      'udef-gdep0-0000-0000-0000-000000000006')
 ON CONFLICT DO NOTHING;
 
--- SEDCORE1 olarak kalmış eski erişim kayıtlarını sil — SEDCORE olanlar zaten mevcut
--- UPDATE yerine DELETE: SEDCORE kaydı zaten varsa unique constraint ihlali olur
+-- ============================================================
+-- MİGRASYON: Mevcut DB'deki yanlış company_code düzeltmeleri
+-- ============================================================
+
+-- 1. SEDCORE kullanıcılarının hâlâ SEDCORE1 company_code'lu erişim
+--    kayıtlarını temizle (önceki yanlış seed'den kalan)
 DELETE FROM user_def_access
 WHERE id IN (
     'uacc-admin-0000-0000-0000-000000000001',
     'uacc-kasiy-0000-0000-0000-000000000002',
-    'uacc-depo0-0000-0000-0000-000000000003',
+    'uacc-depo0-0000-0000-0000-000000000003'
+)
+AND company_code = 'SEDCORE1';
+
+-- 2. Giyim kullanıcılarını (4-6) SEDCORE → SEDCORE1'e taşı
+UPDATE user_def
+SET company_code = 'SEDCORE1'
+WHERE id IN (
+    'udef-mgzad-0000-0000-0000-000000000004',
+    'udef-gkasy-0000-0000-0000-000000000005',
+    'udef-gdep0-0000-0000-0000-000000000006'
+)
+AND company_code = 'SEDCORE';
+
+-- 3. Giyim kullanıcılarının erişim kayıtları: SEDCORE → SEDCORE1
+--    Eğer SEDCORE1 kaydı yoksa güvenle UPDATE yapılır
+UPDATE user_def_access
+SET company_code = 'SEDCORE1'
+WHERE id IN (
     'uacc-mgzad-0000-0000-0000-000000000004',
     'uacc-gkasy-0000-0000-0000-000000000005',
     'uacc-gdep0-0000-0000-0000-000000000006'
 )
-AND company_code = 'SEDCORE1';
+AND company_code = 'SEDCORE'
+AND NOT EXISTS (
+    SELECT 1 FROM user_def_access x
+    WHERE x.user_def_id = user_def_access.user_def_id
+      AND x.company_code = 'SEDCORE1'
+      AND x.id != user_def_access.id
+);
+
+-- 4. Giyim user_role kayıtları: SEDCORE rolleri → SEDCORE1 rolleri
+UPDATE user_role
+SET company_code = 'SEDCORE1',
+    role_def_id  = 'role-s1mgz-0000-0000-0000-000000000004'
+WHERE id = 'urol-mgzad-0000-0000-0000-000000000004'
+  AND company_code = 'SEDCORE';
+
+UPDATE user_role
+SET company_code = 'SEDCORE1',
+    role_def_id  = 'role-s1kas-0000-0000-0000-000000000002'
+WHERE id = 'urol-gkasy-0000-0000-0000-000000000005'
+  AND company_code = 'SEDCORE';
+
+UPDATE user_role
+SET company_code = 'SEDCORE1',
+    role_def_id  = 'role-s1dep-0000-0000-0000-000000000003'
+WHERE id = 'urol-gdep0-0000-0000-0000-000000000006'
+  AND company_code = 'SEDCORE';
 
 -- ============================================================
 -- ROL ATAMALARI (user_role)
@@ -151,17 +217,17 @@ VALUES
     ('urol-depo0-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'SEDCORE', 'role-depo0-0000-0000-0000-000000000003', 'udef-depo-0000-0000-0000-000000000003'),
 
-    -- magaza_admin → STORE_MANAGER rolü
+    -- magaza_admin → STORE_ADMIN rolü (SEDCORE1)
     ('urol-mgzad-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'role-mgzyn-0000-0000-0000-000000000004', 'udef-mgzad-0000-0000-0000-000000000004'),
+     'SEDCORE1', 'role-s1mgz-0000-0000-0000-000000000004', 'udef-mgzad-0000-0000-0000-000000000004'),
 
-    -- giyim_kasiyer → CASHIER rolü
+    -- giyim_kasiyer → CASHIER rolü (SEDCORE1)
     ('urol-gkasy-0000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'role-kasiy-0000-0000-0000-000000000002', 'udef-gkasy-0000-0000-0000-000000000005'),
+     'SEDCORE1', 'role-s1kas-0000-0000-0000-000000000002', 'udef-gkasy-0000-0000-0000-000000000005'),
 
-    -- giyim_depo → WAREHOUSE rolü
+    -- giyim_depo → WAREHOUSE rolü (SEDCORE1)
     ('urol-gdep0-0000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'SEDCORE', 'role-depo0-0000-0000-0000-000000000003', 'udef-gdep0-0000-0000-0000-000000000006')
+     'SEDCORE1', 'role-s1dep-0000-0000-0000-000000000003', 'udef-gdep0-0000-0000-0000-000000000006')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================

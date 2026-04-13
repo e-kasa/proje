@@ -1642,6 +1642,12 @@ VALUES
     ('bnd-bt088-0000-0000-000000000088', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.document_no_items', 'Belgeden ürün kalemi çıkarılamadı', 'No product lines extracted from document'),
     ('bnd-bt089-0000-0000-000000000089', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.document_items_imported', 'kalem aktarıldı', 'items imported'),
     ('bnd-bt090-0000-0000-000000000090', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.document_analyze_error', 'Belge analizi başarısız oldu', 'Document analysis failed'),
+    ('bnd-bt091-0000-0000-000000000091', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.select_source', 'Kaynak Seç', 'Select Source'),
+    ('bnd-bt092-0000-0000-000000000092', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.upload_pdf', 'PDF Yükle', 'Upload PDF'),
+    ('bnd-bt093-0000-0000-000000000093', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.take_photo', 'Fotoğraf Çek', 'Take Photo'),
+    ('bnd-bt094-0000-0000-000000000094', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.choose_from_gallery', 'Galeriden Seç', 'Choose from Gallery'),
+    ('bnd-bt095-0000-0000-000000000095', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.camera_permission_denied', 'Kamera izni verilmedi', 'Camera permission denied'),
+    ('bnd-bt096-0000-0000-000000000096', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.upload_or_photo', 'PDF veya Fotoğraf Yükle', 'Upload PDF or Photo'),
 
     -- ── WIZARD (Ürün ekleme adımları) ─────────────────────────────
     ('bnd-wz001-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.changes_will_be_lost', 'Değişiklikler kaybolacak', 'Changes will be lost'),

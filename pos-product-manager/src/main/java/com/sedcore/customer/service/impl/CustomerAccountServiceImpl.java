@@ -7,11 +7,9 @@ import com.sedcore.customer.repository.CustomerAccountRepository;
 import com.sedcore.customer.repository.CustomerRepository;
 import com.sedcore.customer.service.CustomerAccountService;
 import com.towpen.base.security.BaseDbServiceImp;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import com.towpen.base.enums.model.TMessageType;
-import com.towpen.base.exceptions.TOpenException;
-import com.towpen.base.restservice.model.TOpenMessage;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.sedcore.common.exception.NotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,12 +19,12 @@ import java.time.LocalDateTime;
 @Service
 @Slf4j
 @Transactional
+@RequiredArgsConstructor
 public class CustomerAccountServiceImpl
         extends BaseDbServiceImp<CustomerAccountRepository, CustomerAccount>
         implements CustomerAccountService {
 
-    @Autowired
-    private CustomerRepository customerRepository;
+    private final CustomerRepository customerRepository;
 
     @Override
     public Class<?> getDTOClassForService() {
@@ -120,14 +118,14 @@ public class CustomerAccountServiceImpl
     @Transactional(readOnly = true)
     public CustomerAccountResponse getAccountResponse(String customerId) {
         CustomerAccount acct = dao.findByCustomerId(customerId)
-                .orElseThrow(() -> new RuntimeException("Musteri cari hesabi bulunamadi: " + customerId));
+                .orElseThrow(() -> new NotFoundException("CustomerAccount", customerId));
         return mapToResponse(acct);
     }
 
     @Override
     public CustomerAccountResponse recalculate(String customerId) {
         Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new RuntimeException("Musteri bulunamadi: " + customerId));
+                .orElseThrow(() -> new NotFoundException("Customer", customerId));
         CustomerAccount acct = getOrCreate(customer);
         acct.updateCalculatedFields();
         return mapToResponse(save(acct));

@@ -472,7 +472,57 @@ if (!entity.getCompanyCode().equals(companyCode)) {
 
 ---
 
-## 10. PRODUCTION-READY KURALLAR (2026-04-13)
+## 10. EXCEPTION YÖNETİMİ — KRİTİK KURAL (2026-04-13)
+
+### TOpenException / TOpenMessage KULLANMA — NotFoundException / BusinessException Kullan
+
+`TOpenMessage` sınıfı `toString()` override etmez → log'da nesne referansı görünür → debug imkânsız:
+
+```
+ERROR GlobalExceptionHandler : TOpenException: [com.towpen.base.restservice.model.TOpenMessage@5bd0d0d5]
+```
+
+**Proje exception'larını kullan — bunlar düzgün mesaj taşır:**
+
+```java
+// ✅ DOĞRU — log'da net mesaj, AppExceptionHandler yakalar, doğru HTTP status döner
+throw new NotFoundException("CustomerAccount", customerId);
+// → log: "CustomerAccount bulunamadı: abc-123"   HTTP 404
+
+throw new NotFoundException("Ürün bulunamadı: " + id);
+// → log: "Ürün bulunamadı: abc-123"              HTTP 404
+
+throw new BusinessException("Stok yetersiz: mevcut=" + current + ", istenen=" + requested);
+// → log: "Stok yetersiz: mevcut=2, istenen=5"    HTTP 400
+
+throw new ConflictException("Bu SKU zaten kayıtlı: " + sku);
+// → log: "Bu SKU zaten kayıtlı: ABC-001"         HTTP 409
+
+// ❌ YANLIŞ — TOpenMessage.toString() object reference döner → log okunmaz
+throw new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006));
+// → log: "TOpenException: [com.towpen.base.restservice.model.TOpenMessage@5bd0d0d5]"
+```
+
+**Exception → HTTP status eşlemesi:**
+
+| Exception | HTTP | Kullanım |
+|-----------|------|---------|
+| `NotFoundException` | 404 | Kayıt bulunamadı |
+| `BusinessException` | 400 | İş kuralı ihlali, yetersiz stok, geçersiz durum |
+| `ConflictException` | 409 | Duplicate kayıt, SKU çakışması |
+| `DataConflictException` | 409 | Veri bütünlüğü ihlali |
+| `OperationNotAllowedException` | 403 | İzinsiz işlem |
+| `CompanyIsolationViolationException` | 403 | Tenant sızıntısı — KRİTİK |
+
+`AppExceptionHandler` tüm bu exception'ları yakalar → `{ success: false, message: "...", errorCode }` döner.
+
+**`TOpenException` ne zaman kullanılır?**  
+Sadece core kütüphanesi (`BaseDbServiceImp.findAndCheckById()` vb.) içinden fırlatılıyorsa ve
+doğrudan re-throw ediliyorsa kabul edilebilir. Servis/controller kodunda `new TOpenException(...)` yazma.
+
+---
+
+## 11. PRODUCTION-READY KURALLAR (2026-04-13)
 
 ### Sektör İzolasyonu
 
@@ -555,3 +605,150 @@ spring.jpa.hibernate.ddl-auto=create   # Her startup'ta DROP+CREATE
 ```
 
 `ALTER TABLE ... ADD COLUMN` ifadelerini data.sql'e **ekleme** — Hibernate schema'yı yönetir.
+
+---
+
+## 12. PDF FATURA ANALİZİ — MİMARİ VE ALAN DETAYLARI
+
+### Endpoint
+
+```
+POST /api/v1/document/analyze   (multipart/form-data, field: "file")
+Flutter URL: product/api/v1/document/analyze
+```
+
+### Dosya Lokasyonları
+
+```
+model/DocumentItemResult.java        ← Tek satır sonuç DTO
+model/DocumentAnalyzeResponse.java   ← Tüm belge sonuç DTO
+service/DocumentAnalyzeService.java  ← Interface
+service/impl/DocumentAnalyzeServiceImpl.java  ← PDFBox parse + ürün match
+controller/DocumentAnalyzeController.java     ← Interface (@Tag, @RequestMapping)
+controller/impl/DocumentAnalyzeControllerImpl.java
+```
+
+### DocumentAnalyzeResponse Yapısı
+
+```java
+// DocumentAnalyzeResponse
+String fileName;       // Yüklenen dosyanın adı
+int totalItems;        // Toplam çıkarılan kalem sayısı
+int foundItems;        // Sistemde eşleşen kalem sayısı
+int notFoundItems;     // Eşleşmeyen (yeni ürün) kalem sayısı
+List<DocumentItemResult> items;
+
+// DocumentItemResult — her fatura satırı
+int rowIndex;              // Parse sırası (1, 2, 3...)
+String rawText;            // Ham satır metni (debug için)
+String extractedName;      // Temizlenmiş ürün adı
+String extractedCode;      // Barkod veya OEM numarası
+Double extractedQuantity;  // Miktar
+Double extractedUnitPrice; // Birim fiyat
+String matchStatus;        // "FOUND" | "NOT_FOUND"
+String matchedProductId;   // Eşleşen ürün ID (FOUND ise)
+String matchedVariantId;   // Eşleşen varyant ID (FOUND ise) — Flutter'da existingVariantId olur
+String matchedProductName; // Eşleşen ürün adı
+String matchedSku;         // Eşleşen SKU
+String matchType;          // "BARCODE" | "OEM" | "NAME"
+Double matchedCurrentStock; // Mevcut stok (0.0 sabit — TODO: gerçek stok)
+
+// ❌ EKSİK — Sprint 1 tamamlama için eklenecek:
+// String unit;           // "ADET" | "KG" | "MT" vb.
+// Double vatRate;        // 8.0 | 18.0 | 20.0
+// Boolean vatIncluded;   // fiyat KDV dahil mi?
+// Double totalPrice;     // satır toplamı
+```
+
+### Parse Akışı (DocumentAnalyzeServiceImpl)
+
+```
+1. PDFBox → PDFTextStripper.setSortByPosition(true) → tüm metin
+2. "\r?\n" ile satırlara böl
+3. Her satır için:
+   a. shouldSkipLine() → başlık/footer satırları atla
+   b. extractLineInfo():
+      - EAN13 (13 rakam) → result.code, result.codeType="BARCODE"
+      - OEM (harf+rakam 4-20 karakter) → result.code, result.codeType="OEM"
+      - Türkçe sayılar normalize (1.234,56 → 1234.56)
+      - Tam sayı 1-9999 → result.quantity
+      - En küçük pozitif ondalıklı → result.unitPrice
+      - Kodu ve sayıları temizle → result.name
+   c. matchToProduct():
+      - Barkod → barcodeRepository.findByBarcodeCode()
+      - OEM   → oemNumberRepository.findByOemNumberIgnoreCase()
+      - İsim  → productRepository.searchProducts(ilk 2-3 kelime)
+      - Bulunamadı → NOT_FOUND
+4. DocumentAnalyzeResponse döner
+```
+
+### Türkçe Fatura Formatı — Atlanan Satırlar (SKIP_PREFIXES)
+
+```java
+// Şu an atlanıyor (başlık/footer):
+"sıra", "sira", "satır", "satir", "miktar", "birim", "adet",
+"toplam", "genel", "kdv", "vergi", "iban", "banka",
+"sayfa", "page", "tarih", "fatura", "irsaliye", "alıcı",
+"alici", "satıcı", "satici", "müşteri", "musteri", "tc kimlik",
+"adres", "telefon", "e-posta", "email", "web"
+
+// Ayrıca:
+// - 5 karakterden kısa satırlar
+// - Sadece rakam/özel karakter içeren satırlar
+// - Boş satırlar
+```
+
+### Ürün Eşleştirme Kritik Notlar
+
+```java
+// BARCODE: barcodeRepository.findByBarcodeCode(code)
+// → Barcode entity'de: getVariant() (object, NOT String ID)
+// → variant.getProduct() (object, NOT String ID)
+
+// OEM: oemNumberRepository.findByOemNumberIgnoreCase(code)
+// → OemNumber entity'de: getVariant() (object)
+
+// NAME: productRepository.searchProducts(keyword)
+// → İlk 2-3 anlamlı kelime (≥3 karakter) aranır
+// → İlk sonuç alınır → variants[0] → FOUND
+// ⚠️ UYARI: İsim eşleşmesi belirsiz — "YAĞ FİLTRESİ" → yanlış ürün bulabilir
+// Flutter'da NAME eşleşmesinde kullanıcı onayı gerekli
+
+// matchedCurrentStock: Şu an 0.0 sabit
+// TODO: inventoryRepository.getCurrentStock(variantId, companyCode)
+```
+
+### Sprint 1 Tamamlama — Eklenecekler
+
+```java
+// 1. DocumentItemResult.java'ya yeni alanlar:
+private String unit;           // extract edilen birim
+private Double vatRate;        // extract edilen KDV oranı
+private Boolean vatIncluded;   // KDV dahil mi?
+
+// 2. DocumentAnalyzeServiceImpl.extractLineInfo():
+// Birim extract:
+Pattern UNIT_PATTERN = Pattern.compile(
+  "\\b(ADET|ADT|KG|KGR|LT|LTR|MT|MTR|M2|PAKET|PKT|KUTU|KTU|PCS|GR|GRAM)\\b",
+  Pattern.CASE_INSENSITIVE);
+// → Matcher.find() → result.unit = match
+
+// KDV extract:
+Pattern VAT_PATTERN = Pattern.compile("\\b(1|8|10|18|20)\\s*%");
+// → Satırda "%18", "18%" vb. → result.vatRate = Double.parseDouble(match)
+
+// 3. matchedCurrentStock gerçek stok:
+// inventoryRepository.findByVariantIdAndCompanyCode(variantId, CompanyContext.get())
+//   .map(inv -> inv.getTotalStock()).orElse(0.0)
+```
+
+### Desteklenen / Desteklenmeyen Formatlar
+
+```
+✅ Dijital PDF (metin seçilebilir, PDFBox doğrudan okur)
+✅ Türkçe fatura formatı (1.234,56 virgüllü sayı)
+✅ Çok sayfalı PDF (her sayfa parse edilir)
+❌ Taranmış/görüntü PDF → OCR gerekli (Sprint 2: Tesseract)
+❌ Şifreli/korumalı PDF → Exception fırlatır
+❌ Excel/Word fatura → BusinessException ("Sadece PDF desteklenmektedir")
+```

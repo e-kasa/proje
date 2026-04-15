@@ -54,7 +54,7 @@ public class MultiLineAggregator {
                 if (pending.quantity == null) pending.quantity = line.quantity;
                 if (pending.unitPrice == null) pending.unitPrice = line.unitPrice;
                 if (pending.code == null) pending.code = line.code;
-                if (pending.code == null) pending.codeType = line.codeType;
+                if (pending.codeType == null) pending.codeType = line.codeType;
                 if (pending.unit == null) pending.unit = line.unit;
                 if (pending.vatRate == null) pending.vatRate = line.vatRate;
                 if (pending.totalPrice == null) pending.totalPrice = line.totalPrice;

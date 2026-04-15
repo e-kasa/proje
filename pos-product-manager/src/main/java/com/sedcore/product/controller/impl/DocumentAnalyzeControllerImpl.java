@@ -26,6 +26,10 @@ public class DocumentAnalyzeControllerImpl implements DocumentAnalyzeController 
             throw new BusinessException("Dosya boş olamaz");
         }
 
+        if (file.getSize() > 10L * 1024 * 1024) {
+            throw new BusinessException("Dosya boyutu 10 MB sınırını aşıyor");
+        }
+
         String fileName = file.getOriginalFilename() != null
                 ? file.getOriginalFilename().toLowerCase() : "";
         if (!fileName.endsWith(".pdf") && !isImageFile(fileName)) {

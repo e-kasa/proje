@@ -1,4 +1,6 @@
 ﻿import 'dart:io';
+import 'dart:typed_data';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,7 +15,6 @@ import '../../../core/widgets/widgets.dart';
 import '../../../providers/sector_provider.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/services/service_locator.dart';
-import 'package:project_pos/features/inventory/services/document_analyze_service.dart';
 import 'package:project_pos/features/inventory/screens/batch_entry/widgets/document_analyze_result_sheet.dart';
 import 'providers/batch_entry_provider.dart';
 import 'models/batch_entry_models.dart';
@@ -104,17 +105,28 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
     );
     if (choice == null) return;
 
-    // 2. Dosya al
-    File? file;
+    // 2. Dosya → bytes + filename (web ve native için ortak)
+    Uint8List? fileBytes;
+    String? fileName;
 
     if (choice == _srcPdf) {
+      // withData: true → web'de path null olduğu için bytes gerekli
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf'],
         allowMultiple: false,
+        withData: true,
       );
-      if (result == null || result.files.single.path == null) return;
-      file = File(result.files.single.path!);
+      if (result == null) return;
+      final pf = result.files.single;
+      if (pf.bytes != null) {
+        fileBytes = pf.bytes;
+        fileName = pf.name;
+      } else if (pf.path != null) {
+        // native fallback
+        fileBytes = await File(pf.path!).readAsBytes();
+        fileName = pf.name;
+      }
     } else if (choice == _srcCamera) {
       // Kamera izni
       final status = await Permission.camera.request();
@@ -129,7 +141,8 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
         maxWidth: 2048,
       );
       if (picked == null) return;
-      file = File(picked.path);
+      fileBytes = await picked.readAsBytes();
+      fileName = picked.name;
     } else {
       // Galeri
       final picked = await ImagePicker().pickImage(
@@ -137,7 +150,16 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
         imageQuality: 85,
       );
       if (picked == null) return;
-      file = File(picked.path);
+      fileBytes = await picked.readAsBytes();
+      fileName = picked.name;
+    }
+
+    if (fileBytes == null || fileName == null) return;
+
+    // 10 MB ön kontrol
+    if (fileBytes!.length > 10 * 1024 * 1024) {
+      if (mounted) AppToast.error(context, t('batch.file_too_large'));
+      return;
     }
 
     if (!mounted) return;
@@ -160,10 +182,13 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
 
     try {
       final service = ref.read(documentAnalyzeServiceProvider);
-      final analyzeResult = await service.analyzeDocument(file);
+      final analyzeResult =
+          await service.analyzeDocumentFromBytes(fileBytes, fileName);
+
+      // Root navigator'dan pop et — showDialog useRootNavigator:true ile açar
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
 
       if (!mounted) return;
-      Navigator.pop(context); // loading dialog kapat
 
       if (analyzeResult.items.isEmpty) {
         AppToast.error(context, t('batch.document_no_items'));
@@ -183,10 +208,26 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
         },
       );
     } catch (e) {
-      if (mounted) {
-        Navigator.pop(context); // loading dialog kapat
-        AppToast.error(context, t('batch.document_analyze_error'));
+      // Root navigator'dan pop et
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      if (!mounted) return;
+
+      String key = 'batch.document_analyze_error';
+      if (e is DioException) {
+        if (e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.receiveTimeout ||
+            e.type == DioExceptionType.sendTimeout) {
+          key = 'batch.document_timeout_error';
+        } else if (e.response?.statusCode == 400) {
+          final msg = (e.response?.data?['message'] as String?) ?? '';
+          key = (msg.contains('10 MB') || msg.contains('boyut'))
+              ? 'batch.file_too_large'
+              : 'batch.document_parse_error';
+        } else if (e.response?.statusCode == 500) {
+          key = 'batch.document_parse_error';
+        }
       }
+      AppToast.error(context, t(key));
     }
   }
 
@@ -203,10 +244,12 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
   }
 
   Future<void> _submit(BatchEntryState state) async {
-    // Validasyon
+    // Validasyon — validateAll() i18n anahtarı döner, t() ile çevrilir
     final err = ref.read(batchEntryProvider.notifier).validateAll();
     if (err != null) {
-      _showError(err);
+      final t = i18nOf(ref);
+      // i18n key mi yoksa direkt mesaj mı?
+      _showError(err.contains('.') ? t(err) : err);
       return;
     }
 
@@ -1230,7 +1273,7 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
     // Satır silindiyse dialog'u kapat
     if (row.id != widget.rowId) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) Navigator.of(context).pop();
+        if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
       });
       return const SizedBox.shrink();
     }
@@ -1310,7 +1353,7 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(8),
-                      onTap: () => Navigator.of(context).pop(),
+                      onTap: () => Navigator.of(context, rootNavigator: true).pop(),
                       child: const Padding(
                         padding: EdgeInsets.all(6),
                         child: Icon(Icons.close_rounded,
@@ -1668,8 +1711,9 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                 children: [
                   TextButton.icon(
                     onPressed: () {
+                      // Sadece satırı sil — build() addPostFrameCallback ile dialog'u kapatır.
+                      // İkinci Navigator.pop() ekleme: double-pop ekranı atıyor.
                       ref.read(batchEntryProvider.notifier).removeRow(widget.rowId);
-                      Navigator.of(context).pop();
                     },
                     icon: const Icon(Icons.delete_outline_rounded,
                         size: 16, color: AppColors.danger),
@@ -1685,7 +1729,7 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                   ),
                   const Spacer(),
                   TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
                     child: Text(t('common.close'),
                         style: const TextStyle(color: AppColors.textSecondary)),
                   ),

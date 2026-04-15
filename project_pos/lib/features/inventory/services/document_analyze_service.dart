@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:project_pos/core/api/api_client.dart';
@@ -11,15 +12,12 @@ class DocumentAnalyzeService {
   final ApiClient _apiClient;
   DocumentAnalyzeService(this._apiClient);
 
-  /// PDF dosyasını yükler, ürün kalemlerini analiz eder.
-  /// Dönen liste her belge satırı için [DocumentAnalyzeItem] içerir.
-  Future<DocumentAnalyzeResult> analyzeDocument(File file) async {
+  /// Bytes + dosya adı ile belge analizi yapar (web + native ortak yol).
+  Future<DocumentAnalyzeResult> analyzeDocumentFromBytes(
+      Uint8List bytes, String filename) async {
     try {
       final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(
-          file.path,
-          filename: file.path.split(Platform.pathSeparator).last,
-        ),
+        'file': MultipartFile.fromBytes(bytes, filename: filename),
       });
 
       final response = await _apiClient.post(
@@ -30,9 +28,16 @@ class DocumentAnalyzeService {
       final data = response.data['data'] as Map<String, dynamic>;
       return DocumentAnalyzeResult.fromJson(data);
     } catch (e) {
-      debugPrint('DocumentAnalyzeService.analyzeDocument hata: $e');
+      debugPrint('DocumentAnalyzeService.analyzeDocumentFromBytes hata: $e');
       rethrow;
     }
+  }
+
+  /// Native için eski File-tabanlı yol (backward compat).
+  Future<DocumentAnalyzeResult> analyzeDocument(File file) async {
+    final bytes = await file.readAsBytes();
+    final filename = file.path.split(Platform.pathSeparator).last;
+    return analyzeDocumentFromBytes(bytes, filename);
   }
 }
 
@@ -86,6 +91,10 @@ class DocumentAnalyzeItem {
   final bool? vatIncluded;   // KDV dahil mi? null = bilinmiyor
   final double? totalPrice;  // satır toplamı | null
 
+  // ── Sprint 1 ekleme: eşleşme güveni + uyarı bayrakları ──
+  final double? matchConfidence;       // BARCODE=1.0, OEM=0.9, NAME=0.5, NOT_FOUND=0.0
+  final List<String> warningFlags;     // NAME_MATCH_UNCERTAIN | PRICE_MISMATCH | NO_PRICE | DUPLICATE_MERGED
+
   const DocumentAnalyzeItem({
     required this.rowIndex,
     required this.rawText,
@@ -103,9 +112,18 @@ class DocumentAnalyzeItem {
     this.vatRate,
     this.vatIncluded,
     this.totalPrice,
+    this.matchConfidence,
+    this.warningFlags = const [],
   });
 
   bool get isFound => matchStatus == 'FOUND';
+
+  bool get isNameMatch       => matchType == 'NAME';
+  bool get hasPriceMismatch  => warningFlags.contains('PRICE_MISMATCH');
+  bool get isDuplicateMerged => warningFlags.contains('DUPLICATE_MERGED');
+  bool get hasNoPrice        => warningFlags.contains('NO_PRICE');
+  bool get isHighConfidence  => (matchConfidence ?? 0) >= 0.9;
+  bool get isLowConfidence   => isFound && (matchConfidence ?? 0) < 0.6;
 
   factory DocumentAnalyzeItem.fromJson(Map<String, dynamic> json) {
     return DocumentAnalyzeItem(
@@ -125,6 +143,8 @@ class DocumentAnalyzeItem {
       vatRate: (json['vatRate'] as num?)?.toDouble(),
       vatIncluded: json['vatIncluded'] as bool?,
       totalPrice: (json['totalPrice'] as num?)?.toDouble(),
+      matchConfidence: (json['matchConfidence'] as num?)?.toDouble(),
+      warningFlags: List<String>.from(json['warningFlags'] ?? []),
     );
   }
 }

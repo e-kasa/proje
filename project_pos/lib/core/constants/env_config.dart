@@ -85,14 +85,15 @@ class EnvConfig {
   }
 
   /// Yanıt alma zaman aşımı (ms)
+  /// PDF analizi uzun sürebilir (OCR + eşleşme): dev=60s, staging=45s, prod=30s
   static int get receiveTimeout {
     switch (environment) {
       case Environment.dev:
-        return 15000;
+        return 60000;
       case Environment.staging:
-        return 20000;
+        return 45000;
       case Environment.prod:
-        return 10000;
+        return 30000;
     }
   }
 

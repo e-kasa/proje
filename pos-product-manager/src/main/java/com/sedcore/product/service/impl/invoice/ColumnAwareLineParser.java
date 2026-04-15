@@ -17,8 +17,8 @@ public class ColumnAwareLineParser {
             Pattern.compile("\\b(ADET|ADT|KG|KGR|LT|LTR|MT|MTR|M2|PAKET|PKT|KUTU|KTU|PCS|GR|GRAM)\\b",
                     Pattern.CASE_INSENSITIVE);
 
-    private static final Pattern VAT_PATTERN =
-            Pattern.compile("\\b(1|8|10|18|20)\\s*%?\\b");
+    private static final Pattern VAT_PATTERN = Pattern.compile(
+            "(?:%\\s*(1|8|10|18|20)\\b|\\b(1|8|10|18|20)\\s*%)", Pattern.CASE_INSENSITIVE);
 
     private final ColumnPositionMapper mapper;
 
@@ -80,7 +80,8 @@ public class ColumnAwareLineParser {
             Matcher vm = VAT_PATTERN.matcher(vatStr);
             if (vm.find()) {
                 try {
-                    result.vatRate = Double.parseDouble(vm.group(1));
+                    String vatGroup = vm.group(1) != null ? vm.group(1) : vm.group(2);
+                    result.vatRate = Double.parseDouble(vatGroup);
                 } catch (NumberFormatException ignored) {}
             }
         }

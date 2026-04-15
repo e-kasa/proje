@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
  * Fatura/İrsaliye belgesinden analiz edilen tek bir ürün kalemi.
  * matchStatus: "FOUND" → sistemde var, "NOT_FOUND" → sistemde yok
@@ -65,4 +67,13 @@ public class DocumentItemResult {
 
     /** Satır toplamı (miktar × birim fiyat veya belgeden çıkarılan) */
     private Double totalPrice;
+
+    /** Eşleşme güven skoru: BARCODE=1.0, OEM=0.9, NAME=0.5, NOT_FOUND=0.0 */
+    private Double matchConfidence;
+
+    /**
+     * Uyarı bayrakları.
+     * Olası değerler: "NAME_MATCH_UNCERTAIN", "PRICE_MISMATCH", "NO_PRICE", "DUPLICATE_MERGED"
+     */
+    private List<String> warningFlags;
 }

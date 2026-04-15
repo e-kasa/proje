@@ -265,9 +265,9 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
 
   // --- Validasyon ------------------------------------------------------------
   String? validateAll() {
-    if (state.rows.isEmpty) return 'En az bir urun ekleyin';
-    if (state.supplierId == null) return 'Tedarikci secimi zorunludur';
-    if (state.locationId == null) return 'Lokasyon secimi zorunludur';
+    if (state.rows.isEmpty) return 'batch.min_one_product';
+    if (state.supplierId == null) return 'batch.supplier_required';
+    if (state.locationId == null) return 'batch.location_required';
 
     for (int i = 0; i < state.rows.length; i++) {
       final r = state.rows[i];

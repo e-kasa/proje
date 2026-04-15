@@ -36,37 +36,43 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
   }
 
   Future<void> _loadData() async {
-    try {
-      final results = await Future.wait([
-        ref.read(supplierServiceProvider).getSuppliers(status: 'ACTIVE'),
-        ref.read(warehouseServiceProvider).getWarehouses(isActive: true),
-        ref.read(storeServiceProvider).getStores(isActive: true),
-      ]);
-      if (mounted) {
-        final warehouses = results[1] as List<Map<String, dynamic>>;
-        final stores = results[2] as List<Map<String, dynamic>>;
-        final combined = [
-          ...stores.map((s) => {
-            'code': s['code']?.toString() ?? s['id']?.toString() ?? '',
-            'name': s['name']?.toString() ?? '',
-            'type': 'STORE',
-          }),
-          ...warehouses.map((w) => {
-            'code': w['code']?.toString() ?? w['id']?.toString() ?? '',
-            'name': w['name']?.toString() ?? '',
-            'type': 'WAREHOUSE',
-          }),
-        ];
-        setState(() {
-          _suppliers = results[0];
-          _locations = combined;
-          _loading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('BatchHeaderForm veri yüklenemedi: $e');
-      if (mounted) setState(() => _loading = false);
-    }
+    // Her API çağrısı bağımsız — biri hata verse diğerleri çalışmaya devam eder
+    List<Map<String, dynamic>> suppliers = [];
+    List<Map<String, dynamic>> warehouses = [];
+    List<Map<String, dynamic>> stores = [];
+
+    await Future.wait([
+      ref.read(supplierServiceProvider).getSuppliers(status: 'ACTIVE').then(
+        (v) => suppliers = v,
+        onError: (e) => debugPrint('Tedarikçiler yüklenemedi: $e'),
+      ),
+      ref.read(warehouseServiceProvider).getWarehouses(isActive: true).then(
+        (v) => warehouses = v,
+        onError: (e) => debugPrint('Depolar yüklenemedi: $e'),
+      ),
+      ref.read(storeServiceProvider).getStores(isActive: true).then(
+        (v) => stores = v,
+        onError: (e) => debugPrint('Mağazalar yüklenemedi: $e'),
+      ),
+    ]);
+
+    if (!mounted) return;
+    setState(() {
+      _suppliers = suppliers;
+      _locations = [
+        ...stores.map((s) => {
+          'code': s['code']?.toString() ?? s['id']?.toString() ?? '',
+          'name': s['name']?.toString() ?? '',
+          'type': 'STORE',
+        }),
+        ...warehouses.map((w) => {
+          'code': w['code']?.toString() ?? w['id']?.toString() ?? '',
+          'name': w['name']?.toString() ?? '',
+          'type': 'WAREHOUSE',
+        }),
+      ];
+      _loading = false;
+    });
   }
 
   Future<void> _pickDate() async {
@@ -360,32 +366,12 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
               // Unified Location (Store + Warehouse)
               Expanded(
                 flex: 2,
-                child: _DropdownField<String>(
+                child: _LocationDropdown(
                   label: '${t('batch.location')} *',
-                  icon: Icons.location_on_outlined,
                   value: state.locationId,
-                  items: _locations.map((loc) {
-                    final isWarehouse = loc['type'] == 'WAREHOUSE';
-                    return DropdownMenuItem<String>(
-                      value: loc['code']?.toString(),
-                      child: Row(
-                        children: [
-                          Icon(
-                            isWarehouse ? Icons.warehouse_outlined : Icons.store_outlined,
-                            size: 13,
-                            color: AppColors.textMuted,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(loc['name']?.toString() ?? '',
-                                overflow: TextOverflow.ellipsis),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
+                  locations: _locations,
                   onChanged: (val) {
-                    if (val == null) return;
+                    if (val == null || val.isEmpty) return;
                     final loc = _locations.firstWhere(
                       (l) => l['code']?.toString() == val,
                       orElse: () => {},
@@ -519,6 +505,147 @@ class _TextField extends StatelessWidget {
             borderSide: const BorderSide(
                 color: AppColors.primary, width: 1.5),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── LOKASYON DROPDOWN ─────────────────────────────────────────────────────────
+// selectedItemBuilder ayrı liste kullanır — dropdown item'larındaki Row layout
+// sorunlarını önlemek için selected gösterim sade Text olarak yapılır.
+class _LocationDropdown extends StatelessWidget {
+  final String label;
+  final String? value;
+  final List<Map<String, dynamic>> locations;
+  final ValueChanged<String?> onChanged;
+
+  const _LocationDropdown({
+    required this.label,
+    required this.value,
+    required this.locations,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (locations.isEmpty) {
+      // Yüklenmedi / boş — pasif gösterim
+      return Container(
+        height: 48,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7F8FC),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE8E9F0)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(
+          children: [
+            const Icon(Icons.location_on_outlined,
+                size: 15, color: AppColors.textMuted),
+            const SizedBox(width: 6),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 12, color: AppColors.textMuted)),
+          ],
+        ),
+      );
+    }
+
+    // value listede yoksa null yap — DropdownButton assertion hatasını önler
+    final validValue = (value != null &&
+            locations.any((l) => l['code']?.toString() == value))
+        ? value
+        : null;
+
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F8FC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE8E9F0)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: validValue,
+          isExpanded: true,
+          icon: const Icon(Icons.keyboard_arrow_down_rounded,
+              size: 18, color: AppColors.textMuted),
+          hint: Row(
+            children: [
+              const Icon(Icons.location_on_outlined,
+                  size: 15, color: AppColors.textMuted),
+              const SizedBox(width: 6),
+              Text(label,
+                  style: const TextStyle(
+                      fontSize: 12, color: AppColors.textMuted)),
+            ],
+          ),
+          // selectedItemBuilder: seçili satırda icon + metin gösterir
+          // NOT: Align+Row(min)+Expanded kombinasyonu layout hatasına yol açar,
+          //      bunun yerine Row(max) + Flexible kullanılır.
+          selectedItemBuilder: (_) => locations.map((loc) {
+            final isWarehouse = loc['type'] == 'WAREHOUSE';
+            final name = loc['name']?.toString() ?? '';
+            return Row(
+              children: [
+                Icon(
+                  isWarehouse
+                      ? Icons.warehouse_outlined
+                      : Icons.store_outlined,
+                  size: 13,
+                  color: AppColors.textPrimary,
+                ),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    name,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }).toList(),
+          items: locations.map((loc) {
+            final isWarehouse = loc['type'] == 'WAREHOUSE';
+            final code = loc['code']?.toString() ?? '';
+            final name = loc['name']?.toString() ?? '';
+            return DropdownMenuItem<String>(
+              value: code,
+              child: Row(
+                children: [
+                  Icon(
+                    isWarehouse
+                        ? Icons.warehouse_outlined
+                        : Icons.store_outlined,
+                    size: 13,
+                    color: AppColors.textMuted,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      name,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+          onChanged: onChanged,
+          style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary),
         ),
       ),
     );

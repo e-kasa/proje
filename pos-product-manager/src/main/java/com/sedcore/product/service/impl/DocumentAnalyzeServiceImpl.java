@@ -95,6 +95,31 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
                     "Desteklenmeyen dosya formatı. Lütfen PDF veya görüntü (JPG, PNG) yükleyin. Alınan: " + fileName);
         }
 
+        // Duplicate ürün satırlarını birleştir (aynı barkod/isim → quantity topla)
+        Map<String, DocumentItemResult> deduped = new LinkedHashMap<>();
+        int nullKeySeq = 0;
+        for (DocumentItemResult item : items) {
+            String key = item.getExtractedCode() != null
+                    ? item.getExtractedCode()
+                    : item.getExtractedName() != null
+                        ? item.getExtractedName().toLowerCase().trim()
+                        : "NULL_" + nullKeySeq++;
+            if (!key.startsWith("NULL_") && deduped.containsKey(key)) {
+                DocumentItemResult ex = deduped.get(key);
+                double merged =
+                        (ex.getExtractedQuantity()   != null ? ex.getExtractedQuantity()   : 0.0)
+                      + (item.getExtractedQuantity() != null ? item.getExtractedQuantity() : 0.0);
+                ex.setExtractedQuantity(merged);
+                List<String> flags = ex.getWarningFlags() != null
+                        ? new ArrayList<>(ex.getWarningFlags()) : new ArrayList<>();
+                flags.add("DUPLICATE_MERGED");
+                ex.setWarningFlags(flags);
+            } else {
+                deduped.put(key, item);
+            }
+        }
+        items = new ArrayList<>(deduped.values());
+
         long found = items.stream().filter(i -> "FOUND".equals(i.getMatchStatus())).count();
 
         return DocumentAnalyzeResponse.builder()
@@ -295,6 +320,10 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
             if (!prices.isEmpty()) {
                 result.unitPrice = prices.get(0);
             }
+            // Satır toplamı: en az 2 farklı sayı varsa en büyüğü toplam fiyattır
+            if (prices.size() >= 2) {
+                result.totalPrice = prices.get(prices.size() - 1);
+            }
         }
 
         // 6. Ürün adını çıkar — kodu, sayıları ve birimi temizle
@@ -346,7 +375,8 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
         if ("BARCODE".equals(parsed.codeType) && parsed.code != null) {
             var barcodeOpt = barcodeRepository.findByBarcodeCode(parsed.code);
             if (barcodeOpt.isPresent() && barcodeOpt.get().getVariant() != null) {
-                return enrichFromVariant(builder, barcodeOpt.get().getVariant(), "BARCODE");
+                return enrichFromVariant(builder, barcodeOpt.get().getVariant(), "BARCODE",
+                        buildWarningFlags(parsed, "BARCODE"));
             }
         }
 
@@ -354,7 +384,8 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
         if (parsed.code != null && !"BARCODE".equals(parsed.codeType)) {
             var oemList = oemNumberRepository.findByOemNumberIgnoreCase(parsed.code);
             if (!oemList.isEmpty() && oemList.get(0).getVariant() != null) {
-                return enrichFromVariant(builder, oemList.get(0).getVariant(), "OEM");
+                return enrichFromVariant(builder, oemList.get(0).getVariant(), "OEM",
+                        buildWarningFlags(parsed, "OEM"));
             }
         }
 
@@ -375,18 +406,26 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
                             .matchedProductName(product.getName())
                             .matchedVariantId(variant.getId())
                             .matchedSku(variant.getSku())
+                            .matchConfidence(0.5)
+                            .warningFlags(buildWarningFlags(parsed, "NAME"))
                             .build();
                 }
             }
         }
 
         // 4. Bulunamadı
-        return builder.matchStatus("NOT_FOUND").build();
+        return builder
+                .matchStatus("NOT_FOUND")
+                .matchConfidence(0.0)
+                .warningFlags(buildWarningFlags(parsed, null))
+                .build();
     }
 
     private DocumentItemResult enrichFromVariant(
             DocumentItemResult.DocumentItemResultBuilder builder,
-            com.sedcore.product.entity.ProductVariant variant, String matchType) {
+            com.sedcore.product.entity.ProductVariant variant,
+            String matchType,
+            List<String> warningFlags) {
 
         String productName = variant.getName();
         String productId = null;
@@ -398,6 +437,8 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
             }
         }
 
+        double confidence = "BARCODE".equals(matchType) ? 1.0
+                          : "OEM".equals(matchType)     ? 0.9 : 0.5;
         return builder
                 .matchStatus("FOUND")
                 .matchType(matchType)
@@ -406,7 +447,26 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
                 .matchedVariantId(variant.getId())
                 .matchedSku(variant.getSku())
                 .matchedCurrentStock(0.0)
+                .matchConfidence(confidence)
+                .warningFlags(warningFlags)
                 .build();
+    }
+
+    private List<String> buildWarningFlags(ParsedLine parsed, String matchType) {
+        List<String> flags = new ArrayList<>();
+        if ("NAME".equals(matchType)) {
+            flags.add("NAME_MATCH_UNCERTAIN");
+        }
+        if (parsed.unitPrice == null) {
+            flags.add("NO_PRICE");
+        }
+        if (parsed.totalPrice != null && parsed.unitPrice != null && parsed.quantity != null) {
+            double expected = parsed.unitPrice * parsed.quantity;
+            if (expected > 0 && Math.abs(parsed.totalPrice - expected) / expected > 0.05) {
+                flags.add("PRICE_MISMATCH");
+            }
+        }
+        return flags;
     }
 
     private String extractKeywords(String name) {

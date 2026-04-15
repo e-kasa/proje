@@ -1,279 +1,147 @@
-# CLAUDE.md — template (React Admin + Storefront)
+---
+module: template
+type: React Admin + Storefront
+stack: React 19 + TypeScript 5 + Redux Toolkit + React Router v7 + Vite
+base-url: localhost:8080 (api-manager gateway)
+depends-on: [api-manager, security, pos-product-manager]
+touch-when: [new-feature, slice, endpoint, component, route]
+last-verified: 2026-04-16
+---
 
-Genel kurallar için kök `CLAUDE.md`'e bak.  
-**Stack:** React 19 + TypeScript 5 + Redux Toolkit + React Router v7 + Vite
+# CLAUDE.md — template (React)
+
+Genel kurallar: kök `CLAUDE.md`.  
+URL kuralı: `.claude/reference/url-routing.md`. API zarfı: `.claude/reference/api-response.md`.  
+JWT parse: `.claude/reference/jwt-payload.md`.
 
 ---
 
-## 1. TECH STACK
+## Tech Stack
 
-| Paket | Versiyon | Kullanım |
-|-------|----------|---------|
-| React | 19.1.1 | UI framework |
-| TypeScript | 5.8.3 | Tip güvenliği |
-| Vite | 6.3.6 | Build tool |
-| Redux Toolkit | 2.10.1 | Global state (auth, cart, stats) |
-| Zustand | 5.0.9 | Lokal component state |
-| Axios | 1.13.2 | HTTP client |
-| React Router DOM | 7.8.2 | Routing + route guard |
-| Ant Design | 5.27.3 | UI component library |
-| React Bootstrap | 2.10.10 | Grid + layout |
-| PrimeReact | 10.9.7 | Data grid, calendar |
-| React Query (via axios) | — | Server state caching |
-| Chart.js / Apexcharts | — | Dashboard grafikleri |
+```
+React 19, TypeScript 5.8, Vite 6
+Redux Toolkit 2.10   Zustand 5.0   Axios 1.13
+React Router v7   Ant Design 5.27   React Bootstrap 2.10   PrimeReact 10.9
+Chart.js / Apexcharts
+```
 
 ---
 
-## 2. PROJE YAPISI
+## Proje Yapısı
 
 ```
 src/
-├── app.router.tsx               # Ana router — tüm route tanımları
-├── main.tsx                     # Entry point: Redux Provider, PrimeReact, alert config
-├── environment.tsx              # API URL'leri, ortam değişkenleri
-├── customStyle.scss             # Global CSS variables + Tailwind override'ları
+├── app.router.tsx              # Tüm route tanımları
+├── main.tsx                    # Entry (Redux Provider, PrimeReact)
+├── environment.tsx             # API URL'leri
+├── customStyle.scss            # Global CSS variables + Tailwind override
 │
-├── core/                        # Altyapı — framework seviyesi, business logic içermez
-│   ├── axiosClient/
-│   │   └── index.ts             # Axios instance: JWT interceptor, X-Company-Code, 401 refresh
-│   ├── context/                 # React context (auth, tenant)
-│   ├── endpointBuilder.ts       # Tüm API URL sabitleri — hardcode URL yasak
-│   ├── modals/                  # Global modal wrapper'ları
-│   ├── pagination/              # Sayfalama hook + bileşeni
-│   ├── redux/
-│   │   ├── store.tsx            # Redux store konfigürasyonu
-│   │   ├── authSlice.ts         # { user, token, companyCode, isAuthenticated }
-│   │   ├── sidebarSlice.ts      # Sidebar açık/kapalı state
-│   │   └── themeSlice.ts        # Tema ayarları
-│   ├── services/                # Axios tabanlı temel servis katmanı
-│   ├── types/                   # Global TypeScript arayüzleri
-│   └── json/                    # Statik JSON veri (diller, sabit listeler)
+├── core/                       # Altyapı
+│   ├── axiosClient/index.ts    # JWT interceptor, X-Company-Code, 401 refresh
+│   ├── endpointBuilder.ts      # API URL sabitleri — hardcode YASAK
+│   ├── redux/                  # store, authSlice, sidebarSlice, themeSlice
+│   └── services/, types/, context/
 │
-├── store/                       # Redux Toolkit slice'ları (feature state)
-│   ├── cartSlice.ts             # Sepet (POS + storefront)
-│   ├── statsSlice.ts            # Dashboard istatistikleri
-│   └── wishlistSlice.ts         # Favori listesi (storefront)
-│
-├── services/                    # API servis fonksiyonları
-│   ├── authService.ts           # login(), refreshToken()
-│   ├── categoryApi.ts           # Kategori CRUD
-│   ├── productApi.ts            # Ürün CRUD
-│   ├── statsService.ts          # Dashboard stats
-│   └── menuService.ts           # Dinamik menü + i18n
-│
-├── components/                  # Paylaşılan UI bileşenleri
-├── types/                       # Feature bazlı TypeScript tipleri
-├── utils/                       # Yardımcı fonksiyonlar
-├── assets/                      # Görseller, ikonlar
-├── routes/                      # Route guard'lar, layout wrapper'lar
-└── feature-module/              # Ana feature modülleri (lazy loaded)
-    ├── dashboard/
-    ├── pos/                     # POS satış ekranı (web)
-    ├── inventory/               # Ürün listesi, detay, ekleme
-    ├── stock/                   # Stok yönetimi
-    ├── sales/                   # Satış listesi, iade
-    ├── purchases/               # Satın alma
-    ├── people/                  # Müşteri, tedarikçi, kullanıcı
-    ├── finance-accounts/        # Cari hesap, giderler
-    ├── Reports/                 # Raporlar (büyük R — mevcut klasör)
-    ├── settings/                # Firma, kullanıcı, sistem ayarları
-    ├── ecommerce/               # E-ticaret yönetimi
-    ├── storefront/              # Müşteri mağaza arayüzü
-    ├── super-admin/             # Platform yönetimi (SUPER_ADMIN rolü)
-    ├── hrm/                     # İnsan kaynakları
-    ├── coupons/                 # İndirim kuponları
-    ├── usermanagement/          # Kullanıcı yönetimi
-    └── pages/                   # Statik sayfalar (404, hakkında...)
+├── store/                      # Feature slice'ları (cart, stats, wishlist)
+├── services/                   # authService, categoryApi, productApi...
+├── components/                 # Paylaşılan UI
+├── routes/                     # Guard + layout wrapper
+└── feature-module/             # Lazy loaded features
+    ├── dashboard, pos, inventory, stock
+    ├── sales, purchases, people, finance-accounts
+    ├── Reports, settings, ecommerce, storefront
+    ├── super-admin, hrm, coupons, usermanagement, pages
 ```
 
 ---
 
-## 3. TENANT KONFİGÜRASYON — NASIL ÇALIŞIR
+## Tenant Konfigürasyon
 
-**Her API isteğine otomatik eklenir:**
+Her request interceptor otomatik header ekler:
+
 ```typescript
-// core/axiosClient/index.ts — request interceptor
-const state = store.getState();
-const token = state.auth.token;
-const companyCode = state.auth.companyCode ?? localStorage.getItem("companyCode") ?? "syste";
+// core/axiosClient/index.ts
+config.headers.Authorization = `Bearer ${token}`;
+config.headers["X-Company-Code"] = companyCode;   // state.auth.companyCode
 
-if (token) {
-  config.headers.Authorization = `Bearer ${token}`;
-}
-config.headers["X-Company-Code"] = companyCode;  // her istekte otomatik
-
-// Response interceptor: res.data.data otomatik unwrap edilir (backend standart zarfı)
+// Response interceptor: res.data.data otomatik unwrap
+// 401 → refreshToken → retry → başarısız: logout
 ```
 
-**Token yenileme (401 durumunda):**
-```typescript
-// Axios interceptor 401 yakalar
-// → refreshToken() çağrılır
-// → Yeni token ile request retry edilir
-// → Refresh da başarısız olursa → logout
-```
-
-**Firma değişimi:**
+Firma değişimi:
 ```typescript
 dispatch(setCredentials({ companyCode: newCode }));
-// Sonraki tüm istekler yeni companyCode ile gider
 ```
 
 ---
 
-## 4. REDUX STORE YAPISI
+## Redux Store
 
 ```typescript
 {
-  auth:        { token, user, companyCode, isAuthenticated },
-  cart:        { items, total, customerId },       // cartSlice.ts
-  stats:       { revenue, orders, topProducts },   // statsSlice.ts
-  wishlist:    { items },                          // wishlistSlice.ts
-  sidebar:     { toggleHeader },                   // sidebarSlice.ts
-  themeSetting:{ dataLayout, dataColorAll, ... }   // themeSlice.ts
+  auth:         { token, user, companyCode, isAuthenticated },
+  cart:         { items, total, customerId },
+  stats:        { revenue, orders, topProducts },
+  wishlist:     { items },
+  sidebar:      { toggleHeader },
+  themeSetting: { dataLayout, dataColorAll, ... }
 }
 ```
 
-**Slice şablonu:**
-```typescript
-// store/mySlice.ts
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-
-interface MyState {
-  items: MyItem[];
-  isLoading: boolean;
-  error: string | null;
-}
-
-const initialState: MyState = { items: [], isLoading: false, error: null };
-
-const mySlice = createSlice({
-  name: 'my',
-  initialState,
-  reducers: {
-    setItems: (state, action: PayloadAction<MyItem[]>) => {
-      state.items = action.payload;
-    },
-    setLoading: (state, action: PayloadAction<boolean>) => {
-      state.isLoading = action.payload;
-    },
-    setError: (state, action: PayloadAction<string | null>) => {
-      state.error = action.payload;
-    },
-  },
-});
-
-export const { setItems, setLoading, setError } = mySlice.actions;
-export default mySlice.reducer;
-```
+Slice şablonu: `createSlice({ name, initialState, reducers })` — `setItems`, `setLoading`, `setError` pattern.
 
 ---
 
-## 5. SERVİS ŞABLONU
+## Endpoint Kuralı
 
 ```typescript
-// services/myService.ts
-import axiosInstance from '../core/axiosClient';
-import { ENDPOINTS } from '../core/endpointBuilder';
-
-export const MyService = {
-  getItems: async (): Promise<MyItem[]> => {
-    const res = await axiosInstance.get(ENDPOINTS.myResource);
-    return res.data.data ?? [];   // ← her zaman .data.data
-  },
-
-  createItem: async (payload: CreateMyItemDto): Promise<MyItem> => {
-    const res = await axiosInstance.post(ENDPOINTS.myResource, payload);
-    return res.data.data;
-  },
-
-  updateItem: async (id: string, payload: UpdateMyItemDto): Promise<MyItem> => {
-    const res = await axiosInstance.put(`${ENDPOINTS.myResource}/${id}`, payload);
-    return res.data.data;
-  },
-
-  deleteItem: async (id: string): Promise<void> => {
-    await axiosInstance.delete(`${ENDPOINTS.myResource}/${id}`);
-  },
-};
-```
-
----
-
-## 6. API ENDPOINT KURALI
-
-```typescript
-// core/endpointBuilder.ts — URL sabitlerini BURAYA ekle
+// core/endpointBuilder.ts — URL sabitleri BURAYA
 export const ENDPOINTS = {
-  auth:        '/security/authenticate',
-  users:       '/security/api/users',
-  menu:        '/security/api/get-menu-for-user',
-  i18n:        '/security/i18n/all',
+  auth:          '/security/authenticate',
+  users:         '/security/api/users',
+  menu:          '/security/api/get-menu-for-user',
+  i18n:          '/security/i18n/all',
 
-  products:       '/product/api/v1/products',
-  productsBatch:  '/product/api/v1/products/batch',  // Toplu ürün girişi
-  categories:     '/product/api/v1/categories',
-  brands:         '/product/api/v1/brands',
-  units:          '/product/api/v1/units',
-  sales:          '/product/api/v1/sales',
-  purchases:      '/product/api/v1/purchases',
-  stock:          '/product/api/v1/stock-movements',
-  suppliers:      '/product/api/v1/suppliers',
+  products:      '/product/api/v1/products',
+  productsBatch: '/product/api/v1/products/batch',
+  categories:    '/product/api/v1/categories',
+  brands:        '/product/api/v1/brands',
+  units:         '/product/api/v1/units',
+  sales:         '/product/api/v1/sales',
+  purchases:     '/product/api/v1/purchases',
+  stock:         '/product/api/v1/stock-movements',
+  suppliers:     '/product/api/v1/suppliers',
 };
 
-// ❌ axiosInstance.get('/product/api/v1/products')  → hardcode URL yasak
+// ❌ axiosInstance.get('/product/api/v1/products')   — hardcode YASAK
 // ✅ axiosInstance.get(ENDPOINTS.products)
 ```
 
 ---
 
-## 7. COMPONENT ŞABLONU
+## Servis Şablonu
 
-```tsx
-// feature-module/inventory/components/ProductCard.tsx
-import React from 'react';
-import { useDispatch } from 'react-redux';
-import { Product } from '../../../types/product';
-
-interface Props {
-  product: Product;
-  onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
-}
-
-const ProductCard: React.FC<Props> = ({ product, onEdit, onDelete }) => {
-  return (
-    <div className="card border-default">
-      <h3 className="text-primary font-semibold">{product.name}</h3>
-      <button className="btn-primary" onClick={() => onEdit(product.id)}>
-        Düzenle
-      </button>
-    </div>
-  );
+```typescript
+export const MyService = {
+  getItems: async (): Promise<MyItem[]> => {
+    const res = await axiosInstance.get(ENDPOINTS.myResource);
+    return res.data.data ?? [];   // ← her zaman .data.data
+  },
+  createItem: async (payload): Promise<MyItem> => {
+    const res = await axiosInstance.post(ENDPOINTS.myResource, payload);
+    return res.data.data;
+  },
 };
-
-export default ProductCard;
 ```
 
 ---
 
-## 8. ROUTE YAPISI
+## Route + Guard
 
 ```tsx
-// app.router.tsx — lazy loading zorunlu (feature bazlı bundle splitting)
+// app.router.tsx — lazy zorunlu
 const InventoryPage = lazy(() => import('./feature-module/inventory'));
-const POSPage = lazy(() => import('./feature-module/pos'));
-const DashboardPage = lazy(() => import('./feature-module/dashboard'));
 
-// Route kategorileri:
-// 1. Public (token gerekmez): /signin, /signup, /store, /product-detail
-// 2. Protected (token gerekir): /dashboard, /inventory, /pos, /sales, /purchases...
-// 3. Super Admin (SUPER_ADMIN rolü): /super-admin/**
-```
-
-**Route guard:**
-```tsx
-// routes/ klasöründe PrivateRoute bileşeni
 <PrivateRoute roles={['ADMIN', 'STORE_ADMIN']}>
   <InventoryPage />
 </PrivateRoute>
@@ -281,50 +149,43 @@ const DashboardPage = lazy(() => import('./feature-module/dashboard'));
 // Yetki yoksa → /unauthorized
 ```
 
+Public: `/signin, /signup, /store, /product-detail`.
+
 ---
 
-## 9. CSS / SCSS KURALLARI
+## CSS Kuralları
 
 ```scss
-// customStyle.scss — global özel stiller + CSS variables
-
 :root {
-  --primary:   #667eea;
-  --success:   #10b981;
-  --warning:   #f59e0b;
-  --danger:    #ef4444;
-  --info:      #3b82f6;
+  --primary: #667eea;  --success: #10b981;  --warning: #f59e0b;
+  --danger:  #ef4444;  --info:    #3b82f6;
 }
 
-// Tenant tema override (firma bazlı):
 [data-tenant="firma-kodu"] {
   --primary: #firma-rengi;
 }
 ```
 
 **Kural:**
-```
-✅ Tailwind class: className="text-primary bg-light border-default"
-✅ CSS variable: style={{ color: 'var(--primary)' }}
-✅ customStyle.scss'e global override
-❌ inline style={{ color: '#667eea' }}  → hardcode renk yasak
-❌ inline style={{ color: '#ef4444' }}  → CSS variable kullan
-```
+- ✅ Tailwind: `className="text-primary bg-light border-default"`
+- ✅ CSS var: `style={{ color: 'var(--primary)' }}`
+- ✅ `customStyle.scss` global override
+- ❌ Inline hex: `style={{ color: '#667eea' }}`
 
 ---
 
-## 10. SIK YAPILAN HATALAR
+## Sık Yapılan Hatalar
 
 | Hata | Çözüm |
 |------|-------|
-| `res.data.items` | `res.data.data` (backend standart) |
-| Hardcode API URL string | `ENDPOINTS.xxx` kullan |
-| Hardcode renk `#667eea` | `var(--primary)` veya Tailwind |
-| `localStorage` token her yerden | sadece `core/axiosClient` interceptor'dan |
-| Tenant kodu request'e elle ekleme | Interceptor otomatik ekler |
-| `any` tip kullanımı | Interface veya type tanımla |
-| `console.log` production'da | `if (isDev) console.log(...)` veya kaldır |
-| `sessionInstance` direkt kullanmak | `JSON.parse(claims.sessionInstance)` ile parse et |
-| Lazy import olmadan büyük modül | Her feature-module lazy import olmalı |
-| Toplu ürün girişi — ayrı HTTP çağrıları | `ENDPOINTS.productsBatch` — tek POST ile tüm batch |
-| Sektör string hardcode (`'genel'`, `'parcaci'`) | `sectorType.apiValue` → `'GENERAL'`, `'AUTO_PARTS'` |
+| `res.data.items` | `res.data.data` |
+| Hardcode API URL | `ENDPOINTS.xxx` |
+| Hardcode renk | `var(--primary)` veya Tailwind |
+| `localStorage` direkt kullanım | Sadece `core/axiosClient` interceptor |
+| Tenant kodu elle eklemek | Interceptor otomatik |
+| `any` tip | Interface / type tanımla |
+| `console.log` production | `if (isDev) console.log(...)` veya sil |
+| `sessionInstance` direkt | `JSON.parse(claims.sessionInstance)` |
+| Büyük modül lazy değil | Her feature-module lazy import |
+| Toplu ürün ayrı çağrı | `ENDPOINTS.productsBatch` — tek POST |
+| `'sector': 'genel'` | `'GENERAL'` — bkz. sector-strings.md |

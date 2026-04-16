@@ -1665,6 +1665,17 @@ VALUES
     ('bnd-bt111-0000-0000-000000000111', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.match_oem', 'OEM', 'OEM'),
     ('bnd-bt112-0000-0000-000000000112', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.match_name', 'İsim', 'Name'),
     ('bnd-bt113-0000-0000-000000000113', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.document_items_import', 'Kalemi Aktar', 'Items Import'),
+    ('bnd-bt114-0000-0000-000000000114', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.margin', 'Marj', 'Margin'),
+    ('bnd-bt115-0000-0000-000000000115', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.vat_included_yes', 'Dahil', 'Included'),
+    ('bnd-bt116-0000-0000-000000000116', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.vat_included_no', 'Hariç', 'Excluded'),
+    ('bnd-bt117-0000-0000-000000000117', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.variant_attributes', 'Varyant Özellikleri', 'Variant Attributes'),
+    ('bnd-bt118-0000-0000-000000000118', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.add_attribute', 'Yeni Özellik', 'New Attribute'),
+    ('bnd-bt119-0000-0000-000000000119', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.attribute_name', 'Özellik Adı', 'Attribute Name'),
+    ('bnd-bt120-0000-0000-000000000120', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.select_icon', 'İkon Seç', 'Select Icon'),
+    ('bnd-bt121-0000-0000-000000000121', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.attribute_required', 'Özellik adı zorunludur', 'Attribute name required'),
+    ('bnd-bt122-0000-0000-000000000122', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.add_new', 'Yeni', 'New'),
+    ('bnd-bt123-0000-0000-000000000123', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.variant_color', 'Renk', 'Color'),
+    ('bnd-bt124-0000-0000-000000000124', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.no_variants_added', 'Henüz varyant eklenmedi', 'No variants added yet'),
 
     -- ── WIZARD (Ürün ekleme adımları) ─────────────────────────────
     ('bnd-wz001-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.changes_will_be_lost', 'Değişiklikler kaybolacak', 'Changes will be lost'),

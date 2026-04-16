@@ -27,19 +27,7 @@ SELECT
 FROM stock_movements sm
 GROUP BY sm.company_code, sm.variant_id, sm.location_id, sm.location_type;
 
--- ================================================
--- 0a. ŞİRKETLER
--- Company entity: id, company_code, company_name, is_main_company, sector_type
--- (create_user/create_time alanları yok - TOpenDbEntity sadece id içerir)
--- ================================================
-INSERT INTO company
-(id, company_code, company_name, is_main_company, sector_type)
-VALUES
-    ('cmp-0001-0000-0000-0000-000000000001',
-     'SEDCORE','Sedcore Oto Parca A.S.',true,'AUTO_PARTS'),
-    ('cmp-0002-0000-0000-0000-000000000001',
-     'SEDCORE1','Sedcore Giyim Magazasi',false,'FOOTWEAR')
-ON CONFLICT (id) DO NOTHING;
+
 
 -- ================================================
 -- 0. STORES & WAREHOUSES

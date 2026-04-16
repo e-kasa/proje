@@ -73,18 +73,18 @@ class BatchRowCompletion {
       if (row.productName.trim().isNotEmpty) {
         filled++;
       } else {
-        missing.add('Ürün adı');
+        missing.add('batch.field_product_name');
       }
       if (row.categoryId != null && row.categoryId!.isNotEmpty) {
         filled++;
       } else {
-        missing.add('Kategori');
+        missing.add('batch.field_category');
       }
       if (brandRequired) {
         if (row.brandName != null && row.brandName!.trim().isNotEmpty) {
           filled++;
         } else {
-          missing.add('Marka');
+          missing.add('batch.field_brand');
         }
       }
       sectionA = filled == required
@@ -99,16 +99,16 @@ class BatchRowCompletion {
     if (row.salePrice > 0) {
       bFilled++;
     } else {
-      missing.add('Satış fiyatı');
+      missing.add('batch.field_sale_price');
     }
     if (row.quantity > 0) {
       bFilled++;
     } else {
-      missing.add('Adet');
+      missing.add('batch.field_quantity');
     }
     // Mevcut ürünlerde alış fiyatı da zorunlu (cari kaydı için)
     if (isExisting && row.purchasePrice <= 0) {
-      missing.add('Alış fiyatı');
+      missing.add('batch.field_purchase_price');
     }
     final SectionStatus sectionB = bFilled >= 2
         ? SectionStatus.complete
@@ -125,17 +125,17 @@ class BatchRowCompletion {
         sectionC = SectionStatus.complete;
       } else if (row.variantRows.isNotEmpty) {
         sectionC = SectionStatus.partial;
-        missing.add('Varyant (numara/beden)');
+        missing.add('batch.field_variant');
       } else {
         sectionC = SectionStatus.empty;
-        missing.add('Varyant (numara/beden)');
+        missing.add('batch.field_variant');
       }
     } else {
       bool cHasRequired = true;
       bool cHasAny = row.barcode.isNotEmpty;
       if (showOem && oemRequired) {
         if (row.oemNumber == null || row.oemNumber!.trim().isEmpty) {
-          missing.add('OEM No');
+          missing.add('batch.field_oem');
           cHasRequired = false;
         } else {
           cHasAny = true;
@@ -143,7 +143,7 @@ class BatchRowCompletion {
       }
       if (showShelf && shelfRequired) {
         if (row.shelfLocation == null || row.shelfLocation!.trim().isEmpty) {
-          missing.add('Raf kodu');
+          missing.add('batch.field_shelf');
           cHasRequired = false;
         } else {
           cHasAny = true;
@@ -191,12 +191,15 @@ String _generateId() {
 // ── Footwear varyant satırı ───────────────────────────────────────────────────
 class BatchVariantRow {
   final String id;
-  String size;    // Numara / Beden
+  String size;    // Numara / Beden (display / single non-color attr value)
   String color;   // Renk
   String barcode;
   int quantity;
   double? purchasePrice; // null = karttan miras alınır
   double? salePrice;     // null = karttan miras alınır
+  /// Tam attribute map'i — builder'dan üretildiğinde doldurulur.
+  /// Backend'e gönderilirken bu map kullanılır (hardcoded 'Numara' yerine).
+  Map<String, String>? attributesMap;
 
   BatchVariantRow({
     String? id,
@@ -206,6 +209,7 @@ class BatchVariantRow {
     this.quantity = 1,
     this.purchasePrice,
     this.salePrice,
+    this.attributesMap,
   }) : id = id ?? _generateId();
 
   bool get isValid => size.trim().isNotEmpty && quantity > 0;
@@ -219,6 +223,7 @@ class BatchVariantRow {
     bool clearPurchasePrice = false,
     double? salePrice,
     bool clearSalePrice = false,
+    Map<String, String>? attributesMap,
   }) {
     return BatchVariantRow(
       id: id,
@@ -228,6 +233,7 @@ class BatchVariantRow {
       quantity: quantity ?? this.quantity,
       purchasePrice: clearPurchasePrice ? null : (purchasePrice ?? this.purchasePrice),
       salePrice: clearSalePrice ? null : (salePrice ?? this.salePrice),
+      attributesMap: attributesMap ?? this.attributesMap,
     );
   }
 }
@@ -299,9 +305,24 @@ class BatchEntryRow {
         crossRefList = crossRefList ?? [],
         variantRows = variantRows ?? [];
 
-  double get lineTotal => salePrice * quantity;
-  double get lineCost => purchasePrice * quantity;
+  /// Varyantlar varsa bunların adet toplamı, yoksa kart miktar alanı.
+  int get effectiveQuantity => variantRows.isNotEmpty
+      ? variantRows.fold(0, (s, r) => s + r.quantity)
+      : quantity;
+
+  /// Varyantlar varsa her satır kendi fiyatı × kendi adedi, yoksa kart fiyatı × kart adedi.
+  double get lineTotal => variantRows.isNotEmpty
+      ? variantRows.fold(
+          0.0, (s, r) => s + (r.salePrice ?? salePrice) * r.quantity)
+      : salePrice * quantity;
+
+  double get lineCost => variantRows.isNotEmpty
+      ? variantRows.fold(
+          0.0, (s, r) => s + (r.purchasePrice ?? purchasePrice) * r.quantity)
+      : purchasePrice * quantity;
+
   double get lineProfit => lineTotal - lineCost;
+
   double get profitMargin =>
       salePrice > 0 ? ((salePrice - purchasePrice) / salePrice * 100) : 0;
 

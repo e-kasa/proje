@@ -1207,7 +1207,16 @@ VALUES
     ('bnd-i030-0000-0000-0000-000000000030', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.quick_add', 'Hızlı Ürün Ekle', 'Quick Add Product'),
     ('bnd-i031-0000-0000-0000-000000000031', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.scan_barcode', 'Barkod Tara', 'Scan Barcode'),
     ('bnd-i032-0000-0000-0000-000000000032', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.selected', 'seçili', 'selected'),
-    ('bnd-i033-0000-0000-0000-000000000033', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.stock_summary', 'Stok Özeti', 'Stock Summary'),
+    ('bnd-i033-0000-0000-0000-000000000033', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.stock_summary',   'Stok Özeti',    'Stock Summary'),
+
+    -- ── Ürün listesi — sıralama ────────────────────────────────────
+    ('bnd-i034-0000-0000-0000-000000000034', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.sort',            'Sırala',        'Sort'),
+    ('bnd-i035-0000-0000-0000-000000000035', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.sort_name_az',    'İsim A→Z',      'Name A→Z'),
+    ('bnd-i036-0000-0000-0000-000000000036', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.sort_name_za',    'İsim Z→A',      'Name Z→A'),
+    ('bnd-i037-0000-0000-0000-000000000037', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.sort_price_asc',  'Fiyat Artan',   'Price Asc'),
+    ('bnd-i038-0000-0000-0000-000000000038', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.sort_price_desc', 'Fiyat Azalan',  'Price Desc'),
+    ('bnd-i039-0000-0000-0000-000000000039', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.sort_stock_asc',  'Stok Az→Çok',   'Stock Asc'),
+    ('bnd-i040-0000-0000-0000-000000000040', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.sort_stock_desc', 'Stok Çok→Az',   'Stock Desc'),
 
     -- ── POS (eksik) ───────────────────────────────────────────────
     ('bnd-p018-0000-0000-0000-000000000018', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'pos.bank_transfer_payment_info', 'Havale/EFT tutarını girin', 'Enter bank transfer amount'),
@@ -1719,6 +1728,9 @@ VALUES
     ('bnd-bt155-0000-0000-000000000155', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.add_value',           'Değer Ekle',               'Add Value'),
     ('bnd-bt156-0000-0000-000000000156', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.back_to_builder',     'Yapılandırmayı Düzenle',   'Edit Configuration'),
     ('bnd-bt157-0000-0000-000000000157', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.incomplete',          'eksik',                    'incomplete'),
+    ('bnd-bt158-0000-0000-000000000158', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.default_label',       'Varsayılan',               'Default'),
+    ('bnd-bt159-0000-0000-000000000159', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.total_stock',         'Toplam Stok',              'Total Stock'),
+    ('bnd-bt160-0000-0000-000000000160', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.apply_to_variants',   'Varyantlara Uygula',       'Apply to Variants'),
 
     -- ── WIZARD (Ürün ekleme adımları) ─────────────────────────────
     ('bnd-wz001-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.changes_will_be_lost', 'Değişiklikler kaybolacak', 'Changes will be lost'),

@@ -1143,10 +1143,13 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                           ],
                           const SizedBox(height: 6),
                         ],
-                        _QuantityControl(
-                          quantity: row.quantity,
-                          onChanged: (q) => _update(quantity: q),
-                        ),
+                        if (row.variantRows.isNotEmpty)
+                          _VariantQtyBadge(row.effectiveQuantity)
+                        else
+                          _QuantityControl(
+                            quantity: row.quantity,
+                            onChanged: (q) => _update(quantity: q),
+                          ),
                       ],
                     ),
                     const SizedBox(width: 8),
@@ -1267,6 +1270,26 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
           attributes: attributes,
           variantRows: variantRows,
         );
+  }
+
+  /// Kart alış fiyatını TÜM variant satırlarına uygular (üzerine yazar).
+  void _applyPurchaseToAllVariants(BatchEntryRow row) {
+    final val = double.tryParse(_purchaseCtrl.text.replaceAll(',', '.')) ?? 0;
+    if (val <= 0) return;
+    _update(
+      purchasePrice: val,
+      variantRows: row.variantRows.map((vr) => vr.copyWith(purchasePrice: val)).toList(),
+    );
+  }
+
+  /// Kart satış fiyatını TÜM variant satırlarına uygular (üzerine yazar).
+  void _applySaleToAllVariants(BatchEntryRow row) {
+    final val = double.tryParse(_saleCtrl.text.replaceAll(',', '.')) ?? 0;
+    if (val <= 0) return;
+    _update(
+      salePrice: val,
+      variantRows: row.variantRows.map((vr) => vr.copyWith(salePrice: val)).toList(),
+    );
   }
 
   BatchRowCompletion _completion(BatchEntryRow row) => BatchRowCompletion.compute(
@@ -1492,36 +1515,93 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                     showHeader: false,
                     child: Column(
                       children: [
+                        // ── Fiyat alanları ─────────────────────────────────
+                        // Varyantlar varsa etiketler "Varsayılan" prefix alır
                         _FormRow(children: [
                           _Field(
-                            label: '${t('batch.purchase_price')} ₺' +
-                                (row.isExisting ? ' *' : ''),
+                            label: row.variantRows.isNotEmpty
+                                ? '${t('batch.default_label')} ${t('batch.purchase_price')} ₺'
+                                : '${t('batch.purchase_price')} ₺${row.isExisting ? ' *' : ''}',
                             ctrl: _purchaseCtrl,
                             onChanged: (v) =>
-                                _update(purchasePrice: double.tryParse(v) ?? 0),
+                                _update(purchasePrice: double.tryParse(v.replaceAll(',', '.')) ?? 0),
                             keyboardType: const TextInputType.numberWithOptions(
                                 decimal: true),
                             hint: '0,00',
                           ),
                           _Field(
-                            label: '${widget.cfg.labels.salePriceLabel} ₺ *',
+                            label: row.variantRows.isNotEmpty
+                                ? '${t('batch.default_label')} ${widget.cfg.labels.salePriceLabel} ₺'
+                                : '${widget.cfg.labels.salePriceLabel} ₺ *',
                             ctrl: _saleCtrl,
                             onChanged: (v) =>
-                                _update(salePrice: double.tryParse(v) ?? 0),
+                                _update(salePrice: double.tryParse(v.replaceAll(',', '.')) ?? 0),
                             keyboardType: const TextInputType.numberWithOptions(
                                 decimal: true),
                             hint: '0,00',
                           ),
                         ]),
-                        const SizedBox(height: 10),
-                        _Field(
-                          label: '${t('common.quantity')} *',
-                          ctrl: _quantityCtrl,
-                          onChanged: (v) =>
-                              _update(quantity: int.tryParse(v) ?? 1),
-                          keyboardType: TextInputType.number,
-                          hint: '1',
-                        ),
+
+                        // ── Varyantlara Uygula (sadece variant varsa) ──────
+                        if (row.variantRows.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              const SizedBox(width: 2),
+                              _ApplyToVariantsBtn(
+                                label: '↓ ${t('batch.purchase_price')}',
+                                onTap: () => _applyPurchaseToAllVariants(row),
+                              ),
+                              const SizedBox(width: 8),
+                              _ApplyToVariantsBtn(
+                                label: '↓ ${widget.cfg.labels.salePriceLabel}',
+                                onTap: () => _applySaleToAllVariants(row),
+                              ),
+                              const Spacer(),
+                              // Toplam stok: varyant adetlerinin toplamı
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.info.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                      color: AppColors.info.withValues(alpha: 0.3)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.layers_rounded,
+                                        size: 11, color: AppColors.info),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${t('batch.total_stock')}: ${row.effectiveQuantity}',
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.info,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+
+                        // ── Adet (sadece varyant YOK ise) ─────────────────
+                        if (row.variantRows.isEmpty) ...[
+                          const SizedBox(height: 10),
+                          _Field(
+                            label: '${t('common.quantity')} *',
+                            ctrl: _quantityCtrl,
+                            onChanged: (v) =>
+                                _update(quantity: int.tryParse(v) ?? 1),
+                            keyboardType: TextInputType.number,
+                            hint: '1',
+                          ),
+                        ],
+
                         const SizedBox(height: 10),
                         Row(children: [
                           Expanded(
@@ -1542,6 +1622,8 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                             ),
                           ),
                         ]),
+
+                        // ── Kâr özet banner ────────────────────────────────
                         if (row.salePrice > 0 && row.purchasePrice > 0) ...[
                           const SizedBox(height: 10),
                           Container(
@@ -1562,39 +1644,59 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                               Expanded(
                                 child: Text.rich(
                                   TextSpan(children: [
+                                    // Varyantlar varsa toplam kâr, yoksa birim kâr
+                                    if (row.variantRows.isNotEmpty) ...[
+                                      TextSpan(
+                                        text: t('common.total') + ': ',
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: AppColors.textSecondary),
+                                      ),
+                                      TextSpan(
+                                        text: widget.currency.format(row.lineProfit),
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.success),
+                                      ),
+                                      TextSpan(
+                                        text: '  •  ${row.effectiveQuantity} ${t("common.quantity_unit")}',
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: AppColors.textSecondary),
+                                      ),
+                                    ] else ...[
+                                      TextSpan(
+                                        text: '${t('batch.unit_profit')}: ',
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: AppColors.textSecondary),
+                                      ),
+                                      TextSpan(
+                                        text: widget.currency.format(
+                                                row.salePrice - row.purchasePrice) +
+                                            '  •  ',
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.success),
+                                      ),
+                                      TextSpan(
+                                        text: '${t('common.total')}: ',
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: AppColors.textSecondary),
+                                      ),
+                                      TextSpan(
+                                        text: widget.currency.format(row.lineProfit),
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.success),
+                                      ),
+                                    ],
                                     TextSpan(
-                                      text: t('batch.unit_profit') + ': ',
-                                      style: const TextStyle(
-                                          fontSize: 11,
-                                          color: AppColors.textSecondary),
-                                    ),
-                                    TextSpan(
-                                      text: widget.currency.format(
-                                              row.salePrice -
-                                                  row.purchasePrice) +
-                                          '  •  ',
-                                      style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.success),
-                                    ),
-                                    TextSpan(
-                                      text: t('common.total') + ': ',
-                                      style: const TextStyle(
-                                          fontSize: 11,
-                                          color: AppColors.textSecondary),
-                                    ),
-                                    TextSpan(
-                                      text: widget.currency
-                                          .format(row.lineProfit),
-                                      style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.success),
-                                    ),
-                                    TextSpan(
-                                      text:
-                                          '  •  ${t('batch.margin')}: %${margin.toStringAsFixed(1)}',
+                                      text: '  •  ${t('batch.margin')}: %${margin.toStringAsFixed(1)}',
                                       style: TextStyle(
                                           fontSize: 11,
                                           color: margin >= 20
@@ -1788,6 +1890,69 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
 }
 
 // ── QUANTITY CONTROL ──────────────────────────────────────────────────────────
+// Kart üzerinde: varyant ürün için toplam stok rozeti (tıklanamaz)
+class _VariantQtyBadge extends StatelessWidget {
+  final int totalQty;
+  const _VariantQtyBadge(this.totalQty);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.success.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.layers_rounded, size: 12, color: AppColors.success),
+          const SizedBox(width: 4),
+          Text(
+            '$totalQty',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: AppColors.success,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Dialog Section 2: "↓ Alışı / Satışı Varyantlara Uygula" mini butonu
+class _ApplyToVariantsBtn extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _ApplyToVariantsBtn({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.success.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: AppColors.success,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _QuantityControl extends StatelessWidget {
   final int quantity;
   final ValueChanged<int> onChanged;
@@ -4168,6 +4333,8 @@ class _BatchVariantBuilderState extends State<_BatchVariantBuilder> {
       return BatchVariantRow(
         size: otherVals,
         color: color,
+        // Tam attribute haritasını sakla — provider backend payload'ını buradan üretir
+        attributesMap: Map<String, String>.from(combo),
         purchasePrice: widget.defaultPurchasePrice > 0 ? widget.defaultPurchasePrice : null,
         salePrice: widget.defaultSalePrice > 0 ? widget.defaultSalePrice : null,
       );

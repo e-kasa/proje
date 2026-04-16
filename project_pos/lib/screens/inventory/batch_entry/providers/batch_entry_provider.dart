@@ -35,7 +35,7 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
       final row = updatedRows[existingIndex];
       updatedRows[existingIndex] = row.copyWith(quantity: row.quantity + 1);
       state = state.copyWith(rows: updatedRows);
-      return '${row.productName} — adet artirildi (${row.quantity + 1})';
+      return 'batch.barcode_qty_increased|${row.productName}|${row.quantity + 1}';
     }
 
     // Backend'te ara
@@ -64,7 +64,7 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
           existingVariantSku: p['sku']?.toString(),
         );
         state = state.copyWith(rows: [row, ...state.rows]);
-        return '${row.productName} eklendi';
+        return 'batch.barcode_added|${row.productName}';
       }
     } catch (e) {
       AppLogger.error('Barkod arama hatasi', tag: 'BatchEntry', error: e);
@@ -77,7 +77,7 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
       vatRate: 20.0,
     );
     state = state.copyWith(rows: [row, ...state.rows]);
-    return 'Yeni urun satiri acildi — bilgileri doldurun';
+    return 'batch.new_product_row_opened';
   }
 
   // --- Döküman Analizi'nden Satır Ekle ----------------------------------------
@@ -273,16 +273,16 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
       final r = state.rows[i];
       if (r.isSaved) continue;
       if (r.isNew && r.productName.trim().isEmpty) {
-        return 'Satir ${i + 1}: Urun adi zorunludur';
+        return 'batch.row_product_name_required|${i + 1}';
       }
       if (r.isNew && (r.categoryId == null || r.categoryId!.isEmpty)) {
-        return 'Satir ${i + 1}: Kategori secimi zorunludur';
+        return 'batch.row_category_required|${i + 1}';
       }
       if (r.salePrice <= 0) {
-        return 'Satir ${i + 1}: Satis fiyati 0\'dan buyuk olmalidir';
+        return 'batch.row_sale_price_required|${i + 1}';
       }
       if (r.quantity <= 0) {
-        return 'Satir ${i + 1}: Miktar 0\'dan buyuk olmalidir';
+        return 'batch.row_quantity_required|${i + 1}';
       }
     }
     return null;
@@ -316,10 +316,14 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
                 'name': '${row.productName} - ${vr.size}'
                     '${vr.color.isNotEmpty ? " ${vr.color}" : ""}',
                 'shelfLocationCode': row.shelfLocation,
-                'attributes': {
-                  'Numara': vr.size,
-                  if (vr.color.isNotEmpty) 'Renk': vr.color,
-                },
+                // attributesMap: builder'dan üretilmişse gerçek key-value map kullan,
+                // yoksa eski fallback (manual satır eklendi)
+                'attributes': (vr.attributesMap?.isNotEmpty == true)
+                    ? vr.attributesMap!
+                    : {
+                        if (vr.size.isNotEmpty) 'Numara': vr.size,
+                        if (vr.color.isNotEmpty) 'Renk': vr.color,
+                      },
                 'pricing': {
                   'purchasePrice': vr.purchasePrice ?? row.purchasePrice,
                   'salePrice': vr.salePrice ?? row.salePrice,

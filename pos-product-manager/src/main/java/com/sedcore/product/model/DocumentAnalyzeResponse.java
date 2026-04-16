@@ -31,4 +31,16 @@ public class DocumentAnalyzeResponse {
 
     /** Ürün kalemlerinin analiz sonuçları */
     private List<DocumentItemResult> items;
+
+    /**
+     * true → belge taranmış/görüntü tabanlıydı, Python OCR ile işlendi.
+     * Flutter bu alanı uyarı banner'ı için kullanır.
+     */
+    private boolean scannedPdf;
+
+    /**
+     * Parse yöntemi — debug ve loglama için.
+     * "POSITIONAL" | "REGEX" | "OCR"
+     */
+    private String parseMethod;
 }

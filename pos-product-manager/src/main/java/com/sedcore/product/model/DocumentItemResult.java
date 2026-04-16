@@ -73,7 +73,22 @@ public class DocumentItemResult {
 
     /**
      * Uyarı bayrakları.
-     * Olası değerler: "NAME_MATCH_UNCERTAIN", "PRICE_MISMATCH", "NO_PRICE", "DUPLICATE_MERGED"
+     * Olası değerler: "NAME_MATCH_UNCERTAIN", "PRICE_MISMATCH", "NO_PRICE",
+     * "DUPLICATE_MERGED", "VARIANT_GROUP", "OCR_PROCESSED"
      */
     private List<String> warningFlags;
+
+    // ── Varyant grup alanları ─────────────────────────────────────────────────
+
+    /**
+     * true → bu satır birden fazla varyantın gruplanmış halidir (Durum 2).
+     * false → tekil ürün (Durum 1).
+     */
+    private boolean variantGroup;
+
+    /**
+     * Varyant alt satırları. Yalnızca {@code variantGroup=true} olduğunda dolu.
+     * Her bir {@link DocumentVariantItem} tek bir beden/renk kombinasyonunu temsil eder.
+     */
+    private List<DocumentVariantItem> variants;
 }

@@ -3,56 +3,291 @@ package com.sedcore.product.service.impl.invoice;
 import java.util.*;
 
 /**
- * Fatura metnindeki başlık satırını tespit eder.
+ * Fatura / irsaliye / satış notu metnindeki tablo başlık satırını tespit eder.
  *
- * Strateji: Her satır için bilinen sütun anahtar sözcükleriyle karşılaştırılır.
- * Eşleşen sütun sayısı eşiği (≥ 3) geçerse başlık satırı kabul edilir.
+ * <p>Strateji: Satır küçük harfe çevrilerek her {@link ColumnType} için tanımlı
+ * anahtar sözcük listesiyle karşılaştırılır ({@code String.contains} ile).
+ * Eşleşen sütun tipi sayısı ≥ {@value #MATCH_THRESHOLD} ise başlık satırı kabul edilir.
+ *
+ * <p>Desteklenen belge türleri (Türkçe + İngilizce):
+ * <ul>
+ *   <li>e-Fatura / e-Arşiv Fatura (GİB standardı)</li>
+ *   <li>e-İrsaliye / Sevk İrsaliyesi</li>
+ *   <li>Proforma Fatura</li>
+ *   <li>Satış Notu / Sipariş Fişi / Teklif</li>
+ *   <li>Alış Faturası / Tedarikçi Faturası</li>
+ *   <li>İngilizce uluslararası faturalar</li>
+ *   <li>ERP çıktıları (SAP, Logo, Netsis, Mikro, Luca, Paraşüt, Uyumsoft…)</li>
+ * </ul>
  */
 public class InvoiceHeaderDetector {
 
-    /** Sütun tipi → anahtar sözcük listesi (Türkçe + İngilizce) */
+    /** Başlık kabulü için gereken minimum sütun tipi eşleşmesi. */
+    private static final int MATCH_THRESHOLD = 3;
+
+    /** Sütun tipi → anahtar sözcük listesi */
     private static final Map<ColumnType, List<String>> KEYWORDS = new LinkedHashMap<>();
 
     static {
+
+        // ── ROW_NUMBER ────────────────────────────────────────────────────────
+        // Satır numarası / sıra numarası sütunu.
+        // Türkçe ERP çıktıları, e-Fatura standardı, elle oluşturulmuş belgeler.
         KEYWORDS.put(ColumnType.ROW_NUMBER, List.of(
-                "sıra", "sira", "no", "s.no", "s/n", "#"
+                // Türkçe
+                "sıra no", "sira no", "sıra", "sira",
+                "satır no", "satir no",
+                "kalem no", "kalem",
+                "poz.", "poz", "pozisyon",
+                "s.no", "s.n.", "s/n",
+                // Kısa
+                "no.", "no",
+                // İngilizce
+                "line no", "line#", "line #", "item no",
+                "pos.", "pos", "position",
+                "seq", "seq.", "sequence",
+                "row", "row no", "#"
         ));
+
+        // ── CODE ──────────────────────────────────────────────────────────────
+        // Ürün kodu / barkod / OEM / SKU / stok kodu sütunu.
+        // Dikkat: "no" tek başına ROW_NUMBER ile çakışır — burada bileşik ifadeler kullanılır.
         KEYWORDS.put(ColumnType.CODE, List.of(
-                "ürün kodu", "urun kodu", "stok kodu", "part no", "part number",
-                "ref.no", "ref no", "oem", "code", "kod", "barkod", "barcode",
-                "ürün no", "urun no", "malzeme kodu", "stok no"
+                // Türkçe — ürün kodu
+                "ürün kodu", "urun kodu",
+                "ürün no", "urun no",
+                "malzeme kodu", "malzeme no",
+                "stok kodu", "stok no",
+                "parça kodu", "parca kodu",
+                "parça no", "parca no",
+                "katalog no", "katalog kodu", "kat.no", "kat. no",
+                "model kodu", "model no",
+                "sipariş kodu", "siparis kodu",
+                "referans kodu", "ref kodu",
+                "ref.no", "ref no", "ref.",
+                // Barkod
+                "barkod", "barcode", "barkod no",
+                "ean", "ean13", "ean-13",
+                "gtin",
+                // OEM / Teknik
+                "oem", "oem no", "oem kodu",
+                "orjinal no", "orijinal no",
+                // ERP standartları
+                "sku", "article no", "article code", "artikelno", "artikel",
+                "item code", "item number",
+                "product code", "product no",
+                "part no", "part number", "part code",
+                "stock code", "stock no",
+                // Genel kısa
+                "code", "kod"
         ));
+
+        // ── DESCRIPTION ───────────────────────────────────────────────────────
+        // Ürün / hizmet adı ve açıklaması sütunu.
+        // En geniş keyword seti — farklı belgeler çok farklı isim kullanır.
         KEYWORDS.put(ColumnType.DESCRIPTION, List.of(
-                "açıklama", "aciklama", "ürün adı", "urun adi", "malzeme",
-                "stok adı", "stok adi", "ürün tanımı", "urun tanimi",
-                "tanım", "tanim", "description", "item", "parça adı", "parca adi",
-                "product name", "ürün", "urun", "mal adı", "mal adi"
+                // Türkçe — açıklama
+                "açıklama", "aciklama",
+                "ürün açıklaması", "urun aciklamasi",
+                "mal açıklaması", "mal aciklamasi",
+                "kalem açıklaması", "kalem aciklamasi",
+                // Türkçe — ürün adı
+                "ürün adı", "urun adi",
+                "ürün adı/açıklaması", "urun adi aciklamasi",
+                "ürün ismi", "urun ismi",
+                "ürün bilgisi",
+                "ürün tanımı", "urun tanimi",
+                "ürün detayı",
+                // Türkçe — mal hizmet (e-Fatura / e-Arşiv GİB standardı)
+                "mal hizmet", "mal/hizmet",
+                "mal ve hizmet", "mal veya hizmet",
+                "malın adı", "malin adi",
+                "mal adı", "mal adi",
+                "mal tanımı", "mal tanimi",
+                // Türkçe — hizmet
+                "hizmet adı", "hizmet adi",
+                "hizmet tanımı", "hizmet tanimi",
+                "iş tanımı", "is tanimi",
+                // Türkçe — stok
+                "stok adı", "stok adi",
+                "stok tanımı", "stok tanimi",
+                // Türkçe — malzeme
+                "malzeme adı", "malzeme adi",
+                "malzeme tanımı", "malzeme tanimi",
+                "malzeme",
+                // Türkçe — parça
+                "parça adı", "parca adi",
+                "parça tanımı", "parca tanimi",
+                // Türkçe — mamul/ürün/kısaltma
+                "ürün/hizmet", "urun/hizmet",
+                "ürün/malzeme",
+                "mamul adı",
+                "tanım", "tanim",
+                // İngilizce
+                "description", "item description",
+                "product description", "goods description",
+                "product name", "item name",
+                "article description", "article name",
+                "name", "details", "narrative",
+                "service description", "service name",
+                "particulars"
         ));
+
+        // ── QUANTITY ──────────────────────────────────────────────────────────
+        // Miktar / adet sütunu.
         KEYWORDS.put(ColumnType.QUANTITY, List.of(
-                "miktar", "mik", "mik.", "qty", "quantity", "adet", "adt"
+                // Türkçe
+                "miktar", "miktarı", "miktari",
+                "miktar/adet", "adet/miktar",
+                "sipariş miktarı", "siparis miktari",
+                "teslim miktarı", "teslim miktari",
+                "sevk miktarı", "sevk miktari",
+                "gönderilen miktar",
+                "kalan miktar",
+                "iade miktarı", "iade miktari",
+                "toplam miktar",
+                "adet", "adt",
+                "tane",
+                "mik.", "mik",
+                // İngilizce
+                "quantity", "qty", "qty.",
+                "q.ty", "q'ty", "q.",
+                "pieces", "pcs",
+                "count", "no. of units",
+                "units", "unit qty",
+                "ordered qty", "shipped qty",
+                "amount" // bazı İngilizce faturalarda quantity için kullanılır
         ));
+
+        // ── UNIT ──────────────────────────────────────────────────────────────
+        // Birim / ölçü birimi sütunu.
         KEYWORDS.put(ColumnType.UNIT, List.of(
-                "birim", "br", "br.", "unit", "uom", "ölçü birimi", "olcu birimi"
+                // Türkçe
+                "birim", "birimi",
+                "birim adı", "birim adi",
+                "ölçü birimi", "olcu birimi",
+                "ölçü", "olcu",
+                "ölçü br", "ölçü br.",
+                "br.", "br",
+                "brm",
+                // İngilizce
+                "unit", "unit of measure", "uom",
+                "measure", "u/m", "u.m.",
+                "um"
         ));
+
+        // ── UNIT_PRICE ────────────────────────────────────────────────────────
+        // Birim fiyat sütunu.
+        // "fiyat" tek başına hem satış hem alış hem liste fiyatı olabilir.
         KEYWORDS.put(ColumnType.UNIT_PRICE, List.of(
-                "birim fiyat", "b.fiyat", "b fiyat", "fiyat", "price",
-                "unit price", "birim f.", "birim f", "satış fiyatı",
-                "satis fiyati", "alış fiyatı", "alis fiyati"
+                // Türkçe — birim fiyat (bileşik — önce bunlar kontrol edilmeli)
+                "birim fiyat", "birim fiyatı", "birim fiyati",
+                "birim satış fiyatı", "birim satis fiyati",
+                "birim alış fiyatı", "birim alis fiyati",
+                "birim liste fiyatı", "birim liste fiyati",
+                "birim bedel",
+                "b. fiyat", "b.fiyat", "b fiyat",
+                "birim f.", "birim f",
+                "br. fiyat", "br fiyat",
+                "bf",
+                // Türkçe — satış fiyatı
+                "satış fiyatı", "satis fiyati",
+                "satış f.", "satiş f.",
+                "liste fiyatı", "liste fiyati",
+                "net fiyat",
+                "kdv hariç fiyat", "kdv haric fiyat",
+                "kdvsiz fiyat",
+                // Türkçe — alış fiyatı
+                "alış fiyatı", "alis fiyati",
+                // Türkçe — genel
+                "fiyat", "fiyatı", "fiyati",
+                "bedel",
+                "değer", "deger",
+                // İngilizce
+                "unit price", "unit cost",
+                "price", "price each",
+                "cost", "cost price",
+                "selling price", "sales price",
+                "rate", "rate per unit",
+                "p/u", "u.price", "uprice",
+                "list price", "net price"
         ));
+
+        // ── VAT ───────────────────────────────────────────────────────────────
+        // KDV oranı veya tutarı sütunu.
+        // Dikkat: "kdv tutarı" hem VAT hem TOTAL ile çakışabilir — VAT önce gelir.
         KEYWORDS.put(ColumnType.VAT, List.of(
-                "kdv", "kdv%", "kdv oranı", "vergi", "tax", "vat", "tax%", "kdv %"
+                // Türkçe — oran
+                "kdv oranı", "kdv orani",
+                "kdv %", "kdv%",
+                "%kdv",
+                "vergi oranı", "vergi orani",
+                "vergi %", "vergi%",
+                "v.%",
+                // Türkçe — tutar
+                "kdv tutarı", "kdv tutari",
+                "kdv bedeli",
+                "vergi tutarı", "vergi tutari",
+                "vergi bedeli",
+                "kdv matrahı", "kdv matrahi",
+                // Türkçe — kısa
+                "kdv", "vergisi", "vergi",
+                // Diğer Türkiye vergileri
+                "ötv", "otv", "ötv oranı",
+                "stopaj",
+                // İngilizce
+                "vat", "vat%", "vat rate", "vat amount",
+                "tax", "tax%", "tax rate", "tax amount",
+                "gst", "hst", "gst/hst",
+                "sales tax"
         ));
+
+        // ── TOTAL ─────────────────────────────────────────────────────────────
+        // Satır toplamı / tutar sütunu.
+        // TableRowParser'da "en sağdaki kazanır" kuralı → iskonto tutarı değil asıl toplam alınır.
         KEYWORDS.put(ColumnType.TOTAL, List.of(
-                "toplam", "tutar", "total", "genel toplam", "satır tutarı",
-                "satir tutari", "line total", "amount"
+                // Türkçe — satır tutarı
+                "satır tutarı", "satir tutari",
+                "satır toplamı", "satir toplami",
+                "satır bedeli", "satir bedeli",
+                "kalem tutarı", "kalem tutari",
+                "kalem toplamı", "kalem toplami",
+                // Türkçe — mal hizmet tutarı (e-Fatura GİB)
+                "mal hizmet tutarı", "mal hizmet tutari",
+                "mal tutarı", "mal tutari",
+                "hizmet tutarı", "hizmet tutari",
+                // Türkçe — net / brüt
+                "net tutar", "net toplam",
+                "brüt tutar", "brut tutar",
+                "kdv dahil tutar", "kdv dahil toplam",
+                "kdv dahil",
+                "toplam tutar",
+                "toplam fiyat", "toplam bedel",
+                "toplam değer", "toplam deger",
+                "uzatılmış tutar", "uzatilmis tutar",
+                "uzatma",
+                "fatura tutarı", "fatura tutari",
+                // Türkçe — kısa
+                "tutar", "toplam",
+                "t. tutar", "t.tutar",
+                "tt",
+                // İngilizce
+                "line total", "line amount",
+                "total price", "total amount",
+                "ext. price", "ext price",
+                "extended price", "extended amount",
+                "net amount", "gross amount",
+                "amount due",
+                "total", "amount",
+                "subtotal"
         ));
     }
 
     /**
-     * Verilen satırın başlık satırı olup olmadığını kontrol eder.
+     * Verilen satırdaki anahtar sözcüklere göre eşleşen {@link ColumnType} setini döner.
      *
-     * @param line Faturadan alınan ham satır
-     * @return Eşleşen sütun tipleri seti; boş → başlık değil
+     * @param line ham satır metni (büyük/küçük harf duyarsız)
+     * @return eşleşen sütun tipleri; boş set → başlık değil
      */
     public static Set<ColumnType> detect(String line) {
         if (line == null || line.isBlank()) return Collections.emptySet();
@@ -64,7 +299,7 @@ public class InvoiceHeaderDetector {
             for (String keyword : entry.getValue()) {
                 if (lower.contains(keyword)) {
                     matched.add(entry.getKey());
-                    break;
+                    break; // bu tip eşleşti, sonraki tipe geç
                 }
             }
         }
@@ -73,9 +308,9 @@ public class InvoiceHeaderDetector {
     }
 
     /**
-     * Eşleşme sayısı ≥ 3 ise başlık satırı olarak kabul edilir.
+     * Eşleşen sütun tipi sayısı ≥ {@value #MATCH_THRESHOLD} ise başlık satırı.
      */
     public static boolean isHeader(String line) {
-        return detect(line).size() >= 3;
+        return detect(line).size() >= MATCH_THRESHOLD;
     }
 }

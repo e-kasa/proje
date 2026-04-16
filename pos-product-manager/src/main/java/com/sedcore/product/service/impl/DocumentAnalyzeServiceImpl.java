@@ -70,13 +70,34 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
     private static final Pattern VAT_PATTERN =
             Pattern.compile("(?:%\\s*(1|8|10|18|20)\\b|\\b(1|8|10|18|20)\\s*%)");
 
-    // Faturada atlanan satır başlangıçları (Türkçe fatura başlıkları)
+    // Faturada atlanan satır başlangıçları (Türkçe fatura başlıkları + dipnot)
     private static final List<String> SKIP_PREFIXES = List.of(
             "sıra", "sira", "satır", "satir", "birim", "toplam", "genel",
             "kdv", "vergi", "iban", "banka", "sayfa", "page", "tarih",
             "fatura", "irsaliye", "alıcı", "alici", "satıcı", "satici",
             "müşteri", "musteri", "tc kimlik", "adres", "telefon",
-            "e-posta", "email", "web"
+            "e-posta", "email", "web",
+            // Ek dipnot / alt bilgi başlangıçları
+            "not:", "açıklama:", "aciklama:", "düzenleme tarihi", "vade",
+            "ödeme", "odeme", "kargo", "teslimat", "sipariş no", "siparis no",
+            "imza", "kaşe", "kase", "yetkili"
+    );
+
+    // Tablo sonu (footer) satır başlangıçları — bu satır görülünce parse durdurulur
+    private static final List<String> TABLE_FOOTER_PREFIXES = List.of(
+            "toplam", "genel toplam", "ara toplam", "kdv toplam", "kdv matrah",
+            "vergi toplam", "ödenecek", "odenecek", "net toplam",
+            "subtotal", "total", "grand total",
+            // e-Arşiv fatura özet satırları (regex yolunda da yakala)
+            "mal hizmet toplam", "hesaplanan kdv", "vergiler dahil",
+            "toplam i̇skonto", "toplam iskonto",
+            // Satış notu dipnotları
+            "güncel bakiye", "guncel bakiye",
+            "teşekkür", "tesekkur",
+            "yalnız", "yalniz",
+            "fatura doğrulama", "fatura dogrulama",
+            "mali i̇ade", "mali iade",
+            "hesap bilgileri"
     );
 
     @Override
@@ -84,12 +105,20 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
         String fileName = Optional.ofNullable(file.getOriginalFilename()).orElse("belge");
         String ext = fileName.toLowerCase();
 
+        boolean scannedPdf = false;
+        String parseMethod = "REGEX";
         List<DocumentItemResult> items;
+
         if (ext.endsWith(".pdf")) {
-            items = parsePdf(file);
+            ParseResult pr = parsePdf(file);
+            items = pr.items();
+            scannedPdf = pr.scannedPdf();
+            parseMethod = pr.parseMethod();
         } else if (isImage(ext)) {
             String ocrText = callOcrService(file);
             items = parseText(ocrText, fileName);
+            scannedPdf = true;
+            parseMethod = "OCR";
         } else {
             throw new BusinessException(
                     "Desteklenmeyen dosya formatı. Lütfen PDF veya görüntü (JPG, PNG) yükleyin. Alınan: " + fileName);
@@ -128,6 +157,8 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
                 .foundItems((int) found)
                 .notFoundItems(items.size() - (int) found)
                 .items(items)
+                .scannedPdf(scannedPdf)
+                .parseMethod(parseMethod)
                 .build();
     }
 
@@ -174,13 +205,95 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
 
     // ── PDF PARSE ────────────────────────────────────────────────────────────
 
-    private List<DocumentItemResult> parsePdf(MultipartFile file) throws IOException {
-        try (PDDocument doc = Loader.loadPDF(file.getBytes())) {
+    /** parsePdf() dönüş tipi: item listesi + parse yöntemi metadata */
+    private record ParseResult(List<DocumentItemResult> items,
+                                boolean scannedPdf,
+                                String parseMethod) {}
+
+    private ParseResult parsePdf(MultipartFile file) throws IOException {
+        byte[] bytes = file.getBytes();
+        try (PDDocument doc = Loader.loadPDF(bytes)) {
+
+            // ── 1. Taranmış PDF tespiti → OCR fallback ───────────────────────
+            PDFTextStripper quickCheck = new PDFTextStripper();
+            quickCheck.setEndPage(1);
+            String firstPageText = quickCheck.getText(doc);
+            if (firstPageText == null || firstPageText.trim().length() < 50) {
+                log.warn("parsePdf: Taranmış PDF tespit edildi — Python OCR'a yönlendiriliyor");
+                String ocrText = callOcrService(file);
+                List<DocumentItemResult> ocrItems = parseText(ocrText, file.getOriginalFilename());
+                return new ParseResult(ocrItems, true, "OCR");
+            }
+
+            // ── 2. Pozisyonel tablo çıkarımı ─────────────────────────────────
+            Optional<PositionalTableExtractor.ExtractionResult> tableOpt =
+                    PositionalTableExtractor.extract(doc);
+
+            if (tableOpt.isPresent()) {
+                PositionalTableExtractor.ExtractionResult extraction = tableOpt.get();
+                log.info("parsePdf: Pozisyonel mod — {} veri satırı", extraction.dataRows().size());
+
+                TableRowParser rowParser = new TableRowParser(extraction.headerRow());
+                List<ParsedLine> parsedLines = new ArrayList<>();
+                MultiLineAggregator aggregator = new MultiLineAggregator();
+
+                for (TableRow tableRow : extraction.dataRows()) {
+                    ParsedLine parsed = rowParser.parse(tableRow);
+                    if (parsed.name == null || parsed.name.isBlank()) continue;
+                    List<ParsedLine> ready = aggregator.process(parsed);
+                    parsedLines.addAll(ready);
+                }
+                parsedLines.addAll(aggregator.flush());
+
+                if (!parsedLines.isEmpty()) {
+                    List<DocumentItemResult> results = buildResults(parsedLines);
+                    log.info("parsePdf [{}]: Pozisyonel mod → {} ürün", file.getOriginalFilename(), results.size());
+                    return new ParseResult(results, false, "POSITIONAL");
+                }
+                log.warn("parsePdf: Pozisyonel mod 0 ürün — regex yoluna düşülüyor");
+            }
+
+            // ── 3. Regex fallback ─────────────────────────────────────────────
+            log.info("parsePdf: Regex parse yoluna geçildi");
             PDFTextStripper stripper = new PDFTextStripper();
             stripper.setSortByPosition(true);
             String fullText = stripper.getText(doc);
-            return parseText(fullText, file.getOriginalFilename());
+            List<DocumentItemResult> items = parseText(fullText, file.getOriginalFilename());
+            return new ParseResult(items, false, "REGEX");
         }
+    }
+
+    /** ParsedLine listesini VariantGrouper → matchToProduct() → DocumentItemResult listesine dönüştürür. */
+    private List<DocumentItemResult> buildResults(List<ParsedLine> parsedLines) {
+        List<VariantGrouper.VariantGroup> groups = VariantGrouper.group(parsedLines);
+        List<DocumentItemResult> results = new ArrayList<>();
+        int rowIndex = 0;
+
+        for (VariantGrouper.VariantGroup group : groups) {
+            if (group.isGroup()) {
+                // Durum 2: varyant grubu
+                List<com.sedcore.product.model.DocumentVariantItem> variantItems =
+                        group.variants().stream().map(vl -> com.sedcore.product.model.DocumentVariantItem.builder()
+                                .attributeValue(vl.attributeValue())
+                                .attributeType(vl.attributeType())
+                                .quantity(vl.line().quantity)
+                                .unitPrice(vl.line().unitPrice)
+                                .barcode(vl.line().code != null && "BARCODE".equals(vl.line().codeType)
+                                        ? vl.line().code : null)
+                                .rawText(vl.line().name)
+                                .build()
+                        ).toList();
+
+                DocumentItemResult result = matchToProduct(group.base(), ++rowIndex,
+                        group.base().name, variantItems);
+                results.add(result);
+            } else {
+                // Durum 1: tekil ürün
+                results.add(matchToProduct(group.base(), ++rowIndex,
+                        group.base().name, Collections.emptyList()));
+            }
+        }
+        return results;
     }
 
     // ── METİN PARSE (PDF + OCR ortak) ────────────────────────────────────────
@@ -195,7 +308,8 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
         ColumnAwareLineParser columnParser = null;
         int headerLineIndex = -1;
 
-        for (int i = 0; i < Math.min(lines.length, 20); i++) {
+        // Başlık satırı tüm satırlarda aranır — e-Arşiv gibi uzun başlıklı belgeler için limit kaldırıldı.
+        for (int i = 0; i < lines.length; i++) {
             String line = lines[i].trim();
             if (InvoiceHeaderDetector.isHeader(line)) {
                 Set<ColumnType> matchedColumns = InvoiceHeaderDetector.detect(line);
@@ -207,9 +321,9 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
             }
         }
 
-        // 2. Satırları parse et
+        // 2. Satırları parse et → ParsedLine listesi topla
         MultiLineAggregator aggregator = new MultiLineAggregator();
-        int rowIndex = 0;
+        List<ParsedLine> parsedLines = new ArrayList<>();
 
         for (int i = 0; i < lines.length; i++) {
             String rawLine = lines[i];
@@ -218,34 +332,35 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
             // Başlık satırını ve öncesini atla
             if (headerLineIndex >= 0 && i <= headerLineIndex) continue;
             if (line.isBlank() || line.length() < 4) continue;
+
+            // Tablo sonu (footer) tespiti
+            if (headerLineIndex >= 0 && isTableFooterLine(line)) {
+                log.debug("parseText: Tablo sonu (satır {}): '{}'", i, line);
+                break;
+            }
+
             if (shouldSkipLine(line)) continue;
 
             ParsedLine parsed;
             if (columnParser != null && !columnMapper.isEmpty()) {
-                // Sütun bazlı parse (başlık tespit edildi)
                 parsed = columnParser.parse(rawLine);
             } else {
-                // Regex fallback (başlık yok)
                 parsed = extractLineInfo(line);
             }
 
             if (parsed.name == null || parsed.name.isBlank()) continue;
 
-            // MultiLine aggregator
             List<ParsedLine> ready = aggregator.process(parsed);
-            for (ParsedLine p : ready) {
-                DocumentItemResult result = matchToProduct(p, ++rowIndex, line);
-                results.add(result);
-            }
+            parsedLines.addAll(ready);
         }
 
-        // Kalan pending satırları yayınla
-        for (ParsedLine p : aggregator.flush()) {
-            DocumentItemResult result = matchToProduct(p, ++rowIndex, p.name);
-            results.add(result);
-        }
+        // Kalan pending satırları ekle
+        parsedLines.addAll(aggregator.flush());
 
-        log.info("DocumentAnalyze [{}]: {} satır analiz edildi, {} eşleşme",
+        // 3. VariantGrouper → matchToProduct → DocumentItemResult
+        List<DocumentItemResult> results = buildResults(parsedLines);
+
+        log.info("DocumentAnalyze [{}]: {} ürün kalemi ({}  eşleşme)",
                 fileName, results.size(),
                 results.stream().filter(r -> "FOUND".equals(r.getMatchStatus())).count());
         return results;
@@ -261,6 +376,14 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
         }
         // Sadece rakam/özel karakter içeren satırlar
         if (lower.replaceAll("[^a-zğüşıöça-z]", "").isBlank()) return true;
+        return false;
+    }
+
+    private boolean isTableFooterLine(String line) {
+        String lower = line.toLowerCase().trim();
+        for (String prefix : TABLE_FOOTER_PREFIXES) {
+            if (lower.startsWith(prefix)) return true;
+        }
         return false;
     }
 
@@ -358,7 +481,9 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
 
     // ── ÜRÜN EŞLEŞTİRME ─────────────────────────────────────────────────────
 
-    private DocumentItemResult matchToProduct(ParsedLine parsed, int rowIndex, String rawText) {
+    private DocumentItemResult matchToProduct(ParsedLine parsed, int rowIndex, String rawText,
+                                               List<com.sedcore.product.model.DocumentVariantItem> variants) {
+        boolean isGroup = variants != null && !variants.isEmpty();
         DocumentItemResult.DocumentItemResultBuilder builder = DocumentItemResult.builder()
                 .rowIndex(rowIndex)
                 .rawText(rawText)
@@ -369,7 +494,9 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
                 .unit(parsed.unit)
                 .vatRate(parsed.vatRate)
                 .vatIncluded(parsed.vatIncluded)
-                .totalPrice(parsed.totalPrice);
+                .totalPrice(parsed.totalPrice)
+                .variantGroup(isGroup)
+                .variants(isGroup ? variants : Collections.emptyList());
 
         // 1. EAN13 barkod ile eşleştir
         if ("BARCODE".equals(parsed.codeType) && parsed.code != null) {
@@ -395,10 +522,10 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
             var products = productRepository.searchProducts(keyword);
             if (!products.isEmpty()) {
                 var product = products.get(0);
-                var variants = productVariantRepository
+                var productVariants = productVariantRepository
                         .findByProductIdAndIsDeleted(product.getId(), false);
-                if (!variants.isEmpty()) {
-                    var variant = variants.get(0);
+                if (!productVariants.isEmpty()) {
+                    var variant = productVariants.get(0);
                     return builder
                             .matchStatus("FOUND")
                             .matchType("NAME")

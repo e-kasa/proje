@@ -382,8 +382,15 @@ BatchEntryRow(
   - minStockLevel backend DTO'ya eklendi
   - metadata technology fix (imei)
   - _buildOemList oemNumber fallback
+  - validateAll() i18n: "key|rowNum" format → screen parse eder
+  - missingFields i18n: 'batch.field_*' keys → ConsumerState t() ile çevirir
+  - addByBarcode() toast i18n: pipe-format → _formatBarcodeMsg()
+  - _submit() exception prefix soyma ("Exception: " kaldırılır)
+  - _BulkActionsPanel widget: Kategori / KDV / Marka tüm yenilere uygula
+  - PDF aktarım sonrası salePrice uyarı toastı (700ms gecikme)
+  - security/data.sql bt125-bt144: alan adı + validasyon + toplu işlem anahtarları
 
-🔴 SPRINT 1 — PDF FATURA ANALİZİ (DEVAM EDİYOR — TAMAMLANMADI):
+🔴 SPRINT 1 — PDF FATURA ANALİZİ (TAMAMLANDI — uçtan uca test bekliyor):
   Mevcut: Temel altyapı (PDFBox, Flutter servis, result sheet, upload butonu)
   Eksik:
     [ ] Backend: KDV oranı extract (fatura'dan %18, %8 gibi)
@@ -421,29 +428,222 @@ BatchEntryRow(
 
 ## 11. i18n ANAHTARLARI (data.sql — `bnd-bt` prefix)
 
-| ID | Key | TR | EN |
-|----|-----|----|----|
-| bt070 | `batch.status_draft` | Taslak | Draft |
-| bt071 | `batch.status_incomplete` | Eksik Alan | Incomplete |
-| bt072 | `batch.status_ready` | Hazır | Ready |
-| bt073 | `batch.status_saved` | Kaydedildi | Saved |
-| bt074 | `batch.status_saving` | Kaydediliyor... | Saving... |
-| bt075 | `batch.status_error` | Hata | Error |
-| bt076 | `batch.section_complete` | Tamamlandı | Complete |
-| bt077 | `batch.section_partial` | Kısmen | Partial |
-| bt078 | `batch.section_required` | Zorunlu | Required |
-| bt079 | `batch.section_optional` | Opsiyonel | Optional |
-| bt080 | `batch.price_and_stock` | Fiyat & Stok | Price & Stock |
-| bt081 | `batch.existing_stock_note` | Mevcut ürün: stok ve cari hesap güncellenecek | Existing product: stock and supplier account will be updated |
-| bt082 | `batch.ready` | Hazır | Ready |
-| bt083 | `batch.details` | Detaylar | Details |
-| bt084 | `batch.product_info` | Ürün Bilgileri | Product Info |
-| bt085 | `batch.variants` | Varyantlar | Variants |
-| bt086 | `batch.upload_document` | Fatura / İrsaliye Yükle | Upload Invoice / Bill |
-| bt087 | `batch.document_uploading` | Belge analiz ediliyor... | Analyzing document... |
-| bt088 | `batch.document_no_items` | Belgeden ürün kalemi çıkarılamadı | No product lines extracted from document |
-| bt089 | `batch.document_items_imported` | kalem aktarıldı | items imported |
-| bt090 | `batch.document_analyze_error` | Belge analizi başarısız oldu | Document analysis failed |
+> **Son eklenen ID:** `bt148`  
+> Yeni anahtar eklerken `bt149`'dan başla.  
+> Tam kayıt kaynağı: `security/src/main/resources/data.sql`
+
+---
+
+### 11.1 ⚠️ common.* ÖNCE BAK — Bu batch.* anahtarları ARTIK KULLANILMAMALI
+
+Aşağıdaki `batch.*` anahtarları `common.*` ile **birebir aynı** metni içeriyor.  
+Yeni kodda `common.*` versiyonunu kullan — `batch.*` versiyonu sadece geriye uyumluluk için bırakıldı.
+
+| Kullanma | Bunun yerine kullan | TR |
+|----------|--------------------|----|
+| `batch.all` (bt003) | `common.all` | Tümü |
+| `batch.clear` (bt006) | `common.clear` | Temizle |
+| `batch.date` (bt011) | `common.date` | Tarih |
+| `batch.new` (bt032) | `common.new` | Yeni |
+| `batch.add_new` (bt122) | `common.new` | Yeni |
+| `batch.match_new` (bt109) | `common.new` | Yeni |
+| `batch.status_new` (bt057) | `common.new` | Yeni |
+| `batch.saved` (bt048) | `common.saved` | Kaydedildi |
+| `batch.status_saved` (bt073) | `common.saved` | Kaydedildi |
+| `batch.status_saving` (bt074) | `common.saving` | Kaydediliyor... |
+| `batch.status_error` (bt054/bt075) | `common.error` | Hata |
+| `batch.section_optional` (bt079) | `common.optional` | Opsiyonel |
+| `batch.section_required` (bt078) | `common.required` | Zorunlu |
+| `batch.match_barcode` (bt110) | `common.barcode` | Barkod |
+| `batch.field_quantity` (bt129) | `common.quantity_unit` | Adet |
+
+> **Duplicate kayıtlar** (ON CONFLICT DO NOTHING ile zararsız ama karışıklık yaratır):  
+> `batch.details` → bt013 = bt083 (aynı key, iki satır)  
+> `batch.ready` → bt044 = bt082 (aynı key, iki satır)  
+> `batch.status_error` → bt054 = bt075 (aynı key, iki satır)
+
+---
+
+### 11.2 Genel UI (bt001–bt069)
+
+| ID | Key | TR |
+|----|-----|----|
+| bt001 | `batch.add_manual` | Manuel Ekle |
+| bt002 | `batch.add_manual_row` | Manuel Satır Ekle |
+| bt004 | `batch.barcode_search_hint` | Barkod ile ara... |
+| bt005 | `batch.bulk_product_entry` | Toplu Ürün Girişi |
+| bt007 | `batch.clear_list` | Listeyi Temizle |
+| bt008 | `batch.clear_list_confirm` | Tüm satırlar silinecek. Emin misiniz? |
+| bt009 | `batch.complete_save` | Kaydetmeyi Tamamla |
+| bt010 | `batch.cost` | Maliyet |
+| bt013 | `batch.details` | Detaylar |
+| bt014 | `batch.enter_product_name` | Ürün adı giriniz... |
+| bt015 | `batch.existing` | Mevcut |
+| bt016 | `batch.existing_products` | Mevcut Ürünler |
+| bt017 | `batch.fields` | Alanlar |
+| bt018 | `batch.hint_auto_brand` | Ör: Bosch, Valeo |
+| bt019 | `batch.hint_auto_category` | Ör: Fren Sistemi |
+| bt020 | `batch.hint_brand_name` | Marka adı |
+| bt021 | `batch.hint_category` | Kategori |
+| bt022 | `batch.hint_colors` | Ör: Siyah, Beyaz |
+| bt023 | `batch.hint_footwear_category` | Ör: Spor Ayakkabı |
+| bt024 | `batch.hint_imei_serial` | IMEI / Seri No |
+| bt025 | `batch.hint_original_part_no` | Orijinal parça no |
+| bt026 | `batch.hint_warranty` | Ör: 24 ay |
+| bt027 | `batch.incomplete` | Eksik |
+| bt028 | `batch.invoice` | Fatura |
+| bt029 | `batch.invoice_delivery_info` | Fatura & Teslimat Bilgileri |
+| bt030 | `batch.invoice_no` | Fatura No |
+| bt031 | `batch.items` | Kalem |
+| bt033 | `batch.new_product` | Yeni Ürün |
+| bt034 | `batch.new_products` | Yeni Ürünler |
+| bt035 | `batch.no_products_in_category` | Bu kategoride ürün yok |
+| bt036 | `batch.no_products_yet` | Henüz ürün eklenmemiş |
+| bt037 | `batch.partially_completed` | Kısmen Tamamlandı |
+| bt038 | `batch.processed` | İşlendi |
+| bt039 | `batch.product_details` | Ürün Detayları |
+| bt040 | `batch.profit` | Kâr |
+| bt041 | `batch.profit_percent` | Kâr % |
+| bt042 | `batch.purchase` | Alış |
+| bt043 | `batch.purchase_price` | Alış Fiyatı |
+| bt044 | `batch.ready` | Hazır |
+| bt045 | `batch.sale` | Satış |
+| bt046 | `batch.sale_price` | Satış Fiyatı |
+| bt047 | `batch.save_all` | Tümünü Kaydet |
+| bt049 | `batch.saved_successfully` | Başarıyla kaydedildi |
+| bt050 | `batch.scan_or_add_manual` | Barkod tarayın veya manuel ekleyin |
+| bt051 | `batch.scan_with_camera` | Kamera ile tara |
+| bt052 | `batch.search_and_add` | Ara ve Ekle |
+| bt053 | `batch.select_different_tab` | Farklı sekme seçin |
+| bt055 | `batch.status_existing` | Mevcut |
+| bt056 | `batch.status_matched` | Eşleşti |
+| bt058 | `batch.stock_qty` | Stok Miktarı |
+| bt059 | `batch.stock_updated` | Stok güncellendi |
+| bt060 | `batch.store` | Mağaza |
+| bt061 | `batch.supplier` | Tedarikçi |
+| bt062 | `batch.total_cost` | Toplam Maliyet |
+| bt063 | `batch.total_products` | Toplam Ürün |
+| bt064 | `batch.total_sale` | Toplam Satış |
+| bt065 | `batch.unit_profit` | Birim Kâr |
+| bt066 | `batch.vat` | KDV |
+| bt067 | `batch.warehouse` | Depo |
+| bt068 | `batch.vat_included` | KDV Dahil |
+| bt069 | `batch.min_stock_level` | Min. Stok Seviyesi |
+
+---
+
+### 11.3 Durum / Tamamlanma (bt070–bt084)
+
+| ID | Key | TR |
+|----|-----|----|
+| bt070 | `batch.status_draft` | Taslak |
+| bt071 | `batch.status_incomplete` | Eksik Alan |
+| bt072 | `batch.status_ready` | Hazır |
+| bt076 | `batch.section_complete` | Tamamlandı |
+| bt077 | `batch.section_partial` | Kısmen |
+| bt080 | `batch.price_and_stock` | Fiyat & Stok |
+| bt081 | `batch.existing_stock_note` | Mevcut ürün: stok ve cari hesap güncellenecek |
+| bt084 | `batch.product_info` | Ürün Bilgileri |
+
+---
+
+### 11.4 Kamera / PDF / Belge (bt086–bt113)
+
+| ID | Key | TR |
+|----|-----|----|
+| bt086 | `batch.upload_document` | Fatura / İrsaliye Yükle |
+| bt087 | `batch.document_uploading` | Belge analiz ediliyor... |
+| bt088 | `batch.document_no_items` | Belgeden ürün kalemi çıkarılamadı |
+| bt089 | `batch.document_items_imported` | kalem aktarıldı |
+| bt090 | `batch.document_analyze_error` | Belge analizi başarısız oldu |
+| bt091 | `batch.select_source` | Kaynak Seç |
+| bt092 | `batch.upload_pdf` | PDF Yükle |
+| bt093 | `batch.take_photo` | Fotoğraf Çek |
+| bt094 | `batch.choose_from_gallery` | Galeriden Seç |
+| bt095 | `batch.camera_permission_denied` | Kamera izni verilmedi |
+| bt096 | `batch.upload_or_photo` | PDF veya Fotoğraf Yükle |
+| bt097 | `batch.location` | Lokasyon |
+| bt098 | `batch.location_required` | Lokasyon seçimi zorunludur |
+| bt099 | `batch.supplier_required` | Tedarikçi seçimi zorunludur |
+| bt100 | `batch.min_one_product` | En az bir ürün ekleyin |
+| bt101 | `batch.name_match_warning` | İsme göre eşleşti — lütfen onaylayın |
+| bt102 | `batch.price_mismatch_warning` | Fiyat × Adet tutarsız |
+| bt103 | `batch.new_items_category_required` | Yeni ürünler için kategori seçimi gerekli |
+| bt104 | `batch.file_too_large` | Dosya 10 MB'dan büyük olamaz |
+| bt105 | `batch.document_timeout_error` | Zaman aşımı — daha küçük dosya deneyin |
+| bt106 | `batch.document_parse_error` | Fatura okunamadı — dijital PDF olmalı |
+| bt107 | `batch.document_analysis` | Belge Analizi |
+| bt108 | `batch.match_existing` | Mevcut |
+| bt111 | `batch.match_oem` | OEM |
+| bt112 | `batch.match_name` | İsim |
+| bt113 | `batch.document_items_import` | Kalemi Aktar |
+
+---
+
+### 11.5 Alan Adları / Validasyon (bt114–bt138)
+
+| ID | Key | TR |
+|----|-----|----|
+| bt114 | `batch.margin` | Marj |
+| bt115 | `batch.vat_included_yes` | Dahil |
+| bt116 | `batch.vat_included_no` | Hariç |
+| bt120 | `batch.select_icon` | İkon Seç |
+| bt125 | `batch.field_product_name` | Ürün adı |
+| bt126 | `batch.field_category` | Kategori |
+| bt127 | `batch.field_brand` | Marka |
+| bt128 | `batch.field_sale_price` | Satış fiyatı |
+| bt130 | `batch.field_shelf` | Raf kodu |
+| bt131 | `batch.field_variant` | Varyant |
+| bt132 | `batch.field_purchase_price` | Alış fiyatı |
+| bt133 | `batch.field_oem` | OEM No |
+| bt134 | `batch.field_vat` | KDV oranı |
+| bt135 | `batch.row_product_name_required` | Ürün adı zorunludur |
+| bt136 | `batch.row_category_required` | Kategori seçimi zorunludur |
+| bt137 | `batch.row_sale_price_required` | Satış fiyatı 0'dan büyük olmalıdır |
+| bt138 | `batch.row_quantity_required` | Miktar 0'dan büyük olmalıdır |
+
+---
+
+### 11.6 Barkod / Toplu İşlem (bt139–bt144)
+
+| ID | Key | TR |
+|----|-----|----|
+| bt139 | `batch.barcode_added` | eklendi |
+| bt140 | `batch.barcode_qty_increased` | adet artırıldı |
+| bt141 | `batch.new_product_row_opened` | Yeni ürün satırı açıldı |
+| bt142 | `batch.bulk_actions` | Toplu İşlem |
+| bt143 | `batch.apply_to_new` | Yenilere Uygula |
+| bt144 | `batch.sale_price_check_required` | Satış fiyatlarını kontrol edin — alış fiyatına eşitlendi |
+
+---
+
+### 11.7 Varyant (bt085, bt117–bt124, bt145–bt148)
+
+| ID | Key | TR | Durum |
+|----|-----|----|-------|
+| bt085 | `batch.variants` | Varyantlar | mevcut |
+| bt117 | `batch.variant_attributes` | Varyant Özellikleri | mevcut |
+| bt118 | `batch.add_attribute` | Yeni Özellik | mevcut |
+| bt119 | `batch.attribute_name` | Özellik Adı | mevcut |
+| bt121 | `batch.attribute_required` | Özellik adı zorunludur | mevcut |
+| bt123 | `batch.variant_color` | Renk | mevcut |
+| bt124 | `batch.no_variants_added` | Henüz varyant eklenmedi | mevcut |
+| bt145 | `batch.variants_add` | Varyant Ekle | **YENİ** |
+| bt146 | `batch.variant_quick_sizes` | Hızlı Beden | **YENİ** |
+| bt147 | `batch.variant_color_custom` | Özel | **YENİ** |
+| bt148 | `batch.variant` | varyant | **YENİ** (tekil, özet için: "3 varyant") |
+
+**Varyant kartında REUSE edilecek common.* anahtarları:**
+```dart
+t('common.copy')          // Kopyala    — satır kopyalama butonu
+t('common.apply')         // Uygula     — fiyatı tümüne uygula butonu
+t('common.quantity_unit') // Adet       — özet çubuğu
+t('batch.purchase')       // Alış       — başlık
+t('batch.sale')           // Satış      — başlık
+t('batch.purchase_price') // Alış Fiyatı — kolon başlığı
+t('batch.sale_price')     // Satış Fiyatı — kolon başlığı
+t('batch.variant_color')  // Renk       — kolon başlığı (bt123)
+```
 
 ---
 

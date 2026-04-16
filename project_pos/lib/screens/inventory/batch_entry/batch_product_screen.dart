@@ -997,7 +997,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                                         row.variantRows.isNotEmpty)
                                       _MetaChip(
                                         icon: Icons.layers_rounded,
-                                        label: '${row.variantRows.length} varyant',
+                                        label: '${row.variantRows.length} ${t('batch.variants')}',
                                         color: accentColor,
                                       ),
                                   ],
@@ -1101,7 +1101,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                'Kâr %${margin.toStringAsFixed(0)}',
+                                '${t('batch.profit_percent')} ${margin.toStringAsFixed(0)}',
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
@@ -1161,6 +1161,7 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
   late final TextEditingController _oemCtrl;
   late final TextEditingController _purchaseCtrl;
   late final TextEditingController _saleCtrl;
+  late final TextEditingController _quantityCtrl;
   late final TextEditingController _brandCtrl;
   late final TextEditingController _shelfCtrl;
   late final TextEditingController _descCtrl;
@@ -1178,6 +1179,7 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
         text: r.purchasePrice > 0 ? r.purchasePrice.toString() : '');
     _saleCtrl = TextEditingController(
         text: r.salePrice > 0 ? r.salePrice.toString() : '');
+    _quantityCtrl = TextEditingController(text: r.quantity.toString());
     _brandCtrl = TextEditingController(text: r.brandName ?? '');
     _shelfCtrl = TextEditingController(text: r.shelfLocation ?? '');
     _descCtrl = TextEditingController(text: r.description ?? '');
@@ -1188,7 +1190,7 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
   void dispose() {
     for (final c in [
       _nameCtrl, _barcodeCtrl, _oemCtrl, _purchaseCtrl,
-      _saleCtrl, _brandCtrl, _shelfCtrl, _descCtrl, _minStockCtrl,
+      _saleCtrl, _quantityCtrl, _brandCtrl, _shelfCtrl, _descCtrl, _minStockCtrl,
     ]) {
       c.dispose();
     }
@@ -1483,6 +1485,15 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                           ),
                         ]),
                         const SizedBox(height: 10),
+                        _Field(
+                          label: '${t('common.quantity')} *',
+                          ctrl: _quantityCtrl,
+                          onChanged: (v) =>
+                              _update(quantity: int.tryParse(v) ?? 1),
+                          keyboardType: TextInputType.number,
+                          hint: '1',
+                        ),
+                        const SizedBox(height: 10),
                         Row(children: [
                           Expanded(
                             child: _VatDropdown(
@@ -1495,6 +1506,8 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                           Expanded(
                             child: _VatIncludedSwitch(
                               label: t('batch.vat_included'),
+                              trueLabel: t('batch.vat_included_yes'),
+                              falseLabel: t('batch.vat_included_no'),
                               value: row.vatIncluded,
                               onChanged: (v) => _update(vatIncluded: v),
                             ),
@@ -1552,7 +1565,7 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                                     ),
                                     TextSpan(
                                       text:
-                                          '  •  Marj: %${margin.toStringAsFixed(1)}',
+                                          '  •  ${t('batch.margin')}: %${margin.toStringAsFixed(1)}',
                                       style: TextStyle(
                                           fontSize: 11,
                                           color: margin >= 20
@@ -1589,6 +1602,7 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                       sizeLabel: widget.cfg.labels.variantField,
                       accentColor: accentColor,
                       onChanged: (rows) => _update(variantRows: rows),
+                      t: t,
                     ),
                   ] else if (widget.cfg.fields.showOem ||
                       widget.cfg.fields.showShelf) ...[
@@ -1663,6 +1677,7 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                       attributes: row.attributes,
                       cfg: widget.cfg,
                       onChanged: (attrs) => _update(attributes: attrs),
+                      t: t,
                     ),
                   ],
 
@@ -2209,11 +2224,15 @@ class _VatDropdown extends StatelessWidget {
 // ── VAT INCLUDED SWITCH ────────────────────────────────────────────────────────
 class _VatIncludedSwitch extends StatelessWidget {
   final String label;
+  final String trueLabel;
+  final String falseLabel;
   final bool value;
   final ValueChanged<bool> onChanged;
 
   const _VatIncludedSwitch({
     required this.label,
+    required this.trueLabel,
+    required this.falseLabel,
     required this.value,
     required this.onChanged,
   });
@@ -2244,7 +2263,7 @@ class _VatIncludedSwitch extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                value ? 'Dahil' : 'Hariç',
+                value ? trueLabel : falseLabel,
                 style: TextStyle(
                   fontSize: 12,
                   color:
@@ -3047,11 +3066,13 @@ class _BatchAttributesSection extends StatefulWidget {
   final Map<String, String> attributes;
   final SectorConfig cfg;
   final void Function(Map<String, String>) onChanged;
+  final String Function(String) t;
 
   const _BatchAttributesSection({
     required this.attributes,
     required this.cfg,
     required this.onChanged,
+    required this.t,
   });
 
   @override
@@ -3227,8 +3248,8 @@ class _BatchAttributesSectionState
                   color: AppColors.success, size: 20),
             ),
             const SizedBox(width: 12),
-            const Text('Yeni Özellik',
-                style: TextStyle(
+            Text(widget.t('batch.add_attribute'),
+                style: const TextStyle(
                     fontSize: 16, fontWeight: FontWeight.w700)),
           ]),
           content: SizedBox(
@@ -3242,7 +3263,7 @@ class _BatchAttributesSectionState
                   autofocus: true,
                   onChanged: (_) => setDs(() => nameError = null),
                   decoration: InputDecoration(
-                    labelText: 'Özellik Adı',
+                    labelText: widget.t('batch.attribute_name'),
                     hintText: 'ör: Renk, Beden, Model',
                     errorText: nameError,
                     border: const OutlineInputBorder(),
@@ -3251,8 +3272,8 @@ class _BatchAttributesSectionState
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text('İkon Seç',
-                    style: TextStyle(
+                Text(widget.t('batch.select_icon'),
+                    style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textSecondary)),
@@ -3320,14 +3341,14 @@ class _BatchAttributesSectionState
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dCtx),
-              child: const Text('İptal'),
+              child: Text(widget.t('common.cancel')),
             ),
             AppButton.primary(
-              text: 'Ekle',
+              text: widget.t('common.add'),
               onPressed: () {
                 final name = nameCtrl.text.trim();
                 if (name.isEmpty) {
-                  setDs(() => nameError = 'Özellik adı zorunludur');
+                  setDs(() => nameError = widget.t('batch.attribute_required'));
                   return;
                 }
                 if (widget.attributes.containsKey(name)) {
@@ -3387,7 +3408,7 @@ class _BatchAttributesSectionState
                   child: Icon(Icons.tune_rounded, size: 16, color: accent),
                 ),
                 const SizedBox(width: 10),
-                Text('Varyant Özellikleri',
+                Text(widget.t('batch.variant_attributes'),
                     style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -3401,7 +3422,7 @@ class _BatchAttributesSectionState
                       color: accent.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Text('${attrs.length} özellik',
+                    child: Text('${attrs.length} ${widget.t('batch.variants')}',
                         style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
@@ -3424,14 +3445,14 @@ class _BatchAttributesSectionState
                             color: AppColors.success
                                 .withValues(alpha: 0.3)),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.add_rounded,
+                          const Icon(Icons.add_rounded,
                               size: 14, color: AppColors.success),
-                          SizedBox(width: 4),
-                          Text('Yeni',
-                              style: TextStyle(
+                          const SizedBox(width: 4),
+                          Text(widget.t('batch.add_new'),
+                              style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.success)),
@@ -3882,6 +3903,7 @@ class _FootwearVariantTable extends StatefulWidget {
   final String sizeLabel;
   final Color accentColor;
   final void Function(List<BatchVariantRow>) onChanged;
+  final String Function(String) t;
 
   const _FootwearVariantTable({
     required this.variantRows,
@@ -3890,6 +3912,7 @@ class _FootwearVariantTable extends StatefulWidget {
     required this.sizeLabel,
     required this.accentColor,
     required this.onChanged,
+    required this.t,
   });
 
   @override
@@ -3959,11 +3982,11 @@ class _FootwearVariantTableState extends State<_FootwearVariantTable> {
             child: Row(
               children: [
                 _HeaderCell(widget.sizeLabel, flex: 2),
-                _HeaderCell('Renk', flex: 2),
-                _HeaderCell('Adet', flex: 1),
-                _HeaderCell('Barkod', flex: 2),
-                _HeaderCell('Alış ₺', flex: 2),
-                _HeaderCell('Satış ₺', flex: 2),
+                _HeaderCell(widget.t('batch.variant_color'), flex: 2),
+                _HeaderCell(widget.t('common.quantity'), flex: 1),
+                _HeaderCell(widget.t('common.barcode'), flex: 2),
+                _HeaderCell('${widget.t('batch.purchase_price')} ₺', flex: 2),
+                _HeaderCell('${widget.t('batch.sale_price')} ₺', flex: 2),
                 const SizedBox(width: 28), // delete button placeholder
               ],
             ),
@@ -3974,8 +3997,8 @@ class _FootwearVariantTableState extends State<_FootwearVariantTable> {
               padding: const EdgeInsets.symmetric(vertical: 20),
               child: Center(
                 child: Text(
-                  'Henüz varyant eklenmedi',
-                  style: TextStyle(
+                  widget.t('batch.no_variants_added'),
+                  style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textMuted,
                     fontStyle: FontStyle.italic,

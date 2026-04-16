@@ -1677,6 +1677,49 @@ VALUES
     ('bnd-bt123-0000-0000-000000000123', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.variant_color', 'Renk', 'Color'),
     ('bnd-bt124-0000-0000-000000000124', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.no_variants_added', 'Henüz varyant eklenmedi', 'No variants added yet'),
 
+    -- ── BATCH — Alan adları (kart uyarıları + toplu işlem) ────────
+    ('bnd-bt125-0000-0000-000000000125', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.field_product_name',      'Ürün adı',      'Product name'),
+    ('bnd-bt126-0000-0000-000000000126', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.field_category',          'Kategori',      'Category'),
+    ('bnd-bt127-0000-0000-000000000127', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.field_brand',             'Marka',         'Brand'),
+    ('bnd-bt128-0000-0000-000000000128', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.field_sale_price',        'Satış fiyatı',  'Sale price'),
+    ('bnd-bt129-0000-0000-000000000129', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.field_quantity',          'Adet',          'Quantity'),
+    ('bnd-bt130-0000-0000-000000000130', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.field_shelf',             'Raf kodu',      'Shelf code'),
+    ('bnd-bt131-0000-0000-000000000131', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.field_variant',           'Varyant',       'Variant'),
+    ('bnd-bt132-0000-0000-000000000132', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.field_purchase_price',    'Alış fiyatı',   'Purchase price'),
+    ('bnd-bt133-0000-0000-000000000133', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.field_oem',               'OEM No',        'OEM No'),
+    ('bnd-bt134-0000-0000-000000000134', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.field_vat',               'KDV oranı',     'VAT rate'),
+
+    -- ── BATCH — Validasyon hata anahtarları ───────────────────────
+    ('bnd-bt135-0000-0000-000000000135', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.row_product_name_required', 'Ürün adı zorunludur',                  'Product name is required'),
+    ('bnd-bt136-0000-0000-000000000136', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.row_category_required',     'Kategori seçimi zorunludur',           'Category selection is required'),
+    ('bnd-bt137-0000-0000-000000000137', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.row_sale_price_required',   'Satış fiyatı 0''dan büyük olmalıdır',  'Sale price must be greater than 0'),
+    ('bnd-bt138-0000-0000-000000000138', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.row_quantity_required',     'Miktar 0''dan büyük olmalıdır',        'Quantity must be greater than 0'),
+
+    -- ── BATCH — Barkod + toplu işlem mesajları ────────────────────
+    ('bnd-bt139-0000-0000-000000000139', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.barcode_added',             'eklendi',                              'added'),
+    ('bnd-bt140-0000-0000-000000000140', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.barcode_qty_increased',     'adet artırıldı',                       'quantity increased'),
+    ('bnd-bt141-0000-0000-000000000141', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.new_product_row_opened',    'Yeni ürün satırı açıldı', 'New product row opened — fill in the details'),
+    ('bnd-bt142-0000-0000-000000000142', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.bulk_actions',              'Toplu İşlem',                          'Bulk Action'),
+    ('bnd-bt143-0000-0000-000000000143', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.apply_to_new',              'Yenilere Uygula',                      'Apply to New'),
+    ('bnd-bt144-0000-0000-000000000144', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.sale_price_check_required', 'Satış fiyatlarını kontrol edin — alış fiyatına eşitlendi', 'Check sale prices — set equal to purchase price'),
+
+    -- ── BATCH — Footwear varyant kartı ────────────────────────────
+    ('bnd-bt145-0000-0000-000000000145', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.variants_add',        'Varyant Ekle',  'Add Variant'),
+    ('bnd-bt146-0000-0000-000000000146', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.variant_quick_sizes', 'Hızlı Beden',   'Quick Sizes'),
+    ('bnd-bt147-0000-0000-000000000147', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.variant_color_custom','Özel',          'Custom'),
+    ('bnd-bt148-0000-0000-000000000148', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.variant',             'varyant',       'variant'),
+
+    -- ── BATCH — Varyant Yapılandırıcı (builder faz) ───────────────
+    ('bnd-bt149-0000-0000-000000000149', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.variant_presets',     'Hızlı Şablonlar',          'Quick Templates'),
+    ('bnd-bt150-0000-0000-000000000150', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.preset_shoes',        'Ayakkabı',                 'Shoes'),
+    ('bnd-bt151-0000-0000-000000000151', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.preset_clothing',     'Giyim',                    'Clothing'),
+    ('bnd-bt152-0000-0000-000000000152', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.preset_electronics',  'Elektronik',               'Electronics'),
+    ('bnd-bt153-0000-0000-000000000153', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.preset_custom',       'Özel',                     'Custom'),
+    ('bnd-bt154-0000-0000-000000000154', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.generate_variants',   'Varyant Oluştur',          'Generate Variants'),
+    ('bnd-bt155-0000-0000-000000000155', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.add_value',           'Değer Ekle',               'Add Value'),
+    ('bnd-bt156-0000-0000-000000000156', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.back_to_builder',     'Yapılandırmayı Düzenle',   'Edit Configuration'),
+    ('bnd-bt157-0000-0000-000000000157', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.incomplete',          'eksik',                    'incomplete'),
+
     -- ── WIZARD (Ürün ekleme adımları) ─────────────────────────────
     ('bnd-wz001-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.changes_will_be_lost', 'Değişiklikler kaybolacak', 'Changes will be lost'),
     ('bnd-wz002-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.exit', 'Çıkış', 'Exit'),

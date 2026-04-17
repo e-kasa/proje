@@ -838,6 +838,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
     int? minStockLevel,
     bool? isExpanded,
     double? vatRate,
+    double? discountRate,
     bool? vatIncluded,
     String? description,
     Map<String, String>? attributes,
@@ -1198,6 +1199,7 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
   late final TextEditingController _shelfCtrl;
   late final TextEditingController _descCtrl;
   late final TextEditingController _minStockCtrl;
+  late final TextEditingController _discountCtrl;
 
   @override
   void initState() {
@@ -1207,6 +1209,8 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
     _nameCtrl = TextEditingController(text: r.productName);
     _barcodeCtrl = TextEditingController(text: r.barcode);
     _oemCtrl = TextEditingController(text: r.oemNumber ?? '');
+    _discountCtrl = TextEditingController(
+        text: r.discountRate > 0 ? r.discountRate.toString() : '');
     _purchaseCtrl = TextEditingController(
         text: r.purchasePrice > 0 ? r.purchasePrice.toString() : '');
     _saleCtrl = TextEditingController(
@@ -1223,6 +1227,7 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
     for (final c in [
       _nameCtrl, _barcodeCtrl, _oemCtrl, _purchaseCtrl,
       _saleCtrl, _quantityCtrl, _brandCtrl, _shelfCtrl, _descCtrl, _minStockCtrl,
+      _discountCtrl,
     ]) {
       c.dispose();
     }
@@ -1234,16 +1239,19 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
     String? barcode,
     String? oemNumber,
     List<Map<String, String>>? oemList,
+    List<Map<String, String>>? crossRefList,
     double? purchasePrice,
     double? salePrice,
     int? quantity,
     String? categoryId,
     String? categoryName,
+    String? brandId,
     String? brandName,
     String? unitId,
     String? shelfLocation,
     int? minStockLevel,
     double? vatRate,
+    double? discountRate,
     bool? vatIncluded,
     String? description,
     Map<String, String>? attributes,
@@ -1255,16 +1263,19 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
           barcode: barcode,
           oemNumber: oemNumber,
           oemList: oemList,
+          crossRefList: crossRefList,
           purchasePrice: purchasePrice,
           salePrice: salePrice,
           quantity: quantity,
           categoryId: categoryId,
           categoryName: categoryName,
+          brandId: brandId,
           brandName: brandName,
           unitId: unitId,
           shelfLocation: shelfLocation,
           minStockLevel: minStockLevel,
           vatRate: vatRate,
+          discountRate: discountRate,
           vatIncluded: vatIncluded,
           description: description,
           attributes: attributes,
@@ -1469,14 +1480,15 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                                   _update(categoryId: id, categoryName: name),
                             ),
                             if (widget.cfg.fields.showBrand)
-                              _Field(
+                              _BrandAutocomplete(
                                 label: t('product.brand') +
                                     (widget.cfg.fields.brandRequired ? ' *' : ''),
                                 ctrl: _brandCtrl,
-                                onChanged: (v) => _update(brandName: v),
                                 hint: widget.cfg.type == SectorType.autoParts
                                     ? t('batch.hint_auto_brand')
                                     : t('batch.hint_brand_name'),
+                                onSelected: (id, name) =>
+                                    _update(brandId: id, brandName: name),
                               )
                             else
                               const SizedBox.shrink(),
@@ -1619,6 +1631,21 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                               falseLabel: t('batch.vat_included_no'),
                               value: row.vatIncluded,
                               onChanged: (v) => _update(vatIncluded: v),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _Field(
+                              label: t('batch.field_discount'),
+                              ctrl: _discountCtrl,
+                              keyboardType: const TextInputType
+                                  .numberWithOptions(decimal: true),
+                              onChanged: (v) => _update(
+                                discountRate: double.tryParse(
+                                        v.replaceAll(',', '.')) ??
+                                    0,
+                              ),
+                              hint: '0',
                             ),
                           ),
                         ]),
@@ -1765,7 +1792,12 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                                   oemNumber: v,
                                   oemList: v.trim().isEmpty
                                       ? []
-                                      : [{'oemNumber': v.trim(), 'manufacturer': ''}],
+                                      : [
+                                          {
+                                            'oemNumber': v.trim(),
+                                            'manufacturer': ''
+                                          }
+                                        ],
                                 ),
                                 hint: widget.cfg.type == SectorType.technology
                                     ? t('batch.hint_imei_serial')
@@ -2836,6 +2868,10 @@ class _ExistingProductInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brandName = row.brandName ?? row.existingBrandName;
+    final shelf = row.existingShelfLocation;
+    final stock = row.existingCurrentStock;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
@@ -2847,7 +2883,7 @@ class _ExistingProductInfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Mevcut ürün etiketi
+          // ── Üst satır: Mevcut etiketi + stok rozeti + SKU ───────────────
           Row(
             children: [
               const Icon(Icons.inventory_2_rounded,
@@ -2862,6 +2898,9 @@ class _ExistingProductInfoCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
+              if (stock != null) _StockBadge(stock: stock, t: t),
+              if (stock != null && row.existingVariantSku != null)
+                const SizedBox(width: 6),
               if (row.existingVariantSku != null)
                 Container(
                   padding:
@@ -2892,7 +2931,7 @@ class _ExistingProductInfoCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          // Kategori / marka chip'leri
+          // Kategori / marka / barkod / raf chip'leri
           Wrap(
             spacing: 8,
             runSpacing: 4,
@@ -2903,10 +2942,10 @@ class _ExistingProductInfoCard extends StatelessWidget {
                   label: row.categoryName!,
                   color: accentColor,
                 ),
-              if (row.brandName != null && row.brandName!.isNotEmpty)
+              if (brandName != null && brandName.isNotEmpty)
                 _InfoChip(
                   icon: Icons.business_outlined,
-                  label: row.brandName!,
+                  label: brandName,
                   color: AppColors.textSecondary,
                 ),
               if (row.barcode.isNotEmpty)
@@ -2915,9 +2954,62 @@ class _ExistingProductInfoCard extends StatelessWidget {
                   label: row.barcode,
                   color: AppColors.textMuted,
                 ),
+              if (shelf != null && shelf.isNotEmpty)
+                _InfoChip(
+                  icon: Icons.shelves,
+                  label: shelf,
+                  color: AppColors.info,
+                ),
             ],
           ),
-          // Stok alanı bilgisi
+
+          // ── OEM chip listesi ─────────────────────────────────────────────
+          if (row.existingOemCodes.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${t('batch.oem_codes')}: ',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Expanded(
+                  child: Wrap(
+                    spacing: 4,
+                    runSpacing: 3,
+                    children: row.existingOemCodes
+                        .map((code) => Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.orange
+                                    .withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                    color: AppColors.orange
+                                        .withValues(alpha: 0.3)),
+                              ),
+                              child: Text(
+                                code,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.orange,
+                                ),
+                              ),
+                            ))
+                        .toList(),
+                  ),
+                ),
+              ],
+            ),
+          ],
+
+          // ── Stok + cari güncellenecek info notu ─────────────────────────
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -2947,6 +3039,52 @@ class _ExistingProductInfoCard extends StatelessWidget {
     );
   }
 }
+
+/// Mevcut ürün kartı sağ üst — toplam stok rozeti.
+class _StockBadge extends StatelessWidget {
+  final double stock;
+  final Function(String) t;
+  const _StockBadge({required this.stock, required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    final isEmpty = stock <= 0;
+    final color = isEmpty ? AppColors.danger : AppColors.success;
+    final label = isEmpty
+        ? t('batch.no_stock')
+        : '${t('batch.current_stock')}: ${stock.toInt()}';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isEmpty
+                ? Icons.warning_amber_rounded
+                : Icons.layers_rounded,
+            size: 11,
+            color: color,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 
 class _InfoChip extends StatelessWidget {
   final IconData icon;
@@ -5915,4 +6053,145 @@ class _BulkChip extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── BRAND AUTOCOMPLETE ───────────────────────────────────────────────────────
+/// Marka autocomplete: mevcut markaları batchBrandsProvider'dan yükler,
+/// kullanıcı yeni marka adı yazabilir (free-text fallback).
+class _BrandAutocomplete extends ConsumerWidget {
+  final String label;
+  final TextEditingController ctrl;
+  final String? hint;
+  final void Function(String? id, String name) onSelected;
+
+  const _BrandAutocomplete({
+    required this.label,
+    required this.ctrl,
+    required this.onSelected,
+    this.hint,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(batchBrandsProvider);
+    final t = i18nOf(ref);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary)),
+        const SizedBox(height: 4),
+        async.when(
+          loading: () => const SizedBox(
+            height: 38,
+            child: Center(
+              child: SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          ),
+          error: (_, __) => TextField(
+            controller: ctrl,
+            onChanged: (v) => onSelected(null, v),
+            style: const TextStyle(fontSize: 13),
+            decoration: _brandInputDecoration(hint ?? t('batch.brand_type_new')),
+          ),
+          data: (brands) => Autocomplete<Map<String, dynamic>>(
+            initialValue: TextEditingValue(text: ctrl.text),
+            optionsBuilder: (value) {
+              final q = value.text.trim().toLowerCase();
+              if (q.isEmpty) return brands;
+              return brands.where((b) =>
+                  (b['name']?.toString().toLowerCase() ?? '').contains(q));
+            },
+            displayStringForOption: (b) => b['name']?.toString() ?? '',
+            fieldViewBuilder:
+                (context, textCtrl, focusNode, onSubmit) {
+              return TextField(
+                controller: textCtrl,
+                focusNode: focusNode,
+                style: const TextStyle(fontSize: 13),
+                decoration: _brandInputDecoration(
+                    hint ?? t('batch.brand_type_new')),
+                onChanged: (v) {
+                  // Parent ctrl'e yaz ama build'de sync yapma (state leak olmasın)
+                  ctrl.value = TextEditingValue(
+                    text: v,
+                    selection: TextSelection.collapsed(offset: v.length),
+                  );
+                  onSelected(null, v); // serbest metin — id yok
+                },
+              );
+            },
+            onSelected: (b) {
+              final id = b['id']?.toString();
+              final name = b['name']?.toString() ?? '';
+              ctrl.value = TextEditingValue(
+                text: name,
+                selection: TextSelection.collapsed(offset: name.length),
+              );
+              onSelected(id, name);
+            },
+            optionsViewBuilder: (context, onSelect, options) {
+              return Align(
+                alignment: Alignment.topLeft,
+                child: Material(
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(8),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 200, maxWidth: 300),
+                    child: ListView.builder(
+                      padding: EdgeInsets.zero,
+                      shrinkWrap: true,
+                      itemCount: options.length,
+                      itemBuilder: (_, i) {
+                        final opt = options.elementAt(i);
+                        return InkWell(
+                          onTap: () => onSelect(opt),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            child: Text(
+                              opt['name']?.toString() ?? '',
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  InputDecoration _brandInputDecoration(String hint) => InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+        isDense: true,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        ),
+      );
 }

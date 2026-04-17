@@ -10,6 +10,12 @@ import com.sedcore.product.repository.ProductVariantRepository;
 import com.sedcore.product.service.DocumentAnalyzeService;
 import com.sedcore.product.service.impl.invoice.*;
 import com.sedcore.autoparts.repository.OemNumberRepository;
+import com.sedcore.common.enums.StockMovementType;
+import com.sedcore.inventory.entity.StockMovement;
+import com.sedcore.inventory.repository.StockMovementRepository;
+import com.sedcore.inventory.service.StockLevelService;
+import com.sedcore.product.entity.VariantPricing;
+import org.springframework.data.domain.PageRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.Loader;
@@ -53,6 +59,8 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
     private final OemNumberRepository oemNumberRepository;
     private final ProductRepository productRepository;
     private final ProductVariantRepository productVariantRepository;
+    private final StockMovementRepository stockMovementRepository;
+    private final StockLevelService stockLevelService;
 
     @Value("${ocr.service.url:http://localhost:8003}")
     private String ocrServiceUrl;
@@ -79,6 +87,29 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
     private static final Pattern VAT_PATTERN =
             Pattern.compile("(?:%\\s*(0|1|8|10|18|20)\\b|\\b(0|1|8|10|18|20)\\s*%)");
 
+    // İskonto oranı — "İsk.", "İskonto", "Ind.", "İnd." prefix'inden sonra veya
+    // genel %NN formatı (KDV için atanmayan). Türkçe fatura: "İsk. %10", "%5 İnd."
+    private static final Pattern DISCOUNT_PATTERN = Pattern.compile(
+            "(?:i[sş]k(?:onto)?\\.?|i[nṅ]d(?:irim)?\\.?)\\s*%?\\s*(\\d{1,2}(?:[.,]\\d{1,2})?)" +
+            "|(\\d{1,2}(?:[.,]\\d{1,2})?)\\s*%?\\s*(?:i[sş]k(?:onto)?|i[nṅ]d(?:irim)?)",
+            Pattern.CASE_INSENSITIVE);
+
+    // Ürün adı BİLİNEN non-product prefix'ler — tüm satırı bu kelimelerden biri
+    // SADECE başlatıyorsa (ad = sadece bu kelimelerden oluşuyorsa) at.
+    // Multi-line header parçaları ("No Oranı Tutarı Oranı") ve footer satırları
+    // ("Mal Hizmet Toplam Tutarı", "Hesaplanan KDV", "Ödenecek Tutar") yakalanır.
+    private static final Pattern NON_PRODUCT_NAME_START = Pattern.compile(
+            "(?i)^\\s*(no|oran[ıi]?|tutar[ıi]?|kdv|vergiler\\s*dahil|" +
+            "mal\\s*hizmet\\s*toplam|hesaplanan\\s*kdv|toplam\\s*i?skonto|" +
+            "ödenecek|\u00f6denecek|genel\\s*toplam|net\\s*toplam|ara\\s*toplam|" +
+            "vergiler|ettn|belge|özelleştirme|ozellestirme|senaryo|fatura\\s*tipi|" +
+            "yaln[ıi]z|te[sş]ekk[uü]r|fatura\\s*do[ğg]rulama|hesap\\s*bilgileri|" +
+            "iban|ali?cı|sati?cı|alıcı|satıcı|sayın|sayin|mali\\s*iade|iade\\s*eden|" +
+            "adı?|soyadı?|adres|imza)(\\s|:|$)");
+
+    // Ürün adı en az bir 3-harfli kelime içermeli (isim, marka vs.)
+    private static final Pattern NAME_MIN_WORD = Pattern.compile(".*[\\p{L}]{3,}.*");
+
     // Faturada atlanan satır başlangıçları (Türkçe fatura başlıkları + dipnot)
     private static final List<String> SKIP_PREFIXES = List.of(
             "sıra", "sira", "satır", "satir", "birim", "toplam", "genel",
@@ -100,8 +131,11 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
     private static final List<String> SPECIFIC_TABLE_FOOTER_PREFIXES = List.of(
             "genel toplam", "ara toplam", "kdv toplam", "kdv matrah",
             "vergi toplam", "ödenecek", "odenecek", "net toplam",
-            // e-Arşiv fatura özet satırları
-            "mal hizmet toplam", "hesaplanan kdv", "vergiler dahil",
+            // e-Arşiv fatura özet satırları (GİB standard)
+            "mal hizmet toplam", "mal hizmet toplam tutar",
+            "hesaplanan kdv", "vergiler dahil",
+            "vergiler dahil toplam", "vergiler dahil toplam tutar",
+            "ödenecek tutar", "odenecek tutar",
             "toplam i̇skonto", "toplam iskonto",
             // Satış notu dipnotları
             "güncel bakiye", "guncel bakiye",
@@ -109,7 +143,11 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
             "yalnız", "yalniz",
             "fatura doğrulama", "fatura dogrulama",
             "mali i̇ade", "mali iade",
-            "hesap bilgileri"
+            "hesap bilgileri",
+            // e-Arşiv iade tablosu
+            "iade eden", "ıade eden", "i̇ade eden",
+            "iade edilen", "ıade edilen", "i̇ade edilen",
+            "malı iade", "mali iade"
     );
 
     /**
@@ -270,7 +308,11 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
                 log.info("parsePdf [{}]: Metin modu → {} ürün", file.getOriginalFilename(), textItems.size());
                 return new ParseResult(textItems, false, "TEXT");
             }
-            log.warn("parsePdf [{}]: Metin modu 0 ürün — pozisyonel moda geçildi", file.getOriginalFilename());
+            // Debug: 0 ürün çıkarsa PDFBox metin çıktısını logla (ilk 2000 char)
+            log.warn("parsePdf [{}]: Metin modu 0 ürün — PDFBox çıktısı (ilk 2000 char):\n{}",
+                    file.getOriginalFilename(),
+                    fullText.length() > 2000 ? fullText.substring(0, 2000) + "..." : fullText);
+            log.warn("parsePdf [{}]: Pozisyonel moda geçildi", file.getOriginalFilename());
 
             // ── 3. Pozisyonel tablo çıkarımı (FALLBACK) ──────────────────────
             // PDF metin akışı bozuksa (bazı ERP/muhasebe yazılımları metin sırasını
@@ -307,8 +349,40 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
         }
     }
 
+    /**
+     * Ürün satırı minimum geçerlilik kontrolü.
+     * Tablo header/footer parçalarını veya boş satırları ürün olarak kabul etmez.
+     */
+    private boolean isValidProductLine(ParsedLine p) {
+        if (p == null || p.name == null || p.name.trim().length() < 3) return false;
+        // En az bir 3-harfli Unicode kelime (ürün adı gerekli)
+        if (!NAME_MIN_WORD.matcher(p.name).matches()) return false;
+        // Bilinen footer/header prefix ile başlıyorsa at
+        if (NON_PRODUCT_NAME_START.matcher(p.name).find()) return false;
+        // Ad içinde 2+ footer keyword'ü var mı? ("mal hizmet toplam tutar" gibi)
+        String lowerName = p.name.toLowerCase();
+        String[] footerHints = {"toplam", "tutar", "oran", "ödenecek", "odenecek",
+                                 "vergiler dahil", "hesaplanan", "iskonto"};
+        int footerHits = 0;
+        for (String f : footerHints) if (lowerName.contains(f)) footerHits++;
+        if (footerHits >= 2) return false;
+        // En az bir sayısal alan olmalı (miktar veya fiyat)
+        return p.quantity != null || p.unitPrice != null || p.totalPrice != null;
+    }
+
     /** ParsedLine listesini VariantGrouper → matchToProduct() → DocumentItemResult listesine dönüştürür. */
     private List<DocumentItemResult> buildResults(List<ParsedLine> parsedLines) {
+        // Post-process filter: non-product satırları at
+        int before = parsedLines.size();
+        parsedLines = parsedLines.stream()
+                .filter(this::isValidProductLine)
+                .collect(Collectors.toList());
+        int removed = before - parsedLines.size();
+        if (removed > 0) {
+            log.info("buildResults: {} non-product satır atıldı, {} geçerli ürün kaldı",
+                    removed, parsedLines.size());
+        }
+
         List<VariantGrouper.VariantGroup> groups = VariantGrouper.group(parsedLines);
         List<DocumentItemResult> results = new ArrayList<>();
         int rowIndex = 0;
@@ -359,6 +433,21 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
                 columnParser = new ColumnAwareLineParser(columnMapper);
                 headerLineIndex = i;
                 log.info("DocumentAnalyze: Başlık satırı tespit edildi (satır {}): '{}'", i, line);
+
+                // Multi-line header desteği: e-Arşiv fatura header'ı iki fiziksel
+                // satıra yayılabilir ("Sıra\nNo", "İskonto\nOranı"). Bir sonraki
+                // 3 satıra kadar "header devamı" (≥1 header keyword + sayı yok)
+                // varsa headerLineIndex'i o kadar ileri taşı.
+                for (int j = i + 1; j <= Math.min(i + 3, lines.length - 1); j++) {
+                    String next = lines[j].trim();
+                    if (next.isBlank() || next.length() > 80) break;
+                    // Para/sayı içeriyorsa veri satırıdır, header devamı değil
+                    if (next.matches(".*\\d+[.,]\\d+.*")) break;
+                    Set<ColumnType> nextMatches = InvoiceHeaderDetector.detect(next);
+                    if (nextMatches.isEmpty()) break;
+                    headerLineIndex = j;
+                    log.debug("DocumentAnalyze: Header devamı satırı atlandı (satır {}): '{}'", j, next);
+                }
                 break;
             }
         }
@@ -409,6 +498,13 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
 
             if (parsed.name == null || parsed.name.isBlank()) continue;
 
+            // Geçersiz satırları aggregator'a gönderme — multi-line kalıntı birikmesin.
+            // (footer parçaları, header devamı, non-product etiketler)
+            if (!isValidProductLine(parsed)) {
+                log.debug("parseText: Geçersiz ürün satırı atlandı: '{}'", line);
+                continue;
+            }
+
             List<ParsedLine> ready = aggregator.process(parsed);
             parsedLines.addAll(ready);
         }
@@ -440,16 +536,34 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
 
     private boolean isTableFooterLine(String line) {
         String lower = line.toLowerCase().trim();
+        // PDFBox sortByPosition bazen sağ-hizalı sayıları satır başına alır:
+        // "63.636,37 TL Mal Hizmet Toplam Tutarı" gibi. Baştaki sayı/para/tire
+        // karakterlerini temizleyerek footer keyword'ünü satır başına getir.
+        String stripped = lower.replaceAll("^[\\d.,\\s\\-–—₺$€]+(tl|try|usd|eur)?\\s*", "").trim();
 
-        // 1. Kesin footer prefix'leri
+        // 1. Kesin footer prefix'leri — hem orijinal hem strip edilmiş hali
         for (String prefix : SPECIFIC_TABLE_FOOTER_PREFIXES) {
-            if (lower.startsWith(prefix)) return true;
+            if (lower.startsWith(prefix) || stripped.startsWith(prefix)) return true;
+        }
+
+        // 1b. Belirli footer keyword'leri satırın HERHANGİ yerinde — sadece çok net
+        // eşleşmeler (kolon başlığı "Mal Hizmet Tutarı" ile karışmayacak olanlar)
+        String[] strictContains = {
+                "mal hizmet toplam tutar",
+                "vergiler dahil toplam tutar",
+                "hesaplanan kdv",
+                "toplam iskonto", "toplam i̇skonto",
+                "ödenecek tutar", "odenecek tutar"
+        };
+        for (String s : strictContains) {
+            if (lower.contains(s)) return true;
         }
 
         // 2. Belirsiz kelimeler — sonrasında harf varsa ürün adı (footer değil)
         for (String word : AMBIGUOUS_TABLE_FOOTER_WORDS) {
-            if (lower.startsWith(word)) {
-                String remainder = lower.substring(word.length()).trim();
+            if (lower.startsWith(word) || stripped.startsWith(word)) {
+                String src = lower.startsWith(word) ? lower : stripped;
+                String remainder = src.substring(word.length()).trim();
                 if (remainder.isEmpty() || !Character.isLetter(remainder.charAt(0))) {
                     return true;
                 }
@@ -508,6 +622,19 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
         if (vatMatcher.find()) {
             String vatGroup = vatMatcher.group(1) != null ? vatMatcher.group(1) : vatMatcher.group(2);
             try { result.vatRate = Double.parseDouble(vatGroup); } catch (NumberFormatException ignored) {}
+        }
+
+        // 5b. İskonto oranı — "İsk. %10", "%5 İnd" formatlarını ara
+        Matcher discMatcher = DISCOUNT_PATTERN.matcher(processed);
+        if (discMatcher.find()) {
+            String discGroup = discMatcher.group(1) != null
+                    ? discMatcher.group(1) : discMatcher.group(2);
+            if (discGroup != null) {
+                try {
+                    double rate = Double.parseDouble(discGroup.replace(',', '.'));
+                    if (rate >= 0 && rate <= 100) result.discountRate = rate;
+                } catch (NumberFormatException ignored) {}
+            }
         }
 
         // 6. Sayıları çıkar (miktar ve fiyat)
@@ -574,6 +701,7 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
                 .vatRate(parsed.vatRate)
                 .vatIncluded(parsed.vatIncluded)
                 .totalPrice(parsed.totalPrice)
+                .discountRate(parsed.discountRate)
                 .variantGroup(isGroup)
                 .variants(isGroup ? variants : Collections.emptyList());
 
@@ -604,16 +732,40 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
                 var productVariants = productVariantRepository
                         .findByProductIdAndIsDeleted(product.getId(), false);
                 if (!productVariants.isEmpty()) {
-                    var variant = productVariants.get(0);
-                    return builder
-                            .matchStatus("FOUND")
-                            .matchType("NAME")
-                            .matchedProductId(product.getId())
-                            .matchedProductName(product.getName())
-                            .matchedVariantId(variant.getId())
-                            .matchedSku(variant.getSku())
-                            .matchConfidence(0.5)
-                            .warningFlags(buildWarningFlags(parsed, "NAME"))
+                    // İlk 3 ürünü alternatif aday olarak topla
+                    List<com.sedcore.product.model.MatchCandidate> candidates = new ArrayList<>();
+                    int candidateLimit = Math.min(products.size(), 3);
+                    for (int i = 0; i < candidateLimit; i++) {
+                        var p = products.get(i);
+                        var pVariants = productVariantRepository
+                                .findByProductIdAndIsDeleted(p.getId(), false);
+                        if (pVariants.isEmpty()) continue;
+                        var v = pVariants.get(0);
+                        java.math.BigDecimal sale = null;
+                        try {
+                            if (v.getVariantPricings() != null
+                                    && !v.getVariantPricings().isEmpty()) {
+                                sale = v.getVariantPricings().get(0).getSalePrice();
+                            }
+                        } catch (Exception ignored) {}
+                        double stock = 0.0;
+                        try {
+                            stock = stockLevelService.getTotalQuantity(v.getId());
+                        } catch (Exception ignored) {}
+                        candidates.add(com.sedcore.product.model.MatchCandidate.builder()
+                                .productId(p.getId())
+                                .variantId(v.getId())
+                                .productName(p.getName())
+                                .sku(v.getSku())
+                                .salePrice(sale)
+                                .currentStock(stock)
+                                .confidence(i == 0 ? 0.5 : 0.5 - (i * 0.1))
+                                .build());
+                    }
+                    return enrichFromVariant(builder, productVariants.get(0), "NAME",
+                            buildWarningFlags(parsed, "NAME"))
+                            .toBuilder()
+                            .matchCandidates(candidates)
                             .build();
                 }
             }
@@ -635,12 +787,72 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
 
         String productName = variant.getName();
         String productId = null;
+        String brandName = null;
 
         if (variant.getProduct() != null) {
             productId = variant.getProduct().getId();
             if (variant.getProduct().getName() != null) {
                 productName = variant.getProduct().getName();
             }
+            brandName = variant.getProduct().getBrand();
+        }
+
+        // Aktif pricing: en son valid pricing kaydı (validFrom DESC)
+        java.math.BigDecimal salePrice = null;
+        java.math.BigDecimal purchasePrice = null;
+        try {
+            List<VariantPricing> pricings = variant.getVariantPricings();
+            if (pricings != null && !pricings.isEmpty()) {
+                VariantPricing active = pricings.stream()
+                        .filter(p -> p.getValidFrom() != null)
+                        .max(Comparator.comparing(VariantPricing::getValidFrom))
+                        .orElse(pricings.get(0));
+                salePrice = active.getSalePrice();
+                purchasePrice = active.getPurchasePrice();
+            }
+        } catch (Exception e) {
+            log.debug("Pricing enrichment başarısız: variantId={}, hata={}",
+                    variant.getId(), e.getMessage());
+        }
+
+        // Son alış fiyatı: en son PURCHASE_IN StockMovement
+        java.math.BigDecimal lastPurchasePrice = null;
+        try {
+            List<StockMovement> last = stockMovementRepository
+                    .findLastByVariantIdAndMovementType(
+                            variant.getId(),
+                            StockMovementType.PURCHASE_IN,
+                            PageRequest.of(0, 1));
+            if (!last.isEmpty()) {
+                lastPurchasePrice = last.get(0).getUnitPrice();
+            }
+        } catch (Exception e) {
+            log.debug("Son alış fiyatı enrichment başarısız: variantId={}, hata={}",
+                    variant.getId(), e.getMessage());
+        }
+
+        // Anlık toplam stok (tüm lokasyonlar)
+        double currentStock = 0.0;
+        try {
+            currentStock = stockLevelService.getTotalQuantity(variant.getId());
+        } catch (Exception e) {
+            log.debug("Stok enrichment başarısız: variantId={}, hata={}",
+                    variant.getId(), e.getMessage());
+        }
+
+        // OEM kodları (ilk 3)
+        List<String> oemCodes = Collections.emptyList();
+        try {
+            if (variant.getOemNumbers() != null) {
+                oemCodes = variant.getOemNumbers().stream()
+                        .map(o -> o.getOemNumber())
+                        .filter(Objects::nonNull)
+                        .limit(3)
+                        .collect(Collectors.toList());
+            }
+        } catch (Exception e) {
+            log.debug("OEM enrichment başarısız: variantId={}, hata={}",
+                    variant.getId(), e.getMessage());
         }
 
         double confidence = "BARCODE".equals(matchType) ? 1.0
@@ -652,7 +864,13 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
                 .matchedProductName(productName)
                 .matchedVariantId(variant.getId())
                 .matchedSku(variant.getSku())
-                .matchedCurrentStock(0.0)
+                .matchedCurrentStock(currentStock)
+                .matchedSalePrice(salePrice)
+                .matchedPurchasePrice(purchasePrice)
+                .matchedLastPurchasePrice(lastPurchasePrice)
+                .matchedShelfLocation(variant.getShelfLocationCode())
+                .matchedBrandName(brandName)
+                .matchedOemCodes(oemCodes)
                 .matchConfidence(confidence)
                 .warningFlags(warningFlags)
                 .build();

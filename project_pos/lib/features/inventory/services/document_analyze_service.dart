@@ -81,6 +81,42 @@ class DocumentAnalyzeResult {
   }
 }
 
+// ── NAME MATCH ALTERNATİF ADAY ──────────────────────────────────────────────
+
+/// Backend searchProducts sonucundan dönen alternatif ürün adayı.
+/// NAME match'te kullanıcı ilk eşleşmeyi reddederse seçebilir.
+class DocumentMatchCandidate {
+  final String? productId;
+  final String? variantId;
+  final String? productName;
+  final String? sku;
+  final double? salePrice;
+  final double? currentStock;
+  final double? confidence;
+
+  const DocumentMatchCandidate({
+    this.productId,
+    this.variantId,
+    this.productName,
+    this.sku,
+    this.salePrice,
+    this.currentStock,
+    this.confidence,
+  });
+
+  factory DocumentMatchCandidate.fromJson(Map<String, dynamic> json) {
+    return DocumentMatchCandidate(
+      productId: json['productId'] as String?,
+      variantId: json['variantId'] as String?,
+      productName: json['productName'] as String?,
+      sku: json['sku'] as String?,
+      salePrice: (json['salePrice'] as num?)?.toDouble(),
+      currentStock: (json['currentStock'] as num?)?.toDouble(),
+      confidence: (json['confidence'] as num?)?.toDouble(),
+    );
+  }
+}
+
 // ── VARYANT KALEMİ ──────────────────────────────────────────────────────────
 
 /// Tek bir beden/renk/numara kombinasyonu (Durum 2 — her varyant ayrı satır)
@@ -139,10 +175,30 @@ class DocumentAnalyzeItem {
   final double? vatRate;     // 8.0 | 18.0 | 20.0 | null
   final bool? vatIncluded;   // KDV dahil mi? null = bilinmiyor
   final double? totalPrice;  // satır toplamı | null
+  final double? discountRate; // iskonto oranı (%) | null
 
   // ── Sprint 1 ekleme: eşleşme güveni + uyarı bayrakları ──
   final double? matchConfidence;       // BARCODE=1.0, OEM=0.9, NAME=0.5, NOT_FOUND=0.0
   final List<String> warningFlags;     // NAME_MATCH_UNCERTAIN | PRICE_MISMATCH | NO_PRICE | DUPLICATE_MERGED | VARIANT_GROUP | OCR_PROCESSED
+
+  // ── Mevcut ürün enrichment (FOUND ise doldurulur) ─────────────────────────
+  /// Eşleşen varyantın tüm lokasyonlardaki toplam stoğu
+  final double? matchedCurrentStock;
+  /// Sistemdeki aktif satış fiyatı
+  final double? matchedSalePrice;
+  /// VariantPricing aktif alış fiyatı
+  final double? matchedPurchasePrice;
+  /// En son PURCHASE_IN StockMovement unit fiyatı — fatura karşılaştırması
+  final double? matchedLastPurchasePrice;
+  /// Varyantın raf kodu
+  final String? matchedShelfLocation;
+  /// Ürünün marka adı
+  final String? matchedBrandName;
+  /// Eşleşen varyantın ilk birkaç OEM numarası (backend max 3)
+  final List<String> matchedOemCodes;
+
+  /// NAME match'te alternatif adaylar (backend max 3, aksi halde boş)
+  final List<DocumentMatchCandidate> matchCandidates;
 
   // ── Varyant grup alanları ──────────────────────────────────────────────────
   /// true → bu satır birden fazla varyantın gruplanmış hali (Durum 2)
@@ -168,8 +224,17 @@ class DocumentAnalyzeItem {
     this.vatRate,
     this.vatIncluded,
     this.totalPrice,
+    this.discountRate,
     this.matchConfidence,
     this.warningFlags = const [],
+    this.matchedCurrentStock,
+    this.matchedSalePrice,
+    this.matchedPurchasePrice,
+    this.matchedLastPurchasePrice,
+    this.matchedShelfLocation,
+    this.matchedBrandName,
+    this.matchedOemCodes = const [],
+    this.matchCandidates = const [],
     this.variantGroup = false,
     this.variants = const [],
   });
@@ -202,8 +267,21 @@ class DocumentAnalyzeItem {
       vatRate: (json['vatRate'] as num?)?.toDouble(),
       vatIncluded: json['vatIncluded'] as bool?,
       totalPrice: (json['totalPrice'] as num?)?.toDouble(),
+      discountRate: (json['discountRate'] as num?)?.toDouble(),
       matchConfidence: (json['matchConfidence'] as num?)?.toDouble(),
       warningFlags: List<String>.from(json['warningFlags'] ?? []),
+      matchedCurrentStock: (json['matchedCurrentStock'] as num?)?.toDouble(),
+      matchedSalePrice: (json['matchedSalePrice'] as num?)?.toDouble(),
+      matchedPurchasePrice: (json['matchedPurchasePrice'] as num?)?.toDouble(),
+      matchedLastPurchasePrice:
+          (json['matchedLastPurchasePrice'] as num?)?.toDouble(),
+      matchedShelfLocation: json['matchedShelfLocation'] as String?,
+      matchedBrandName: json['matchedBrandName'] as String?,
+      matchedOemCodes: List<String>.from(json['matchedOemCodes'] ?? []),
+      matchCandidates: (json['matchCandidates'] as List<dynamic>? ?? [])
+          .map((e) =>
+              DocumentMatchCandidate.fromJson(e as Map<String, dynamic>))
+          .toList(),
       variantGroup: json['variantGroup'] as bool? ?? false,
       variants: (json['variants'] as List<dynamic>? ?? [])
           .map((e) => DocumentVariantItem.fromJson(e as Map<String, dynamic>))

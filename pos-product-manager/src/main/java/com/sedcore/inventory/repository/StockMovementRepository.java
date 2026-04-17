@@ -62,6 +62,13 @@ public interface StockMovementRepository extends BaseDaoRepository<StockMovement
             @Param("variantId") String variantId,
             @Param("movementType") StockMovementType movementType);
 
+    /** En son PURCHASE_IN kaydı — doküman analizinde son alış fiyatını enrichment için. */
+    @Query("SELECT sm FROM StockMovement sm WHERE sm.variant.id = :variantId AND sm.movementType = :movementType ORDER BY sm.createTime DESC")
+    List<StockMovement> findLastByVariantIdAndMovementType(
+            @Param("variantId") String variantId,
+            @Param("movementType") StockMovementType movementType,
+            Pageable pageable);
+
     /** Birlikte satılan ürünler — Recommendation engine */
     @Query(value = """
             SELECT p.id, p.name, p.sku, pv.id as variantId, COUNT(*) as frequency

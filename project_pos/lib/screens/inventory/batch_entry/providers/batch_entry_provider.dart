@@ -45,23 +45,49 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
 
       if (products.isNotEmpty) {
         final p = products.first;
+        final sysSale = (p['sellingPrice'] as num?)?.toDouble() ??
+            (p['basePrice'] as num?)?.toDouble();
+        final sysPurchase = (p['purchasePrice'] as num?)?.toDouble();
+        final sysStock = (p['stock'] as num?)?.toDouble();
+        final oemCodes = <String>[];
+        // Varyantlar içinde oemNumbers alanı varsa topla
+        final variants = p['variants'] as List?;
+        if (variants != null) {
+          for (final v in variants) {
+            final oems = (v as Map?)?['oemNumbers'] as List?;
+            if (oems != null) {
+              for (final o in oems) {
+                final code = (o as Map?)?['oemNumber']?.toString();
+                if (code != null && code.isNotEmpty) {
+                  oemCodes.add(code);
+                  if (oemCodes.length >= 3) break;
+                }
+              }
+              if (oemCodes.length >= 3) break;
+            }
+          }
+        }
         final row = BatchEntryRow(
           barcode: p['barcode']?.toString() ?? trimmed,
           productName: p['name']?.toString() ?? '',
           brandName: p['brand']?.toString(),
           categoryId: p['categoryId']?.toString(),
           categoryName: p['categoryName']?.toString(),
-          purchasePrice: (p['purchasePrice'] as num?)?.toDouble() ??
-              (p['basePrice'] as num?)?.toDouble() ?? 0,
-          salePrice: (p['sellingPrice'] as num?)?.toDouble() ??
-              (p['basePrice'] as num?)?.toDouble() ??
-              0,
+          purchasePrice: sysPurchase ?? 0,
+          salePrice: sysSale ?? 0,
           vatRate: (p['taxRate'] as num?)?.toDouble() ?? 20.0,
           quantity: 1,
           status: RowStatus.existing,
           existingProductId: p['id']?.toString(),
           existingVariantId: p['variantId']?.toString(),
           existingVariantSku: p['sku']?.toString(),
+          existingCurrentStock: sysStock,
+          existingSalePrice: sysSale,
+          existingPurchasePrice: sysPurchase,
+          existingLastPurchasePrice: sysPurchase, // barkod akışında aynı
+          existingShelfLocation: p['shelfLocationCode']?.toString(),
+          existingBrandName: p['brand']?.toString(),
+          existingOemCodes: oemCodes,
         );
         state = state.copyWith(rows: [row, ...state.rows]);
         return 'batch.barcode_added|${row.productName}';
@@ -85,6 +111,7 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
     final newRows = items.map((item) {
       final vat = item.vatRate ?? 20.0;
       final vatIncluded = item.vatIncluded ?? false;
+      final discount = item.discountRate ?? 0.0;
       final unitId = _mapUnit(item.unit);
       final productName =
           item.matchedProductName ?? item.extractedName ?? item.rawText;
@@ -120,11 +147,19 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
             salePrice: item.extractedUnitPrice ?? 0,
             vatRate: vat,
             vatIncluded: vatIncluded,
+            discountRate: discount,
             unitId: unitId,
             status: RowStatus.existing,
             existingVariantId: item.matchedVariantId,
             existingProductId: item.matchedProductId,
             existingVariantSku: item.matchedSku,
+            existingCurrentStock: item.matchedCurrentStock,
+            existingSalePrice: item.matchedSalePrice,
+            existingPurchasePrice: item.matchedPurchasePrice,
+            existingLastPurchasePrice: item.matchedLastPurchasePrice,
+            existingShelfLocation: item.matchedShelfLocation,
+            existingBrandName: item.matchedBrandName,
+            existingOemCodes: item.matchedOemCodes,
             variantRows: variantRows,
           );
         } else {
@@ -137,6 +172,7 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
             salePrice: item.extractedUnitPrice ?? 0,
             vatRate: vat,
             vatIncluded: vatIncluded,
+            discountRate: discount,
             unitId: unitId,
             status: RowStatus.newProduct,
             variantRows: variantRows,
@@ -154,11 +190,19 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
           salePrice: item.extractedUnitPrice ?? 0,
           vatRate: vat,
           vatIncluded: vatIncluded,
+          discountRate: discount,
           unitId: unitId,
           status: RowStatus.existing,
           existingVariantId: item.matchedVariantId,
           existingProductId: item.matchedProductId,
           existingVariantSku: item.matchedSku,
+          existingCurrentStock: item.matchedCurrentStock,
+          existingSalePrice: item.matchedSalePrice,
+          existingPurchasePrice: item.matchedPurchasePrice,
+          existingLastPurchasePrice: item.matchedLastPurchasePrice,
+          existingShelfLocation: item.matchedShelfLocation,
+          existingBrandName: item.matchedBrandName,
+          existingOemCodes: item.matchedOemCodes,
         );
       } else {
         return BatchEntryRow(
@@ -169,6 +213,7 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
           salePrice: item.extractedUnitPrice ?? 0,
           vatRate: vat,
           vatIncluded: vatIncluded,
+          discountRate: discount,
           unitId: unitId,
           status: RowStatus.newProduct,
         );
@@ -213,6 +258,7 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
     double? purchasePrice,
     double? salePrice,
     double? vatRate,
+    double? discountRate,
     int? quantity,
     bool? isExpanded,
     String? description,
@@ -238,6 +284,7 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
         purchasePrice: purchasePrice,
         salePrice: salePrice,
         vatRate: vatRate,
+        discountRate: discountRate,
         quantity: quantity,
         isExpanded: isExpanded,
         description: description,
@@ -609,4 +656,10 @@ final batchEntryProvider =
 final batchCategoriesProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>(
   (ref) => ref.read(companyCategoryServiceProvider).getMyCategoryList(),
+);
+
+/// Marka listesi — kart içindeki autocomplete için paylaşımlı cache
+final batchBrandsProvider =
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>(
+  (ref) => ref.read(brandServiceProvider).getActiveBrands(),
 );

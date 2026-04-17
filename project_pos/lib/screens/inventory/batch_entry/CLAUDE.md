@@ -347,12 +347,15 @@ BatchEntryRow(
 
 ### P1 — Kritik (Veri bütünlüğü)
 
-- [ ] **Mevcut ürün `purchasePrice` = 0** — `_mapProduct` içinde `firstVariant['purchasePrice']`  
-  bakıyor ama API response yapısına göre key farklı olabilir → test edilmeli.
-- [ ] **PDF aktarımında `categoryId` boş** — Yeni ürün satırları kategori olmadan oluşur → batch  
-  submit'te "Kategori zorunlu" hatası alınır. Kategori seçimi mandatory.
-- [ ] **Stok concurrent update** — `ProductVariant`'ta `@Version` alanı yok → 2 kasiyerin  
-  aynı ürünü aynı anda satması → lost update. Optimistic locking eklenmeli.
+- [x] **Mevcut ürün `purchasePrice` = 0** — `_mapProduct` doğru key'leri okuyor;  
+  ayrıca backend `DocumentAnalyzeServiceImpl.enrichFromVariant` → `VariantPricing` + son  
+  `StockMovement(PURCHASE_IN)` üzerinden sistem fiyatı/son alış fiyatı Flutter'a gönderiliyor  
+  (`matchedSalePrice`, `matchedLastPurchasePrice`). Fatura fiyatı ≠ son alış → kartta warning.
+- [ ] **PDF aktarımında `categoryId` boş** — Yeni ürün satırları kategori olmadan oluşur →  
+  `batch.new_items_category_required` banner'ı result sheet'te gösteriliyor. Hâlâ kullanıcı  
+  dropdown'dan manuel seçmek zorunda.
+- [ ] **Stok concurrent update** — `ProductVariant`'ta `@Version` alanı YOK değil (entity'de  
+  `@Version Long version` var) — ancak retry + exponential backoff implementasyonu eksik.
 
 ### P2 — UX sorunları
 
@@ -390,18 +393,30 @@ BatchEntryRow(
   - PDF aktarım sonrası salePrice uyarı toastı (700ms gecikme)
   - security/data.sql bt125-bt144: alan adı + validasyon + toplu işlem anahtarları
 
-🔴 SPRINT 1 — PDF FATURA ANALİZİ (TAMAMLANDI — uçtan uca test bekliyor):
-  Mevcut: Temel altyapı (PDFBox, Flutter servis, result sheet, upload butonu)
-  Eksik:
-    [ ] Backend: KDV oranı extract (fatura'dan %18, %8 gibi)
-    [ ] Backend: Birim extract ("ADET", "KG", "MT" vb. → DocumentItemResult.unit)
-    [ ] Backend: DocumentItemResult modeline unit + vatRate + vatIncluded alanı ekle
-    [ ] Backend: Fatura başlık bilgisi (fatura no, tarih) — opsiyonel
-    [ ] Flutter: addFromDocumentItems() → KDV, birim aktarımı
-    [ ] Flutter: Loading spinner (_uploadDocument sırasında dialog)
-    [ ] Flutter: İsim eşleşmesi (NAME match) için kullanıcı onay UI
-    [ ] Flutter: Yükleme hatası detaylı mesaj (ağ hatası vs. geçersiz PDF)
-    [ ] Test: Gerçek fatura PDF'i ile uçtan uca test
+🔴 SPRINT 1 — PDF FATURA ANALİZİ + KART ZENGİNLEŞTİRME (TAMAMLANDI):
+  [x] Backend: Multi-line header desteği (e-Arşiv "Sıra\nNo", "İskonto\nOranı")
+  [x] Backend: isTableFooterLine strip + strict contains (sağ-hizalı sayı senaryosu)
+  [x] Backend: NON_PRODUCT_NAME_START regex + isValidProductLine (footer/header satır sızması engellendi)
+  [x] Backend: buildResults post-filter + debug log (0 ürün durumunda PDFBox çıktısı WARN)
+  [x] Backend: KDV + birim + iskonto extract (VAT_PATTERN, UNIT_PATTERN, DISCOUNT_PATTERN)
+  [x] Backend: DocumentItemResult → unit, vatRate, vatIncluded, totalPrice, discountRate
+  [x] Backend: matchedCurrentStock, matchedSalePrice, matchedPurchasePrice,
+       matchedLastPurchasePrice, matchedShelfLocation, matchedBrandName,
+       matchedOemCodes (enrichFromVariant genişletildi)
+  [x] Backend: StockMovementRepository.findLastByVariantIdAndMovementType → son alış fiyatı
+  [x] Backend: MatchCandidate + matchCandidates — NAME match alternatif 3 aday
+  [x] Flutter: addFromDocumentItems() KDV + birim + iskonto + enrichment aktarımı
+  [x] Flutter: Loading spinner dialog (_uploadDocument sırasında)
+  [x] Flutter: NAME match için "Alternatif Göster" + "Yeni Ürün Olarak" UI
+  [x] Flutter: Yükleme hatası detaylı mesaj (timeout / parse / file-too-large ayrı)
+  [x] Flutter: _ExistingProductInfoCard stok rozeti + OEM chip + raf chip
+       (fiyat karşılaştırma tablosu KULLANICI İSTEĞİ ile kaldırıldı)
+  [x] Flutter: _BrandAutocomplete widget (yeni marka girişi destekli)
+  [x] Flutter: Dialog Section 2'de İskonto % alanı (KDV + KDV dahil + İskonto yan yana)
+  [x] Python OCR: tablo header/footer + non-product filtresi (logo/adres/imza bypass)
+  [x] Python OCR: genişletilmiş kolon başlığı eşleşmesi (Cinsi, Nevi, Hizmet Cinsi,
+       Stok Kodu, Malzeme, Vergi, ÖTV, İsk., İnd. vb.)
+  [ ] Test: Gerçek fatura PDF'i ile uçtan uca test
 
   Sprint 2: UX iyileştirmeleri
     - taxExempt / specialTaxRate batch modele ekle
@@ -428,8 +443,8 @@ BatchEntryRow(
 
 ## 11. i18n ANAHTARLARI (data.sql — `bnd-bt` prefix)
 
-> **Son eklenen ID:** `bt148`  
-> Yeni anahtar eklerken `bt149`'dan başla.  
+> **Son eklenen ID:** `bt184`  
+> Yeni anahtar eklerken `bt185`'ten başla.  
 > Tam kayıt kaynağı: `security/src/main/resources/data.sql`
 
 ---
@@ -628,10 +643,50 @@ Yeni kodda `common.*` versiyonunu kullan — `batch.*` versiyonu sadece geriye u
 | bt121 | `batch.attribute_required` | Özellik adı zorunludur | mevcut |
 | bt123 | `batch.variant_color` | Renk | mevcut |
 | bt124 | `batch.no_variants_added` | Henüz varyant eklenmedi | mevcut |
-| bt145 | `batch.variants_add` | Varyant Ekle | **YENİ** |
-| bt146 | `batch.variant_quick_sizes` | Hızlı Beden | **YENİ** |
-| bt147 | `batch.variant_color_custom` | Özel | **YENİ** |
-| bt148 | `batch.variant` | varyant | **YENİ** (tekil, özet için: "3 varyant") |
+| bt145 | `batch.variants_add` | Varyant Ekle | — |
+| bt146 | `batch.variant_quick_sizes` | Hızlı Beden | — |
+| bt147 | `batch.variant_color_custom` | Özel | — |
+| bt148 | `batch.variant` | varyant | — |
+
+### 11.8 Mevcut ürün zenginleştirme (bt165–bt171)
+
+| ID | Key | TR |
+|----|-----|----|
+| bt165 | `batch.current_stock` | Mevcut Stok |
+| bt166 | `batch.system_sale_price` | Sistem Satış |
+| bt167 | `batch.last_purchase_price` | Son Alış |
+| bt168 | `batch.invoice_price` | Fatura Fiyatı |
+| bt169 | `batch.price_changed` | Fiyat değişti |
+| bt170 | `batch.no_stock` | Stok yok |
+| bt171 | `batch.oem_codes` | OEM Kodları |
+
+### 11.9 Yeni ürün kart widget'ları (bt172–bt178)
+
+| ID | Key | TR |
+|----|-----|----|
+| bt172 | `batch.brand_select` | Marka Seç |
+| bt173 | `batch.brand_type_new` | Yeni marka yazın |
+| bt174 | `batch.oem_add` | OEM Ekle |
+| bt175 | `batch.oem_manufacturer` | Üretici |
+| bt176 | `batch.crossref_add` | Çapraz Referans Ekle |
+| bt177 | `batch.crossref_number` | Ref No |
+| bt178 | `batch.crossref_brand` | Ref Markası |
+
+### 11.10 NAME match alternatif seçim (bt179–bt182)
+
+| ID | Key | TR |
+|----|-----|----|
+| bt179 | `batch.show_alternatives` | Alternatif Göster |
+| bt180 | `batch.alternatives` | Alternatifler |
+| bt181 | `batch.save_as_new` | Yeni Ürün Olarak |
+| bt182 | `batch.candidate_stock` | Stok |
+
+### 11.11 İskonto oranı (bt183–bt184)
+
+| ID | Key | TR |
+|----|-----|----|
+| bt183 | `batch.field_discount` | İskonto % |
+| bt184 | `batch.discount_applied` | İsk. uygulandı |
 
 **Varyant kartında REUSE edilecek common.* anahtarları:**
 ```dart
@@ -749,18 +804,25 @@ SKIP_PREFIXES = ["sıra", "satır", "miktar", "birim", "adet", "toplam",
 // + 5 karakterden kısa satırlar
 ```
 
-**ŞU AN EKSİK — OKUNMAYAN ALANLAR:**
+**OKUNAN ALANLAR (güncel):**
 ```
-❌ vatRate (KDV oranı)  → DocumentItemResult'ta alan yok, Flutter'da sabit 20.0
-❌ unit (birim)         → "ADET","KG","MT" var ama temizleniyor, extract edilmiyor
-❌ vatIncluded          → Fiyat KDV dahil mi? bilinmiyor
-❌ totalPrice           → Satır toplamı (miktar × fiyat)
+✅ vatRate              → VAT_PATTERN "% N" / "N %" formatı
+✅ unit                 → UNIT_PATTERN + QTY_BEFORE_UNIT
+✅ vatIncluded          → Belgeden çıkarıldıysa, yoksa null (sabit değil)
+✅ totalPrice           → Birim fiyat × miktar
+✅ discountRate         → DISCOUNT_PATTERN "İsk. %N" / "%N İnd" formatı
+```
+
+**HÂLÂ EKSİK — OKUNMAYAN ALANLAR:**
+```
 ❌ invoiceNo            → Fatura numarası (belge başlığı)
 ❌ invoiceDate          → Fatura tarihi
 ❌ supplierName         → Tedarikçi adı
 ❌ rowNumber            → Belgedeki sıra numarası (1, 2, 3...)
 ❌ description          → Ürün açıklaması (uzun satır)
 ```
+Not: Görsel (logo, damga, grafik, watermark, imza) ve belge başlık/adres/KVKK
+bölümleri OCR filter'ı tarafından bypass edilir — DocumentItemResult'a gelmez.
 
 ### 14.3 Ürün Eşleştirme Sırası
 

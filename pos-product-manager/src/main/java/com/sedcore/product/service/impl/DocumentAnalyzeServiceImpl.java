@@ -303,6 +303,11 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
             // yok sayar — yalnızca kolon başlıkları ve ürün satırları okunur.
             // Ürün fotografları, logolar, adres blokları parse sürecini etkilemez.
             log.info("parsePdf [{}]: Metin modu deneniyor", file.getOriginalFilename());
+            // TEŞHİS LOG'U — her parse'da PDFBox metnini log'la (ilk 3000 char).
+            // Kullanıcı "parse yanlış okundu" dediğinde bu log gerçek çıktıyı gösterir.
+            log.info("parsePdf [{}] PDFBox ÇIKTI (ilk 3000 char):\n=====PDFBOX BEGIN=====\n{}\n=====PDFBOX END=====",
+                    file.getOriginalFilename(),
+                    fullText.length() > 3000 ? fullText.substring(0, 3000) + "...[truncated]" : fullText);
             List<DocumentItemResult> textItems = parseText(fullText, file.getOriginalFilename());
             if (!textItems.isEmpty()) {
                 log.info("parsePdf [{}]: Metin modu → {} ürün", file.getOriginalFilename(), textItems.size());
@@ -501,9 +506,13 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
             // Geçersiz satırları aggregator'a gönderme — multi-line kalıntı birikmesin.
             // (footer parçaları, header devamı, non-product etiketler)
             if (!isValidProductLine(parsed)) {
-                log.debug("parseText: Geçersiz ürün satırı atlandı: '{}'", line);
+                log.info("parseText ATLANDI: '{}' → name='{}', qty={}, price={}, total={}",
+                        line, parsed.name, parsed.quantity, parsed.unitPrice, parsed.totalPrice);
                 continue;
             }
+
+            log.info("parseText ÜRÜN: '{}' → name='{}', qty={}, price={}, total={}, vat={}",
+                    line, parsed.name, parsed.quantity, parsed.unitPrice, parsed.totalPrice, parsed.vatRate);
 
             List<ParsedLine> ready = aggregator.process(parsed);
             parsedLines.addAll(ready);
@@ -656,12 +665,20 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
             if (prices.size() >= 2) result.totalPrice = prices.get(prices.size() - 1);
         }
 
-        // 7. Ürün adını çıkar — kodu, sayıları ve birimi temizle
+        // 7. Ürün adını çıkar — kodu, sayıları, birimi ve para birimini temizle
         String nameStr = processed;
         if (result.code != null) nameStr = nameStr.replace(result.code, " ");
-        nameStr = nameStr.replaceAll("\\b\\d+[.,]?\\d*\\b", " ");
-        nameStr = nameStr.replaceAll("(?i)\\b(ADET|ADT|AD|KG|KGR|LT|LTR|MT|MTR|M2|PAKET|PKT|KUTU|KTU|PCS|GR|GRAM)\\b", " ");
-        nameStr = nameStr.replaceAll("[%₺$€@#*]", " ");
+        // Türkçe format: binlik nokta + virgül ondalık → tüm sayıları yakala
+        nameStr = nameStr.replaceAll("\\b\\d+(?:[.,]\\d+)*\\b", " ");
+        // Birim + para birimi + iskonto/indirim kısaltmaları
+        nameStr = nameStr.replaceAll(
+                "(?i)\\b(ADET|ADT|AD|KG|KGR|LT|LTR|MT|MTR|M2|PAKET|PKT|KUTU|KTU|" +
+                "PCS|GR|GRAM|TL|TRY|TURK\\s*LIRASI|USD|EUR|GBP|İSK|ISK|İND|IND)\\b",
+                " ");
+        // Para ve özel semboller + yalın noktalama (virgül/nokta/tire kalıntıları)
+        nameStr = nameStr.replaceAll("[%₺$€£@#*\"']", " ");
+        // Yalın başta/sonda/arada kalan noktalama — ürün adında anlam taşımayan ayraçlar
+        nameStr = nameStr.replaceAll("(?:^|\\s)[.,;:\\-–—](?=\\s|$)", " ");
         nameStr = nameStr.replaceAll("\\s+", " ").trim();
 
         if (nameStr.length() >= 3 && nameStr.matches(".*[a-zA-ZğüşıöçĞÜŞİÖÇ].*")) {

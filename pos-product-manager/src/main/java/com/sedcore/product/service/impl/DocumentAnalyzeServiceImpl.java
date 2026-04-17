@@ -443,6 +443,7 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
                 // satıra yayılabilir ("Sıra\nNo", "İskonto\nOranı"). Bir sonraki
                 // 3 satıra kadar "header devamı" (≥1 header keyword + sayı yok)
                 // varsa headerLineIndex'i o kadar ileri taşı.
+                boolean hasMultiLineHeader = false;
                 for (int j = i + 1; j <= Math.min(i + 3, lines.length - 1); j++) {
                     String next = lines[j].trim();
                     if (next.isBlank() || next.length() > 80) break;
@@ -451,7 +452,16 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
                     Set<ColumnType> nextMatches = InvoiceHeaderDetector.detect(next);
                     if (nextMatches.isEmpty()) break;
                     headerLineIndex = j;
-                    log.debug("DocumentAnalyze: Header devamı satırı atlandı (satır {}): '{}'", j, next);
+                    hasMultiLineHeader = true;
+                    log.info("DocumentAnalyze: Header devamı satırı atlandı (satır {}): '{}'", j, next);
+                }
+                // Multi-line header varsa ColumnAwareLineParser'ın kolon pozisyonları
+                // data satırıyla uyuşmuyor (e-Arşiv düzeni). Tamamen devre dışı bırak
+                // → tüm satırlar extractLineInfo fallback ile işlenir.
+                if (hasMultiLineHeader) {
+                    log.info("DocumentAnalyze: Multi-line header tespit edildi → ColumnAwareLineParser bypass, regex fallback kullanılacak");
+                    columnMapper = null;
+                    columnParser = null;
                 }
                 break;
             }
@@ -646,23 +656,71 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
             }
         }
 
-        // 6. Sayıları çıkar (miktar ve fiyat)
-        List<Double> numbers = extractNumbers(processed);
+        // 6. Sayıları çıkar — AMA KDV/iskonto % değerlerini ÖNCE temizle ki
+        // fiyat olarak seçilmesin ("%10,00" → 10 sayısı fiyat listesine girmemeli)
+        String cleaned = processed
+                // "%10", "% 10", "10%" → tümünü at (KDV/iskonto oranı)
+                .replaceAll("%\\s*\\d{1,2}(?:[.,]\\d{1,4})?", " ")
+                .replaceAll("\\d{1,2}(?:[.,]\\d{1,4})?\\s*%", " ");
+        List<Double> numbers = extractNumbers(cleaned);
+        // Hariç tutulacaklar: miktar + KDV oranı + iskonto oranı
+        java.util.Set<Double> exclusions = new java.util.HashSet<>();
+        if (result.quantity != null)     exclusions.add(result.quantity);
+        if (result.vatRate != null)      exclusions.add(result.vatRate);
+        if (result.discountRate != null) exclusions.add(result.discountRate);
+
         if (!numbers.isEmpty()) {
-            // Miktar zaten birim yoluyla bulunduysa, sadece fiyat/toplam bul
+            // Miktar birimle bulunmadıysa, integer + 1-9999 ilk sayıyı seç
             if (result.quantity == null) {
                 for (Double n : numbers) {
-                    if (n == Math.floor(n) && n >= 1 && n <= 9999 && result.quantity == null) {
+                    if (n == Math.floor(n) && n >= 1 && n <= 9999) {
                         result.quantity = n;
+                        exclusions.add(n);
+                        break;
                     }
                 }
             }
             List<Double> prices = numbers.stream()
-                    .filter(n -> n > 0 && !n.equals(result.quantity))
+                    .filter(n -> n > 0 && !exclusions.contains(n))
+                    .distinct()
                     .sorted()
                     .collect(Collectors.toList());
-            if (!prices.isEmpty()) result.unitPrice = prices.get(0);
-            if (prices.size() >= 2) result.totalPrice = prices.get(prices.size() - 1);
+
+            // totalPrice = en büyük (satır toplamı genelde en yüksek)
+            if (!prices.isEmpty()) {
+                result.totalPrice = prices.get(prices.size() - 1);
+            }
+
+            // unitPrice heuristic: qty × unitPrice ≈ totalPrice olmalı.
+            // KDV dahil toplam ise: qty × unitPrice × (1 + vat/100) ≈ totalPrice
+            // Aday fiyatlardan bu orana EN YAKIN olanı unitPrice seç.
+            if (result.quantity != null && result.quantity > 0 && !prices.isEmpty()) {
+                double qty = result.quantity;
+                double total = result.totalPrice != null ? result.totalPrice : 0;
+                double vat = result.vatRate != null ? result.vatRate : 0;
+                double expectedNet  = qty > 0 ? total / qty : 0;
+                double expectedGross = (qty > 0 && vat > 0) ? total / (qty * (1 + vat / 100.0)) : 0;
+
+                Double best = null;
+                double bestDelta = Double.MAX_VALUE;
+                for (Double p : prices) {
+                    if (p.equals(result.totalPrice)) continue; // total adayı fiyat değil
+                    double d1 = expectedNet  > 0 ? Math.abs(p - expectedNet)  / expectedNet  : Double.MAX_VALUE;
+                    double d2 = expectedGross > 0 ? Math.abs(p - expectedGross) / expectedGross : Double.MAX_VALUE;
+                    double d = Math.min(d1, d2);
+                    if (d < bestDelta) { bestDelta = d; best = p; }
+                }
+                // Tolerans %5 — heuristic bu aralıkta tuttu, unitPrice olarak seç
+                if (best != null && bestDelta <= 0.05) {
+                    result.unitPrice = best;
+                } else if (!prices.isEmpty()) {
+                    // Heuristic başarısız — ortanca (median) seç (en küçük KDV tutarı ihtimaline karşı)
+                    result.unitPrice = prices.get(prices.size() / 2);
+                }
+            } else if (!prices.isEmpty()) {
+                // Miktar yok — en küçük fiyat (eski davranış)
+                result.unitPrice = prices.get(0);
+            }
         }
 
         // 7. Ürün adını çıkar — kodu, sayıları, birimi ve para birimini temizle

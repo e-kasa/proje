@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from ocr_engine import get_reader, extract_text
+from invoice_parser import parse_invoice_text
 import uvicorn
 import logging
 
@@ -61,6 +63,40 @@ async def ocr_extract(file: UploadFile = File(...), table_only: bool = False):
     except Exception as e:
         log.error("OCR işlem hatası: %s", e, exc_info=True)
         raise HTTPException(500, f"OCR hatası: {str(e)}")
+
+
+class ParseTextRequest(BaseModel):
+    """PDFBox'tan gelen ham PDF metni. Python parse sonucu items[] döner."""
+    text: str
+
+
+@app.post("/parse-text")
+async def parse_text(request: ParseTextRequest):
+    """
+    PDF metnini alır, SADECE ürün tablosunu parse eder.
+
+    Java PDFBox'tan çıkarılan metni:
+      - header + footer tespit et (sadece ürün tablosu aralığı)
+      - firma başlığı + adres + toplam/imza/footer satırları elenir
+      - her ürün satırını regex ile parse et (isim/kod/miktar/fiyat/KDV/iskonto)
+
+    Returns: {items, headerLine, footerLine, skippedCount, totalLines}
+    """
+    if not request.text or not request.text.strip():
+        raise HTTPException(400, "text alanı boş olamaz")
+
+    try:
+        result = parse_invoice_text(request.text)
+        log.info(
+            "parse_text: %d satır → %d ürün (atılan: %d)",
+            result["totalLines"],
+            len(result["items"]),
+            result["skippedCount"],
+        )
+        return result
+    except Exception as e:
+        log.error("parse_text hatası: %s", e, exc_info=True)
+        raise HTTPException(500, f"Parse hatası: {str(e)}")
 
 
 if __name__ == "__main__":

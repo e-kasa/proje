@@ -271,6 +271,89 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
         throw new BusinessException("OCR servisi boş yanıt döndürdü");
     }
 
+    // ── PYTHON PARSE SERVİSİ (/parse-text) ──────────────────────────────────
+
+    /**
+     * PDFBox'tan alınan tam PDF metnini Python /parse-text endpoint'ine gönderir.
+     * Python: tablo header/footer tespit → satır bazlı regex parse → items[].
+     *
+     * Response items → ParsedLine listesine adapte edilir, buildResults() ile
+     * matchToProduct + enrichFromVariant zinciri standart şekilde çalışır.
+     */
+    @SuppressWarnings("unchecked")
+    private List<ParsedLine> callParseTextService(String pdfText) {
+        RestTemplate rest = new RestTemplate();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        Map<String, String> body = Map.of("text", pdfText);
+        HttpEntity<Map<String, String>> request = new HttpEntity<>(body, headers);
+
+        String url = ocrServiceUrl + "/parse-text";
+        long start = System.currentTimeMillis();
+
+        ResponseEntity<Map> resp;
+        try {
+            resp = rest.postForEntity(url, request, Map.class);
+        } catch (Exception e) {
+            log.error("callParseTextService: Python servisine ulaşılamadı ({}): {}",
+                    url, e.getMessage());
+            throw new BusinessException("Parse servisi yanıt vermedi: " + e.getMessage());
+        }
+
+        long elapsed = System.currentTimeMillis() - start;
+        if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null) {
+            throw new BusinessException("Parse servisi boş yanıt döndürdü");
+        }
+
+        Map<String, Object> responseBody = resp.getBody();
+        Object headerLine = responseBody.get("headerLine");
+        Object footerLine = responseBody.get("footerLine");
+        Object skippedCount = responseBody.get("skippedCount");
+        List<Map<String, Object>> items = (List<Map<String, Object>>) responseBody.get("items");
+
+        log.info("callParseTextService: {} ms, header={}, footer={}, skipped={}, items={}",
+                elapsed, headerLine, footerLine, skippedCount,
+                items == null ? 0 : items.size());
+
+        if (items == null || items.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<ParsedLine> out = new ArrayList<>();
+        for (Map<String, Object> m : items) {
+            ParsedLine line = new ParsedLine();
+            line.name         = (String) m.get("name");
+            line.code         = (String) m.get("code");
+            line.codeType     = null; // Python ayırt etmiyor şimdilik
+            line.quantity     = toDouble(m.get("quantity"));
+            line.unit         = (String) m.get("unit");
+            line.unitPrice    = toDouble(m.get("unitPrice"));
+            line.totalPrice   = toDouble(m.get("totalPrice"));
+            line.vatRate      = toDouble(m.get("vatRate"));
+            line.discountRate = toDouble(m.get("discountRate"));
+            // Python barkodları EAN13 olarak ayırt edebilir — kod 13 rakamsa BARCODE
+            if (line.code != null && line.code.matches("\\d{13}")) {
+                line.codeType = "BARCODE";
+            } else if (line.code != null) {
+                line.codeType = "OEM";
+            }
+            out.add(line);
+        }
+        return out;
+    }
+
+    /** JSON'dan gelen Number → Double. null-safe. */
+    private Double toDouble(Object v) {
+        if (v == null) return null;
+        if (v instanceof Number) return ((Number) v).doubleValue();
+        try {
+            return Double.parseDouble(v.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     // ── PDF PARSE ────────────────────────────────────────────────────────────
 
     /** parsePdf() dönüş tipi: item listesi + parse yöntemi metadata */
@@ -298,19 +381,37 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
                 return new ParseResult(ocrItems, true, "OCR");
             }
 
-            // ── 2. Metin tabanlı parse (BİRİNCİL YOL) ───────────────────────
-            // PDFBox metin çıkarımı, belgedeki resim/fotoğrafları otomatik olarak
-            // yok sayar — yalnızca kolon başlıkları ve ürün satırları okunur.
-            // Ürün fotografları, logolar, adres blokları parse sürecini etkilemez.
-            log.info("parsePdf [{}]: Metin modu deneniyor", file.getOriginalFilename());
-            // TEŞHİS LOG'U — her parse'da PDFBox metnini log'la (ilk 3000 char).
-            // Kullanıcı "parse yanlış okundu" dediğinde bu log gerçek çıktıyı gösterir.
+            // ── 2a. PYTHON PARSE (BİRİNCİL YOL) ─────────────────────────────
+            // PDFBox metnini Python /parse-text endpoint'ine gönder.
+            // Python: header/footer tespit + her satırı regex ile parse +
+            //         unitPrice heuristic (qty × price ≈ total).
+            log.info("parsePdf [{}]: Python parse deneniyor (metin uzunluk: {})",
+                    file.getOriginalFilename(), fullText.length());
+            try {
+                List<ParsedLine> pythonLines = callParseTextService(fullText);
+                if (!pythonLines.isEmpty()) {
+                    List<DocumentItemResult> results = buildResults(pythonLines);
+                    if (!results.isEmpty()) {
+                        log.info("parsePdf [{}]: Python parse → {} ürün",
+                                file.getOriginalFilename(), results.size());
+                        return new ParseResult(results, false, "PYTHON");
+                    }
+                }
+                log.warn("parsePdf [{}]: Python parse 0 ürün → Java fallback",
+                        file.getOriginalFilename());
+            } catch (Exception e) {
+                log.warn("parsePdf [{}]: Python parse başarısız ({}) → Java fallback",
+                        file.getOriginalFilename(), e.getMessage());
+            }
+
+            // ── 2b. Java metin parse (FALLBACK) ─────────────────────────────
+            log.info("parsePdf [{}]: Java metin modu deneniyor", file.getOriginalFilename());
             log.info("parsePdf [{}] PDFBox ÇIKTI (ilk 3000 char):\n=====PDFBOX BEGIN=====\n{}\n=====PDFBOX END=====",
                     file.getOriginalFilename(),
                     fullText.length() > 3000 ? fullText.substring(0, 3000) + "...[truncated]" : fullText);
             List<DocumentItemResult> textItems = parseText(fullText, file.getOriginalFilename());
             if (!textItems.isEmpty()) {
-                log.info("parsePdf [{}]: Metin modu → {} ürün", file.getOriginalFilename(), textItems.size());
+                log.info("parsePdf [{}]: Java metin modu → {} ürün", file.getOriginalFilename(), textItems.size());
                 return new ParseResult(textItems, false, "TEXT");
             }
             // Debug: 0 ürün çıkarsa PDFBox metin çıktısını logla (ilk 2000 char)

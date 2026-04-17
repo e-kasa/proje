@@ -2,15 +2,27 @@ import easyocr
 import numpy as np
 from PIL import Image
 import io
+import threading
+import logging
 
-# Servis başladığında bir kez yüklenir (ağır model)
+log = logging.getLogger(__name__)
+
 _reader = None
+_reader_lock = threading.Lock()
 
 
-def get_reader():
+def get_reader() -> easyocr.Reader:
+    """
+    EasyOCR reader'ı döndürür.
+    Thread-safe singleton — ilk çağrıda model indirilir/yüklenir.
+    """
     global _reader
     if _reader is None:
-        _reader = easyocr.Reader(['tr', 'en'], gpu=False)
+        with _reader_lock:
+            if _reader is None:          # double-checked locking
+                log.info("easyocr.Reader(['tr', 'en'], gpu=False) başlatılıyor...")
+                _reader = easyocr.Reader(['tr', 'en'], gpu=False)
+                log.info("Reader hazır.")
     return _reader
 
 
@@ -39,7 +51,7 @@ def extract_text(image_bytes: bytes, table_only: bool = False) -> str:
     prev_y = None
 
     for bbox, text, conf in results_sorted:
-        if conf < 0.3:  # Güven skoru düşükse atla
+        if conf < 0.3:          # Güven skoru düşükse atla
             continue
         y = bbox[0][1]
         if prev_y is None or abs(y - prev_y) < 20:

@@ -1,14 +1,34 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
-from ocr_engine import extract_text
+from ocr_engine import get_reader, extract_text
 import uvicorn
+import logging
 
-app = FastAPI(title="SEDCORE OCR Service", version="1.0.0")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)s  %(message)s")
+log = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Uygulama başlarken EasyOCR modelini yükle (ilk istekte değil)."""
+    log.info("EasyOCR modeli yükleniyor — ilk kez çalıştırılıyorsa model indirme süresi 3-10 dk olabilir...")
+    try:
+        get_reader()          # ağır model burada yüklenir (blocking ama kasıtlı)
+        log.info("EasyOCR modeli hazır ✓")
+    except Exception as e:
+        log.error("EasyOCR model yüklenemedi: %s", e)
+        raise RuntimeError(f"EasyOCR başlatılamadı: {e}") from e
+    yield
+    log.info("OCR servisi kapatılıyor.")
+
+
+app = FastAPI(title="SEDCORE OCR Service", version="1.0.0", lifespan=lifespan)
 
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "model": "loaded"}
 
 
 @app.post("/ocr/extract")
@@ -39,6 +59,7 @@ async def ocr_extract(file: UploadFile = File(...), table_only: bool = False):
             "tableOnly": table_only
         }
     except Exception as e:
+        log.error("OCR işlem hatası: %s", e, exc_info=True)
         raise HTTPException(500, f"OCR hatası: {str(e)}")
 
 

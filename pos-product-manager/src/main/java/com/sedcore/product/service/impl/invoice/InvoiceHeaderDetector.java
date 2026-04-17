@@ -22,8 +22,11 @@ import java.util.*;
  */
 public class InvoiceHeaderDetector {
 
-    /** Başlık kabulü için gereken minimum sütun tipi eşleşmesi. */
+    /** Başlık kabulü için gereken minimum sütun tipi eşleşmesi (normal mod). */
     private static final int MATCH_THRESHOLD = 3;
+
+    /** Gevşek başlık kabulü için minimum sütun tipi eşleşmesi (fallback). */
+    private static final int MATCH_THRESHOLD_RELAXED = 2;
 
     /** Sütun tipi → anahtar sözcük listesi */
     private static final Map<ColumnType, List<String>> KEYWORDS = new LinkedHashMap<>();
@@ -159,26 +162,11 @@ public class InvoiceHeaderDetector {
                 "amount" // bazı İngilizce faturalarda quantity için kullanılır
         ));
 
-        // ── UNIT ──────────────────────────────────────────────────────────────
-        // Birim / ölçü birimi sütunu.
-        KEYWORDS.put(ColumnType.UNIT, List.of(
-                // Türkçe
-                "birim", "birimi",
-                "birim adı", "birim adi",
-                "ölçü birimi", "olcu birimi",
-                "ölçü", "olcu",
-                "ölçü br", "ölçü br.",
-                "br.", "br",
-                "brm",
-                // İngilizce
-                "unit", "unit of measure", "uom",
-                "measure", "u/m", "u.m.",
-                "um"
-        ));
-
         // ── UNIT_PRICE ────────────────────────────────────────────────────────
         // Birim fiyat sütunu.
-        // "fiyat" tek başına hem satış hem alış hem liste fiyatı olabilir.
+        // UNIT'ten ÖNCE tanımlanmalı: "Birim Fiyat" hücresi hem "birim" (UNIT) hem
+        // "birim fiyat" (UNIT_PRICE) ile eşleşir. LinkedHashMap sırası = öncelik sırası;
+        // UNIT_PRICE önce gelirse detect() → iterator().next() doğru tipi döner.
         KEYWORDS.put(ColumnType.UNIT_PRICE, List.of(
                 // Türkçe — birim fiyat (bileşik — önce bunlar kontrol edilmeli)
                 "birim fiyat", "birim fiyatı", "birim fiyati",
@@ -211,6 +199,25 @@ public class InvoiceHeaderDetector {
                 "rate", "rate per unit",
                 "p/u", "u.price", "uprice",
                 "list price", "net price"
+        ));
+
+        // ── UNIT ──────────────────────────────────────────────────────────────
+        // Birim / ölçü birimi sütunu.
+        // UNIT_PRICE'tan SONRA tanımlanmalı — "birim" içeren bileşik ifadeler
+        // (birim fiyat, birim adı vb.) önce UNIT_PRICE ile eşleşsin.
+        KEYWORDS.put(ColumnType.UNIT, List.of(
+                // Türkçe
+                "birim", "birimi",
+                "birim adı", "birim adi",
+                "ölçü birimi", "olcu birimi",
+                "ölçü", "olcu",
+                "ölçü br", "ölçü br.",
+                "br.", "br",
+                "brm",
+                // İngilizce
+                "unit", "unit of measure", "uom",
+                "measure", "u/m", "u.m.",
+                "um"
         ));
 
         // ── VAT ───────────────────────────────────────────────────────────────
@@ -308,9 +315,19 @@ public class InvoiceHeaderDetector {
     }
 
     /**
-     * Eşleşen sütun tipi sayısı ≥ {@value #MATCH_THRESHOLD} ise başlık satırı.
+     * Eşleşen sütun tipi sayısı ≥ {@value #MATCH_THRESHOLD} ise başlık satırı (katı mod).
      */
     public static boolean isHeader(String line) {
         return detect(line).size() >= MATCH_THRESHOLD;
+    }
+
+    /**
+     * Gevşek başlık tespiti: ≥ {@value #MATCH_THRESHOLD_RELAXED} sütun tipi eşleşmesi yeterli.
+     *
+     * <p>Sade fatura formatlarında (örn: yalnızca "Ürün Adı | Adet | Fiyat" gibi 2 sütunlu)
+     * katı mod başlık bulamazsa bu metod fallback olarak kullanılır.
+     */
+    public static boolean isHeaderRelaxed(String line) {
+        return detect(line).size() >= MATCH_THRESHOLD_RELAXED;
     }
 }

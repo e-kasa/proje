@@ -1587,6 +1587,13 @@ VALUES
     ('bnd-pd184-0000-0000-000000000184', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'stock.value_report_subtitle',     'Stok değer analizi',          'Stock value analysis'),
     ('bnd-pd185-0000-0000-000000000185', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'common.options',                  'Seçenekler',                  'Options'),
 
+    -- ── Varyant barkod / QR yazdırma ─────────────────────────────────────────
+    ('bnd-pd186-0000-0000-000000000186', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.select_variant',          'Varyant Seç',                 'Select Variant'),
+    ('bnd-pd187-0000-0000-000000000187', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.code_type',               'Kod Türü',                    'Code Type'),
+    ('bnd-pd188-0000-0000-000000000188', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.barcode_code128',         'Barkod (128)',                'Barcode (128)'),
+    ('bnd-pd189-0000-0000-000000000189', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.qr_code',                 'QR Kod',                      'QR Code'),
+    ('bnd-pd190-0000-0000-000000000190', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.variant_and_barcode',     'Varyant & Barkod',            'Variant & Barcode'),
+
     -- ── BATCH (Toplu giriş) ───────────────────────────────────────
     ('bnd-bt001-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.add_manual', 'Manuel Ekle', 'Add Manual'),
     ('bnd-bt002-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.add_manual_row', 'Manuel Satır Ekle', 'Add Manual Row'),
@@ -1760,6 +1767,12 @@ VALUES
     ('bnd-bt159-0000-0000-000000000159', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.total_stock',         'Toplam Stok',              'Total Stock'),
     ('bnd-bt160-0000-0000-000000000160', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.apply_to_variants',   'Varyantlara Uygula',       'Apply to Variants'),
 
+    -- ── BELGE ANALİZİ — varyant grup + OCR ────────────────────────
+    ('bnd-bt161-0000-0000-000000000161', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.ocr_scanned_pdf_warning',  'Bu belge taranmış görüntüden okundu. OCR sonuçlarını doğrulayın.', 'This document was read via OCR from a scanned image. Please verify the results.'),
+    ('bnd-bt162-0000-0000-000000000162', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.document_total_items',     'Kalem',   'Items'),
+    ('bnd-bt163-0000-0000-000000000163', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.document_found_items',     'Mevcut',  'Existing'),
+    ('bnd-bt164-0000-0000-000000000164', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.document_new_items',       'Yeni',    'New'),
+
     -- ── WIZARD (Ürün ekleme adımları) ─────────────────────────────
     ('bnd-wz001-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.changes_will_be_lost', 'Değişiklikler kaybolacak', 'Changes will be lost'),
     ('bnd-wz002-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.exit', 'Çıkış', 'Exit'),
@@ -1828,14 +1841,20 @@ VALUES
     ('bnd-cm002-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'common.not_found', 'Bulunamadı', 'Not Found'),
     ('bnd-cm003-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'common.current', 'Güncel', 'Current'),
     ('bnd-cm004-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'common.user', 'Kullanıcı', 'User'),
-    ('bnd-cm005-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'common.note', 'Not', 'Note'),
+    ('bnd-cm005-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'common.note',   'Not',    'Note'),
+    ('bnd-cm006-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'common.piece',  'adet',   'pcs'),
+    ('bnd-cm007-0000-0000-000000000007', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'common.code',   'Kod',    'Code'),
     ('bnd-vl001-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'validation.invalid', 'Geçersiz değer', 'Invalid value'),
     ('bnd-pt001-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.tech_info', 'Teknoloji Bilgileri', 'Technology Info'),
     ('bnd-pt002-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.serial_number', 'Seri Numarası', 'Serial Number'),
     ('bnd-pt003-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.hint_serial_no', 'Seri numarasını girin', 'Enter serial number'),
     ('bnd-pt004-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.hint_imei', 'IMEI numarasını girin', 'Enter IMEI number'),
     ('bnd-pt005-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.warranty_period', 'Garanti Süresi', 'Warranty Period'),
-    ('bnd-pt006-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.hint_warranty', 'Örn: 24 ay', 'E.g. 24 months')
+    ('bnd-pt006-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.hint_warranty',  'Örn: 24 ay',  'E.g. 24 months'),
+    ('bnd-pd191-0000-0000-000000000191', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.relationships',  'İlişkiler',   'Relationships'),
+    ('bnd-pd192-0000-0000-000000000192', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.add_oem',        'OEM Ekle',    'Add OEM'),
+    ('bnd-pd193-0000-0000-000000000193', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.add_cross_ref',  'Çapraz Ref Ekle', 'Add Cross Ref'),
+    ('bnd-sm025-0000-0000-000000000025', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'stock.movement_type',    'Hareket Türü', 'Movement Type')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================

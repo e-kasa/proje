@@ -14,11 +14,16 @@ public class ColumnAwareLineParser {
             Pattern.compile("(\\d{1,8}(?:[.,]\\d{1,4})?)");
 
     private static final Pattern UNIT_PATTERN =
-            Pattern.compile("\\b(ADET|ADT|KG|KGR|LT|LTR|MT|MTR|M2|PAKET|PKT|KUTU|KTU|PCS|GR|GRAM)\\b",
+            Pattern.compile("\\b(ADET|ADT|AD|KG|KGR|LT|LTR|MT|MTR|M2|PAKET|PKT|KUTU|KTU|PCS|GR|GRAM)\\b",
                     Pattern.CASE_INSENSITIVE);
 
+    // %0 (KDV muaf) dahil tüm geçerli KDV oranları
     private static final Pattern VAT_PATTERN = Pattern.compile(
-            "(?:%\\s*(1|8|10|18|20)\\b|\\b(1|8|10|18|20)\\s*%)", Pattern.CASE_INSENSITIVE);
+            "(?:%\\s*(0|1|8|10|18|20)\\b|\\b(0|1|8|10|18|20)\\s*%)", Pattern.CASE_INSENSITIVE);
+
+    // Satır başındaki sıra numarası: "1 ", "2. " gibi ön ekler
+    private static final java.util.regex.Pattern ROW_NUM_PREFIX =
+            java.util.regex.Pattern.compile("^\\d{1,3}[.\\s]+");
 
     private final ColumnPositionMapper mapper;
 
@@ -32,10 +37,11 @@ public class ColumnAwareLineParser {
     public ParsedLine parse(String dataLine) {
         ParsedLine result = new ParsedLine();
 
-        // Ürün adı
+        // Ürün adı — sıra numarası prefix'i temizle
         String desc = mapper.extract(dataLine, ColumnType.DESCRIPTION);
         if (desc != null && !desc.isBlank()) {
-            result.name = desc.trim();
+            desc = ROW_NUM_PREFIX.matcher(desc.trim()).replaceFirst("").trim();
+            if (!desc.isBlank()) result.name = desc.substring(0, Math.min(desc.length(), 200));
         }
 
         // Ürün kodu

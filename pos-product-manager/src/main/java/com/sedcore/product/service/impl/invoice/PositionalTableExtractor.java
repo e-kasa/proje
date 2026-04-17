@@ -34,19 +34,29 @@ public class PositionalTableExtractor {
 
     // ── Eşikler ───────────────────────────────────────────────────────────────
 
-    /** Aynı metin satırında sayılmak için Y farkı toleransı (pt). */
-    private static final float ROW_Y_TOLERANCE = 3.0f;
+    /**
+     * Aynı metin satırında sayılmak için Y farkı toleransı (pt).
+     * 4pt → 3.9pt Y farkına kadar aynı satır sayılır.
+     * Önceki 3.0f ile Math.round() kullanımı tutarsız bucket'lara yol açıyordu.
+     */
+    private static final float ROW_Y_TOLERANCE = 4.0f;
 
     /** Aynı hücre içinde sayılmak için maksimum fragment boşluğu (pt). */
     private static final float WORD_GAP = 6.0f;
 
-    /** Yeni hücre başlangıcı için minimum boşluk (pt). */
-    private static final float COLUMN_GAP = 18.0f;
+    /**
+     * Yeni hücre başlangıcı için minimum boşluk (pt).
+     * 12pt → GİB e-Arşiv gibi 10 sütunlu yoğun tablolarda "Sıra" ve "Mal Hizmet"
+     * arasındaki dar boşluğu (≈12pt) doğru böler; 18pt ile bunlar tek hücreye birleşiyordu.
+     */
+    private static final float COLUMN_GAP = 12.0f;
 
-    /** Tablo sonu olarak değerlendirilen satır başlangıçları (küçük harf). */
-    private static final Set<String> FOOTER_PREFIXES = Set.of(
-            "toplam", "genel toplam", "ara toplam", "subtotal", "total",
-            "kdv toplam", "kdv matrah", "vergi toplam",
+    /**
+     * Kesin footer satırları — tek başına veya çok kelimeli ama ürün adında çıkması imkânsız.
+     * startsWith() ile eşleşir → hemen footer kabul edilir.
+     */
+    private static final Set<String> SPECIFIC_FOOTER_PREFIXES = Set.of(
+            "genel toplam", "ara toplam", "kdv toplam", "kdv matrah", "vergi toplam",
             "ödenecek", "odenecek", "net toplam",
             "iban", "banka", "hesap no", "açıklama:", "aciklama:",
             // e-Arşiv fatura özet satırları
@@ -61,6 +71,15 @@ public class PositionalTableExtractor {
             "i̇ade edilen", "iade edilen",
             "hesap bilgileri",
             "e-arşiv", "e-arsiv"
+    );
+
+    /**
+     * Belirsiz footer kelimeleri — ürün adında da geçebilir.
+     * Örnek: "Toplam Koru Yağı" ürün, "Toplam 1.234,56" footer.
+     * Kural: kelimeden sonra harf geliyorsa ürün adı → footer DEĞİL.
+     */
+    private static final Set<String> AMBIGUOUS_FOOTER_WORDS = Set.of(
+            "toplam", "total", "subtotal", "grand total"
     );
 
     // ── Sonuç modeli ─────────────────────────────────────────────────────────
@@ -96,7 +115,7 @@ public class PositionalTableExtractor {
             // Y koordinatına göre satırlara grupla
             TreeMap<Integer, List<TextFragment>> rowBuckets = groupByRow(fragments);
 
-            // Satırları oluştur (Y büyükten küçüğe = görsel üstten alta)
+            // Satırları oluştur (Y büyükten küçüğe = görsel üstten alta — standart PDF)
             List<TableRow> allRows = buildRows(rowBuckets);
             if (allRows.isEmpty()) {
                 return Optional.empty();
@@ -104,6 +123,29 @@ public class PositionalTableExtractor {
 
             // Başlık satırını bul
             int headerIdx = findHeaderRow(allRows);
+
+            // ── Y koordinat yönü düzeltmesi ──────────────────────────────────
+            // Bazı PDF üreticileri (HTML→PDF, web muhasebe sistemleri, POS yazılımları vb.)
+            // ekran koordinat sistemini kullanır: Y=0 sol-üst, aşağıya doğru artar.
+            // Bu durumda TreeMap(reverseOrder()) sayfayı ALT→ÜST sıralar:
+            //   allRows[0] = sayfa altı (footer), ..., allRows[son] = sayfa üstü
+            // Sonuç: başlık satırı listenin ortasından sonra bulunur;
+            //        başlık "sonrası" data olarak üst-sayfa (başlık öncesi) içerik gelir.
+            //
+            // Tespit: başlık listenin %50'sinden sonra → Y ters → listeyi ters çevir.
+            if (headerIdx < 0 || (allRows.size() > 4 && headerIdx > allRows.size() / 2)) {
+                List<TableRow> reversed = new ArrayList<>(allRows);
+                Collections.reverse(reversed);
+                int revIdx = findHeaderRow(reversed);
+                boolean reversedIsBetter = revIdx >= 0 && (headerIdx < 0 || revIdx < headerIdx);
+                if (reversedIsBetter) {
+                    allRows = reversed;
+                    headerIdx = revIdx;
+                    log.debug("PositionalTableExtractor: Ters Y koordinatı tespit edildi — " +
+                              "sıra düzeltildi (başlık: {}/{})", headerIdx, allRows.size());
+                }
+            }
+
             if (headerIdx < 0) {
                 log.debug("PositionalTableExtractor: Başlık satırı bulunamadı — regex yoluna düşülüyor");
                 return Optional.empty();
@@ -127,14 +169,17 @@ public class PositionalTableExtractor {
 
     /**
      * Fragment'ları Y toleransına göre integer bucket'lara gruplar.
-     * Bucket key = round(y / ROW_Y_TOLERANCE) * ROW_Y_TOLERANCE.
-     * TreeMap ters sıra → büyük Y = görsel üst = ilk satır.
+     *
+     * <p>Bucket key = floor(y / ROW_Y_TOLERANCE).
+     * Floor tabanlı bölme tutarlı bucket sınırları verir; önceki Math.round() yaklaşımı
+     * bitişik Y değerlerini farklı bucket'lara düşürüyordu (örn: 10.4 → 9, 10.5 → 12).
+     * TreeMap ters sıra → büyük bucket = görsel üst = ilk satır.
      */
     private static TreeMap<Integer, List<TextFragment>> groupByRow(List<TextFragment> fragments) {
-        // Ters sıra: büyük Y değeri (görsel üst) → önce gelir
         TreeMap<Integer, List<TextFragment>> map = new TreeMap<>(Comparator.reverseOrder());
         for (TextFragment f : fragments) {
-            int bucket = Math.round(f.y() / ROW_Y_TOLERANCE) * Math.round(ROW_Y_TOLERANCE);
+            // Floor tabanlı bucket: [0, 4) → 0, [4, 8) → 1, vb.
+            int bucket = (int)(f.y() / ROW_Y_TOLERANCE);
             map.computeIfAbsent(bucket, k -> new ArrayList<>()).add(f);
         }
         return map;
@@ -206,12 +251,23 @@ public class PositionalTableExtractor {
 
     // ── Başlık tespiti ────────────────────────────────────────────────────────
 
+    /**
+     * Başlık satırını arar. Önce katı eşleme (≥3 kolon), bulunamazsa
+     * gevşek eşleme (≥2 kolon) ile tekrar dener.
+     */
     private static int findHeaderRow(List<TableRow> rows) {
-        // e-Arşiv fatura gibi karmaşık belgelerde başlık satırı 40-50. satırda olabilir.
-        // Tüm satırları tara — ilk eşleşen başlık satırıdır.
+        // 1. Katı eşleme: ≥3 sütun tipi
         for (int i = 0; i < rows.size(); i++) {
-            String fullText = rows.get(i).fullText();
-            if (InvoiceHeaderDetector.isHeader(fullText)) {
+            if (InvoiceHeaderDetector.isHeader(rows.get(i).fullText())) {
+                return i;
+            }
+        }
+        // 2. Gevşek eşleme: ≥2 sütun tipi (sade fatura formatları için)
+        log.debug("PositionalTableExtractor: Katı başlık bulunamadı — gevşek mod deneniyor");
+        for (int i = 0; i < rows.size(); i++) {
+            if (InvoiceHeaderDetector.isHeaderRelaxed(rows.get(i).fullText())) {
+                log.debug("PositionalTableExtractor: Gevşek başlık → satır {}: '{}'",
+                        i, rows.get(i).fullText());
                 return i;
             }
         }
@@ -238,10 +294,23 @@ public class PositionalTableExtractor {
     }
 
     private static boolean isTableFooter(String text) {
-        String lower = text.toLowerCase();
-        for (String prefix : FOOTER_PREFIXES) {
-            if (lower.startsWith(prefix)) {
-                return true;
+        String lower = text.toLowerCase().trim();
+
+        // 1. Kesin footer prefix'leri — her zaman durdur
+        for (String prefix : SPECIFIC_FOOTER_PREFIXES) {
+            if (lower.startsWith(prefix)) return true;
+        }
+
+        // 2. Belirsiz kelimeler — sonrasında harf varsa ürün adı, footer değil
+        //    "Toplam Koru Yağı" → harf var → ürün  ✓
+        //    "Toplam 1.234,56"  → harf yok → footer ✓
+        //    "Toplam"           → boş → footer ✓
+        for (String word : AMBIGUOUS_FOOTER_WORDS) {
+            if (lower.startsWith(word)) {
+                String remainder = lower.substring(word.length()).trim();
+                if (remainder.isEmpty() || !Character.isLetter(remainder.charAt(0))) {
+                    return true;
+                }
             }
         }
         return false;

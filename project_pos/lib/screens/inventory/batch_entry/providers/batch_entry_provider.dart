@@ -86,13 +86,68 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
       final vat = item.vatRate ?? 20.0;
       final vatIncluded = item.vatIncluded ?? false;
       final unitId = _mapUnit(item.unit);
+      final productName =
+          item.matchedProductName ?? item.extractedName ?? item.rawText;
 
+      // ── Durum 2: Varyant grubu (birden fazla beden/renk satırı) ──────────
+      if (item.variantGroup && item.variants.isNotEmpty) {
+        // Her DocumentVariantItem → BatchVariantRow
+        final variantRows = item.variants.map((v) {
+          final isSize = v.attributeType == 'SIZE';
+          return BatchVariantRow(
+            size: isSize ? v.attributeValue : '',
+            color: isSize ? '' : v.attributeValue,
+            barcode: v.barcode ?? '',
+            quantity: v.quantity?.toInt() ?? 1,
+            purchasePrice: v.unitPrice ?? item.extractedUnitPrice,
+            salePrice: v.unitPrice ?? item.extractedUnitPrice,
+            attributesMap: {
+              if (isSize)
+                'Numara': v.attributeValue
+              else
+                'Renk': v.attributeValue,
+            },
+          );
+        }).toList();
+
+        if (item.isFound && item.matchedProductId != null) {
+          // Mevcut ürün — varyant grubu olarak existing
+          return BatchEntryRow(
+            productName: productName,
+            barcode: item.extractedCode ?? '',
+            quantity: item.extractedQuantity?.toInt() ?? variantRows.fold(0, (s, v) => s + v.quantity),
+            purchasePrice: item.extractedUnitPrice ?? 0,
+            salePrice: item.extractedUnitPrice ?? 0,
+            vatRate: vat,
+            vatIncluded: vatIncluded,
+            unitId: unitId,
+            status: RowStatus.existing,
+            existingVariantId: item.matchedVariantId,
+            existingProductId: item.matchedProductId,
+            existingVariantSku: item.matchedSku,
+            variantRows: variantRows,
+          );
+        } else {
+          // Yeni ürün — varyant grubu
+          return BatchEntryRow(
+            productName: item.extractedName ?? item.rawText,
+            barcode: item.extractedCode ?? '',
+            quantity: item.extractedQuantity?.toInt() ?? variantRows.fold(0, (s, v) => s + v.quantity),
+            purchasePrice: item.extractedUnitPrice ?? 0,
+            salePrice: item.extractedUnitPrice ?? 0,
+            vatRate: vat,
+            vatIncluded: vatIncluded,
+            unitId: unitId,
+            status: RowStatus.newProduct,
+            variantRows: variantRows,
+          );
+        }
+      }
+
+      // ── Durum 1: Tekil satır ──────────────────────────────────────────────
       if (item.isFound && item.matchedVariantId != null) {
-        // Mevcut ürün → existing satır
         return BatchEntryRow(
-          productName: item.matchedProductName ??
-              item.extractedName ??
-              item.rawText,
+          productName: productName,
           barcode: item.extractedCode ?? '',
           quantity: item.extractedQuantity?.toInt() ?? 1,
           purchasePrice: item.extractedUnitPrice ?? 0,
@@ -106,7 +161,6 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
           existingVariantSku: item.matchedSku,
         );
       } else {
-        // Yeni ürün → newProduct satır
         return BatchEntryRow(
           productName: item.extractedName ?? item.rawText,
           barcode: item.extractedCode ?? '',

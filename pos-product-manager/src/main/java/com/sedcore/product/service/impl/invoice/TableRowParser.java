@@ -31,12 +31,14 @@ public class TableRowParser {
     private static final Pattern NUMBER_PATTERN =
             Pattern.compile("(\\d{1,8}(?:[.,]\\d{1,4})?)");
 
+    // "ad" = adet kısaltması (Satış Notu, POS fişlerinde yaygın)
     private static final Pattern UNIT_PATTERN =
-            Pattern.compile("\\b(ADET|ADT|KG|KGR|LT|LTR|MT|MTR|M2|PAKET|PKT|KUTU|KTU|PCS|GR|GRAM)\\b",
+            Pattern.compile("\\b(ADET|ADT|AD|KG|KGR|LT|LTR|MT|MTR|M2|PAKET|PKT|KUTU|KTU|PCS|GR|GRAM)\\b",
                     Pattern.CASE_INSENSITIVE);
 
+    // %0 dahil tüm geçerli KDV oranlarını yakala (0, 1, 8, 10, 18, 20)
     private static final Pattern VAT_PATTERN = Pattern.compile(
-            "(?:%\\s*(1|8|10|18|20)\\b|\\b(1|8|10|18|20)\\s*%)", Pattern.CASE_INSENSITIVE);
+            "(?:%\\s*(0|1|8|10|18|20)\\b|\\b(0|1|8|10|18|20)\\s*%)", Pattern.CASE_INSENSITIVE);
 
     private static final Pattern BARCODE_PATTERN =
             Pattern.compile("\\b(\\d{13})\\b");
@@ -68,23 +70,28 @@ public class TableRowParser {
         for (TableCell cell : headerRow.getCells()) {
             String text = cell.trimmedText();
             Set<ColumnType> detected = InvoiceHeaderDetector.detect(text);
-            if (!detected.isEmpty()) {
-                ColumnType type = detected.iterator().next();
-                boolean alreadyMapped = mappings.stream()
-                        .anyMatch(m -> m.type() == type);
+            if (detected.isEmpty()) continue;
 
-                if (alreadyMapped) {
-                    // TOTAL için özel kural: en sağdaki sütun kazanır.
-                    // "İskonto Tutarı" değil, "Mal Hizmet Tutarı" gibi asıl toplam sütunu seçilir.
-                    if (type == ColumnType.TOTAL) {
-                        mappings.removeIf(m -> m.type() == ColumnType.TOTAL);
-                        mappings.add(new ColumnMapping(type, cell.xStart(), cell.xEnd()));
-                        log.debug("TableRowParser: TOTAL sütunu güncellendi → '{}' (x={})", text, cell.xStart());
-                    }
-                    // Diğer türler: ilk eşleşme kalır
-                } else {
+            // TOTAL için özel kural: en sağdaki sütun her zaman kazanır.
+            // "İskonto Tutarı" değil, "Mal Hizmet Tutarı" gibi asıl toplam sütunu seçilir.
+            // "Mal Hizmet Tutarı" → {DESCRIPTION, TOTAL}: önce TOTAL güncellenir,
+            // ardından DESCRIPTION zaten eşlenmiş olduğu için atlanır.
+            if (detected.contains(ColumnType.TOTAL)) {
+                mappings.removeIf(m -> m.type() == ColumnType.TOTAL);
+                mappings.add(new ColumnMapping(ColumnType.TOTAL, cell.xStart(), cell.xEnd()));
+                log.debug("TableRowParser: TOTAL sütunu güncellendi → '{}' (x={})", text, cell.xStart());
+            }
+
+            // Non-TOTAL türler: detected set içinde ilk henüz eşlenmemiş türü al.
+            // Birden fazla ColumnType eşleşirse (örn. "Birim Fiyat" → UNIT_PRICE + UNIT)
+            // sadece ilk uygun tür işlenir — geri kalanlar o hücreye ait değildir.
+            for (ColumnType type : detected) {
+                if (type == ColumnType.TOTAL) continue; // yukarıda işlendi
+                boolean alreadyMapped = mappings.stream().anyMatch(m -> m.type() == type);
+                if (!alreadyMapped) {
                     mappings.add(new ColumnMapping(type, cell.xStart(), cell.xEnd()));
                     log.debug("TableRowParser: '{}' → {} (xStart={})", text, type, cell.xStart());
+                    break; // Bu hücreden yalnızca bir non-TOTAL tür eşle
                 }
             }
         }
@@ -124,6 +131,12 @@ public class TableRowParser {
         return parseWithHeader(dataRow);
     }
 
+    // Satır başındaki sıra numarasını temizleyen regex:
+    // "1 Ürün Adı", "1. Ürün", "01 Ürün", "1.2 Ürün" gibi desenleri temizler.
+    // Sadece 1-3 basamaklı sayı, ardından nokta/boşluk → temizle.
+    private static final Pattern ROW_NUMBER_PREFIX =
+            Pattern.compile("^\\d{1,3}[.\\s]+");
+
     // ── Başlıklı mod ──────────────────────────────────────────────────────────
 
     private ParsedLine parseWithHeader(TableRow dataRow) {
@@ -131,6 +144,10 @@ public class TableRowParser {
 
         // Sütun bölgelerini hesapla (her eşlemede bir kez)
         List<float[]> regions = buildColumnRegions();
+
+        // ROW_NUMBER sütunu eşlenmiş mi? (varsa o hücreyi description'dan çıkar)
+        boolean hasRowNumberCol = columnMappings.stream()
+                .anyMatch(m -> m.type() == ColumnType.ROW_NUMBER);
 
         // Her veri hücresini bölge bazlı kolon eşlemesine ata
         Map<ColumnType, List<String>> assigned = new EnumMap<>(ColumnType.class);
@@ -145,7 +162,15 @@ public class TableRowParser {
         // Ürün adı
         String desc = joinCells(assigned.get(ColumnType.DESCRIPTION));
         if (desc != null && !desc.isBlank()) {
-            result.name = desc.trim().substring(0, Math.min(desc.trim().length(), 200));
+            desc = desc.trim();
+            // Sıra numarası sütunu ayrıca eşlenmemişse, description başındaki rakamı temizle
+            // Örn: "1 Motor Yağı" → "Motor Yağı" (1 sıra nosunun description'a taşması)
+            if (!hasRowNumberCol) {
+                desc = ROW_NUMBER_PREFIX.matcher(desc).replaceFirst("").trim();
+            }
+            if (!desc.isBlank()) {
+                result.name = desc.substring(0, Math.min(desc.length(), 200));
+            }
         }
 
         // Kod (barkod / OEM)
@@ -227,51 +252,66 @@ public class TableRowParser {
     /**
      * Başlık yoksa sütun sırasına göre heuristic atama:
      * İlk büyük metin hücresi → açıklama, sayılar → miktar/fiyat.
+     *
+     * <p>Önemli: Satırın ilk hücresi tek küçük tam sayı ise (1-99) büyük ihtimalle
+     * sıra numarasıdır — description veya quantity olarak kullanılmaz, atlanır.
      */
     private ParsedLine parseWithoutHeader(TableRow dataRow) {
         ParsedLine result = new ParsedLine();
         List<Double> numbers = new ArrayList<>();
+        List<TableCell> cells = dataRow.getCells();
 
-        for (TableCell cell : dataRow.getCells()) {
+        for (int cellIdx = 0; cellIdx < cells.size(); cellIdx++) {
+            TableCell cell = cells.get(cellIdx);
             String text = cell.trimmedText();
             if (text.isBlank()) continue;
 
-            // Barkod testi
+            // İlk hücre tek küçük tam sayı → büyük ihtimalle sıra no, atla
+            if (cellIdx == 0 && text.matches("\\d{1,3}") && result.name == null) {
+                double v = Double.parseDouble(text);
+                if (v >= 1 && v <= 999) {
+                    continue; // sıra no olarak atla
+                }
+            }
+
+            // Barkod testi (13 rakam)
             if (BARCODE_PATTERN.matcher(text).matches()) {
                 result.code = text;
                 result.codeType = "BARCODE";
                 continue;
             }
 
-            // Sayısal hücre
-            Double num = parseNumber(text);
-            if (num != null && text.replaceAll("[0-9.,]", "").isBlank()) {
-                numbers.add(num);
-                continue;
-            }
-
-            // Birim
+            // Birim (tam eşleşme)
             Matcher um = UNIT_PATTERN.matcher(text);
             if (um.matches()) {
                 result.unit = um.group(1).toUpperCase();
                 continue;
             }
 
-            // Metin → açıklama
+            // Saf sayısal hücre
+            Double num = parseNumber(text);
+            if (num != null && text.replaceAll("[0-9.,\\s]", "").isBlank()) {
+                numbers.add(num);
+                continue;
+            }
+
+            // Metin → açıklama (harf içeriyorsa)
             if (result.name == null && text.length() >= 3 &&
                     text.matches(".*[a-zA-ZğüşıöçĞÜŞİÖÇ].*")) {
                 result.name = text.substring(0, Math.min(text.length(), 200));
             }
         }
 
-        // Sayıları miktar/fiyat olarak ata
+        // Sayıları miktar/fiyat/toplam olarak ata
         if (!numbers.isEmpty()) {
-            // Tam sayı küçük değer → miktar
+            // Tam sayı, küçük değer (1-9999) → miktar adayı
             for (Double n : numbers) {
                 if (n == Math.floor(n) && n >= 1 && n <= 9999 && result.quantity == null) {
                     result.quantity = n;
+                    break;
                 }
             }
+            // Kalan sayılar fiyat/toplam
             List<Double> prices = numbers.stream()
                     .filter(n -> !n.equals(result.quantity))
                     .sorted()

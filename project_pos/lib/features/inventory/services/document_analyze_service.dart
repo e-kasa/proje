@@ -50,12 +50,20 @@ class DocumentAnalyzeResult {
   final int notFoundItems;
   final List<DocumentAnalyzeItem> items;
 
+  /// true → belge taranmış görüntüydü, Python OCR ile işlendi.
+  final bool scannedPdf;
+
+  /// Parse yöntemi: "POSITIONAL" | "REGEX" | "OCR"
+  final String? parseMethod;
+
   const DocumentAnalyzeResult({
     required this.fileName,
     required this.totalItems,
     required this.foundItems,
     required this.notFoundItems,
     required this.items,
+    this.scannedPdf = false,
+    this.parseMethod,
   });
 
   factory DocumentAnalyzeResult.fromJson(Map<String, dynamic> json) {
@@ -67,6 +75,47 @@ class DocumentAnalyzeResult {
       items: (json['items'] as List<dynamic>? ?? [])
           .map((e) => DocumentAnalyzeItem.fromJson(e as Map<String, dynamic>))
           .toList(),
+      scannedPdf: json['scannedPdf'] as bool? ?? false,
+      parseMethod: json['parseMethod'] as String?,
+    );
+  }
+}
+
+// ── VARYANT KALEMİ ──────────────────────────────────────────────────────────
+
+/// Tek bir beden/renk/numara kombinasyonu (Durum 2 — her varyant ayrı satır)
+class DocumentVariantItem {
+  /// "XL", "Siyah", "42" vb.
+  final String attributeValue;
+
+  /// "SIZE" | "COLOR" | "OTHER"
+  final String attributeType;
+
+  final double? quantity;
+
+  /// null → ana satırdan miras alınır
+  final double? unitPrice;
+
+  final String? barcode;
+  final String? rawText;
+
+  const DocumentVariantItem({
+    required this.attributeValue,
+    required this.attributeType,
+    this.quantity,
+    this.unitPrice,
+    this.barcode,
+    this.rawText,
+  });
+
+  factory DocumentVariantItem.fromJson(Map<String, dynamic> json) {
+    return DocumentVariantItem(
+      attributeValue: json['attributeValue'] as String? ?? '',
+      attributeType: json['attributeType'] as String? ?? 'OTHER',
+      quantity: (json['quantity'] as num?)?.toDouble(),
+      unitPrice: (json['unitPrice'] as num?)?.toDouble(),
+      barcode: json['barcode'] as String?,
+      rawText: json['rawText'] as String?,
     );
   }
 }
@@ -93,7 +142,14 @@ class DocumentAnalyzeItem {
 
   // ── Sprint 1 ekleme: eşleşme güveni + uyarı bayrakları ──
   final double? matchConfidence;       // BARCODE=1.0, OEM=0.9, NAME=0.5, NOT_FOUND=0.0
-  final List<String> warningFlags;     // NAME_MATCH_UNCERTAIN | PRICE_MISMATCH | NO_PRICE | DUPLICATE_MERGED
+  final List<String> warningFlags;     // NAME_MATCH_UNCERTAIN | PRICE_MISMATCH | NO_PRICE | DUPLICATE_MERGED | VARIANT_GROUP | OCR_PROCESSED
+
+  // ── Varyant grup alanları ──────────────────────────────────────────────────
+  /// true → bu satır birden fazla varyantın gruplanmış hali (Durum 2)
+  final bool variantGroup;
+
+  /// Varyant alt satırları — yalnızca variantGroup=true ise dolu
+  final List<DocumentVariantItem> variants;
 
   const DocumentAnalyzeItem({
     required this.rowIndex,
@@ -114,9 +170,12 @@ class DocumentAnalyzeItem {
     this.totalPrice,
     this.matchConfidence,
     this.warningFlags = const [],
+    this.variantGroup = false,
+    this.variants = const [],
   });
 
-  bool get isFound => matchStatus == 'FOUND';
+  bool get isFound        => matchStatus == 'FOUND';
+  bool get isOcrProcessed => warningFlags.contains('OCR_PROCESSED');
 
   bool get isNameMatch       => matchType == 'NAME';
   bool get hasPriceMismatch  => warningFlags.contains('PRICE_MISMATCH');
@@ -145,6 +204,10 @@ class DocumentAnalyzeItem {
       totalPrice: (json['totalPrice'] as num?)?.toDouble(),
       matchConfidence: (json['matchConfidence'] as num?)?.toDouble(),
       warningFlags: List<String>.from(json['warningFlags'] ?? []),
+      variantGroup: json['variantGroup'] as bool? ?? false,
+      variants: (json['variants'] as List<dynamic>? ?? [])
+          .map((e) => DocumentVariantItem.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 }

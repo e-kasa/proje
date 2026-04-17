@@ -94,16 +94,22 @@ public class ColumnPositionMapper {
                 "ürün no", "urun no", "malzeme kodu", "stok no"
         ));
         m.put(ColumnType.DESCRIPTION, List.of(
+                // GİB e-Arşiv / e-Fatura standardı — önce gelmeli
+                "mal hizmet", "mal/hizmet", "ürün/hizmet",
+                // Diğer yaygın başlıklar
                 "açıklama", "aciklama", "ürün adı", "urun adi", "malzeme",
                 "stok adı", "stok adi", "tanım", "tanim", "description",
                 "item", "parça adı", "parca adi", "product name", "ürün", "urun"
         ));
         m.put(ColumnType.QUANTITY, List.of("miktar", "mik.", "mik", "qty", "quantity", "adet", "adt"));
-        m.put(ColumnType.UNIT, List.of("birim", "br.", "br", "unit", "uom", "ölçü birimi"));
+        // UNIT_PRICE must come before UNIT so "birim fiyat" is matched as UNIT_PRICE,
+        // not as UNIT (which would happen if "birim" were checked first).
         m.put(ColumnType.UNIT_PRICE, List.of(
-                "birim fiyat", "b.fiyat", "b fiyat", "fiyat", "price",
-                "unit price", "birim f."
+                "birim fiyat", "birim fiyatı", "birim fiyati",
+                "b.fiyat", "b fiyat", "birim f.", "fiyat", "price",
+                "unit price", "net fiyat"
         ));
+        m.put(ColumnType.UNIT, List.of("birim", "br.", "br", "unit", "uom", "ölçü birimi"));
         m.put(ColumnType.VAT, List.of("kdv%", "kdv %", "kdv oranı", "kdv", "tax%", "vat"));
         m.put(ColumnType.TOTAL, List.of("toplam", "tutar", "total", "genel toplam", "amount"));
         return m;

@@ -12,10 +12,13 @@ def health():
 
 
 @app.post("/ocr/extract")
-async def ocr_extract(file: UploadFile = File(...)):
+async def ocr_extract(file: UploadFile = File(...), table_only: bool = False):
     """
     Görüntü yükle → metin döndür.
     Desteklenen: JPG, PNG, WEBP, BMP
+
+    table_only=true: Sadece sayı içeren satırları döndürür.
+    Fatura başlığı, adres, firma bilgisi gibi saf metin satırları elenir.
     """
     allowed = {'image/jpeg', 'image/png', 'image/webp', 'image/bmp'}
     if file.content_type not in allowed:
@@ -26,13 +29,14 @@ async def ocr_extract(file: UploadFile = File(...)):
         raise HTTPException(400, "Dosya 10 MB'dan büyük olamaz")
 
     try:
-        text = extract_text(contents)
+        text = extract_text(contents, table_only=table_only)
         lines = [l for l in text.split('\n') if l.strip()]
         return {
             "success": True,
             "text": text,
             "lineCount": len(lines),
-            "lines": lines
+            "lines": lines,
+            "tableOnly": table_only
         }
     except Exception as e:
         raise HTTPException(500, f"OCR hatası: {str(e)}")

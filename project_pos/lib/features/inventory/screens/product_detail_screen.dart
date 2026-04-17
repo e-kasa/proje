@@ -74,7 +74,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
       newTabs.add(_TabDef(_TabType.vehicleCompat, t('product.vehicle_compatibility'), Icons.directions_car));
     }
     newTabs.add(_TabDef(_TabType.history, t('product.history'), Icons.history));
-    newTabs.add(_TabDef(_TabType.relationships, 'İlişkiler', Icons.link));
+    newTabs.add(_TabDef(_TabType.relationships, t('product.relationships'), Icons.link));
 
     setState(() {
       _tabs = newTabs;
@@ -348,22 +348,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
                                 product['categoryName'].toString()),
                         ],
                       ),
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () => _showBarcodePrintSheet(),
-                          icon: const Icon(Icons.print_rounded, size: 16),
-                          label: Text(t('product.print_barcode')),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primary,
-                            side: const BorderSide(color: AppColors.primary),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8)),
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -478,8 +462,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
             ),
           ],
 
-          // ── Varyantlar ────────────────────────────────────────────────
-          if (variants.length > 1) ...[
+          // ── Varyantlar & Barkod ───────────────────────────────────────
+          if (variants.isNotEmpty) ...[
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(16),
@@ -495,17 +479,21 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
                     const Icon(Icons.layers_rounded,
                         size: 15, color: AppColors.textSecondary),
                     const SizedBox(width: 7),
-                    Text(
-                      '${t('product.variants')} (${variants.length})',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                    Expanded(
+                      child: Text(
+                        variants.length == 1
+                            ? t('product.variant_and_barcode')
+                            : '${t('product.variants')} (${variants.length})',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
                   ]),
                   const SizedBox(height: 12),
-                  ...variants.map((v) => _buildVariantRow(v, cfg)),
+                  ...variants.map((v) => _buildVariantRow(v, cfg, product)),
                 ],
               ),
             ),
@@ -515,12 +503,35 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
     );
   }
 
-  Widget _buildVariantRow(Map<String, dynamic> variant, SectorConfig cfg) {
-    final vStock = (variant['stock'] as num?)?.toInt() ?? 0;
+  Widget _buildVariantRow(
+    Map<String, dynamic> variant,
+    SectorConfig cfg,
+    Map<String, dynamic> product,
+  ) {
+    final vStock    = (variant['stock'] as num?)?.toInt() ?? 0;
     final stockColor = vStock == 0 ? AppColors.danger : AppColors.success;
+
+    // Varyantın barkodunu bul (barcode alanı yoksa SKU fallback)
+    // Backend: variant.barcodes[].barcodeCode  (primary öncelikli)
+    final barcodeList = (variant['barcodes'] as List?)
+        ?.cast<Map<String, dynamic>>();
+    final primaryBarcode = barcodeList
+        ?.firstWhere((b) => b['isPrimary'] == true, orElse: () => barcodeList.first)
+        ['barcodeCode']
+        ?.toString();
+    final rawBarcode = variant['barcode']?.toString() ?? primaryBarcode;
+    final vp = _VariantPrint(
+      variantId:      variant['id']?.toString() ?? '',
+      variantName:    variant['name']?.toString() ?? '',
+      barcodeValue:   rawBarcode ?? variant['sku']?.toString() ?? '',
+      hasBarcodeReal: rawBarcode != null,
+      price: (variant['salePrice'] as num?)?.toDouble()
+          ?? (product['basePrice'] as num?)?.toDouble() ?? 0.0,
+      sku: variant['sku']?.toString() ?? '',
+    );
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.bgLight,
         borderRadius: BorderRadius.circular(9),
@@ -528,41 +539,104 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
       ),
       child: Row(
         children: [
+          // ── Sol: isim + SKU + barkod bilgisi ────────────────────────
           Expanded(
-            flex: 3,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(variant['name'] ?? '-',
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 13)),
-                const SizedBox(height: 2),
-                Text('SKU: ${variant['sku'] ?? '-'}',
-                    style: const TextStyle(
-                        fontSize: 11, color: AppColors.textMuted)),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(variant['name'] ?? '-',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 13,
+                          color: AppColors.textPrimary)),
+                  const SizedBox(height: 3),
+                  Row(children: [
+                    const Icon(Icons.qr_code_rounded,
+                        size: 11, color: AppColors.textMuted),
+                    const SizedBox(width: 4),
+                    Text(
+                      vp.hasBarcodeReal
+                          ? vp.barcodeValue
+                          : 'SKU: ${vp.sku}',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: vp.hasBarcodeReal
+                            ? AppColors.textSecondary
+                            : AppColors.textMuted,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                    if (!vp.hasBarcodeReal) ...[
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: AppColors.warning.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: const Text('SKU',
+                            style: TextStyle(
+                                fontSize: 8,
+                                color: AppColors.warning,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ]),
+                ],
+              ),
             ),
           ),
+
+          // ── Orta: fiyat ──────────────────────────────────────────────
           Text(
             _currFmt.format(variant['salePrice'] ?? 0),
             style: const TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w700,
-                fontSize: 14),
+                fontSize: 13),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
+
+          // ── Stok badge ───────────────────────────────────────────────
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
             decoration: BoxDecoration(
               color: stockColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(5),
             ),
-            child: Text(
-              '$vStock',
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: stockColor),
+            child: Text('$vStock',
+                style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: stockColor)),
+          ),
+          const SizedBox(width: 4),
+
+          // ── Barkod yazdır butonu ─────────────────────────────────────
+          Material(
+            color: Colors.transparent,
+            borderRadius: const BorderRadius.horizontal(
+                right: Radius.circular(9)),
+            child: InkWell(
+              onTap: () => _showBarcodePrintSheet(vp),
+              borderRadius: const BorderRadius.horizontal(
+                  right: Radius.circular(9)),
+              child: Container(
+                height: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  border: Border(
+                      left: BorderSide(
+                          color: AppColors.border.withValues(alpha: 0.6))),
+                ),
+                child: const Icon(
+                  Icons.print_outlined,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
+              ),
             ),
           ),
         ],
@@ -572,16 +646,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
 
   // ─── BARCODE PRINT SHEET ─────────────────────────────────────────────────
 
-  void _showBarcodePrintSheet() {
+  void _showBarcodePrintSheet(_VariantPrint variantPrint) {
     if (_product == null) return;
     final product = _product!;
-    final barcodeValue = product['barcode']?.toString()
-        ?? product['sku']?.toString()
-        ?? '';
-    if (barcodeValue.isEmpty) {
-      AppToast.warning(context, t('product.no_barcode'));
-      return;
-    }
 
     showModalBottomSheet(
       context: context,
@@ -593,6 +660,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
         bool showSku   = true;
         int  quantity  = 1;
         String labelSize = 'M';
+        String codeType  = 'BARCODE'; // 'BARCODE' | 'QR'
 
         return StatefulBuilder(
           builder: (ctx, setSheet) {
@@ -616,20 +684,33 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                    // Title row
+                    // Başlık: varyant adını göster
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 0, 8, 0),
                       child: Row(
                         children: [
-                          const Icon(Icons.print_rounded, size: 18, color: AppColors.primary),
+                          const Icon(Icons.print_rounded,
+                              size: 18, color: AppColors.primary),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: Text(t('product.print_barcode'),
-                                style: const TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.textPrimary,
-                                )),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(t('product.print_barcode'),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.textPrimary,
+                                    )),
+                                if (variantPrint.variantName.isNotEmpty)
+                                  Text(
+                                    variantPrint.variantName,
+                                    style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.textMuted),
+                                  ),
+                              ],
+                            ),
                           ),
                           IconButton(
                             icon: const Icon(Icons.close_rounded),
@@ -645,12 +726,67 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
                         controller: scroll,
                         padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
                         children: [
+
                           // ── Önizleme ─────────────────────────────────
                           _buildLabelPreview(
-                            product, barcodeValue,
-                            showName, showPrice, showSku, labelSize,
+                            product, variantPrint,
+                            showName, showPrice, showSku,
+                            labelSize, codeType,
                           ),
                           const SizedBox(height: 20),
+
+                          // ── Kod türü (Barkod / QR) ────────────────────
+                          _editSectionHeader(t('product.code_type'), Icons.qr_code_2_outlined),
+                          Row(
+                            children: [
+                              for (final ct in [
+                                ('BARCODE', t('product.barcode_code128'), Icons.barcode_reader),
+                                ('QR',      t('product.qr_code'),         Icons.qr_code_2_rounded),
+                              ])
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: GestureDetector(
+                                      onTap: () => setSheet(() => codeType = ct.$1),
+                                      child: AnimatedContainer(
+                                        duration: const Duration(milliseconds: 150),
+                                        padding: const EdgeInsets.symmetric(vertical: 13),
+                                        decoration: BoxDecoration(
+                                          color: codeType == ct.$1
+                                              ? AppColors.primary.withValues(alpha: 0.1)
+                                              : AppColors.bgLight,
+                                          borderRadius: BorderRadius.circular(9),
+                                          border: Border.all(
+                                            color: codeType == ct.$1
+                                                ? AppColors.primary : AppColors.border,
+                                            width: codeType == ct.$1 ? 1.5 : 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(ct.$3, size: 16,
+                                                color: codeType == ct.$1
+                                                    ? AppColors.primary
+                                                    : AppColors.textSecondary),
+                                            const SizedBox(width: 6),
+                                            Text(ct.$2,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: codeType == ct.$1
+                                                      ? AppColors.primary
+                                                      : AppColors.textSecondary,
+                                                )),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
 
                           // ── Etiket boyutu ─────────────────────────────
                           _editSectionHeader(t('product.label_size'), Icons.straighten_outlined),
@@ -709,11 +845,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
                           const SizedBox(height: 16),
 
                           // ── Adet ──────────────────────────────────────
-                          _editSectionHeader(t('product.print_quantity'), Icons.format_list_numbered_outlined),
+                          _editSectionHeader(t('product.print_quantity'),
+                              Icons.format_list_numbered_outlined),
                           Row(
                             children: [
                               IconButton(
-                                onPressed: quantity > 1 ? () => setSheet(() => quantity--) : null,
+                                onPressed: quantity > 1
+                                    ? () => setSheet(() => quantity--)
+                                    : null,
                                 icon: const Icon(Icons.remove_circle_outline),
                                 color: AppColors.primary,
                               ),
@@ -730,7 +869,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
                                 ),
                               ),
                               IconButton(
-                                onPressed: quantity < 100 ? () => setSheet(() => quantity++) : null,
+                                onPressed: quantity < 100
+                                    ? () => setSheet(() => quantity++)
+                                    : null,
                                 icon: const Icon(Icons.add_circle_outline),
                                 color: AppColors.primary,
                               ),
@@ -758,9 +899,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
                                 ),
                               ),
                               onPressed: () => _printBarcodeLabels(
-                                ctx, product, barcodeValue,
+                                ctx, product, variantPrint,
                                 showName, showPrice, showSku,
-                                labelSize, quantity,
+                                labelSize, quantity, codeType,
                               ),
                             ),
                           ),
@@ -779,14 +920,15 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
 
   Widget _buildLabelPreview(
     Map<String, dynamic> product,
-    String barcodeValue,
+    _VariantPrint variant,
     bool showName,
     bool showPrice,
     bool showSku,
     String labelSize,
+    String codeType,
   ) {
-    final price = product['basePrice'] ?? product['price'] ?? 0;
-    final double previewH = labelSize == 'S' ? 80 : labelSize == 'M' ? 110 : 140;
+    final isQr = codeType == 'QR';
+    final double previewH = isQr ? 160 : (labelSize == 'S' ? 88 : labelSize == 'M' ? 118 : 148);
 
     return Container(
       width: double.infinity,
@@ -799,9 +941,31 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(t('product.barcode_preview'),
-              style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+          // Başlık + tür badge
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(t('product.barcode_preview'),
+                  style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+              const SizedBox(width: 7),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  isQr ? t('product.qr_code') : t('product.barcode_code128'),
+                  style: const TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 10),
+          // Etiket önizleme kartı
           Container(
             width: double.infinity,
             constraints: BoxConstraints(minHeight: previewH),
@@ -810,9 +974,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
               color: Colors.white,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: AppColors.border),
-              boxShadow: const [
-                BoxShadow(color: Color(0x08000000), blurRadius: 6),
-              ],
+              boxShadow: const [BoxShadow(color: Color(0x08000000), blurRadius: 6)],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -830,35 +992,43 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
                   ),
                   const SizedBox(height: 6),
                 ],
-                SizedBox(
-                  height: 52,
-                  child: CustomPaint(
-                    painter: _BarcodePainter(barcodeValue),
-                    size: const Size(double.infinity, 52),
+                // ── Barkod veya QR ──────────────────────────────────
+                if (isQr)
+                  SizedBox(
+                    width: 90,
+                    height: 90,
+                    child: CustomPaint(
+                      painter: _QrPreviewPainter(variant.barcodeValue),
+                    ),
+                  )
+                else
+                  SizedBox(
+                    height: 52,
+                    child: CustomPaint(
+                      painter: _BarcodePainter(variant.barcodeValue),
+                      size: const Size(double.infinity, 52),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
                 Text(
-                  barcodeValue,
+                  variant.barcodeValue,
                   style: const TextStyle(
-                      fontSize: 9, letterSpacing: 1.5, color: AppColors.textPrimary),
+                      fontSize: 9, letterSpacing: 1.2, color: AppColors.textPrimary),
+                  textAlign: TextAlign.center,
                 ),
-                if (showSku && (product['sku']?.toString() ?? '').isNotEmpty) ...[
+                if (showSku && variant.sku.isNotEmpty) ...[
                   const SizedBox(height: 2),
-                  Text(
-                    'SKU: ${product['sku']}',
-                    style: const TextStyle(fontSize: 8, color: AppColors.textMuted),
-                  ),
+                  Text('SKU: ${variant.sku}',
+                      style: const TextStyle(fontSize: 8, color: AppColors.textMuted)),
                 ],
                 if (showPrice) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 5),
                   Text(
-                    _currFmt.format(price),
+                    _currFmt.format(variant.price),
                     style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary),
                   ),
                 ],
               ],
@@ -892,33 +1062,38 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
   Future<void> _printBarcodeLabels(
     BuildContext ctx,
     Map<String, dynamic> product,
-    String barcodeValue,
+    _VariantPrint variant,
     bool showName,
     bool showPrice,
     bool showSku,
     String labelSize,
     int quantity,
+    String codeType,
   ) async {
     if (ctx.mounted) Navigator.of(ctx).pop();
 
-    final price = (product['basePrice'] as num?)?.toDouble()
-        ?? (product['price'] as num?)?.toDouble() ?? 0.0;
-
+    final isQr = codeType == 'QR';
     final lW = labelSize == 'S'
         ? PdfPageFormat.cm * 3
         : labelSize == 'M'
             ? PdfPageFormat.cm * 5
             : PdfPageFormat.cm * 8;
-    final lH = labelSize == 'S'
-        ? PdfPageFormat.cm * 1
-        : labelSize == 'M'
-            ? PdfPageFormat.cm * 2
-            : PdfPageFormat.cm * 3;
+    // QR kare olmalı, barkod ise yatay etiket
+    final lH = isQr
+        ? lW
+        : labelSize == 'S'
+            ? PdfPageFormat.cm * 1
+            : labelSize == 'M'
+                ? PdfPageFormat.cm * 2
+                : PdfPageFormat.cm * 3;
 
     try {
       await Printing.layoutPdf(
         onLayout: (format) async {
           final doc = pw.Document();
+          final pwBarcode =
+              isQr ? pw.Barcode.qrCode() : pw.Barcode.code128();
+
           for (int i = 0; i < quantity; i++) {
             doc.addPage(
               pw.Page(
@@ -932,33 +1107,36 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
                         pw.Text(
                           product['name']?.toString() ?? '',
                           style: pw.TextStyle(
-                            fontSize: 7,
-                            fontWeight: pw.FontWeight.bold,
-                          ),
+                              fontSize: 7, fontWeight: pw.FontWeight.bold),
                           textAlign: pw.TextAlign.center,
                         ),
                       pw.SizedBox(height: 2),
-                      pw.BarcodeWidget(
-                        barcode: pw.Barcode.code128(),
-                        data: barcodeValue,
-                        width: lW - 16,
-                        height: lH * 0.45,
-                        textStyle: pw.TextStyle(fontSize: 6),
-                        drawText: true,
-                      ),
-                      if (showSku && (product['sku']?.toString() ?? '').isNotEmpty)
-                        pw.Text(
-                          'SKU: ${product['sku']}',
-                          style: pw.TextStyle(fontSize: 5),
-                        ),
+                      // QR: kare, barkod: yatay
+                      isQr
+                          ? pw.BarcodeWidget(
+                              barcode: pwBarcode,
+                              data: variant.barcodeValue,
+                              width:  lW * 0.65,
+                              height: lW * 0.65,
+                              drawText: false,
+                            )
+                          : pw.BarcodeWidget(
+                              barcode: pwBarcode,
+                              data: variant.barcodeValue,
+                              width:  lW - 16,
+                              height: lH * 0.48,
+                              textStyle: pw.TextStyle(fontSize: 6),
+                              drawText: true,
+                            ),
+                      if (showSku && variant.sku.isNotEmpty)
+                        pw.Text('SKU: ${variant.sku}',
+                            style: pw.TextStyle(fontSize: 5)),
                       if (showPrice) ...[
                         pw.SizedBox(height: 2),
                         pw.Text(
-                          _currFmt.format(price),
+                          _currFmt.format(variant.price),
                           style: pw.TextStyle(
-                            fontSize: 9,
-                            fontWeight: pw.FontWeight.bold,
-                          ),
+                              fontSize: 9, fontWeight: pw.FontWeight.bold),
                         ),
                       ],
                     ],
@@ -1916,16 +2094,505 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
 
   // ─── DIALOGS & HELPERS ──────────────────────────────────────────────────
 
+  // ─── STOCK ADJUST DIALOG ─────────────────────────────────────────────────
+
   void _showStockAdjustDialog() {
-    AppToast.info(context, 'Stok düzeltme modülü aktif');
+    final variantId = _firstVariantId;
+    if (variantId == null || _product == null) {
+      AppToast.warning(context, t('common.not_found'));
+      return;
+    }
+    final productId = _product!['id']?.toString() ?? '';
+    final qtyCtrl   = TextEditingController(text: '1');
+    final noteCtrl  = TextEditingController();
+    bool isIn   = true;
+    bool saving = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlg) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.tune, size: 20, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(t('stock.adjust'),
+                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SizedBox(
+            width: 320,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Hareket türü ────────────────────────────────
+                Text(t('stock.movement_type'),
+                    style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setDlg(() => isIn = true),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 120),
+                          padding: const EdgeInsets.symmetric(vertical: 11),
+                          decoration: BoxDecoration(
+                            color: isIn
+                                ? AppColors.success.withValues(alpha: 0.1)
+                                : AppColors.bgLight,
+                            borderRadius: BorderRadius.circular(9),
+                            border: Border.all(
+                                color: isIn ? AppColors.success : AppColors.border,
+                                width: isIn ? 1.5 : 1),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_circle_outline,
+                                  size: 16,
+                                  color: isIn ? AppColors.success : AppColors.textMuted),
+                              const SizedBox(width: 6),
+                              Text(t('stock.entry'),
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13,
+                                      color: isIn
+                                          ? AppColors.success
+                                          : AppColors.textSecondary)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setDlg(() => isIn = false),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 120),
+                          padding: const EdgeInsets.symmetric(vertical: 11),
+                          decoration: BoxDecoration(
+                            color: !isIn
+                                ? AppColors.danger.withValues(alpha: 0.1)
+                                : AppColors.bgLight,
+                            borderRadius: BorderRadius.circular(9),
+                            border: Border.all(
+                                color: !isIn ? AppColors.danger : AppColors.border,
+                                width: !isIn ? 1.5 : 1),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.remove_circle_outline,
+                                  size: 16,
+                                  color: !isIn ? AppColors.danger : AppColors.textMuted),
+                              const SizedBox(width: 6),
+                              Text(t('stock.exit'),
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13,
+                                      color: !isIn
+                                          ? AppColors.danger
+                                          : AppColors.textSecondary)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // ── Miktar ──────────────────────────────────────
+                Text(t('stock.quantity'),
+                    style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: qtyCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    hintText: '1',
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(9)),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(9),
+                        borderSide: const BorderSide(color: AppColors.border)),
+                    focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(9),
+                        borderSide:
+                            const BorderSide(color: AppColors.primary, width: 1.5)),
+                    filled: true,
+                    fillColor: AppColors.bgLight,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                // ── Not ─────────────────────────────────────────
+                Text(t('common.note'),
+                    style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: noteCtrl,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    hintText: t('stock.adjustment'),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(9)),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(9),
+                        borderSide: const BorderSide(color: AppColors.border)),
+                    focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(9),
+                        borderSide:
+                            const BorderSide(color: AppColors.primary, width: 1.5)),
+                    filled: true,
+                    fillColor: AppColors.bgLight,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(t('common.cancel')),
+            ),
+            saving
+                ? const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: SizedBox(
+                        width: 20, height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2)))
+                : ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8))),
+                    onPressed: () async {
+                      final qty = int.tryParse(qtyCtrl.text.trim()) ?? 0;
+                      if (qty <= 0) return;
+                      setDlg(() => saving = true);
+                      try {
+                        await ref.read(stockServiceProvider).createStockMovement({
+                          'variantId': variantId,
+                          'productId': productId,
+                          'quantity': qty,
+                          'movementType':
+                              isIn ? 'ADJUSTMENT_IN' : 'ADJUSTMENT_OUT',
+                          if (noteCtrl.text.trim().isNotEmpty)
+                            'notes': noteCtrl.text.trim(),
+                        });
+                        if (ctx.mounted) Navigator.of(ctx).pop();
+                        if (mounted) {
+                          AppToast.success(context, t('common.saved'));
+                          _loadProduct();
+                          _loadMovements();
+                        }
+                      } catch (e) {
+                        setDlg(() => saving = false);
+                        if (ctx.mounted) AppToast.error(ctx, t('common.error'));
+                      }
+                    },
+                    child: Text(t('common.save'),
+                        style: const TextStyle(color: Colors.white)),
+                  ),
+          ],
+        ),
+      ),
+    );
   }
+
+  // ─── ADD OEM DIALOG ───────────────────────────────────────────────────────
 
   void _showAddOemDialog() {
-    AppToast.info(context, 'OEM Ekleme modülü aktif');
+    final variantId = _firstVariantId;
+    if (variantId == null) {
+      AppToast.warning(context, t('common.not_found'));
+      return;
+    }
+    final oemCtrl = TextEditingController();
+    final mfrCtrl = TextEditingController();
+    bool saving = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlg) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.confirmation_number, size: 20, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(t('product.add_oem'),
+                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SizedBox(
+            width: 320,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(t('product.oem_no'),
+                    style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: oemCtrl,
+                  decoration: InputDecoration(
+                    hintText: 'OEM-123456',
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(9)),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(9),
+                        borderSide: const BorderSide(color: AppColors.border)),
+                    focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(9),
+                        borderSide:
+                            const BorderSide(color: AppColors.primary, width: 1.5)),
+                    filled: true,
+                    fillColor: AppColors.bgLight,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(t('product.manufacturer'),
+                    style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: mfrCtrl,
+                  decoration: InputDecoration(
+                    hintText: 'Bosch, NGK...',
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(9)),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(9),
+                        borderSide: const BorderSide(color: AppColors.border)),
+                    focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(9),
+                        borderSide:
+                            const BorderSide(color: AppColors.primary, width: 1.5)),
+                    filled: true,
+                    fillColor: AppColors.bgLight,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(t('common.cancel')),
+            ),
+            saving
+                ? const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: SizedBox(
+                        width: 20, height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2)))
+                : ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8))),
+                    onPressed: () async {
+                      final oemNum = oemCtrl.text.trim();
+                      if (oemNum.isEmpty) return;
+                      setDlg(() => saving = true);
+                      try {
+                        await ref.read(oemServiceProvider).create({
+                          'variantId': variantId,
+                          'oemNumber': oemNum,
+                          if (mfrCtrl.text.trim().isNotEmpty)
+                            'manufacturer': mfrCtrl.text.trim(),
+                        });
+                        if (ctx.mounted) Navigator.of(ctx).pop();
+                        if (mounted) {
+                          AppToast.success(context, t('common.saved'));
+                          // OEM listesini yenile
+                          setState(() => _oemLoading = true);
+                          try {
+                            final oems = await ref
+                                .read(oemServiceProvider)
+                                .getByVariantId(variantId);
+                            setState(() {
+                              _oemNumbers = oems;
+                              _oemLoading = false;
+                            });
+                          } catch (_) {
+                            setState(() => _oemLoading = false);
+                          }
+                        }
+                      } catch (e) {
+                        setDlg(() => saving = false);
+                        if (ctx.mounted) AppToast.error(ctx, t('common.error'));
+                      }
+                    },
+                    child: Text(t('common.add'),
+                        style: const TextStyle(color: Colors.white)),
+                  ),
+          ],
+        ),
+      ),
+    );
   }
 
+  // ─── ADD CROSS REFERENCE DIALOG ───────────────────────────────────────────
+
   void _showAddCrossReferenceDialog() {
-    AppToast.info(context, 'Çapraz Referans modülü aktif');
+    final variantId = _firstVariantId;
+    if (variantId == null) {
+      AppToast.warning(context, t('common.not_found'));
+      return;
+    }
+    final refCtrl   = TextEditingController();
+    final brandCtrl = TextEditingController();
+    bool saving = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlg) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.swap_horiz, size: 20, color: AppColors.info),
+              const SizedBox(width: 8),
+              Text(t('product.add_cross_ref'),
+                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SizedBox(
+            width: 320,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(t('product.ref_code'),
+                    style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: refCtrl,
+                  decoration: InputDecoration(
+                    hintText: 'CR-123456',
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(9)),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(9),
+                        borderSide: const BorderSide(color: AppColors.border)),
+                    focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(9),
+                        borderSide:
+                            const BorderSide(color: AppColors.primary, width: 1.5)),
+                    filled: true,
+                    fillColor: AppColors.bgLight,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(t('product.brand'),
+                    style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: brandCtrl,
+                  decoration: InputDecoration(
+                    hintText: 'Bosch, Mann...',
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(9)),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(9),
+                        borderSide: const BorderSide(color: AppColors.border)),
+                    focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(9),
+                        borderSide:
+                            const BorderSide(color: AppColors.primary, width: 1.5)),
+                    filled: true,
+                    fillColor: AppColors.bgLight,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(t('common.cancel')),
+            ),
+            saving
+                ? const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: SizedBox(
+                        width: 20, height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2)))
+                : ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.info,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8))),
+                    onPressed: () async {
+                      final refNum = refCtrl.text.trim();
+                      if (refNum.isEmpty) return;
+                      setDlg(() => saving = true);
+                      try {
+                        await ref.read(crossReferenceServiceProvider).create({
+                          'variantId': variantId,
+                          'crossRefNumber': refNum,
+                          if (brandCtrl.text.trim().isNotEmpty)
+                            'crossRefBrand': brandCtrl.text.trim(),
+                        });
+                        if (ctx.mounted) Navigator.of(ctx).pop();
+                        if (mounted) {
+                          AppToast.success(context, t('common.saved'));
+                          // Cross ref listesini yenile
+                          setState(() => _crossRefLoading = true);
+                          try {
+                            final crossRefs = await ref
+                                .read(crossReferenceServiceProvider)
+                                .getByVariantId(variantId);
+                            setState(() {
+                              _crossRefs = crossRefs;
+                              _crossRefLoading = false;
+                            });
+                          } catch (_) {
+                            setState(() => _crossRefLoading = false);
+                          }
+                        }
+                      } catch (e) {
+                        setDlg(() => saving = false);
+                        if (ctx.mounted) AppToast.error(ctx, t('common.error'));
+                      }
+                    },
+                    child: Text(t('common.add'),
+                        style: const TextStyle(color: Colors.white)),
+                  ),
+          ],
+        ),
+      ),
+    );
   }
 
   String _getStatusLabel(String? status) {
@@ -2062,6 +2729,25 @@ class _TabDef {
   const _TabDef(this.type, this.label, this.icon);
 }
 
+// ── Varyant yazdırma modeli ───────────────────────────────────────────────────
+class _VariantPrint {
+  final String variantId;
+  final String variantName;
+  final String barcodeValue;  // gerçek barkod yoksa SKU fallback
+  final bool   hasBarcodeReal;
+  final double price;
+  final String sku;
+
+  const _VariantPrint({
+    required this.variantId,
+    required this.variantName,
+    required this.barcodeValue,
+    required this.hasBarcodeReal,
+    required this.price,
+    required this.sku,
+  });
+}
+
 // ── Barcode preview painter ────────────────────────────────────────────────────
 // Renders a deterministic stripe pattern based on the barcode string.
 // Not a real encoding — for label preview only.
@@ -2118,4 +2804,72 @@ class _BarcodePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_BarcodePainter old) => old.data != data;
+}
+
+// ── QR code preview painter ───────────────────────────────────────────────────
+// Draws a realistic-looking QR code preview with correct finder patterns and
+// a deterministic pseudo-random data area. Not a real QR encoding —
+// for preview only. Actual scannable QR is generated by pw.Barcode.qrCode().
+class _QrPreviewPainter extends CustomPainter {
+  final String data;
+  const _QrPreviewPainter(this.data);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.fill;
+
+    const n = 21; // QR Version 1 = 21×21 modül
+    final c = size.width / n;
+
+    // ── Finder pattern (köşe işaret karesi 7×7) ──────────────────────────
+    void drawFinder(int startRow, int startCol) {
+      for (int r = 0; r < 7; r++) {
+        for (int col = 0; col < 7; col++) {
+          final onOuter = r == 0 || r == 6 || col == 0 || col == 6;
+          final onInner = r >= 2 && r <= 4 && col >= 2 && col <= 4;
+          if (onOuter || onInner) {
+            canvas.drawRect(
+              Rect.fromLTWH(
+                  (startCol + col) * c, (startRow + r) * c, c - 0.4, c - 0.4),
+              paint,
+            );
+          }
+        }
+      }
+    }
+
+    drawFinder(0, 0);      // sol üst
+    drawFinder(0, n - 7);  // sağ üst
+    drawFinder(n - 7, 0);  // sol alt
+
+    // ── Zamanlama çizgileri (6. satır / sütun) ────────────────────────────
+    for (int i = 8; i < n - 8; i++) {
+      if (i % 2 == 0) {
+        canvas.drawRect(Rect.fromLTWH(i * c, 6 * c, c - 0.4, c - 0.4), paint);
+        canvas.drawRect(Rect.fromLTWH(6 * c, i * c, c - 0.4, c - 0.4), paint);
+      }
+    }
+
+    // ── Veri modülleri (deterministic pseudo-random) ──────────────────────
+    int s = data.hashCode.abs();
+    for (int r = 0; r < n; r++) {
+      for (int col = 0; col < n; col++) {
+        // finder pattern ve separator alanlarını atla
+        if (r < 8 && col < 8) continue;
+        if (r < 8 && col >= n - 8) continue;
+        if (r >= n - 8 && col < 8) continue;
+        if (r == 6 || col == 6) continue; // timing
+        s = (s * 1664525 + 1013904223) & 0xFFFFFFFF;
+        if ((s >> 16) & 1 == 1) {
+          canvas.drawRect(
+              Rect.fromLTWH(col * c, r * c, c - 0.4, c - 0.4), paint);
+        }
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_QrPreviewPainter old) => old.data != data;
 }

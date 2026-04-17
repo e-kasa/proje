@@ -62,13 +62,22 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
     // OEM: harf+rakam karışımı, 4-20 karakter (boşluk/tire içerebilir)
     private static final Pattern OEM_PATTERN =
             Pattern.compile("\\b([A-Z0-9][A-Z0-9 .\\-]{3,18}[A-Z0-9])\\b");
-    // Birim: ADET, KG, LT vb.
+    // Birim: ADET, AD (kısaltma), KG, LT vb.
     private static final Pattern UNIT_PATTERN =
-            Pattern.compile("\\b(ADET|ADT|KG|KGR|LT|LTR|MT|MTR|M2|PAKET|PKT|KUTU|KTU|PCS|GR|GRAM)\\b",
+            Pattern.compile("\\b(ADET|ADT|AD|KG|KGR|LT|LTR|MT|MTR|M2|PAKET|PKT|KUTU|KTU|PCS|GR|GRAM)\\b",
                     Pattern.CASE_INSENSITIVE);
-    // KDV oranı: "%18", "18%", "% 18" gibi
+
+    // Satır başındaki sıra numarası prefix'i: "1 ", "2. ", "01 " vb.
+    private static final Pattern ROW_NUM_PREFIX =
+            Pattern.compile("^\\d{1,3}[.\\s]+");
+
+    // Birime bitişik miktar: "7 ad", "28 adet", "6 kg" → qty=7/28/6, unit=AD/ADET/KG
+    private static final Pattern QTY_BEFORE_UNIT = Pattern.compile(
+            "(\\d{1,8}(?:[.,]\\d{1,4})?)\\s*(ADET|ADT|AD|KG|KGR|LT|LTR|MT|MTR|M2|PAKET|PKT|KUTU|KTU|PCS|GR|GRAM)\\b",
+            Pattern.CASE_INSENSITIVE);
+    // KDV oranı: "%0", "%18", "18%", "% 18" gibi — %0 (KDV muaf) dahil
     private static final Pattern VAT_PATTERN =
-            Pattern.compile("(?:%\\s*(1|8|10|18|20)\\b|\\b(1|8|10|18|20)\\s*%)");
+            Pattern.compile("(?:%\\s*(0|1|8|10|18|20)\\b|\\b(0|1|8|10|18|20)\\s*%)");
 
     // Faturada atlanan satır başlangıçları (Türkçe fatura başlıkları + dipnot)
     private static final List<String> SKIP_PREFIXES = List.of(
@@ -83,12 +92,15 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
             "imza", "kaşe", "kase", "yetkili"
     );
 
-    // Tablo sonu (footer) satır başlangıçları — bu satır görülünce parse durdurulur
-    private static final List<String> TABLE_FOOTER_PREFIXES = List.of(
-            "toplam", "genel toplam", "ara toplam", "kdv toplam", "kdv matrah",
+    /**
+     * Kesin footer satır başlangıçları — regex parse yolunda.
+     * startsWith() ile eşleşir → hemen tablo sonu kabul edilir.
+     * "toplam" burada YOK — ürün adında geçebileceğinden AMBIGUOUS_FOOTER_WORDS'de.
+     */
+    private static final List<String> SPECIFIC_TABLE_FOOTER_PREFIXES = List.of(
+            "genel toplam", "ara toplam", "kdv toplam", "kdv matrah",
             "vergi toplam", "ödenecek", "odenecek", "net toplam",
-            "subtotal", "total", "grand total",
-            // e-Arşiv fatura özet satırları (regex yolunda da yakala)
+            // e-Arşiv fatura özet satırları
             "mal hizmet toplam", "hesaplanan kdv", "vergiler dahil",
             "toplam i̇skonto", "toplam iskonto",
             // Satış notu dipnotları
@@ -98,6 +110,14 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
             "fatura doğrulama", "fatura dogrulama",
             "mali i̇ade", "mali iade",
             "hesap bilgileri"
+    );
+
+    /**
+     * Belirsiz footer kelimeleri — sonrasında harf varsa ürün adı, footer değil.
+     * "Toplam Koru Yağı" → ürün adı ✓, "Toplam 1.234,56" → footer ✓
+     */
+    private static final List<String> AMBIGUOUS_TABLE_FOOTER_WORDS = List.of(
+            "toplam", "total", "subtotal", "grand total"
     );
 
     @Override
@@ -115,7 +135,7 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
             scannedPdf = pr.scannedPdf();
             parseMethod = pr.parseMethod();
         } else if (isImage(ext)) {
-            String ocrText = callOcrService(file);
+            String ocrText = callOcrService(file, true);
             items = parseText(ocrText, fileName);
             scannedPdf = true;
             parseMethod = "OCR";
@@ -170,7 +190,14 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
 
     // ── OCR SERVİSİ ÇAĞRISI ─────────────────────────────────────────────────
 
-    private String callOcrService(MultipartFile file) throws IOException {
+    /**
+     * Python OCR servisine görüntü/taranmış PDF gönderir, metin döner.
+     *
+     * @param file      yüklenecek dosya
+     * @param tableOnly true → OCR sonucundan sadece rakam içeren satırları al
+     *                  (fatura başlığı/adres satırlarını elele)
+     */
+    private String callOcrService(MultipartFile file, boolean tableOnly) throws IOException {
         RestTemplate rest = new RestTemplate();
 
         LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
@@ -185,9 +212,12 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
+        // table_only=true → Python OCR sadece rakam içeren satırları döner
+        String url = ocrServiceUrl + "/ocr/extract" + (tableOnly ? "?table_only=true" : "");
+
         try {
             ResponseEntity<Map> response = rest.exchange(
-                    ocrServiceUrl + "/ocr/extract",
+                    url,
                     HttpMethod.POST,
                     new HttpEntity<>(body, headers),
                     Map.class
@@ -215,17 +245,36 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
         try (PDDocument doc = Loader.loadPDF(bytes)) {
 
             // ── 1. Taranmış PDF tespiti → OCR fallback ───────────────────────
-            PDFTextStripper quickCheck = new PDFTextStripper();
-            quickCheck.setEndPage(1);
-            String firstPageText = quickCheck.getText(doc);
-            if (firstPageText == null || firstPageText.trim().length() < 50) {
-                log.warn("parsePdf: Taranmış PDF tespit edildi — Python OCR'a yönlendiriliyor");
-                String ocrText = callOcrService(file);
+            // Tüm sayfa metnini çıkar (sadece sayfa 1 değil — kapak sayfası olabilir).
+            // Bu metin regex fallback'te de yeniden kullanılır → çift çıkarım önlenir.
+            PDFTextStripper fullStripper = new PDFTextStripper();
+            fullStripper.setSortByPosition(true);
+            String fullText = fullStripper.getText(doc);
+
+            if (fullText == null || fullText.trim().length() < 100) {
+                log.warn("parsePdf: Taranmış PDF tespit edildi ({}  char) — Python OCR'a yönlendiriliyor",
+                        fullText == null ? 0 : fullText.trim().length());
+                // table_only=true → adres/başlık satırlarını OCR sonucundan filtreler
+                String ocrText = callOcrService(file, true);
                 List<DocumentItemResult> ocrItems = parseText(ocrText, file.getOriginalFilename());
                 return new ParseResult(ocrItems, true, "OCR");
             }
 
-            // ── 2. Pozisyonel tablo çıkarımı ─────────────────────────────────
+            // ── 2. Metin tabanlı parse (BİRİNCİL YOL) ───────────────────────
+            // PDFBox metin çıkarımı, belgedeki resim/fotoğrafları otomatik olarak
+            // yok sayar — yalnızca kolon başlıkları ve ürün satırları okunur.
+            // Ürün fotografları, logolar, adres blokları parse sürecini etkilemez.
+            log.info("parsePdf [{}]: Metin modu deneniyor", file.getOriginalFilename());
+            List<DocumentItemResult> textItems = parseText(fullText, file.getOriginalFilename());
+            if (!textItems.isEmpty()) {
+                log.info("parsePdf [{}]: Metin modu → {} ürün", file.getOriginalFilename(), textItems.size());
+                return new ParseResult(textItems, false, "TEXT");
+            }
+            log.warn("parsePdf [{}]: Metin modu 0 ürün — pozisyonel moda geçildi", file.getOriginalFilename());
+
+            // ── 3. Pozisyonel tablo çıkarımı (FALLBACK) ──────────────────────
+            // PDF metin akışı bozuksa (bazı ERP/muhasebe yazılımları metin sırasını
+            // karıştırır) koordinat bazlı çıkarım devreye girer.
             Optional<PositionalTableExtractor.ExtractionResult> tableOpt =
                     PositionalTableExtractor.extract(doc);
 
@@ -250,16 +299,11 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
                     log.info("parsePdf [{}]: Pozisyonel mod → {} ürün", file.getOriginalFilename(), results.size());
                     return new ParseResult(results, false, "POSITIONAL");
                 }
-                log.warn("parsePdf: Pozisyonel mod 0 ürün — regex yoluna düşülüyor");
+                log.warn("parsePdf [{}]: Pozisyonel mod da 0 ürün döndü", file.getOriginalFilename());
             }
 
-            // ── 3. Regex fallback ─────────────────────────────────────────────
-            log.info("parsePdf: Regex parse yoluna geçildi");
-            PDFTextStripper stripper = new PDFTextStripper();
-            stripper.setSortByPosition(true);
-            String fullText = stripper.getText(doc);
-            List<DocumentItemResult> items = parseText(fullText, file.getOriginalFilename());
-            return new ParseResult(items, false, "REGEX");
+            log.warn("parsePdf [{}]: Tüm parse yolları başarısız — boş liste", file.getOriginalFilename());
+            return new ParseResult(Collections.emptyList(), false, "FAILED");
         }
     }
 
@@ -299,8 +343,6 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
     // ── METİN PARSE (PDF + OCR ortak) ────────────────────────────────────────
 
     private List<DocumentItemResult> parseText(String text, String fileName) {
-        List<DocumentItemResult> results = new ArrayList<>();
-
         String[] lines = text.split("\\r?\\n");
 
         // 1. Başlık satırını tara (ilk 20 satır içinde)
@@ -344,6 +386,23 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
             ParsedLine parsed;
             if (columnParser != null && !columnMapper.isEmpty()) {
                 parsed = columnParser.parse(rawLine);
+                // Kolon hizalaması tam eşleşmeyebilir (PDFBox metni karakter bazında
+                // hizalamaz). İsim çıkarılamazsa veya hiç sayısal alan dolmazsa
+                // extractLineInfo ile tekrar dene.
+                boolean noName = parsed.name == null || parsed.name.isBlank();
+                boolean noNumbers = parsed.quantity == null && parsed.unitPrice == null && parsed.totalPrice == null;
+                if (noName || noNumbers) {
+                    ParsedLine fallback = extractLineInfo(line);
+                    if (fallback.name != null && !fallback.name.isBlank()) {
+                        // fallback daha iyi; eksik alanları merge et
+                        if (noName) parsed.name = fallback.name;
+                        if (parsed.quantity == null)   parsed.quantity  = fallback.quantity;
+                        if (parsed.unitPrice == null)  parsed.unitPrice = fallback.unitPrice;
+                        if (parsed.totalPrice == null) parsed.totalPrice= fallback.totalPrice;
+                        if (parsed.unit == null)       parsed.unit      = fallback.unit;
+                        if (parsed.vatRate == null)    parsed.vatRate   = fallback.vatRate;
+                    }
+                }
             } else {
                 parsed = extractLineInfo(line);
             }
@@ -381,8 +440,20 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
 
     private boolean isTableFooterLine(String line) {
         String lower = line.toLowerCase().trim();
-        for (String prefix : TABLE_FOOTER_PREFIXES) {
+
+        // 1. Kesin footer prefix'leri
+        for (String prefix : SPECIFIC_TABLE_FOOTER_PREFIXES) {
             if (lower.startsWith(prefix)) return true;
+        }
+
+        // 2. Belirsiz kelimeler — sonrasında harf varsa ürün adı (footer değil)
+        for (String word : AMBIGUOUS_TABLE_FOOTER_WORDS) {
+            if (lower.startsWith(word)) {
+                String remainder = lower.substring(word.length()).trim();
+                if (remainder.isEmpty() || !Character.isLetter(remainder.charAt(0))) {
+                    return true;
+                }
+            }
         }
         return false;
     }
@@ -390,8 +461,12 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
     private ParsedLine extractLineInfo(String line) {
         ParsedLine result = new ParsedLine();
 
+        // 0. Satır başındaki sıra numarasını temizle: "1 ", "2. " → kaldır
+        //    Aksi halde sıra no quantity olarak seçilir, ürün adına karışır.
+        String processed = ROW_NUM_PREFIX.matcher(line).replaceFirst("").trim();
+
         // 1. EAN13 barkod ara
-        Matcher barcodeMatcher = BARCODE_PATTERN.matcher(line);
+        Matcher barcodeMatcher = BARCODE_PATTERN.matcher(processed);
         if (barcodeMatcher.find()) {
             result.code = barcodeMatcher.group(1);
             result.codeType = "BARCODE";
@@ -399,7 +474,7 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
 
         // 2. OEM kodu ara (barkod bulunamadıysa)
         if (result.code == null) {
-            String upper = line.toUpperCase();
+            String upper = processed.toUpperCase();
             Matcher oemMatcher = OEM_PATTERN.matcher(upper);
             while (oemMatcher.find()) {
                 String candidate = oemMatcher.group(1).trim();
@@ -413,50 +488,54 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
             }
         }
 
-        // 3. Birim çıkar
-        Matcher unitMatcher = UNIT_PATTERN.matcher(line);
-        if (unitMatcher.find()) {
-            result.unit = unitMatcher.group(1).toUpperCase();
+        // 3. Miktar: önce "7 ad", "28 adet", "6 kg" gibi birime bitişik sayıyı ara.
+        //    Bu yöntem sıra no / model no ile karışmayı önler.
+        Matcher qbuMatcher = QTY_BEFORE_UNIT.matcher(processed);
+        if (qbuMatcher.find()) {
+            String qtyStr = qbuMatcher.group(1).replace(",", ".").replaceAll("(\\d)\\.(\\d{3})", "$1$2");
+            try { result.quantity = Double.parseDouble(qtyStr); } catch (NumberFormatException ignored) {}
+            result.unit = qbuMatcher.group(2).toUpperCase();
         }
 
-        // 4. KDV oranı çıkar
-        Matcher vatMatcher = VAT_PATTERN.matcher(line);
+        // 4. Birim (qty-unit birlikte bulunmadıysa ayrı ara)
+        if (result.unit == null) {
+            Matcher unitMatcher = UNIT_PATTERN.matcher(processed);
+            if (unitMatcher.find()) result.unit = unitMatcher.group(1).toUpperCase();
+        }
+
+        // 5. KDV oranı çıkar
+        Matcher vatMatcher = VAT_PATTERN.matcher(processed);
         if (vatMatcher.find()) {
             String vatGroup = vatMatcher.group(1) != null ? vatMatcher.group(1) : vatMatcher.group(2);
-            try {
-                result.vatRate = Double.parseDouble(vatGroup);
-            } catch (NumberFormatException ignored) {}
+            try { result.vatRate = Double.parseDouble(vatGroup); } catch (NumberFormatException ignored) {}
         }
 
-        // 5. Sayıları çıkar (miktar ve fiyat)
-        List<Double> numbers = extractNumbers(line);
+        // 6. Sayıları çıkar (miktar ve fiyat)
+        List<Double> numbers = extractNumbers(processed);
         if (!numbers.isEmpty()) {
-            for (Double n : numbers) {
-                if (n == Math.floor(n) && n >= 1 && n <= 9999 && result.quantity == null) {
-                    result.quantity = n;
+            // Miktar zaten birim yoluyla bulunduysa, sadece fiyat/toplam bul
+            if (result.quantity == null) {
+                for (Double n : numbers) {
+                    if (n == Math.floor(n) && n >= 1 && n <= 9999 && result.quantity == null) {
+                        result.quantity = n;
+                    }
                 }
             }
             List<Double> prices = numbers.stream()
                     .filter(n -> n > 0 && !n.equals(result.quantity))
                     .sorted()
                     .collect(Collectors.toList());
-            if (!prices.isEmpty()) {
-                result.unitPrice = prices.get(0);
-            }
-            // Satır toplamı: en az 2 farklı sayı varsa en büyüğü toplam fiyattır
-            if (prices.size() >= 2) {
-                result.totalPrice = prices.get(prices.size() - 1);
-            }
+            if (!prices.isEmpty()) result.unitPrice = prices.get(0);
+            if (prices.size() >= 2) result.totalPrice = prices.get(prices.size() - 1);
         }
 
-        // 6. Ürün adını çıkar — kodu, sayıları ve birimi temizle
-        String nameStr = line;
+        // 7. Ürün adını çıkar — kodu, sayıları ve birimi temizle
+        String nameStr = processed;
         if (result.code != null) nameStr = nameStr.replace(result.code, " ");
         nameStr = nameStr.replaceAll("\\b\\d+[.,]?\\d*\\b", " ");
-        nameStr = nameStr.replaceAll("(?i)\\b(ADT|ADET|KG|KGR|LT|LTR|MT|MTR|M2|PAKET|PKT|KUTU|KTU|PCS|GR|GRAM)\\b", " ");
+        nameStr = nameStr.replaceAll("(?i)\\b(ADET|ADT|AD|KG|KGR|LT|LTR|MT|MTR|M2|PAKET|PKT|KUTU|KTU|PCS|GR|GRAM)\\b", " ");
         nameStr = nameStr.replaceAll("[%₺$€@#*]", " ");
         nameStr = nameStr.replaceAll("\\s+", " ").trim();
-        nameStr = nameStr.replaceAll("^\\d{1,3}\\s+", "").trim();
 
         if (nameStr.length() >= 3 && nameStr.matches(".*[a-zA-ZğüşıöçĞÜŞİÖÇ].*")) {
             result.name = nameStr.substring(0, Math.min(nameStr.length(), 200));

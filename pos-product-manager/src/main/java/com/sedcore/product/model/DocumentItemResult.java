@@ -12,7 +12,7 @@ import java.util.List;
  * matchStatus: "FOUND" → sistemde var, "NOT_FOUND" → sistemde yok
  */
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class DocumentItemResult {
@@ -56,6 +56,30 @@ public class DocumentItemResult {
     /** Eşleşen varyantın mevcut stok miktarı */
     private Double matchedCurrentStock;
 
+    /** Eşleşen varyantın aktif/en son satış fiyatı (VariantPricing.salePrice) */
+    private java.math.BigDecimal matchedSalePrice;
+
+    /** Eşleşen varyantın aktif/en son alış fiyatı (VariantPricing.purchasePrice) */
+    private java.math.BigDecimal matchedPurchasePrice;
+
+    /** En son PURCHASE_IN StockMovement'ın unit fiyatı — fatura fiyat karşılaştırması için */
+    private java.math.BigDecimal matchedLastPurchasePrice;
+
+    /** Eşleşen varyantın raf kodu */
+    private String matchedShelfLocation;
+
+    /** Eşleşen ürünün markası */
+    private String matchedBrandName;
+
+    /** Eşleşen varyantın ilk birkaç OEM numarası — kart chip listesi için */
+    private List<String> matchedOemCodes;
+
+    /**
+     * NAME match'te alternatif adaylar (max 3). BARCODE/OEM match'lerde boş.
+     * Kullanıcı "yanlış ürün" dediğinde sheet'ten başka aday seçebilir.
+     */
+    private List<MatchCandidate> matchCandidates;
+
     /** Belgeden çıkarılan birim (ADET, KG, LT, MT vb.) */
     private String unit;
 
@@ -67,6 +91,9 @@ public class DocumentItemResult {
 
     /** Satır toplamı (miktar × birim fiyat veya belgeden çıkarılan) */
     private Double totalPrice;
+
+    /** İskonto oranı (%) — faturadan çıkarılan, null ise belirtilmemiş */
+    private Double discountRate;
 
     /** Eşleşme güven skoru: BARCODE=1.0, OEM=0.9, NAME=0.5, NOT_FOUND=0.0 */
     private Double matchConfidence;

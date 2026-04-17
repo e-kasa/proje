@@ -45,6 +45,8 @@ class DocumentAnalyzeResultSheet extends ConsumerStatefulWidget {
 class _DocumentAnalyzeResultSheetState
     extends ConsumerState<DocumentAnalyzeResultSheet> {
   late final Set<int> _selectedIndices;
+  // Kullanıcının alternatif aday seçtiği satırlar — index → item (swap kopyası)
+  final Map<int, DocumentAnalyzeItem> _itemOverrides = {};
 
   @override
   void initState() {
@@ -54,9 +56,78 @@ class _DocumentAnalyzeResultSheetState
         Set.from(List.generate(widget.result.items.length, (i) => i));
   }
 
-  List<DocumentAnalyzeItem> get _selectedItems => widget.result.items
-      .whereIndexed((i, _) => _selectedIndices.contains(i))
-      .toList();
+  DocumentAnalyzeItem _itemAt(int i) =>
+      _itemOverrides[i] ?? widget.result.items[i];
+
+  List<DocumentAnalyzeItem> get _selectedItems {
+    final out = <DocumentAnalyzeItem>[];
+    for (var i = 0; i < widget.result.items.length; i++) {
+      if (_selectedIndices.contains(i)) out.add(_itemAt(i));
+    }
+    return out;
+  }
+
+  /// Kullanıcı bir alternatif aday seçtiğinde bu satır override edilir.
+  void _selectCandidate(int index, DocumentMatchCandidate c) {
+    final original = widget.result.items[index];
+    setState(() {
+      _itemOverrides[index] = DocumentAnalyzeItem(
+        rowIndex: original.rowIndex,
+        rawText: original.rawText,
+        extractedName: original.extractedName,
+        extractedCode: original.extractedCode,
+        extractedQuantity: original.extractedQuantity,
+        extractedUnitPrice: original.extractedUnitPrice,
+        matchStatus: 'FOUND',
+        matchedProductId: c.productId,
+        matchedVariantId: c.variantId,
+        matchedProductName: c.productName,
+        matchedSku: c.sku,
+        matchType: 'NAME',
+        unit: original.unit,
+        vatRate: original.vatRate,
+        vatIncluded: original.vatIncluded,
+        totalPrice: original.totalPrice,
+        matchConfidence: c.confidence,
+        warningFlags: original.warningFlags,
+        matchedCurrentStock: c.currentStock,
+        matchedSalePrice: c.salePrice,
+        matchedPurchasePrice: original.matchedPurchasePrice,
+        matchedLastPurchasePrice: original.matchedLastPurchasePrice,
+        matchedShelfLocation: original.matchedShelfLocation,
+        matchedBrandName: original.matchedBrandName,
+        matchedOemCodes: original.matchedOemCodes,
+        matchCandidates: original.matchCandidates,
+        variantGroup: original.variantGroup,
+        variants: original.variants,
+      );
+    });
+  }
+
+  /// "Yeni ürün olarak kaydet" — matchStatus lokal olarak NOT_FOUND olur.
+  void _markAsNew(int index) {
+    final original = widget.result.items[index];
+    setState(() {
+      _itemOverrides[index] = DocumentAnalyzeItem(
+        rowIndex: original.rowIndex,
+        rawText: original.rawText,
+        extractedName: original.extractedName,
+        extractedCode: original.extractedCode,
+        extractedQuantity: original.extractedQuantity,
+        extractedUnitPrice: original.extractedUnitPrice,
+        matchStatus: 'NOT_FOUND',
+        matchType: null,
+        unit: original.unit,
+        vatRate: original.vatRate,
+        vatIncluded: original.vatIncluded,
+        totalPrice: original.totalPrice,
+        matchConfidence: 0.0,
+        warningFlags: original.warningFlags,
+        variantGroup: original.variantGroup,
+        variants: original.variants,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -152,7 +223,7 @@ class _DocumentAnalyzeResultSheetState
                       separatorBuilder: (_, __) =>
                           const Divider(height: 1, indent: 16),
                       itemBuilder: (_, i) => _DocumentItemTile(
-                        item: result.items[i],
+                        item: _itemAt(i),
                         selected: _selectedIndices.contains(i),
                         t: t,
                         onToggle: () => setState(() {
@@ -162,6 +233,8 @@ class _DocumentAnalyzeResultSheetState
                             _selectedIndices.add(i);
                           }
                         }),
+                        onSelectCandidate: (c) => _selectCandidate(i, c),
+                        onMarkAsNew: () => _markAsNew(i),
                       ),
                     ),
             ),
@@ -260,12 +333,16 @@ class _DocumentItemTile extends StatelessWidget {
   final bool selected;
   final VoidCallback onToggle;
   final String Function(String) t;
+  final void Function(DocumentMatchCandidate)? onSelectCandidate;
+  final VoidCallback? onMarkAsNew;
 
   const _DocumentItemTile({
     required this.item,
     required this.selected,
     required this.onToggle,
     required this.t,
+    this.onSelectCandidate,
+    this.onMarkAsNew,
   });
 
   @override
@@ -273,27 +350,47 @@ class _DocumentItemTile extends StatelessWidget {
     if (item.variantGroup && item.variants.isNotEmpty) {
       return _VariantGroupTile(item: item, selected: selected, onToggle: onToggle, t: t);
     }
-    return _FlatItemTile(item: item, selected: selected, onToggle: onToggle, t: t);
+    return _FlatItemTile(
+      item: item,
+      selected: selected,
+      onToggle: onToggle,
+      t: t,
+      onSelectCandidate: onSelectCandidate,
+      onMarkAsNew: onMarkAsNew,
+    );
   }
 }
 
 // ── Tekil kalem (Durum 1) ─────────────────────────────────────────────────────
 
-class _FlatItemTile extends StatelessWidget {
+class _FlatItemTile extends StatefulWidget {
   final DocumentAnalyzeItem item;
   final bool selected;
   final VoidCallback onToggle;
   final String Function(String) t;
+  final void Function(DocumentMatchCandidate)? onSelectCandidate;
+  final VoidCallback? onMarkAsNew;
 
   const _FlatItemTile({
     required this.item,
     required this.selected,
     required this.onToggle,
     required this.t,
+    this.onSelectCandidate,
+    this.onMarkAsNew,
   });
 
   @override
+  State<_FlatItemTile> createState() => _FlatItemTileState();
+}
+
+class _FlatItemTileState extends State<_FlatItemTile> {
+  bool _altExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final item = widget.item;
+    final t = widget.t;
     final isFound = item.isFound;
     final statusColor = isFound ? AppColors.info : AppColors.orange;
     final statusLabel = isFound ? t('batch.match_existing') : t('batch.match_new');
@@ -301,70 +398,254 @@ class _FlatItemTile extends StatelessWidget {
         isFound ? Icons.check_circle_outline : Icons.add_circle_outline;
     final displayName =
         item.matchedProductName ?? item.extractedName ?? item.rawText;
+    final hasAlternatives =
+        item.isNameMatch && item.matchCandidates.isNotEmpty;
 
-    return InkWell(
-      onTap: onToggle,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Checkbox(
-              value: selected,
-              onChanged: (_) => onToggle(),
-              activeColor: AppColors.primary,
-              visualDensity: VisualDensity.compact,
-            ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: widget.onToggle,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Checkbox(
+                  value: widget.selected,
+                  onChanged: (_) => widget.onToggle(),
+                  activeColor: AppColors.primary,
+                  visualDensity: VisualDensity.compact,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _StatusChip(
-                          color: statusColor,
-                          icon: statusIcon,
-                          label: statusLabel),
-                      if (item.matchType != null) ...[
-                        const SizedBox(width: 6),
+                      Row(
+                        children: [
+                          _StatusChip(
+                              color: statusColor,
+                              icon: statusIcon,
+                              label: statusLabel),
+                          if (item.matchType != null) ...[
+                            const SizedBox(width: 6),
+                            Text(
+                              '(${_matchTypeLabel(item.matchType!, t)})',
+                              style: const TextStyle(
+                                  fontSize: 10, color: AppColors.textMuted),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      if (item.isNameMatch) _NameMatchWarning(t: t),
+                      Text(
+                        displayName,
+                        style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (item.extractedCode != null)
                         Text(
-                          '(${_matchTypeLabel(item.matchType!, t)})',
+                          '${t('common.code')}: ${item.extractedCode}',
                           style: const TextStyle(
-                              fontSize: 10, color: AppColors.textMuted),
+                              fontSize: 11, color: AppColors.textMuted),
+                        ),
+                      if (item.hasPriceMismatch)
+                        Text(t('batch.price_mismatch_warning'),
+                            style: const TextStyle(
+                                fontSize: 10, color: AppColors.danger)),
+                      // ── NAME match aksiyon butonları ─────────────────
+                      if (hasAlternatives || item.isNameMatch) ...[
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            if (hasAlternatives)
+                              InkWell(
+                                onTap: () => setState(
+                                    () => _altExpanded = !_altExpanded),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.info
+                                        .withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                        color: AppColors.info
+                                            .withValues(alpha: 0.3)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        _altExpanded
+                                            ? Icons.keyboard_arrow_up_rounded
+                                            : Icons.keyboard_arrow_down_rounded,
+                                        size: 12,
+                                        color: AppColors.info,
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        t('batch.show_alternatives'),
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.info,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            if (hasAlternatives) const SizedBox(width: 6),
+                            if (widget.onMarkAsNew != null)
+                              InkWell(
+                                onTap: widget.onMarkAsNew,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.orange
+                                        .withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                        color: AppColors.orange
+                                            .withValues(alpha: 0.3)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.add_circle_outline_rounded,
+                                        size: 12,
+                                        color: AppColors.orange,
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        t('batch.save_as_new'),
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.orange,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ],
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  if (item.isNameMatch)
-                    _NameMatchWarning(t: t),
-                  Text(
-                    displayName,
-                    style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (item.extractedCode != null)
-                    Text(
-                      '${t('common.code')}: ${item.extractedCode}',
-                      style: const TextStyle(
-                          fontSize: 11, color: AppColors.textMuted),
-                    ),
-                  if (item.hasPriceMismatch)
-                    Text(t('batch.price_mismatch_warning'),
-                        style: const TextStyle(
-                            fontSize: 10, color: AppColors.danger)),
-                ],
-              ),
+                ),
+                _QuantityPriceColumn(item: item),
+              ],
             ),
-            _QuantityPriceColumn(item: item),
-          ],
+          ),
         ),
-      ),
+        // ── Alternatif aday listesi ─────────────────────────────────────
+        if (_altExpanded && hasAlternatives && widget.onSelectCandidate != null)
+          Container(
+            margin: const EdgeInsets.fromLTRB(52, 0, 16, 8),
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.bgLight,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 4),
+                  child: Row(children: [
+                    Text(
+                      t('batch.alternatives'),
+                      style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textSecondary),
+                    ),
+                  ]),
+                ),
+                ...item.matchCandidates.map((c) => InkWell(
+                      onTap: () {
+                        widget.onSelectCandidate!(c);
+                        setState(() => _altExpanded = false);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    c.productName ?? '',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (c.sku != null)
+                                    Text(
+                                      'SKU: ${c.sku}',
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        color: AppColors.textMuted,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (c.currentStock != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.info
+                                      .withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  '${t('batch.candidate_stock')}: ${c.currentStock!.toInt()}',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.info,
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(width: 6),
+                            if (c.salePrice != null)
+                              Text(
+                                '₺${c.salePrice!.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.success,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    )),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

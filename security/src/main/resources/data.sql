@@ -1773,6 +1773,34 @@ VALUES
     ('bnd-bt163-0000-0000-000000000163', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.document_found_items',     'Mevcut',  'Existing'),
     ('bnd-bt164-0000-0000-000000000164', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.document_new_items',       'Yeni',    'New'),
 
+    -- ── BATCH — Mevcut ürün zenginleştirme kartı ──────────────────
+    ('bnd-bt165-0000-0000-000000000165', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.current_stock',       'Mevcut Stok',     'Current Stock'),
+    ('bnd-bt166-0000-0000-000000000166', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.system_sale_price',   'Sistem Satış',    'System Sale'),
+    ('bnd-bt167-0000-0000-000000000167', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.last_purchase_price', 'Son Alış',        'Last Purchase'),
+    ('bnd-bt168-0000-0000-000000000168', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.invoice_price',       'Fatura Fiyatı',   'Invoice Price'),
+    ('bnd-bt169-0000-0000-000000000169', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.price_changed',       'Fiyat değişti',   'Price changed'),
+    ('bnd-bt170-0000-0000-000000000170', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.no_stock',            'Stok yok',        'Out of stock'),
+    ('bnd-bt171-0000-0000-000000000171', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.oem_codes',           'OEM Kodları',     'OEM Codes'),
+
+    -- ── BATCH — Yeni ürün kartı: Marka + OEM/CrossRef editör ──────
+    ('bnd-bt172-0000-0000-000000000172', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.brand_select',        'Marka Seç',       'Select Brand'),
+    ('bnd-bt173-0000-0000-000000000173', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.brand_type_new',      'Yeni marka yazın','Type new brand'),
+    ('bnd-bt174-0000-0000-000000000174', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.oem_add',             'OEM Ekle',        'Add OEM'),
+    ('bnd-bt175-0000-0000-000000000175', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.oem_manufacturer',    'Üretici',         'Manufacturer'),
+    ('bnd-bt176-0000-0000-000000000176', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.crossref_add',        'Çapraz Referans Ekle', 'Add Cross Reference'),
+    ('bnd-bt177-0000-0000-000000000177', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.crossref_number',     'Ref No',          'Ref No'),
+    ('bnd-bt178-0000-0000-000000000178', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.crossref_brand',      'Ref Markası',     'Ref Brand'),
+
+    -- ── BATCH — NAME match alternatif seçimi ──────────────────────
+    ('bnd-bt179-0000-0000-000000000179', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.show_alternatives',   'Alternatif Göster', 'Show Alternatives'),
+    ('bnd-bt180-0000-0000-000000000180', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.alternatives',        'Alternatifler',   'Alternatives'),
+    ('bnd-bt181-0000-0000-000000000181', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.save_as_new',         'Yeni Ürün Olarak', 'Save as New'),
+    ('bnd-bt182-0000-0000-000000000182', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.candidate_stock',     'Stok',            'Stock'),
+
+    -- ── BATCH — İskonto oranı ─────────────────────────────────────
+    ('bnd-bt183-0000-0000-000000000183', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.field_discount',      'İskonto %',       'Discount %'),
+    ('bnd-bt184-0000-0000-000000000184', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.discount_applied',    'İsk. uygulandı',  'Discount applied'),
+
     -- ── WIZARD (Ürün ekleme adımları) ─────────────────────────────
     ('bnd-wz001-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.changes_will_be_lost', 'Değişiklikler kaybolacak', 'Changes will be lost'),
     ('bnd-wz002-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.exit', 'Çıkış', 'Exit'),

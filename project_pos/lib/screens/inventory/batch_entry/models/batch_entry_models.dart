@@ -251,11 +251,22 @@ class BatchEntryRow {
   double purchasePrice;
   double salePrice;
   double vatRate;
+  double discountRate; // iskonto oranı (%) — faturadan veya manuel, default 0
   int quantity;
   RowStatus status;
   String? existingProductId;
   String? existingVariantId;
   String? existingVariantSku;
+
+  // Mevcut ürün enrichment (FOUND olduğunda kart üzerinde read-only gösterilir)
+  double? existingCurrentStock;
+  double? existingSalePrice;
+  double? existingPurchasePrice;
+  double? existingLastPurchasePrice;
+  String? existingShelfLocation;
+  String? existingBrandName;
+  List<String> existingOemCodes;
+
   String? errorMessage;
   bool isExpanded;
 
@@ -284,11 +295,19 @@ class BatchEntryRow {
     this.purchasePrice = 0,
     this.salePrice = 0,
     this.vatRate = 20.0,
+    this.discountRate = 0,
     this.quantity = 1,
     this.status = RowStatus.newProduct,
     this.existingProductId,
     this.existingVariantId,
     this.existingVariantSku,
+    this.existingCurrentStock,
+    this.existingSalePrice,
+    this.existingPurchasePrice,
+    this.existingLastPurchasePrice,
+    this.existingShelfLocation,
+    this.existingBrandName,
+    List<String>? existingOemCodes,
     this.errorMessage,
     this.isExpanded = false,
     this.description,
@@ -300,6 +319,7 @@ class BatchEntryRow {
     List<Map<String, String>>? crossRefList,
     List<BatchVariantRow>? variantRows,
   })  : id = id ?? _generateId(),
+        existingOemCodes = existingOemCodes ?? [],
         attributes = attributes ?? {},
         oemList = oemList ?? [],
         crossRefList = crossRefList ?? [],
@@ -344,11 +364,19 @@ class BatchEntryRow {
     double? purchasePrice,
     double? salePrice,
     double? vatRate,
+    double? discountRate,
     int? quantity,
     RowStatus? status,
     String? existingProductId,
     String? existingVariantId,
     String? existingVariantSku,
+    double? existingCurrentStock,
+    double? existingSalePrice,
+    double? existingPurchasePrice,
+    double? existingLastPurchasePrice,
+    String? existingShelfLocation,
+    String? existingBrandName,
+    List<String>? existingOemCodes,
     String? errorMessage,
     bool? isExpanded,
     String? description,
@@ -373,11 +401,20 @@ class BatchEntryRow {
       purchasePrice: purchasePrice ?? this.purchasePrice,
       salePrice: salePrice ?? this.salePrice,
       vatRate: vatRate ?? this.vatRate,
+      discountRate: discountRate ?? this.discountRate,
       quantity: quantity ?? this.quantity,
       status: status ?? this.status,
       existingProductId: existingProductId ?? this.existingProductId,
       existingVariantId: existingVariantId ?? this.existingVariantId,
       existingVariantSku: existingVariantSku ?? this.existingVariantSku,
+      existingCurrentStock: existingCurrentStock ?? this.existingCurrentStock,
+      existingSalePrice: existingSalePrice ?? this.existingSalePrice,
+      existingPurchasePrice: existingPurchasePrice ?? this.existingPurchasePrice,
+      existingLastPurchasePrice:
+          existingLastPurchasePrice ?? this.existingLastPurchasePrice,
+      existingShelfLocation: existingShelfLocation ?? this.existingShelfLocation,
+      existingBrandName: existingBrandName ?? this.existingBrandName,
+      existingOemCodes: existingOemCodes ?? this.existingOemCodes,
       errorMessage: errorMessage ?? this.errorMessage,
       isExpanded: isExpanded ?? this.isExpanded,
       description: description ?? this.description,

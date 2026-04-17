@@ -14,4 +14,5 @@ public class ParsedLine {
     public Double vatRate;    // 8.0 | 18.0 | 20.0 | null
     public Boolean vatIncluded; // null = bilinmiyor
     public Double totalPrice; // satır toplamı | null
+    public Double discountRate; // iskonto oranı (%) — 5.0, 10.0 vb. | null
 }

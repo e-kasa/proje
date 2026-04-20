@@ -1,0 +1,13 @@
+# Minimum kurulum — SADECE /parse-text için
+# Dijital PDF parse için yeterlidir (Java PDFBox'tan gelen metni işler).
+# Taranmış PDF / görüntü OCR için requirements.txt kullanılmalıdır.
+#
+# Kurulum:
+#   python -m pip install -r requirements-minimal.txt
+#
+# Boyut: ~30 MB (PyTorch yok)
+
+fastapi>=0.104,<1.0
+uvicorn[standard]>=0.24,<1.0
+pydantic>=2.0,<3.0
+python-multipart>=0.0.9

@@ -9,15 +9,30 @@ import logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)s  %(message)s")
 log = logging.getLogger(__name__)
 
-# EasyOCR opsiyonel — sadece taranmış PDF/görüntü için gerekli.
-# Dijital PDF akışı (PDFBox → /parse-text) easyocr olmadan çalışır.
+# ── OPSİYONEL BAĞIMLILIKLAR ──────────────────────────────────────────────────
+# Bu servis iki yolu destekler:
+#   1. /parse-text   → Java PDFBox metnini parse eder (dijital PDF için)
+#                      Gerekli: fastapi + uvicorn + pydantic (minimum kurulum)
+#   2. /ocr/extract  → Görüntü/taranmış PDF'i EasyOCR ile metne çevirir
+#                      Gerekli: EasyOCR (torch, 1-2 GB) + python-multipart
+#
+# Eksik bağımlılıkta endpoint otomatik devre dışı kalır, servis yine başlar.
+
 _easyocr_available = False
 try:
     from ocr_engine import get_reader, extract_text
     _easyocr_available = True
 except ImportError as _e:
     log.warning("EasyOCR yüklü değil — /ocr/extract endpoint'i devre dışı. "
-                "Sadece /parse-text çalışacak. Hata: %s", _e)
+                "Kurulum: pip install easyocr. Hata: %s", _e)
+
+_multipart_available = False
+try:
+    import multipart  # noqa: F401 — python-multipart paketi
+    _multipart_available = True
+except ImportError:
+    log.info("python-multipart yüklü değil — /ocr/extract endpoint'i devre dışı. "
+             "Kurulum: pip install python-multipart")
 
 
 @asynccontextmanager
@@ -41,10 +56,17 @@ app = FastAPI(title="SEDCORE OCR Service", version="1.0.0", lifespan=lifespan)
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model": "loaded"}
+    return {
+        "status": "ok",
+        "endpoints": {
+            "/parse-text": "available",
+            "/ocr/extract": "available" if (_easyocr_available and _multipart_available)
+                            else f"disabled (easyocr={_easyocr_available}, "
+                                 f"multipart={_multipart_available})",
+        },
+    }
 
 
-@app.post("/ocr/extract")
 async def ocr_extract(file: UploadFile = File(...), table_only: bool = False):
     """
     Görüntü yükle → metin döndür.
@@ -53,10 +75,6 @@ async def ocr_extract(file: UploadFile = File(...), table_only: bool = False):
     table_only=true: Sadece sayı içeren satırları döndürür.
     Fatura başlığı, adres, firma bilgisi gibi saf metin satırları elenir.
     """
-    if not _easyocr_available:
-        raise HTTPException(503, "EasyOCR yüklü değil — /ocr/extract kullanılamaz. "
-                                  "`pip install easyocr` ile kurun.")
-
     allowed = {'image/jpeg', 'image/png', 'image/webp', 'image/bmp'}
     if file.content_type not in allowed:
         raise HTTPException(400, f"Desteklenmeyen format: {file.content_type}")
@@ -73,11 +91,21 @@ async def ocr_extract(file: UploadFile = File(...), table_only: bool = False):
             "text": text,
             "lineCount": len(lines),
             "lines": lines,
-            "tableOnly": table_only
+            "tableOnly": table_only,
         }
     except Exception as e:
         log.error("OCR işlem hatası: %s", e, exc_info=True)
         raise HTTPException(500, f"OCR hatası: {str(e)}")
+
+
+# /ocr/extract sadece EasyOCR + python-multipart birlikte varsa register edilir.
+# Aksi halde endpoint hiç yoktur — FastAPI multipart-is-installed assertion'ı
+# modül yüklenmeden tetiklenmez, servis temiz başlar.
+if _easyocr_available and _multipart_available:
+    app.post("/ocr/extract")(ocr_extract)
+    log.info("/ocr/extract kaydedildi ✓")
+else:
+    log.info("/ocr/extract kaydedilmedi (bağımlılık eksik)")
 
 
 class ParseTextRequest(BaseModel):

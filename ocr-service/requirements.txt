@@ -1,6 +1,20 @@
+# Tam kurulum — /parse-text + /ocr/extract (taranmış PDF için EasyOCR dahil)
+#
+# Kurulum:
+#   python -m pip install -r requirements.txt
+#
+# Boyut: ~2 GB (PyTorch + EasyOCR modeli)
+# Süre:  ilk kurulum 3-10 dk (EasyOCR modelini indirir)
+#
+# Sadece dijital PDF işliyorsanız requirements-minimal.txt yeterlidir.
+
+# Core (parse-text)
 fastapi==0.111.0
 uvicorn[standard]==0.29.0
-easyocr==1.7.1
+pydantic>=2.0,<3.0
 python-multipart==0.0.9
+
+# OCR (ocr/extract)
+easyocr==1.7.1
 Pillow>=10.4.0
 numpy>=1.24.0

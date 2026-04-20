@@ -1810,6 +1810,11 @@ VALUES
     ('bnd-bt190-0000-0000-000000000190', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.row_variant_required',  'En az 1 varyant eklemelisiniz', 'At least 1 variant required'),
     ('bnd-bt191-0000-0000-000000000191', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.barcode',               'Barkod',                   'Barcode'),
 
+    -- ── BATCH — Toplam fiyat variant dağıtımı ───────────────────────
+    ('bnd-bt192-0000-0000-000000000192', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.total_purchase_price',  'Toplam Alış',              'Total Purchase'),
+    ('bnd-bt193-0000-0000-000000000193', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.total_sale_price',      'Toplam Satış',             'Total Sale'),
+    ('bnd-bt194-0000-0000-000000000194', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.total_price_distribute_hint', 'Toplam fiyat tüm variantlara adet oranıyla bölüşür', 'Total price is distributed proportionally to variants'),
+
     -- ── WIZARD (Ürün ekleme adımları) ─────────────────────────────
     ('bnd-wz001-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.changes_will_be_lost', 'Değişiklikler kaybolacak', 'Changes will be lost'),
     ('bnd-wz002-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.exit', 'Çıkış', 'Exit'),

@@ -119,16 +119,30 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
 
       // ── Durum 2: Varyant grubu (birden fazla beden/renk satırı) ──────────
       if (item.variantGroup && item.variants.isNotEmpty) {
-        // Her DocumentVariantItem → BatchVariantRow
+        // Toplam fiyatı variantlara bölüştür:
+        // Eğer faturada "Siyah Tshirt S/M/L/XL — toplam 500 TL" yazıyorsa ve
+        // her variant'ın kendi birim fiyatı yoksa → 500 / 5 adet = 100 TL/variant.
+        // v.unitPrice dolu ise (fatura her bedene ayrı fiyat yazmış) o kullanılır.
+        final totalVariantQty = item.variants
+            .fold<int>(0, (s, v) => s + (v.quantity?.toInt() ?? 1));
+        double? autoSplitUnitPrice;
+        if (item.totalPrice != null && totalVariantQty > 0) {
+          autoSplitUnitPrice = item.totalPrice! / totalVariantQty;
+        }
+
         final variantRows = item.variants.map((v) {
           final isSize = v.attributeType == 'SIZE';
+          // Öncelik: v.unitPrice (fatura satır fiyatı) → auto-split → extractedUnitPrice
+          final resolvedUnitPrice = v.unitPrice
+              ?? autoSplitUnitPrice
+              ?? item.extractedUnitPrice;
           return BatchVariantRow(
             size: isSize ? v.attributeValue : '',
             color: isSize ? '' : v.attributeValue,
             barcode: v.barcode ?? '',
             quantity: v.quantity?.toInt() ?? 1,
-            purchasePrice: v.unitPrice ?? item.extractedUnitPrice,
-            salePrice: v.unitPrice ?? item.extractedUnitPrice,
+            purchasePrice: resolvedUnitPrice,
+            salePrice: resolvedUnitPrice,
             attributesMap: {
               if (isSize)
                 'Numara': v.attributeValue
@@ -196,10 +210,13 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
 
       // ── Durum 1: Tekil satır ──────────────────────────────────────────────
       if (item.isFound && item.matchedVariantId != null) {
+        // Fatura miktarı invoiceQuantity olarak saklanır — kullanıcı teslim miktarını düzenler
+        final invoiceQty = item.extractedQuantity?.toInt() ?? 1;
         return BatchEntryRow(
           productName: productName,
           barcode: item.extractedCode ?? '',
-          quantity: item.extractedQuantity?.toInt() ?? 1,
+          quantity: invoiceQty,          // başlangıçta teslim = fatura (kullanıcı değiştirir)
+          invoiceQuantity: invoiceQty,   // faturadan gelen asıl miktar
           purchasePrice: item.extractedUnitPrice ?? 0,
           salePrice: item.extractedUnitPrice ?? 0,
           vatRate: vat,
@@ -274,6 +291,8 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
     double? vatRate,
     double? discountRate,
     int? quantity,
+    int? invoiceQuantity,
+    bool clearInvoiceQuantity = false,
     bool? isExpanded,
     String? description,
     String? shelfLocation,
@@ -300,6 +319,8 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
         vatRate: vatRate,
         discountRate: discountRate,
         quantity: quantity,
+        invoiceQuantity: invoiceQuantity,
+        clearInvoiceQuantity: clearInvoiceQuantity,
         isExpanded: isExpanded,
         description: description,
         shelfLocation: shelfLocation,

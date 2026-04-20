@@ -645,6 +645,32 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Eksik teslimat uyarısı
+              if (state.hasAnyShortage) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        size: 13, color: AppColors.warning),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${state.shortageItems} üründe eksik teslimat — kayıt sonrası talep otomatik açılır',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.warning,
+                      ),
+                    ),
+                  ]),
+                ),
+              ],
               // Hazır / toplam göstergesi
               if (state.rows.isNotEmpty) ...[
                 Row(
@@ -1158,6 +1184,26 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                             quantity: row.quantity,
                             onChanged: (q) => _update(quantity: q),
                           ),
+                        // Eksik teslimat rozeti
+                        if (row.isExisting && row.hasShortage) ...[
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.warning.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: AppColors.warning, width: 0.5),
+                            ),
+                            child: Text(
+                              '${row.shortageQty} eksik',
+                              style: const TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.warning,
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                     const SizedBox(width: 8),
@@ -1202,11 +1248,16 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
   late final TextEditingController _purchaseCtrl;
   late final TextEditingController _saleCtrl;
   late final TextEditingController _quantityCtrl;
+  late final TextEditingController _invoiceQtyCtrl;
   late final TextEditingController _brandCtrl;
   late final TextEditingController _shelfCtrl;
   late final TextEditingController _descCtrl;
   late final TextEditingController _minStockCtrl;
   late final TextEditingController _discountCtrl;
+  /// Toplam satır fiyatı — variant grup durumunda kullanıcı toplam girip
+  /// variantlara orantılı birim fiyat dağıtabilsin.
+  late final TextEditingController _totalPurchaseCtrl;
+  late final TextEditingController _totalSaleCtrl;
 
   @override
   void initState() {
@@ -1223,18 +1274,26 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
     _saleCtrl = TextEditingController(
         text: r.salePrice > 0 ? r.salePrice.toString() : '');
     _quantityCtrl = TextEditingController(text: r.quantity.toString());
+    _invoiceQtyCtrl = TextEditingController(
+        text: r.invoiceQuantity?.toString() ?? r.quantity.toString());
     _brandCtrl = TextEditingController(text: r.brandName ?? '');
     _shelfCtrl = TextEditingController(text: r.shelfLocation ?? '');
     _descCtrl = TextEditingController(text: r.description ?? '');
     _minStockCtrl = TextEditingController(text: r.minStockLevel.toString());
+    // Toplam satır fiyatı — başlangıçta lineCost/lineTotal'dan hesapla
+    _totalPurchaseCtrl = TextEditingController(
+        text: r.lineCost > 0 ? r.lineCost.toStringAsFixed(2) : '');
+    _totalSaleCtrl = TextEditingController(
+        text: r.lineTotal > 0 ? r.lineTotal.toStringAsFixed(2) : '');
   }
 
   @override
   void dispose() {
     for (final c in [
       _nameCtrl, _barcodeCtrl, _oemCtrl, _purchaseCtrl,
-      _saleCtrl, _quantityCtrl, _brandCtrl, _shelfCtrl, _descCtrl, _minStockCtrl,
-      _discountCtrl,
+      _saleCtrl, _quantityCtrl, _invoiceQtyCtrl, _brandCtrl, _shelfCtrl,
+      _descCtrl, _minStockCtrl, _discountCtrl,
+      _totalPurchaseCtrl, _totalSaleCtrl,
     ]) {
       c.dispose();
     }
@@ -1250,6 +1309,8 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
     double? purchasePrice,
     double? salePrice,
     int? quantity,
+    int? invoiceQuantity,
+    bool clearInvoiceQuantity = false,
     String? categoryId,
     String? categoryName,
     String? brandId,
@@ -1274,6 +1335,8 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
           purchasePrice: purchasePrice,
           salePrice: salePrice,
           quantity: quantity,
+          invoiceQuantity: invoiceQuantity,
+          clearInvoiceQuantity: clearInvoiceQuantity,
           categoryId: categoryId,
           categoryName: categoryName,
           brandId: brandId,
@@ -1308,6 +1371,34 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
       salePrice: val,
       variantRows: row.variantRows.map((vr) => vr.copyWith(salePrice: val)).toList(),
     );
+  }
+
+  /// Toplam satır fiyatını variant adet oranına göre birim fiyatlara böl.
+  /// Senaryoda: 5 beden Tshirt × toplam 500 TL → her variant 100 TL birim fiyat.
+  /// [which] 'purchase' | 'sale' | 'both' — hangi alan güncellensin.
+  void _distributeTotalToVariants(BatchEntryRow row, double totalPrice, String which) {
+    if (totalPrice <= 0 || row.variantRows.isEmpty) return;
+    final totalQty = row.variantRows.fold<int>(0, (s, v) => s + v.quantity);
+    if (totalQty <= 0) return;
+    final splitUnitPrice = totalPrice / totalQty;
+    final updated = row.variantRows.map((vr) {
+      return vr.copyWith(
+        purchasePrice: (which == 'purchase' || which == 'both') ? splitUnitPrice : null,
+        salePrice:     (which == 'sale'     || which == 'both') ? splitUnitPrice : null,
+      );
+    }).toList();
+    _update(
+      purchasePrice: (which == 'purchase' || which == 'both') ? splitUnitPrice : null,
+      salePrice:     (which == 'sale'     || which == 'both') ? splitUnitPrice : null,
+      variantRows: updated,
+    );
+    // Ctrl'leri de senkronize et ki field içinde görünüm tutarlı olsun
+    if (which == 'purchase' || which == 'both') {
+      _purchaseCtrl.text = splitUnitPrice.toStringAsFixed(2);
+    }
+    if (which == 'sale' || which == 'both') {
+      _saleCtrl.text = splitUnitPrice.toStringAsFixed(2);
+    }
   }
 
   BatchRowCompletion _completion(BatchEntryRow row) => BatchRowCompletion.compute(
@@ -1617,19 +1708,129 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                               ),
                             ],
                           ),
+
+                          // ── Toplam Fiyat → Variant birim fiyatına orantılı bölüşüm ─
+                          // Senaryo: 5 beden Tshirt → toplam 500 TL gir → her variant
+                          // adet başına 100 TL birim fiyat. (totalPrice / sumOfQty)
+                          const SizedBox(height: 10),
+                          _FormRow(children: [
+                            _Field(
+                              label: '${t('batch.total_purchase_price')} ₺',
+                              ctrl: _totalPurchaseCtrl,
+                              onChanged: (v) {
+                                final total = double.tryParse(
+                                    v.replaceAll(',', '.')) ?? 0;
+                                if (total > 0) {
+                                  _distributeTotalToVariants(row, total, 'purchase');
+                                }
+                              },
+                              keyboardType: const TextInputType.numberWithOptions(
+                                  decimal: true),
+                              hint: '0,00',
+                            ),
+                            _Field(
+                              label: '${t('batch.total_sale_price')} ₺',
+                              ctrl: _totalSaleCtrl,
+                              onChanged: (v) {
+                                final total = double.tryParse(
+                                    v.replaceAll(',', '.')) ?? 0;
+                                if (total > 0) {
+                                  _distributeTotalToVariants(row, total, 'sale');
+                                }
+                              },
+                              keyboardType: const TextInputType.numberWithOptions(
+                                  decimal: true),
+                              hint: '0,00',
+                            ),
+                          ]),
+                          const SizedBox(height: 4),
+                          Row(children: [
+                            const Icon(Icons.info_outline_rounded,
+                                size: 11, color: AppColors.textMuted),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                t('batch.total_price_distribute_hint'),
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.textMuted,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ),
+                          ]),
                         ],
 
                         // ── Adet (sadece varyant YOK ise) ─────────────────
                         if (row.variantRows.isEmpty) ...[
                           const SizedBox(height: 10),
-                          _Field(
-                            label: '${t('common.quantity')} *',
-                            ctrl: _quantityCtrl,
-                            onChanged: (v) =>
-                                _update(quantity: int.tryParse(v) ?? 1),
-                            keyboardType: TextInputType.number,
-                            hint: '1',
-                          ),
+                          // Mevcut ürün: fatura adedi + teslim alınan (shortage takibi)
+                          if (row.isExisting) ...[
+                            Row(children: [
+                              Expanded(
+                                child: _Field(
+                                  label: 'Fatura Adedi',
+                                  ctrl: _invoiceQtyCtrl,
+                                  onChanged: (v) => _update(
+                                    invoiceQuantity: int.tryParse(v),
+                                    clearInvoiceQuantity: v.isEmpty,
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  hint: '0',
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _Field(
+                                  label: 'Teslim Alınan *',
+                                  ctrl: _quantityCtrl,
+                                  onChanged: (v) =>
+                                      _update(quantity: int.tryParse(v) ?? 1),
+                                  keyboardType: TextInputType.number,
+                                  hint: '1',
+                                ),
+                              ),
+                            ]),
+                            // Shortage uyarı banner
+                            if (row.hasShortage) ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.warning.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                      color: AppColors.warning.withValues(alpha: 0.4)),
+                                ),
+                                child: Row(children: [
+                                  const Icon(Icons.warning_amber_rounded,
+                                      size: 14, color: AppColors.warning),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      '${row.shortageQty} adet eksik — kayıt sonrası tedarikçi talebi otomatik açılır',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.warning,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ]),
+                              ),
+                            ],
+                          ] else ...[
+                            _Field(
+                              label: '${t('common.quantity')} *',
+                              ctrl: _quantityCtrl,
+                              onChanged: (v) =>
+                                  _update(quantity: int.tryParse(v) ?? 1),
+                              keyboardType: TextInputType.number,
+                              hint: '1',
+                            ),
+                          ],
                         ],
 
                         const SizedBox(height: 10),

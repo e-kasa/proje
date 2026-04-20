@@ -2,7 +2,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from ocr_engine import get_reader, extract_text
 from invoice_parser import parse_invoice_text
 import uvicorn
 import logging
@@ -10,17 +9,29 @@ import logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)s  %(message)s")
 log = logging.getLogger(__name__)
 
+# EasyOCR opsiyonel — sadece taranmış PDF/görüntü için gerekli.
+# Dijital PDF akışı (PDFBox → /parse-text) easyocr olmadan çalışır.
+_easyocr_available = False
+try:
+    from ocr_engine import get_reader, extract_text
+    _easyocr_available = True
+except ImportError as _e:
+    log.warning("EasyOCR yüklü değil — /ocr/extract endpoint'i devre dışı. "
+                "Sadece /parse-text çalışacak. Hata: %s", _e)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Uygulama başlarken EasyOCR modelini yükle (ilk istekte değil)."""
-    log.info("EasyOCR modeli yükleniyor — ilk kez çalıştırılıyorsa model indirme süresi 3-10 dk olabilir...")
-    try:
-        get_reader()          # ağır model burada yüklenir (blocking ama kasıtlı)
-        log.info("EasyOCR modeli hazır ✓")
-    except Exception as e:
-        log.error("EasyOCR model yüklenemedi: %s", e)
-        raise RuntimeError(f"EasyOCR başlatılamadı: {e}") from e
+    """Uygulama başlarken EasyOCR modelini yükle (mevcutsa)."""
+    if _easyocr_available:
+        log.info("EasyOCR modeli yükleniyor — ilk kez çalıştırılıyorsa 3-10 dk sürebilir...")
+        try:
+            get_reader()
+            log.info("EasyOCR modeli hazır ✓")
+        except Exception as e:
+            log.error("EasyOCR model yüklenemedi: %s — /ocr/extract kapalı", e)
+    else:
+        log.info("EasyOCR yok — sadece /parse-text aktif (dijital PDF parse için yeterli)")
     yield
     log.info("OCR servisi kapatılıyor.")
 
@@ -42,6 +53,10 @@ async def ocr_extract(file: UploadFile = File(...), table_only: bool = False):
     table_only=true: Sadece sayı içeren satırları döndürür.
     Fatura başlığı, adres, firma bilgisi gibi saf metin satırları elenir.
     """
+    if not _easyocr_available:
+        raise HTTPException(503, "EasyOCR yüklü değil — /ocr/extract kullanılamaz. "
+                                  "`pip install easyocr` ile kurun.")
+
     allowed = {'image/jpeg', 'image/png', 'image/webp', 'image/bmp'}
     if file.content_type not in allowed:
         raise HTTPException(400, f"Desteklenmeyen format: {file.content_type}")

@@ -1761,74 +1761,62 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                           ]),
                         ],
 
-                        // ── Adet (sadece varyant YOK ise) ─────────────────
+                        // ── Adet: Fatura Adedi + Teslim Alınan (tüm ürünler) ──
                         if (row.variantRows.isEmpty) ...[
                           const SizedBox(height: 10),
-                          // Mevcut ürün: fatura adedi + teslim alınan (shortage takibi)
-                          if (row.isExisting) ...[
-                            Row(children: [
-                              Expanded(
-                                child: _Field(
-                                  label: 'Fatura Adedi',
-                                  ctrl: _invoiceQtyCtrl,
-                                  onChanged: (v) => _update(
-                                    invoiceQuantity: int.tryParse(v),
-                                    clearInvoiceQuantity: v.isEmpty,
-                                  ),
-                                  keyboardType: TextInputType.number,
-                                  hint: '0',
+                          Row(children: [
+                            Expanded(
+                              child: _Field(
+                                label: 'Fatura Adedi',
+                                ctrl: _invoiceQtyCtrl,
+                                onChanged: (v) => _update(
+                                  invoiceQuantity: int.tryParse(v),
+                                  clearInvoiceQuantity: v.isEmpty,
                                 ),
+                                keyboardType: TextInputType.number,
+                                hint: '0',
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _Field(
-                                  label: 'Teslim Alınan *',
-                                  ctrl: _quantityCtrl,
-                                  onChanged: (v) =>
-                                      _update(quantity: int.tryParse(v) ?? 1),
-                                  keyboardType: TextInputType.number,
-                                  hint: '1',
-                                ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _Field(
+                                label: 'Teslim Alınan *',
+                                ctrl: _quantityCtrl,
+                                onChanged: (v) =>
+                                    _update(quantity: int.tryParse(v) ?? 1),
+                                keyboardType: TextInputType.number,
+                                hint: '1',
                               ),
-                            ]),
-                            // Shortage uyarı banner
-                            if (row.hasShortage) ...[
-                              const SizedBox(height: 8),
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: AppColors.warning.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                      color: AppColors.warning.withValues(alpha: 0.4)),
-                                ),
-                                child: Row(children: [
-                                  const Icon(Icons.warning_amber_rounded,
-                                      size: 14, color: AppColors.warning),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      '${row.shortageQty} adet eksik — kayıt sonrası tedarikçi talebi otomatik açılır',
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: AppColors.warning,
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                            ),
+                          ]),
+                          // Shortage uyarı banner
+                          if (row.hasShortage) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: AppColors.warning.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                    color: AppColors.warning.withValues(alpha: 0.4)),
+                              ),
+                              child: Row(children: [
+                                const Icon(Icons.warning_amber_rounded,
+                                    size: 14, color: AppColors.warning),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    '${row.shortageQty} adet eksik — kayıt sonrası tedarikçi talebi açılır',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.warning,
+                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
-                                ]),
-                              ),
-                            ],
-                          ] else ...[
-                            _Field(
-                              label: '${t('common.quantity')} *',
-                              ctrl: _quantityCtrl,
-                              onChanged: (v) =>
-                                  _update(quantity: int.tryParse(v) ?? 1),
-                              keyboardType: TextInputType.number,
-                              hint: '1',
+                                ),
+                              ]),
                             ),
                           ],
                         ],
@@ -6660,10 +6648,35 @@ class _ExistingVariantsSectionState extends State<_ExistingVariantsSection> {
         // Expanded — her varyantın satır satır detayı
         if (_expanded && canExpand) ...[
           const SizedBox(height: 6),
+          // Açıklayıcı not: her variantın kendi birim fiyatı vardır,
+          // gösterilen ₺X/adet ürünün toplam fiyatı DEĞİL — variantın birimi.
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.info.withValues(alpha: 0.06),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+            ),
+            child: Row(children: [
+              const Icon(Icons.info_outline_rounded,
+                  size: 11, color: AppColors.info),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  widget.t('batch.variant_independent_price_note'),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.info,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ]),
+          ),
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(8)),
               border: Border.all(color: AppColors.border),
             ),
             child: Column(
@@ -6777,7 +6790,7 @@ class _ExistingVariantRow extends StatelessWidget {
             children: [
               if (stock != null)
                 Text(
-                  '${stock.toInt()} ${t("common.quantity_unit")}',
+                  '${t("batch.current_stock")}: ${stock.toInt()} ${t("common.quantity_unit")}',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
@@ -6785,11 +6798,32 @@ class _ExistingVariantRow extends StatelessWidget {
                   ),
                 ),
               if (price != null && price > 0)
-                Text(
-                  '₺${price.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textSecondary,
+                // /adet suffix → birim fiyat olduğu net anlaşılır
+                // (ürünün toplam fiyatı değil variantın birim fiyatı).
+                // Satır toplamı = price × stock; kullanıcı kafasında karıştırmasın.
+                Tooltip(
+                  message: '${t("batch.variant_unit_price_tooltip")}'
+                      ': ₺${price.toStringAsFixed(2)}'
+                      '${stock != null && stock > 0 ? " · ${t("common.total")}: ₺${(price * stock).toStringAsFixed(2)}" : ""}',
+                  child: Text.rich(
+                    TextSpan(children: [
+                      TextSpan(
+                        text: '₺${price.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      TextSpan(
+                        text: '/${t("common.quantity_unit")}',
+                        style: const TextStyle(
+                          fontSize: 9,
+                          color: AppColors.textMuted,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ]),
                   ),
                 ),
               if (shelf != null && shelf.isNotEmpty)

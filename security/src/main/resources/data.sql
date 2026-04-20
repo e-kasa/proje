@@ -1815,6 +1815,10 @@ VALUES
     ('bnd-bt193-0000-0000-000000000193', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.total_sale_price',      'Toplam Satış',             'Total Sale'),
     ('bnd-bt194-0000-0000-000000000194', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.total_price_distribute_hint', 'Toplam fiyat tüm variantlara adet oranıyla bölüşür', 'Total price is distributed proportionally to variants'),
 
+    -- ── BATCH — Variant birim fiyat netleştirme ──────────────────────
+    ('bnd-bt195-0000-0000-000000000195', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.variant_independent_price_note', 'Her variantın kendi birim fiyatı vardır — değerler birim başınadır, ürünün toplam fiyatı değildir', 'Each variant has its own unit price — shown values are per unit, not product total'),
+    ('bnd-bt196-0000-0000-000000000196', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.variant_unit_price_tooltip', 'Bu variantın birim fiyatı', 'Unit price of this variant'),
+
     -- ── WIZARD (Ürün ekleme adımları) ─────────────────────────────
     ('bnd-wz001-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.changes_will_be_lost', 'Değişiklikler kaybolacak', 'Changes will be lost'),
     ('bnd-wz002-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.exit', 'Çıkış', 'Exit'),

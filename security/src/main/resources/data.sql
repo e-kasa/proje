@@ -1801,6 +1801,15 @@ VALUES
     ('bnd-bt183-0000-0000-000000000183', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.field_discount',      'İskonto %',       'Discount %'),
     ('bnd-bt184-0000-0000-000000000184', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.discount_applied',    'İsk. uygulandı',  'Discount applied'),
 
+    -- ── BATCH — Varyant garanti + özet (her ürün ≥1 variant) ──────
+    ('bnd-bt185-0000-0000-000000000185', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.variant_auto_created',  'Otomatik varyant',         'Auto variant'),
+    ('bnd-bt186-0000-0000-000000000186', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.variant_auto_sku',      'kayıt sonrası atanır',     'assigned on save'),
+    ('bnd-bt187-0000-0000-000000000187', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.variant_price_note',    'Birim fiyat, stok ve barkod bu varyanta kaydedilir', 'Unit price, stock and barcode will be saved to this variant'),
+    ('bnd-bt188-0000-0000-000000000188', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.variant_price_stock',   'Varyant: Fiyat & Stok',    'Variant: Price & Stock'),
+    ('bnd-bt189-0000-0000-000000000189', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.variant_attributes',    'Özellik',                   'Attributes'),
+    ('bnd-bt190-0000-0000-000000000190', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.row_variant_required',  'En az 1 varyant eklemelisiniz', 'At least 1 variant required'),
+    ('bnd-bt191-0000-0000-000000000191', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.barcode',               'Barkod',                   'Barcode'),
+
     -- ── WIZARD (Ürün ekleme adımları) ─────────────────────────────
     ('bnd-wz001-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.changes_will_be_lost', 'Değişiklikler kaybolacak', 'Changes will be lost'),
     ('bnd-wz002-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.exit', 'Çıkış', 'Exit'),

@@ -1020,12 +1020,19 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                                         icon: Icons.business_outlined,
                                         label: row.brandName!,
                                       ),
-                                    // Footwear: varyant sayısı chip
+                                    // Varyant chip: footwear → N varyant,
+                                    // diğer yeni ürünler → 1 varyant (otomatik)
                                     if (widget.cfg.fields.showVariantSize &&
                                         row.variantRows.isNotEmpty)
                                       _MetaChip(
                                         icon: Icons.layers_rounded,
                                         label: '${row.variantRows.length} ${t('batch.variants')}',
+                                        color: accentColor,
+                                      )
+                                    else if (row.isNew)
+                                      _MetaChip(
+                                        icon: Icons.inventory_2_rounded,
+                                        label: '1 ${t('batch.variant')}',
                                         color: accentColor,
                                       ),
                                   ],
@@ -6205,4 +6212,164 @@ class _BrandAutocomplete extends ConsumerWidget {
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
       );
+}
+
+// ── VARYANT ÖZET BANNER ──────────────────────────────────────────────────────
+/// Yeni ürün kartında Section 2 üstünde gösterilen varyant özeti.
+///
+/// Mimari: her yeni ürün EN AZ 1 varyantla kaydedilir; birim fiyat, stok,
+/// barkod ve attributes bu varyanta aktarılır. Bu banner o varyantın
+/// önizlemesini yapar — kullanıcı "ürün mü? varyant mı?" ayrımını net görür.
+class _VariantSummaryBanner extends StatelessWidget {
+  final BatchEntryRow row;
+  final Color accentColor;
+  final Function(String) t;
+
+  const _VariantSummaryBanner({
+    required this.row,
+    required this.accentColor,
+    required this.t,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final barcode = row.barcode.isNotEmpty ? row.barcode : null;
+    final shelf = row.shelfLocation;
+    final attrCount = row.attributes.length;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: accentColor.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.inventory_2_rounded, size: 13, color: accentColor),
+              const SizedBox(width: 6),
+              Text(
+                t('batch.variant_auto_created'),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: accentColor,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: accentColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Text(
+                  '1',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              _VariantChip(
+                label: 'SKU',
+                value: t('batch.variant_auto_sku'),
+                icon: Icons.fingerprint_rounded,
+              ),
+              if (barcode != null)
+                _VariantChip(
+                  label: t('batch.barcode'),
+                  value: barcode,
+                  icon: Icons.qr_code_rounded,
+                ),
+              if (shelf != null && shelf.isNotEmpty)
+                _VariantChip(
+                  label: t('batch.shelf'),
+                  value: shelf,
+                  icon: Icons.shelves,
+                ),
+              if (attrCount > 0)
+                _VariantChip(
+                  label: t('batch.variant_attributes'),
+                  value: '$attrCount',
+                  icon: Icons.label_outline_rounded,
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              const Icon(Icons.info_outline_rounded,
+                  size: 11, color: AppColors.textMuted),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  t('batch.variant_price_note'),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textMuted,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VariantChip extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  const _VariantChip({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: AppColors.textMuted),
+          const SizedBox(width: 4),
+          Text(
+            '$label: ',
+            style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

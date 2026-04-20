@@ -55,7 +55,11 @@ import com.sedcore.autoparts.service.OemNumberService;
 import com.sedcore.autoparts.service.CrossReferenceService;
 import com.sedcore.product.service.ProductVariantAttributeValueService;
 import com.sedcore.product.service.ProductVariantService;
+import com.sedcore.common.enums.ClaimReason;
+import com.sedcore.common.enums.PurchaseStatus;
 import com.sedcore.purchase.service.PurchaseService;
+import com.sedcore.purchase.service.SupplierClaimService;
+import com.sedcore.supplier.service.SupplierAccountService;
 import com.sedcore.inventory.service.StockMovementService;
 import com.sedcore.inventory.service.StockLevelService;
 import com.sedcore.common.context.CompanyContext;
@@ -89,6 +93,8 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
     private final CrossReferenceService crossReferenceService;
     private final CompanySettingRepository companySettingRepository;
     private final StockLevelService stockLevelService;
+    private final SupplierClaimService supplierClaimService;
+    private final SupplierAccountService supplierAccountService;
 
     /**
      * Ürün Oluştur (Tüm Detaylarıyla)
@@ -223,54 +229,57 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
             }
         }
 
-        // 5. OEM NUMBERS — ilk varyanta bağla (parçacı sektörü)
+        // 5. OEM NUMBERS — TÜM varyantlara bağla (footwear'da 5 numara varsa 5'i de OEM alır)
         if (dto.getOemNumbers() != null && !dto.getOemNumbers().isEmpty()) {
-            ProductVariant firstVariant = product.getVariants() != null && !product.getVariants().isEmpty()
-                    ? product.getVariants().get(0)
-                    : null;
-            if (firstVariant == null) {
-                // Varyantları DB'den yeniden yükle
+            List<ProductVariant> targetVariants = product.getVariants();
+            if (targetVariants == null || targetVariants.isEmpty()) {
                 Product reloaded = productRepository.findById(product.getId()).orElse(product);
-                firstVariant = reloaded.getVariants() != null && !reloaded.getVariants().isEmpty()
-                        ? reloaded.getVariants().get(0) : null;
+                targetVariants = reloaded.getVariants();
             }
-            if (firstVariant != null) {
-                for (OemNumberRequest oemReq : dto.getOemNumbers()) {
-                    if (oemReq.getOemNumber() == null || oemReq.getOemNumber().isBlank()) continue;
-                    OemNumber oem = OemNumber.builder()
-                            .variant(firstVariant)
-                            .oemNumber(oemReq.getOemNumber())
-                            .manufacturer(oemReq.getManufacturer())
-                            .isPrimary(oemReq.getIsPrimary() != null ? oemReq.getIsPrimary() : false)
-                            .build();
-                    oemNumberService.save(oem);
+            if (targetVariants != null && !targetVariants.isEmpty()) {
+                int savedCount = 0;
+                for (ProductVariant v : targetVariants) {
+                    for (OemNumberRequest oemReq : dto.getOemNumbers()) {
+                        if (oemReq.getOemNumber() == null || oemReq.getOemNumber().isBlank()) continue;
+                        OemNumber oem = OemNumber.builder()
+                                .variant(v)
+                                .oemNumber(oemReq.getOemNumber())
+                                .manufacturer(oemReq.getManufacturer())
+                                .isPrimary(oemReq.getIsPrimary() != null ? oemReq.getIsPrimary() : false)
+                                .build();
+                        oemNumberService.save(oem);
+                        savedCount++;
+                    }
                 }
-                log.info("OEM numaraları kaydedildi: {} adet", dto.getOemNumbers().size());
+                log.info("OEM numaraları kaydedildi: {} adet ({} varyant × {} OEM)",
+                        savedCount, targetVariants.size(), dto.getOemNumbers().size());
             }
         }
 
-        // 6. CROSS REFERENCES — ilk varyanta bağla
+        // 6. CROSS REFERENCES — TÜM varyantlara bağla
         if (dto.getCrossReferences() != null && !dto.getCrossReferences().isEmpty()) {
-            ProductVariant firstVariant = product.getVariants() != null && !product.getVariants().isEmpty()
-                    ? product.getVariants().get(0)
-                    : null;
-            if (firstVariant == null) {
+            List<ProductVariant> targetVariants = product.getVariants();
+            if (targetVariants == null || targetVariants.isEmpty()) {
                 Product reloaded = productRepository.findById(product.getId()).orElse(product);
-                firstVariant = reloaded.getVariants() != null && !reloaded.getVariants().isEmpty()
-                        ? reloaded.getVariants().get(0) : null;
+                targetVariants = reloaded.getVariants();
             }
-            if (firstVariant != null) {
-                for (CrossReferenceRequest crReq : dto.getCrossReferences()) {
-                    if (crReq.getCrossRefNumber() == null || crReq.getCrossRefNumber().isBlank()) continue;
-                    CrossReference cr = CrossReference.builder()
-                            .variant(firstVariant)
-                            .crossRefNumber(crReq.getCrossRefNumber())
-                            .crossRefBrand(crReq.getCrossRefBrand())
-                            .notes(crReq.getNotes())
-                            .build();
-                    crossReferenceService.save(cr);
+            if (targetVariants != null && !targetVariants.isEmpty()) {
+                int savedCount = 0;
+                for (ProductVariant v : targetVariants) {
+                    for (CrossReferenceRequest crReq : dto.getCrossReferences()) {
+                        if (crReq.getCrossRefNumber() == null || crReq.getCrossRefNumber().isBlank()) continue;
+                        CrossReference cr = CrossReference.builder()
+                                .variant(v)
+                                .crossRefNumber(crReq.getCrossRefNumber())
+                                .crossRefBrand(crReq.getCrossRefBrand())
+                                .notes(crReq.getNotes())
+                                .build();
+                        crossReferenceService.save(cr);
+                        savedCount++;
+                    }
                 }
-                log.info("Çapraz referanslar kaydedildi: {} adet", dto.getCrossReferences().size());
+                log.info("Çapraz referanslar kaydedildi: {} adet ({} varyant × {} CR)",
+                        savedCount, targetVariants.size(), dto.getCrossReferences().size());
             }
         }
 
@@ -320,7 +329,9 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
         log.info("Purchase oluşturuldu: id={}", purchase.getId());
 
         List<BatchItemResult> results = new ArrayList<>();
-        BigDecimal totalAmount = BigDecimal.ZERO;
+        BigDecimal totalAmount            = BigDecimal.ZERO; // depoya giren mal tutarı (stok+cari)
+        BigDecimal existingInvoiceTotal   = BigDecimal.ZERO; // mevcut ürün fatura tutarı
+        BigDecimal existingReceivedTotal  = BigDecimal.ZERO; // mevcut ürün teslim tutarı
 
         // 3. Yeni ürünler
         if (req.getNewProducts() != null) {
@@ -393,8 +404,13 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                         stockLevelService.addStock(variant.getId(), req.getLocationId(), sm.getLocationType(), item.getQuantity());
                     }
 
-                    BigDecimal lineTotal = item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
-                    totalAmount = totalAmount.add(lineTotal);
+                    // receivedQty = item.quantity (depoya giren fiziksel miktar)
+                    // invoiceQty  = resolvedInvoiceQty() (faturada yazan)
+                    BigDecimal lineReceived = item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+                    BigDecimal lineInvoice  = item.getUnitPrice().multiply(BigDecimal.valueOf(item.resolvedInvoiceQty()));
+                    totalAmount           = totalAmount.add(lineReceived);
+                    existingInvoiceTotal  = existingInvoiceTotal.add(lineInvoice);
+                    existingReceivedTotal = existingReceivedTotal.add(lineReceived);
 
                     results.add(BatchItemResult.builder()
                             .tempId(item.getTempId())
@@ -402,7 +418,8 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                             .variantId(item.getVariantId())
                             .build());
 
-                    log.info("Mevcut ürün stok güncellendi: tempId={}, variantId={}", item.getTempId(), item.getVariantId());
+                    log.info("Mevcut ürün stok güncellendi: tempId={}, variantId={}, invoiceQty={}, receivedQty={}",
+                            item.getTempId(), item.getVariantId(), item.resolvedInvoiceQty(), item.getQuantity());
 
                 } catch (Exception e) {
                     log.warn("Mevcut ürün işlenemedi: tempId={}, hata={}", item.getTempId(), e.getMessage());
@@ -415,10 +432,50 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
             }
         }
 
-        // 5. Purchase toplam tutar güncelle
+        // 5. Purchase toplam tutar + shortage güncelle
+        //
+        // Yeni ürünlerde invoiceQty = receivedQty (shortage kavramı yok).
+        // Yalnızca mevcut ürünlerde shortage takip edilir.
+        //
+        // newProductsTotal  = totalAmount - existingReceivedTotal
+        // finalInvoiceAmount = existingInvoiceTotal + newProductsTotal
+        //                    = existingInvoiceTotal + totalAmount - existingReceivedTotal
+        // shortageAmount    = existingInvoiceTotal - existingReceivedTotal
+        BigDecimal shortageAmount = existingInvoiceTotal.subtract(existingReceivedTotal);
+        if (shortageAmount.compareTo(BigDecimal.ZERO) < 0) shortageAmount = BigDecimal.ZERO;
+        BigDecimal finalInvoiceAmount = totalAmount.add(shortageAmount);
+
+        purchase.setInvoiceAmount(finalInvoiceAmount);
         purchase.setTotalAmount(totalAmount);
+        purchase.setShortageAmount(shortageAmount);
+        purchase.setPurchaseStatus(shortageAmount.compareTo(BigDecimal.ZERO) > 0
+                ? PurchaseStatus.PARTIAL : PurchaseStatus.COMPLETED);
         purchaseService.save(purchase);
-        log.info("Purchase toplam güncellendi: id={}, total={}", purchase.getId(), totalAmount);
+        log.info("Purchase toplam güncellendi: id={}, invoiceAmount={}, totalAmount={}, shortage={}",
+                purchase.getId(), finalInvoiceAmount, totalAmount, shortageAmount);
+
+        // 6. Eksik teslimat varsa otomatik SupplierClaim aç
+        if (shortageAmount.compareTo(BigDecimal.ZERO) > 0) {
+            supplierClaimService.openClaim(purchase, shortageAmount, ClaimReason.SHORTAGE,
+                    "Toplu giriş — fatura ile teslim miktarı arasında fark: " + shortageAmount + " TL");
+            log.info("SupplierClaim açıldı: purchaseId={}, shortage={}", purchase.getId(), shortageAmount);
+        }
+
+        // 7. Tedarikçi cari hesabına borç olarak işle (toplam teslim tutarı)
+        // invoiceAmount değil totalAmount kullanılır — çünkü eksik teslimat
+        // SupplierClaim üzerinden takip edilir, cari hesaba gerçek teslim girişi yazılır.
+        if (totalAmount.compareTo(BigDecimal.ZERO) > 0) {
+            try {
+                supplierAccountService.applyDebit(supplier, totalAmount);
+                log.info("SupplierAccount borç uygulandı: supplierId={}, amount={}, purchaseId={}",
+                        supplier.getId(), totalAmount, purchase.getId());
+            } catch (Exception e) {
+                // Cari hesap güncelleme başarısız olsa bile batch başarılı — log'la
+                // ve manuel düzeltme için uyarı ver (outer transaction rollback OLMAZ).
+                log.error("SupplierAccount güncellenemedi: supplierId={}, amount={}, hata={}",
+                        supplier.getId(), totalAmount, e.getMessage());
+            }
+        }
 
         long successCount = results.stream().filter(BatchItemResult::isSuccess).count();
         long failCount = results.size() - successCount;
@@ -516,35 +573,37 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
             }
         }
 
-        // 3. OEM
+        // 3. OEM — TÜM varyantlara bağla (footwear'da her numara ayrı OEM alır)
         if (dto.getOemNumbers() != null && !dto.getOemNumbers().isEmpty()) {
             Product reloaded = productRepository.findById(product.getId()).orElse(product);
-            ProductVariant firstVariant = (reloaded.getVariants() != null && !reloaded.getVariants().isEmpty())
-                    ? reloaded.getVariants().get(0) : null;
-            if (firstVariant != null) {
-                for (OemNumberRequest o : dto.getOemNumbers()) {
-                    if (o.getOemNumber() == null || o.getOemNumber().isBlank()) continue;
-                    oemNumberService.save(OemNumber.builder()
-                            .variant(firstVariant).oemNumber(o.getOemNumber())
-                            .manufacturer(o.getManufacturer())
-                            .isPrimary(o.getIsPrimary() != null ? o.getIsPrimary() : false)
-                            .build());
+            List<ProductVariant> targetVariants = reloaded.getVariants();
+            if (targetVariants != null && !targetVariants.isEmpty()) {
+                for (ProductVariant v : targetVariants) {
+                    for (OemNumberRequest o : dto.getOemNumbers()) {
+                        if (o.getOemNumber() == null || o.getOemNumber().isBlank()) continue;
+                        oemNumberService.save(OemNumber.builder()
+                                .variant(v).oemNumber(o.getOemNumber())
+                                .manufacturer(o.getManufacturer())
+                                .isPrimary(o.getIsPrimary() != null ? o.getIsPrimary() : false)
+                                .build());
+                    }
                 }
             }
         }
 
-        // 4. CrossRef
+        // 4. CrossRef — TÜM varyantlara bağla
         if (dto.getCrossReferences() != null && !dto.getCrossReferences().isEmpty()) {
             Product reloaded = productRepository.findById(product.getId()).orElse(product);
-            ProductVariant firstVariant = (reloaded.getVariants() != null && !reloaded.getVariants().isEmpty())
-                    ? reloaded.getVariants().get(0) : null;
-            if (firstVariant != null) {
-                for (CrossReferenceRequest c : dto.getCrossReferences()) {
-                    if (c.getCrossRefNumber() == null || c.getCrossRefNumber().isBlank()) continue;
-                    crossReferenceService.save(CrossReference.builder()
-                            .variant(firstVariant).crossRefNumber(c.getCrossRefNumber())
-                            .crossRefBrand(c.getCrossRefBrand()).notes(c.getNotes())
-                            .build());
+            List<ProductVariant> targetVariants = reloaded.getVariants();
+            if (targetVariants != null && !targetVariants.isEmpty()) {
+                for (ProductVariant v : targetVariants) {
+                    for (CrossReferenceRequest c : dto.getCrossReferences()) {
+                        if (c.getCrossRefNumber() == null || c.getCrossRefNumber().isBlank()) continue;
+                        crossReferenceService.save(CrossReference.builder()
+                                .variant(v).crossRefNumber(c.getCrossRefNumber())
+                                .crossRefBrand(c.getCrossRefBrand()).notes(c.getNotes())
+                                .build());
+                    }
                 }
             }
         }

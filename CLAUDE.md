@@ -97,20 +97,30 @@ Company ──< UserDef ──< UserRole >── RoleDef
                   └─< UserDefAccess
 
 Company ──< Product ──< ProductVariant ──< VariantPricing
-                   │              └──< Barcode
-                   └──< OemNumber
-                   └──< CrossReference
-                   └──< VehicleCompatibility >── Vehicle
+                                       ├──< Barcode
+                                       ├──< OemNumber
+                                       ├──< CrossReference
+                                       └──< VehicleCompatibility >── Vehicle
 
-Company ──< Category ──< CategoryAttribute
-Company ──< Purchase ──< StockMovement
+Category (GLOBAL — TOpenSimpleDbEntity) ──< CategoryAttribute
+                                         └──< CategoryVariant
+Company ──< CompanyCategory (firma → kategori seçimi)
+
+Company ──< Purchase ──< StockMovement >── ProductVariant
 Company ──< Sale ──< SaleItem
-Company ──< Supplier ──< SupplierAccount
+                └─< StockMovement
+Company ──< Supplier ──< SupplierAccount (@Version)
+Company ──< Customer ──< CustomerAccount (@Version)
+Company ──< StockLevel (variant × location anlık bakiye, @Version)
+Company ──< Store / Warehouse (lokasyon kodları)
 
-Kalıtım: TOpenSimpleCompanyEntity → TOpenSimpleDbEntity → TOpenDbEntity
+Kalıtım: TOpenDbEntity → TOpenSimpleDbEntity → TOpenSimpleCompanyEntity
+         (companyCode + @FilterDef "filterCompany" otomatik)
 ```
 
-Detay: modül CLAUDE.md'leri (ör. `pos-product-manager/CLAUDE.md`).
+Detay:
+- Batch entry akışı: `docs/batch-entry-hierarchy.md`
+- Modül CLAUDE.md'leri (ör. `pos-product-manager/CLAUDE.md`)
 
 ---
 

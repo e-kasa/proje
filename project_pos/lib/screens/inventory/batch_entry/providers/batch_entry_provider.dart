@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../services/product_service.dart';
 import '../../../../services/oem_service.dart';
@@ -510,6 +511,7 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
           'tempId': row.id,
           'variantId': row.existingVariantId,
           'quantity': row.quantity,
+          if (row.invoiceQuantity != null) 'invoiceQuantity': row.invoiceQuantity,
           'unitPrice': row.purchasePrice,
           'taxRate': row.vatRate,
         }).toList();
@@ -593,9 +595,15 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
     state = state.copyWith(rows: updatedRows);
   }
 
-  String _generateSku() =>
-      'SKU-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}'
-      '-${(DateTime.now().microsecond % 1000).toString().padLeft(3, '0')}';
+  /// SKU üretici — timestamp + 32-bit kriptografik rastgele.
+  /// Aynı milisaniyede N adet üretim güvenli (Random.secure() çarpışma sıfıra yakın).
+  /// Format: SKU-<ms-hex>-<rand-hex>  örn: SKU-18F8A12CD45-8A3F2B1C
+  static final Random _skuRandom = Random.secure();
+  String _generateSku() {
+    final ms = DateTime.now().millisecondsSinceEpoch.toRadixString(16).toUpperCase();
+    final rand = _skuRandom.nextInt(0xFFFFFFFF).toRadixString(16).padLeft(8, '0').toUpperCase();
+    return 'SKU-$ms-$rand';
+  }
 
 
   /// oemList doluysa ondan, değilse tek oemNumber field'ından oluşturur

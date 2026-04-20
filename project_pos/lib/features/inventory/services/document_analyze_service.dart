@@ -81,6 +81,56 @@ class DocumentAnalyzeResult {
   }
 }
 
+// ── MATCHED ÜRÜNÜN VARYANT ÖZETİ ─────────────────────────────────────────────
+
+/// Mevcut ürün eşleşmesi yapıldığında, ürünün TÜM varyantlarının özet bilgisi.
+/// Footwear gibi çoklu-varyantlı ürünlerde kullanıcı kartta diğer numara/renk
+/// kombinasyonlarını görür (her varyantın stok/fiyat/raf bilgisiyle).
+class DocumentVariantSummary {
+  final String? variantId;
+  final String? sku;
+  final String? name;
+  final Map<String, String> attributes;
+  final double? currentStock;
+  final double? salePrice;
+  final String? shelfLocationCode;
+  final bool isMatched;
+
+  const DocumentVariantSummary({
+    this.variantId,
+    this.sku,
+    this.name,
+    this.attributes = const {},
+    this.currentStock,
+    this.salePrice,
+    this.shelfLocationCode,
+    this.isMatched = false,
+  });
+
+  factory DocumentVariantSummary.fromJson(Map<String, dynamic> json) {
+    final rawAttrs = json['attributes'];
+    Map<String, String> attrs = const {};
+    if (rawAttrs is Map) {
+      attrs = rawAttrs.map((k, v) => MapEntry(k.toString(), v?.toString() ?? ''));
+    }
+    return DocumentVariantSummary(
+      variantId: json['variantId'] as String?,
+      sku: json['sku'] as String?,
+      name: json['name'] as String?,
+      attributes: attrs,
+      currentStock: (json['currentStock'] as num?)?.toDouble(),
+      salePrice: (json['salePrice'] as num?)?.toDouble(),
+      shelfLocationCode: json['shelfLocationCode'] as String?,
+      isMatched: (json['isMatched'] as bool?) ??
+          (json['matched'] as bool?) ?? false,
+    );
+  }
+
+  /// Attributes özeti: "Numara: 42 · Renk: Siyah"
+  String get displayAttributes =>
+      attributes.entries.map((e) => '${e.key}: ${e.value}').join(' · ');
+}
+
 // ── NAME MATCH ALTERNATİF ADAY ──────────────────────────────────────────────
 
 /// Backend searchProducts sonucundan dönen alternatif ürün adayı.
@@ -200,6 +250,15 @@ class DocumentAnalyzeItem {
   /// NAME match'te alternatif adaylar (backend max 3, aksi halde boş)
   final List<DocumentMatchCandidate> matchCandidates;
 
+  /// Eşleşen ürünün TOPLAM variant sayısı (tek variantlı → 1, çoklu → N).
+  /// null → backend bu bilgiyi göndermedi (eski sürüm).
+  final int? matchedVariantCount;
+
+  /// Eşleşen ürünün tüm varyantlarının özet listesi.
+  /// Footwear gibi çoklu-variantlı ürünlerde her numara/renk ayrı satır.
+  /// Eşleşen variant isMatched=true ile işaretlenir.
+  final List<DocumentVariantSummary> matchedVariants;
+
   // ── Varyant grup alanları ──────────────────────────────────────────────────
   /// true → bu satır birden fazla varyantın gruplanmış hali (Durum 2)
   final bool variantGroup;
@@ -235,6 +294,8 @@ class DocumentAnalyzeItem {
     this.matchedBrandName,
     this.matchedOemCodes = const [],
     this.matchCandidates = const [],
+    this.matchedVariantCount,
+    this.matchedVariants = const [],
     this.variantGroup = false,
     this.variants = const [],
   });
@@ -281,6 +342,11 @@ class DocumentAnalyzeItem {
       matchCandidates: (json['matchCandidates'] as List<dynamic>? ?? [])
           .map((e) =>
               DocumentMatchCandidate.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      matchedVariantCount: (json['matchedVariantCount'] as num?)?.toInt(),
+      matchedVariants: (json['matchedVariants'] as List<dynamic>? ?? [])
+          .map((e) =>
+              DocumentVariantSummary.fromJson(e as Map<String, dynamic>))
           .toList(),
       variantGroup: json['variantGroup'] as bool? ?? false,
       variants: (json['variants'] as List<dynamic>? ?? [])

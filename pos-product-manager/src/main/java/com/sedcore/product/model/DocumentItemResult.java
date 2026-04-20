@@ -80,6 +80,21 @@ public class DocumentItemResult {
      */
     private List<MatchCandidate> matchCandidates;
 
+    /**
+     * Eşleşen ürünün TOPLAM variant sayısı (eşleşen variant dahil).
+     * Örn: 3 numaralı gömlek eşleşti, ürünün 5 farklı numarası varsa → 5.
+     * null veya 1 → tek variantlı ürün.
+     */
+    private Integer matchedVariantCount;
+
+    /**
+     * Eşleşen ürünün tüm variant'larının özet bilgisi.
+     * Footwear gibi çok-variantlı ürünlerde kullanıcı karttan diğer
+     * numara/renk kombinasyonlarını görebilir. Eşleşen variant
+     * {@code isMatched=true} ile işaretlenir.
+     */
+    private List<MatchedVariantSummary> matchedVariants;
+
     /** Belgeden çıkarılan birim (ADET, KG, LT, MT vb.) */
     private String unit;
 

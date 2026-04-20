@@ -253,6 +253,9 @@ class BatchEntryRow {
   double vatRate;
   double discountRate; // iskonto oranı (%) — faturadan veya manuel, default 0
   int quantity;
+  /// Fatura üzerindeki miktar. null ise [quantity] değeri kullanılır.
+  /// Eksik teslimat durumunda invoiceQuantity > quantity olur.
+  int? invoiceQuantity;
   RowStatus status;
   String? existingProductId;
   String? existingVariantId;
@@ -266,6 +269,15 @@ class BatchEntryRow {
   String? existingShelfLocation;
   String? existingBrandName;
   List<String> existingOemCodes;
+
+  /// Mevcut ürünün TOPLAM variant sayısı (tek variantlı=1, çoklu footwear=N).
+  /// null → eşleşme yok veya backend enrichment yapmadı.
+  int? existingVariantCount;
+
+  /// Mevcut ürünün tüm varyantlarının özet listesi (Map format — JSON hazır).
+  /// Her entry: {variantId, sku, name, attributes, currentStock, salePrice,
+  /// shelfLocationCode, isMatched}. Kart detay UI'da tablo olarak gösterilir.
+  List<Map<String, dynamic>> existingVariants;
 
   String? errorMessage;
   bool isExpanded;
@@ -297,6 +309,7 @@ class BatchEntryRow {
     this.vatRate = 20.0,
     this.discountRate = 0,
     this.quantity = 1,
+    this.invoiceQuantity,
     this.status = RowStatus.newProduct,
     this.existingProductId,
     this.existingVariantId,
@@ -308,6 +321,8 @@ class BatchEntryRow {
     this.existingShelfLocation,
     this.existingBrandName,
     List<String>? existingOemCodes,
+    this.existingVariantCount,
+    List<Map<String, dynamic>>? existingVariants,
     this.errorMessage,
     this.isExpanded = false,
     this.description,
@@ -320,6 +335,7 @@ class BatchEntryRow {
     List<BatchVariantRow>? variantRows,
   })  : id = id ?? _generateId(),
         existingOemCodes = existingOemCodes ?? [],
+        existingVariants = existingVariants ?? [],
         attributes = attributes ?? {},
         oemList = oemList ?? [],
         crossRefList = crossRefList ?? [],
@@ -329,6 +345,14 @@ class BatchEntryRow {
   int get effectiveQuantity => variantRows.isNotEmpty
       ? variantRows.fold(0, (s, r) => s + r.quantity)
       : quantity;
+
+  /// Depoya giren fiziksel adet (= quantity)
+  int get receivedQty => quantity;
+  /// Fatura miktarı (null → receivedQty ile aynı, eksik teslimat yok)
+  int get resolvedInvoiceQty => invoiceQuantity ?? quantity;
+  /// Eksik adet (0 = tam teslimat)
+  int get shortageQty => (resolvedInvoiceQty - receivedQty).clamp(0, 9999);
+  bool get hasShortage => shortageQty > 0;
 
   /// Varyantlar varsa her satır kendi fiyatı × kendi adedi, yoksa kart fiyatı × kart adedi.
   double get lineTotal => variantRows.isNotEmpty
@@ -366,6 +390,8 @@ class BatchEntryRow {
     double? vatRate,
     double? discountRate,
     int? quantity,
+    int? invoiceQuantity,
+    bool clearInvoiceQuantity = false,
     RowStatus? status,
     String? existingProductId,
     String? existingVariantId,
@@ -377,6 +403,8 @@ class BatchEntryRow {
     String? existingShelfLocation,
     String? existingBrandName,
     List<String>? existingOemCodes,
+    int? existingVariantCount,
+    List<Map<String, dynamic>>? existingVariants,
     String? errorMessage,
     bool? isExpanded,
     String? description,
@@ -403,6 +431,7 @@ class BatchEntryRow {
       vatRate: vatRate ?? this.vatRate,
       discountRate: discountRate ?? this.discountRate,
       quantity: quantity ?? this.quantity,
+      invoiceQuantity: clearInvoiceQuantity ? null : (invoiceQuantity ?? this.invoiceQuantity),
       status: status ?? this.status,
       existingProductId: existingProductId ?? this.existingProductId,
       existingVariantId: existingVariantId ?? this.existingVariantId,
@@ -415,6 +444,8 @@ class BatchEntryRow {
       existingShelfLocation: existingShelfLocation ?? this.existingShelfLocation,
       existingBrandName: existingBrandName ?? this.existingBrandName,
       existingOemCodes: existingOemCodes ?? this.existingOemCodes,
+      existingVariantCount: existingVariantCount ?? this.existingVariantCount,
+      existingVariants: existingVariants ?? this.existingVariants,
       errorMessage: errorMessage ?? this.errorMessage,
       isExpanded: isExpanded ?? this.isExpanded,
       description: description ?? this.description,

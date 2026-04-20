@@ -2981,6 +2981,17 @@ class _ExistingProductInfoCard extends StatelessWidget {
             ],
           ),
 
+          // ── Varyant Özeti — "Bu ürünün N varyantı var" ───────────────────
+          if (row.existingVariantCount != null && row.existingVariantCount! > 0) ...[
+            const SizedBox(height: 8),
+            _ExistingVariantsSection(
+              count: row.existingVariantCount!,
+              variants: row.existingVariants,
+              accentColor: accentColor,
+              t: t,
+            ),
+          ],
+
           // ── OEM chip listesi ─────────────────────────────────────────────
           if (row.existingOemCodes.isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -6367,6 +6378,235 @@ class _VariantChip extends StatelessWidget {
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── EXISTING PRODUCT — VARYANT ÖZETİ ─────────────────────────────────────────
+/// Mevcut ürünün tüm varyantlarını özet halinde gösterir.
+/// Collapsed: "3 varyant" chip. Tap → expand → her varyant için
+/// attributes/stok/fiyat/raf satırı. Eşleşen varyant vurgulanır.
+class _ExistingVariantsSection extends StatefulWidget {
+  final int count;
+  final List<Map<String, dynamic>> variants;
+  final Color accentColor;
+  final Function(String) t;
+
+  const _ExistingVariantsSection({
+    required this.count,
+    required this.variants,
+    required this.accentColor,
+    required this.t,
+  });
+
+  @override
+  State<_ExistingVariantsSection> createState() =>
+      _ExistingVariantsSectionState();
+}
+
+class _ExistingVariantsSectionState extends State<_ExistingVariantsSection> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final canExpand = widget.variants.isNotEmpty;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header — sadece sayı chip'i (tek varyantta sade)
+        InkWell(
+          onTap: canExpand ? () => setState(() => _expanded = !_expanded) : null,
+          borderRadius: BorderRadius.circular(6),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: widget.accentColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                  color: widget.accentColor.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.layers_rounded, size: 12, color: widget.accentColor),
+                const SizedBox(width: 4),
+                Text(
+                  '${widget.count} ${widget.t("batch.variants")}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: widget.accentColor,
+                  ),
+                ),
+                if (canExpand) ...[
+                  const SizedBox(width: 4),
+                  Icon(
+                    _expanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    size: 14,
+                    color: widget.accentColor,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+
+        // Expanded — her varyantın satır satır detayı
+        if (_expanded && canExpand) ...[
+          const SizedBox(height: 6),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              children: widget.variants.asMap().entries.map((e) {
+                final idx = e.key;
+                final v = e.value;
+                return _ExistingVariantRow(
+                  variant: v,
+                  accentColor: widget.accentColor,
+                  isLast: idx == widget.variants.length - 1,
+                  t: widget.t,
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _ExistingVariantRow extends StatelessWidget {
+  final Map<String, dynamic> variant;
+  final Color accentColor;
+  final bool isLast;
+  final Function(String) t;
+
+  const _ExistingVariantRow({
+    required this.variant,
+    required this.accentColor,
+    required this.isLast,
+    required this.t,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sku = variant['sku']?.toString() ?? '';
+    final name = variant['name']?.toString() ?? '';
+    final stock = (variant['currentStock'] as num?)?.toDouble();
+    final price = (variant['salePrice'] as num?)?.toDouble();
+    final shelf = variant['shelfLocationCode']?.toString();
+    final isMatched = variant['isMatched'] as bool? ?? false;
+
+    final attrs = variant['attributes'];
+    String attrDisplay = '';
+    if (attrs is Map && attrs.isNotEmpty) {
+      attrDisplay = attrs.entries
+          .map((e) => '${e.key}: ${e.value}')
+          .join(' · ');
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: isMatched
+            ? accentColor.withValues(alpha: 0.06)
+            : Colors.transparent,
+        border: isLast
+            ? null
+            : Border(bottom: BorderSide(color: AppColors.border)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Eşleşme işareti
+          Icon(
+            isMatched
+                ? Icons.check_circle_rounded
+                : Icons.circle_outlined,
+            size: 12,
+            color: isMatched ? accentColor : AppColors.textMuted,
+          ),
+          const SizedBox(width: 6),
+          // Attributes + SKU
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  attrDisplay.isNotEmpty
+                      ? attrDisplay
+                      : (name.isNotEmpty ? name : '—'),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: isMatched ? FontWeight.w700 : FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (sku.isNotEmpty)
+                  Text(
+                    sku,
+                    style: const TextStyle(
+                      fontSize: 9,
+                      color: AppColors.textMuted,
+                      fontFamily: 'monospace',
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 6),
+          // Stok + fiyat + raf
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (stock != null)
+                Text(
+                  '${stock.toInt()} ${t("common.quantity_unit")}',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: stock <= 0 ? AppColors.danger : AppColors.success,
+                  ),
+                ),
+              if (price != null && price > 0)
+                Text(
+                  '₺${price.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              if (shelf != null && shelf.isNotEmpty)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.shelves, size: 9, color: AppColors.info),
+                    const SizedBox(width: 2),
+                    Text(
+                      shelf,
+                      style: const TextStyle(
+                        fontSize: 9,
+                        color: AppColors.info,
+                      ),
+                    ),
+                  ],
+                ),
+            ],
           ),
         ],
       ),

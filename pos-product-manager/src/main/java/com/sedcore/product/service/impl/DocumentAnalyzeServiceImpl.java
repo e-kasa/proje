@@ -479,17 +479,18 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
     /** ParsedLine listesini VariantGrouper → matchToProduct() → DocumentItemResult listesine dönüştürür. */
     private List<DocumentItemResult> buildResults(List<ParsedLine> parsedLines) {
         // Post-process filter: non-product satırları at
-        int before = parsedLines.size();
-        parsedLines = parsedLines.stream()
+        // NOT: parameter reassignment YAPMAYIZ — lambda/stream scope'unda
+        // effectively final gereksinimi karışmasın. Yeni local variable kullan.
+        final List<ParsedLine> filtered = parsedLines.stream()
                 .filter(this::isValidProductLine)
                 .collect(Collectors.toList());
-        int removed = before - parsedLines.size();
+        final int removed = parsedLines.size() - filtered.size();
         if (removed > 0) {
             log.info("buildResults: {} non-product satır atıldı, {} geçerli ürün kaldı",
-                    removed, parsedLines.size());
+                    removed, filtered.size());
         }
 
-        List<VariantGrouper.VariantGroup> groups = VariantGrouper.group(parsedLines);
+        List<VariantGrouper.VariantGroup> groups = VariantGrouper.group(filtered);
         List<DocumentItemResult> results = new ArrayList<>();
         int rowIndex = 0;
 
@@ -1031,6 +1032,55 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
                     variant.getId(), e.getMessage());
         }
 
+        // Tüm variant özetleri — "mevcut ürünün kaç varyantı var" bilgisi
+        // Kullanıcı kartta diğer numara/renk kombinasyonlarını görebilsin.
+        int variantCount = 0;
+        List<com.sedcore.product.model.MatchedVariantSummary> variantSummaries =
+                Collections.emptyList();
+        try {
+            List<com.sedcore.product.entity.ProductVariant> allVariants = null;
+            if (variant.getProduct() != null && variant.getProduct().getId() != null) {
+                allVariants = productVariantRepository
+                        .findByProductIdAndIsDeleted(variant.getProduct().getId(), false);
+            }
+            if (allVariants != null && !allVariants.isEmpty()) {
+                variantCount = allVariants.size();
+                final String matchedId = variant.getId();
+                variantSummaries = new ArrayList<>();
+                for (com.sedcore.product.entity.ProductVariant v : allVariants) {
+                    java.math.BigDecimal vSale = null;
+                    try {
+                        if (v.getVariantPricings() != null && !v.getVariantPricings().isEmpty()) {
+                            VariantPricing active = v.getVariantPricings().stream()
+                                    .filter(p -> p.getValidFrom() != null)
+                                    .max(Comparator.comparing(VariantPricing::getValidFrom))
+                                    .orElse(v.getVariantPricings().get(0));
+                            vSale = active.getSalePrice();
+                        }
+                    } catch (Exception ignored) {}
+                    double vStock = 0.0;
+                    try {
+                        vStock = stockLevelService.getTotalQuantity(v.getId());
+                    } catch (Exception ignored) {}
+                    variantSummaries.add(
+                        com.sedcore.product.model.MatchedVariantSummary.builder()
+                            .variantId(v.getId())
+                            .sku(v.getSku())
+                            .name(v.getName())
+                            .attributes(v.getAttributes())
+                            .currentStock(vStock)
+                            .salePrice(vSale)
+                            .shelfLocationCode(v.getShelfLocationCode())
+                            .isMatched(matchedId != null && matchedId.equals(v.getId()))
+                            .build()
+                    );
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Variant özeti enrichment başarısız: variantId={}, hata={}",
+                    variant.getId(), e.getMessage());
+        }
+
         double confidence = "BARCODE".equals(matchType) ? 1.0
                           : "OEM".equals(matchType)     ? 0.9 : 0.5;
         return builder
@@ -1047,6 +1097,8 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
                 .matchedShelfLocation(variant.getShelfLocationCode())
                 .matchedBrandName(brandName)
                 .matchedOemCodes(oemCodes)
+                .matchedVariantCount(variantCount)
+                .matchedVariants(variantSummaries)
                 .matchConfidence(confidence)
                 .warningFlags(warningFlags)
                 .build();

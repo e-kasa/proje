@@ -161,6 +161,19 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
             existingShelfLocation: item.matchedShelfLocation,
             existingBrandName: item.matchedBrandName,
             existingOemCodes: item.matchedOemCodes,
+            existingVariantCount: item.matchedVariantCount,
+            existingVariants: item.matchedVariants
+                .map((v) => {
+                      'variantId': v.variantId,
+                      'sku': v.sku,
+                      'name': v.name,
+                      'attributes': v.attributes,
+                      'currentStock': v.currentStock,
+                      'salePrice': v.salePrice,
+                      'shelfLocationCode': v.shelfLocationCode,
+                      'isMatched': v.isMatched,
+                    })
+                .toList(),
             variantRows: variantRows,
           );
         } else {

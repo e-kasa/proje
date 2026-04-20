@@ -1,0 +1,36 @@
+feat(ocr): profesyonel kurulum — minimal + tam requirements + README
+
+Önceki sorun: /ocr/extract endpoint'i python-multipart'ı zorunlu kılıyor
+(UploadFile + File(...) parametresi). Kullanıcı sadece /parse-text'i
+kullanmak isterse bile modül bu paket olmadan başlamıyordu.
+
+Çözüm — endpoint'leri bağımlılıklarına göre koşullu register et:
+
+main.py değişiklikleri:
+- _easyocr_available + _multipart_available iki ayrı flag
+- /ocr/extract sadece her ikisi de True ise app.post ile register edilir
+- Aksi halde endpoint FastAPI'nin route tablosunda HİÇ YER ALMAZ
+  -> multipart_is_installed assertion'ı tetiklenmez, modül temiz yüklenir
+- /health endpoint'i artık durum raporu veriyor
+
+requirements-minimal.txt (YENİ) — sadece parse için 4 paket:
+- fastapi, uvicorn[standard], pydantic, python-multipart
+- ~30 MB, saniyeler içinde kurulur
+- /parse-text için yeterli
+
+requirements.txt — tam kurulum (easyocr dahil, ~2 GB):
+- python-multipart eklendi (explicit dependency)
+
+README.md (YENİ) — profesyonel kurulum + kullanım rehberi:
+- Hızlı başlangıç (dijital PDF için)
+- Tam kurulum (taranmış PDF için)
+- API örnekleri (POST /parse-text request/response)
+- Python 3.14 notu
+- Sorun giderme tablosu
+
+Kullanım:
+  # Minimum (dijital PDF parse — önerilen)
+  python -m pip install -r requirements-minimal.txt
+  python -m uvicorn main:app --port 8003
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>

@@ -1511,10 +1511,21 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
 
                   const SizedBox(height: 14),
 
-                  // ── Bölüm 2: Fiyat & Stok ────────────────────────────────
+                  // ── Varyant Garanti Banner — yeni ürün için tek varyant ──
+                  // Mimari: her yeni ürün en az 1 variantla kaydedilir.
+                  // Birim fiyat + stok + barkod bu variant'a aktarılır.
+                  if (row.isNew && !widget.cfg.fields.showVariantSize)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _VariantSummaryBanner(row: row, accentColor: accentColor, t: t),
+                    ),
+
+                  // ── Bölüm 2: Varyant — Fiyat & Stok ──────────────────────
                   _WizardSectionHeader(
                     stepNumber: 2,
-                    title: t('batch.price_and_stock'),
+                    title: row.isNew
+                        ? t('batch.variant_price_stock')
+                        : t('batch.price_and_stock'),
                     section: completion.sectionB,
                     isRequired: true,
                     t: t,

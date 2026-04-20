@@ -370,6 +370,8 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
     if (state.supplierId == null) return 'batch.supplier_required';
     if (state.locationId == null) return 'batch.location_required';
 
+    final isFootwear = _sectorConfig.type == SectorType.footwear;
+
     for (int i = 0; i < state.rows.length; i++) {
       final r = state.rows[i];
       if (r.isSaved) continue;
@@ -379,11 +381,20 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
       if (r.isNew && (r.categoryId == null || r.categoryId!.isEmpty)) {
         return 'batch.row_category_required|${i + 1}';
       }
-      if (r.salePrice <= 0) {
-        return 'batch.row_sale_price_required|${i + 1}';
-      }
-      if (r.quantity <= 0) {
-        return 'batch.row_quantity_required|${i + 1}';
+      // Footwear: en az 1 geçerli varyant zorunlu (Mimari: her ürün min 1 variant)
+      if (r.isNew && isFootwear) {
+        final validVariants = r.variantRows.where((v) => v.isValid).length;
+        if (validVariants == 0) {
+          return 'batch.row_variant_required|${i + 1}';
+        }
+      } else {
+        // Diğer sektörler: salePrice + quantity row seviyesinde (default variant'a miras)
+        if (r.salePrice <= 0) {
+          return 'batch.row_sale_price_required|${i + 1}';
+        }
+        if (r.quantity <= 0) {
+          return 'batch.row_quantity_required|${i + 1}';
+        }
       }
     }
     return null;

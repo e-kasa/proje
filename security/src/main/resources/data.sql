@@ -1819,6 +1819,9 @@ VALUES
     ('bnd-bt195-0000-0000-000000000195', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.variant_independent_price_note', 'Her variantın kendi birim fiyatı vardır — değerler birim başınadır, ürünün toplam fiyatı değildir', 'Each variant has its own unit price — shown values are per unit, not product total'),
     ('bnd-bt196-0000-0000-000000000196', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.variant_unit_price_tooltip', 'Bu variantın birim fiyatı', 'Unit price of this variant'),
 
+    -- ── BATCH — Mevcut ürün için YENİ fiyatlandırma zorunluluğu ────
+    ('bnd-bt197-0000-0000-000000000197', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.new_price_required_note', 'Bu giriş için YENİ fatura alış fiyatını girin. Sistemdeki fiyat sadece referanstır.', 'Enter NEW invoice purchase price for this entry. System price is reference only.'),
+
     -- ── WIZARD (Ürün ekleme adımları) ─────────────────────────────
     ('bnd-wz001-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.changes_will_be_lost', 'Değişiklikler kaybolacak', 'Changes will be lost'),
     ('bnd-wz002-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.exit', 'Çıkış', 'Exit'),

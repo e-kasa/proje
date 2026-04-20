@@ -3227,8 +3227,74 @@ class _ExistingProductInfoCard extends StatelessWidget {
             ),
           ],
 
-          // ── Stok + cari güncellenecek info notu ─────────────────────────
+          // ── Yeni fiyat girin uyarısı (kritik — kullanıcı sistemin eski
+          // fiyatını baz alacak sanmasın) + sistemdeki son fiyat referansı ──
           const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.warning.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        size: 13, color: AppColors.warning),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        t('batch.new_price_required_note'),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.warning,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                // Referans: sistemdeki son alış + satış fiyatları
+                if (row.existingLastPurchasePrice != null ||
+                    row.existingSalePrice != null) ...[
+                  const SizedBox(height: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 19),
+                    child: Wrap(
+                      spacing: 8,
+                      children: [
+                        if (row.existingLastPurchasePrice != null &&
+                            row.existingLastPurchasePrice! > 0)
+                          Text(
+                            '${t("batch.last_purchase_price")}: ₺${row.existingLastPurchasePrice!.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: AppColors.textSecondary,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        if (row.existingSalePrice != null &&
+                            row.existingSalePrice! > 0)
+                          Text(
+                            '${t("batch.system_sale_price")}: ₺${row.existingSalePrice!.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: AppColors.textSecondary,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          // Stok + cari güncellenecek info notu (ikincil bilgi)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(

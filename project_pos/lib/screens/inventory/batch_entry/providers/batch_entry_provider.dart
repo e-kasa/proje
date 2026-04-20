@@ -68,14 +68,19 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
             }
           }
         }
+        // ÖNEMLİ: Mevcut ürün eşleşse bile row.purchasePrice/salePrice
+        // SIFIR başlatılır — kullanıcı bu batch girişine özel YENİ fatura
+        // fiyatını girecek. Sistemin eski fiyatları (sysSale, sysPurchase)
+        // sadece existing* alanlarında REFERANS olarak saklanır, kartta
+        // "Sistemdeki son fiyat: ₺X" şeklinde gösterilir ama row'a prefill EDİLMEZ.
         final row = BatchEntryRow(
           barcode: p['barcode']?.toString() ?? trimmed,
           productName: p['name']?.toString() ?? '',
           brandName: p['brand']?.toString(),
           categoryId: p['categoryId']?.toString(),
           categoryName: p['categoryName']?.toString(),
-          purchasePrice: sysPurchase ?? 0,
-          salePrice: sysSale ?? 0,
+          purchasePrice: 0, // Kullanıcı fatura alış fiyatını YENIDEN girecek
+          salePrice: 0,     // Kullanıcı satış fiyatını YENIDEN girecek
           vatRate: (p['taxRate'] as num?)?.toDouble() ?? 20.0,
           quantity: 1,
           status: RowStatus.existing,
@@ -83,9 +88,9 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
           existingVariantId: p['variantId']?.toString(),
           existingVariantSku: p['sku']?.toString(),
           existingCurrentStock: sysStock,
-          existingSalePrice: sysSale,
-          existingPurchasePrice: sysPurchase,
-          existingLastPurchasePrice: sysPurchase, // barkod akışında aynı
+          existingSalePrice: sysSale,            // referans (sistem eski)
+          existingPurchasePrice: sysPurchase,    // referans
+          existingLastPurchasePrice: sysPurchase, // referans (son alış)
           existingShelfLocation: p['shelfLocationCode']?.toString(),
           existingBrandName: p['brand']?.toString(),
           existingOemCodes: oemCodes,
@@ -536,6 +541,7 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
                   'crossRefBrand': c['crossRefBrand'] ?? '',
                 })
             .toList(),
+        if (row.invoiceQuantity != null) 'invoiceQuantity': row.invoiceQuantity,
       };
     }).toList();
 

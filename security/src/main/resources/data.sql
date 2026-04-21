@@ -1822,6 +1822,11 @@ VALUES
     -- ── BATCH — Mevcut ürün için YENİ fiyatlandırma zorunluluğu ────
     ('bnd-bt197-0000-0000-000000000197', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.new_price_required_note', 'Bu giriş için YENİ fatura alış fiyatını girin. Sistemdeki fiyat sadece referanstır.', 'Enter NEW invoice purchase price for this entry. System price is reference only.'),
 
+    -- ── BATCH — Satış fiyatı kilit + alış zorunlu (mevcut ürün) ────
+    ('bnd-bt198-0000-0000-000000000198', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.system_price_locked_tooltip', 'Mevcut ürünün satış fiyatı sistemdekiyle aynı kalır', 'Existing product sale price stays same as system'),
+    ('bnd-bt199-0000-0000-000000000199', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.row_sale_price_must_match_system', 'Satır satış fiyatı sistemdeki fiyatla aynı olmalı', 'Row sale price must match system price'),
+    ('bnd-bt200-0000-0000-000000000200', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.row_purchase_price_required', 'Yeni fatura alış fiyatı girilmelidir', 'New invoice purchase price required'),
+
     -- ── WIZARD (Ürün ekleme adımları) ─────────────────────────────
     ('bnd-wz001-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.changes_will_be_lost', 'Değişiklikler kaybolacak', 'Changes will be lost'),
     ('bnd-wz002-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.exit', 'Çıkış', 'Exit'),

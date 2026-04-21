@@ -1637,7 +1637,9 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                     child: Column(
                       children: [
                         // ── Fiyat alanları ─────────────────────────────────
-                        // Varyantlar varsa etiketler "Varsayılan" prefix alır
+                        // KURAL: Mevcut ürün eşleşmesinde salePrice SİSTEM
+                        // fiyatıyla aynı kalır (read-only, 🔒 ikon).
+                        // Yeni ürün veya manuel satırda düzenlenebilir.
                         _FormRow(children: [
                           _Field(
                             label: row.variantRows.isNotEmpty
@@ -1650,17 +1652,25 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                                 decimal: true),
                             hint: '0,00',
                           ),
-                          _Field(
-                            label: row.variantRows.isNotEmpty
-                                ? '${t('batch.default_label')} ${widget.cfg.labels.salePriceLabel} ₺'
-                                : '${widget.cfg.labels.salePriceLabel} ₺ *',
-                            ctrl: _saleCtrl,
-                            onChanged: (v) =>
-                                _update(salePrice: double.tryParse(v.replaceAll(',', '.')) ?? 0),
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            hint: '0,00',
-                          ),
+                          if (row.isExisting && row.existingSalePrice != null)
+                            // Mevcut ürün — satış fiyatı SİSTEMDEN (kilitli)
+                            _LockedPriceField(
+                              label: '🔒 ${widget.cfg.labels.salePriceLabel} ₺',
+                              value: row.existingSalePrice!,
+                              tooltip: t('batch.system_price_locked_tooltip'),
+                            )
+                          else
+                            _Field(
+                              label: row.variantRows.isNotEmpty
+                                  ? '${t('batch.default_label')} ${widget.cfg.labels.salePriceLabel} ₺'
+                                  : '${widget.cfg.labels.salePriceLabel} ₺ *',
+                              ctrl: _saleCtrl,
+                              onChanged: (v) =>
+                                  _update(salePrice: double.tryParse(v.replaceAll(',', '.')) ?? 0),
+                              keyboardType: const TextInputType.numberWithOptions(
+                                  decimal: true),
+                              hint: '0,00',
+                            ),
                         ]),
 
                         // ── Varyantlara Uygula (sadece variant varsa) ──────
@@ -6911,6 +6921,69 @@ class _ExistingVariantRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── KİLİTLİ FİYAT ALANI — mevcut ürün satış fiyatı ───────────────────────────
+/// Mevcut ürün eşleşmesinde satış fiyatı SİSTEM değeriyle aynı kalır.
+/// Kullanıcı düzenleyemez (read-only), kilit ikonu ile vurgulanır.
+/// Değer sabitlendiği için `row.salePrice = existingSalePrice` provider'da atanır.
+class _LockedPriceField extends StatelessWidget {
+  final String label;
+  final double value;
+  final String tooltip;
+
+  const _LockedPriceField({
+    required this.label,
+    required this.value,
+    required this.tooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Tooltip(
+          message: tooltip,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.bgLight,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '₺${value.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                const Icon(Icons.lock_outline_rounded,
+                    size: 13, color: AppColors.textMuted),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

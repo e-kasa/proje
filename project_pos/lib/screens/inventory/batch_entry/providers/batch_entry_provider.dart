@@ -68,19 +68,19 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
             }
           }
         }
-        // ÖNEMLİ: Mevcut ürün eşleşse bile row.purchasePrice/salePrice
-        // SIFIR başlatılır — kullanıcı bu batch girişine özel YENİ fatura
-        // fiyatını girecek. Sistemin eski fiyatları (sysSale, sysPurchase)
-        // sadece existing* alanlarında REFERANS olarak saklanır, kartta
-        // "Sistemdeki son fiyat: ₺X" şeklinde gösterilir ama row'a prefill EDİLMEZ.
+        // KURAL: Mevcut ürün eşleşmesinde
+        //   • salePrice SİSTEM fiyatıyla AYNI olmalı (UI'da kilitli/read-only)
+        //     → existingSalePrice'dan otomatik prefill
+        //   • purchasePrice HER BATCH'te FARKLI (kullanıcı fatura fiyatını girer)
+        //     → 0 başlar, manuel doldurulur
         final row = BatchEntryRow(
           barcode: p['barcode']?.toString() ?? trimmed,
           productName: p['name']?.toString() ?? '',
           brandName: p['brand']?.toString(),
           categoryId: p['categoryId']?.toString(),
           categoryName: p['categoryName']?.toString(),
-          purchasePrice: 0, // Kullanıcı fatura alış fiyatını YENIDEN girecek
-          salePrice: 0,     // Kullanıcı satış fiyatını YENIDEN girecek
+          purchasePrice: 0,           // Kullanıcı YENİ fatura alış fiyatı girer
+          salePrice: sysSale ?? 0,     // SİSTEM fiyatı (kilitli, değişmez)
           vatRate: (p['taxRate'] as num?)?.toDouble() ?? 20.0,
           quantity: 1,
           status: RowStatus.existing,
@@ -159,12 +159,14 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
 
         if (item.isFound && item.matchedProductId != null) {
           // Mevcut ürün — varyant grubu olarak existing
+          // KURAL: salePrice SİSTEM fiyatıyla aynı (kilitli),
+          // purchasePrice fatura fiyatından değişir.
           return BatchEntryRow(
             productName: productName,
             barcode: item.extractedCode ?? '',
             quantity: item.extractedQuantity?.toInt() ?? variantRows.fold(0, (s, v) => s + v.quantity),
-            purchasePrice: item.extractedUnitPrice ?? 0,
-            salePrice: item.extractedUnitPrice ?? 0,
+            purchasePrice: item.extractedUnitPrice ?? 0,      // yeni fatura
+            salePrice: item.matchedSalePrice?.toDouble() ?? 0, // SİSTEM (kilitli)
             vatRate: vat,
             vatIncluded: vatIncluded,
             discountRate: discount,
@@ -215,15 +217,16 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
 
       // ── Durum 1: Tekil satır ──────────────────────────────────────────────
       if (item.isFound && item.matchedVariantId != null) {
-        // Fatura miktarı invoiceQuantity olarak saklanır — kullanıcı teslim miktarını düzenler
+        // KURAL: Mevcut ürün eşleşmesinde salePrice SİSTEM fiyatıyla aynı
+        // kalır (kilitli). purchasePrice fatura fiyatıyla değişir (farklı).
         final invoiceQty = item.extractedQuantity?.toInt() ?? 1;
         return BatchEntryRow(
           productName: productName,
           barcode: item.extractedCode ?? '',
           quantity: invoiceQty,          // başlangıçta teslim = fatura (kullanıcı değiştirir)
           invoiceQuantity: invoiceQty,   // faturadan gelen asıl miktar
-          purchasePrice: item.extractedUnitPrice ?? 0,
-          salePrice: item.extractedUnitPrice ?? 0,
+          purchasePrice: item.extractedUnitPrice ?? 0,  // Yeni fatura alış fiyatı
+          salePrice: item.matchedSalePrice?.toDouble() ?? 0, // SİSTEM fiyatı (kilitli)
           vatRate: vat,
           vatIncluded: vatIncluded,
           discountRate: discount,
@@ -434,6 +437,19 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
         }
         if (r.quantity <= 0) {
           return 'batch.row_quantity_required|${i + 1}';
+        }
+      }
+      // Mevcut ürün kuralları:
+      //  • salePrice SİSTEM fiyatıyla aynı olmalı (UI kilitli ama güvenlik kontrolü)
+      //  • purchasePrice > 0 olmalı (kullanıcı yeni fatura fiyatını girmeli)
+      if (r.isExisting) {
+        if (r.existingSalePrice != null &&
+            r.existingSalePrice! > 0 &&
+            (r.salePrice - r.existingSalePrice!).abs() > 0.01) {
+          return 'batch.row_sale_price_must_match_system|${i + 1}';
+        }
+        if (r.purchasePrice <= 0) {
+          return 'batch.row_purchase_price_required|${i + 1}';
         }
       }
     }

@@ -1888,20 +1888,48 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                               Expanded(
                                 child: Text.rich(
                                   TextSpan(children: [
-                                    // Varyantlar varsa toplam kâr, yoksa birim kâr
+                                    // Varyantlar varsa: Maliyet · Satış · Kâr
                                     if (row.variantRows.isNotEmpty) ...[
                                       TextSpan(
-                                        text: t('common.total') + ': ',
+                                        text: '${t("batch.cost")}: ',
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: AppColors.textSecondary),
+                                      ),
+                                      TextSpan(
+                                        text: widget.currency.format(row.lineCost),
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.warning),
+                                      ),
+                                      TextSpan(
+                                        text: '  •  ${t("common.total")} ${t("batch.sale_price")}: ',
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: AppColors.textSecondary),
+                                      ),
+                                      TextSpan(
+                                        text: widget.currency.format(row.lineTotal),
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.info),
+                                      ),
+                                      TextSpan(
+                                        text: '  •  ${t("batch.unit_profit")}: ',
                                         style: const TextStyle(
                                             fontSize: 11,
                                             color: AppColors.textSecondary),
                                       ),
                                       TextSpan(
                                         text: widget.currency.format(row.lineProfit),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w700,
-                                            color: AppColors.success),
+                                            color: row.lineProfit >= 0
+                                                ? AppColors.success
+                                                : AppColors.danger),
                                       ),
                                       TextSpan(
                                         text: '  •  ${row.effectiveQuantity} ${t("common.quantity_unit")}',
@@ -4644,6 +4672,42 @@ class _BatchVariantBuilderState extends State<_BatchVariantBuilder> {
     super.dispose();
   }
 
+  /// Parent değişikliklerini (örn. _distributeTotalToVariants ile fiyat
+  /// güncellemesi) controller text'lerine yansıt.
+  /// Aksi halde row.purchasePrice değişse de UI'da eski değer görünür.
+  @override
+  void didUpdateWidget(covariant _BatchVariantBuilder oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    for (final row in widget.variantRows) {
+      // purchase
+      final pCtrl = _ctrls['${row.id}_purchase'];
+      if (pCtrl != null) {
+        final expected = (row.purchasePrice ?? widget.defaultPurchasePrice)
+            .toStringAsFixed(2);
+        if (pCtrl.text != expected && expected != '0.00') {
+          pCtrl.text = expected;
+        }
+      }
+      // sale
+      final sCtrl = _ctrls['${row.id}_sale'];
+      if (sCtrl != null) {
+        final expected = (row.salePrice ?? widget.defaultSalePrice)
+            .toStringAsFixed(2);
+        if (sCtrl.text != expected && expected != '0.00') {
+          sCtrl.text = expected;
+        }
+      }
+      // quantity
+      final qCtrl = _ctrls['${row.id}_quantity'];
+      if (qCtrl != null) {
+        final expected = row.quantity.toString();
+        if (qCtrl.text != expected) {
+          qCtrl.text = expected;
+        }
+      }
+    }
+  }
+
   TextEditingController _ctrl(String rowId, String field, String initial) =>
       _ctrls.putIfAbsent('${rowId}_$field', () => TextEditingController(text: initial));
 
@@ -4664,7 +4728,11 @@ class _BatchVariantBuilderState extends State<_BatchVariantBuilder> {
   }
 
   void _addSizeSet(List<String> sizes) {
-    final existingSizes = widget.variantRows.map((r) => r.size.trim()).toSet();
+    // Boş size'lı (manuel boş eklenen) satırlar varsa duplicate sayma
+    final existingSizes = widget.variantRows
+        .map((r) => r.size.trim())
+        .where((s) => s.isNotEmpty)
+        .toSet();
     final newRows = sizes
         .where((s) => !existingSizes.contains(s))
         .map((s) => BatchVariantRow(
@@ -4673,8 +4741,21 @@ class _BatchVariantBuilderState extends State<_BatchVariantBuilder> {
               salePrice: widget.defaultSalePrice > 0 ? widget.defaultSalePrice : null,
             ))
         .toList();
+    // Kullanıcıya her zaman feedback ver (0 yeni eklendi de bilgi)
+    final tot = widget.variantRows.length + newRows.length;
     if (newRows.isNotEmpty) {
       widget.onChanged([...widget.variantRows, ...newRows]);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('${newRows.length} varyant eklendi · Toplam: $tot'),
+          duration: const Duration(seconds: 2),
+        ));
+      }
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Tüm bedenler zaten ekli'),
+        duration: Duration(seconds: 2),
+      ));
     }
   }
 

@@ -661,7 +661,7 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
                         size: 13, color: AppColors.warning),
                     const SizedBox(width: 6),
                     Text(
-                      '${state.shortageItems} üründe eksik teslimat — kayıt sonrası talep otomatik açılır',
+                      '${state.shortageItems} ${t('batch.shortage_summary')}',
                       style: const TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
@@ -1195,7 +1195,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                               border: Border.all(color: AppColors.warning, width: 0.5),
                             ),
                             child: Text(
-                              '${row.shortageQty} eksik',
+                              '${row.shortageQty} ${t('batch.shortage_badge')}',
                               style: const TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.w700,
@@ -1426,6 +1426,14 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
         SectorType.general => Icons.store_outlined,
       };
 
+  void _syncExternalChanges(BatchEntryRow row) {
+    // applyBrandToAll / applyCategoryToAll gibi toplu işlemlerden sonra
+    // TextEditingController'ları senkronize et.
+    // Fiyat alanlarına dokunulmaz — kullanıcı yazarken cursor bozulur.
+    final brand = row.brandName ?? '';
+    if (_brandCtrl.text != brand) _brandCtrl.text = brand;
+  }
+
   @override
   Widget build(BuildContext context) {
     final row = ref.watch(batchEntryProvider.select(
@@ -1440,6 +1448,9 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
       });
       return const SizedBox.shrink();
     }
+
+    // Toplu işlemlerden gelen dışsal state güncellemelerini controller'lara yansıt.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncExternalChanges(row));
 
     final t = i18nOf(ref);
     final completion = _completion(row);
@@ -1777,7 +1788,7 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                           Row(children: [
                             Expanded(
                               child: _Field(
-                                label: 'Fatura Adedi',
+                                label: t('batch.invoice_qty'),
                                 ctrl: _invoiceQtyCtrl,
                                 onChanged: (v) => _update(
                                   invoiceQuantity: int.tryParse(v),
@@ -1790,7 +1801,7 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: _Field(
-                                label: 'Teslim Alınan *',
+                                label: '${t('batch.received_qty')} *',
                                 ctrl: _quantityCtrl,
                                 onChanged: (v) =>
                                     _update(quantity: int.tryParse(v) ?? 1),
@@ -1818,7 +1829,7 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
-                                    '${row.shortageQty} adet eksik — kayıt sonrası tedarikçi talebi açılır',
+                                    '${row.shortageQty} ${t('batch.shortage_note')}',
                                     style: const TextStyle(
                                       fontSize: 11,
                                       color: AppColors.warning,
@@ -2089,33 +2100,6 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                     ),
                   ],
 
-                  const SizedBox(height: 12),
-
-                  // ── Footer actions ────────────────────────────────────────
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton.icon(
-                        onPressed: () => ref
-                            .read(batchEntryProvider.notifier)
-                            .removeRow(row.id),
-                        icon: const Icon(Icons.delete_outline_rounded,
-                            size: 16, color: AppColors.danger),
-                        label: Text(t('common.remove'),
-                            style:
-                                const TextStyle(color: AppColors.danger, fontSize: 13)),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            side: BorderSide(
-                                color: AppColors.danger.withValues(alpha: 0.3)),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                   const SizedBox(height: 8),
                 ],
               ),
@@ -2402,6 +2386,7 @@ class _CategoryDropdown extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
     final asyncCats = ref.watch(batchCategoriesProvider);
 
     return Column(
@@ -2432,9 +2417,9 @@ class _CategoryDropdown extends ConsumerWidget {
               child: DropdownButtonFormField<String>(
                 value: safeValue,
                 isExpanded: true,
-                hint: const Text(
-                  '— Seçin —',
-                  style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                hint: Text(
+                  '— ${t('common.select')} —',
+                  style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
                 ),
                 style: const TextStyle(
                     fontSize: 13, color: AppColors.textPrimary),
@@ -3918,7 +3903,7 @@ class _BatchAttributesSectionState
                   onChanged: (_) => setDs(() => nameError = null),
                   decoration: InputDecoration(
                     labelText: widget.t('batch.attribute_name'),
-                    hintText: 'ör: Renk, Beden, Model',
+                    hintText: widget.t('batch.hint_attr_name'),
                     errorText: nameError,
                     border: const OutlineInputBorder(),
                     prefixIcon: Icon(selIcon,
@@ -4743,18 +4728,19 @@ class _BatchVariantBuilderState extends State<_BatchVariantBuilder> {
         .toList();
     // Kullanıcıya her zaman feedback ver (0 yeni eklendi de bilgi)
     final tot = widget.variantRows.length + newRows.length;
+    final t = widget.t;
     if (newRows.isNotEmpty) {
       widget.onChanged([...widget.variantRows, ...newRows]);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('${newRows.length} varyant eklendi · Toplam: $tot'),
+          content: Text('${newRows.length} ${t('batch.variants_added')} $tot'),
           duration: const Duration(seconds: 2),
         ));
       }
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Tüm bedenler zaten ekli'),
-        duration: Duration(seconds: 2),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(t('batch.all_sizes_added')),
+        duration: const Duration(seconds: 2),
       ));
     }
   }

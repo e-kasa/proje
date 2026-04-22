@@ -1242,6 +1242,26 @@ VALUES
     ('bnd-i054-0000-0000-0000-000000000054', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.brand_activated_msg', 'aktife alındı', 'activated'),
     ('bnd-i055-0000-0000-0000-000000000055', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.brand_deactivated_msg', 'pasife alındı', 'deactivated'),
 
+    -- ── Units (Birim yönetimi) ───────────────────────────────────
+    ('bnd-i056-0000-0000-0000-000000000056', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.unit_name', 'Birim Adı', 'Unit Name'),
+    ('bnd-i057-0000-0000-0000-000000000057', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.unit_name_hint', 'Örn: Adet, Kilogram, Litre', 'e.g., Piece, Kilogram, Liter'),
+    ('bnd-i058-0000-0000-0000-000000000058', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.unit_code', 'Kısa Kod', 'Short Code'),
+    ('bnd-i059-0000-0000-0000-000000000059', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.unit_code_hint', 'Örn: AD, KG, LT', 'e.g., PC, KG, LT'),
+    ('bnd-i060-0000-0000-0000-000000000060', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.unit_symbol', 'Sembol', 'Symbol'),
+    ('bnd-i061-0000-0000-0000-000000000061', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.unit_symbol_hint', 'Örn: kg, lt, m', 'e.g., kg, lt, m'),
+    ('bnd-i062-0000-0000-0000-000000000062', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.unit_type', 'Birim Tipi', 'Unit Type'),
+    ('bnd-i063-0000-0000-0000-000000000063', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.unit_type_countable', 'Sayılabilir', 'Countable'),
+    ('bnd-i064-0000-0000-0000-000000000064', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.unit_type_weighable', 'Tartılabilir', 'Weighable'),
+    ('bnd-i065-0000-0000-0000-000000000065', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.unit_type_measurable', 'Ölçülebilir', 'Measurable'),
+    ('bnd-i066-0000-0000-0000-000000000066', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.unit_load_error', 'Birimler yüklenirken hata oluştu', 'Error loading units'),
+    ('bnd-i067-0000-0000-0000-000000000067', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.unit_save_error', 'Birim kaydedilirken hata oluştu', 'Error saving unit'),
+    ('bnd-i068-0000-0000-0000-000000000068', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.unit_delete_confirm', 'birimini silmek istediğinizden emin misiniz?', 'Are you sure you want to delete this unit?'),
+    ('bnd-i069-0000-0000-0000-000000000069', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.unit_added', 'birimi eklendi', 'unit added'),
+    ('bnd-i070-0000-0000-0000-000000000070', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.unit_updated', 'Birim güncellendi', 'Unit updated'),
+    ('bnd-i071-0000-0000-0000-000000000071', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.unit_deleted', 'silindi', 'deleted'),
+    ('bnd-i072-0000-0000-0000-000000000072', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.unit_activated_msg', 'aktife alındı', 'activated'),
+    ('bnd-i073-0000-0000-0000-000000000073', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'inventory.unit_deactivated_msg', 'pasife alındı', 'deactivated'),
+
     -- ── POS (eksik) ───────────────────────────────────────────────
     ('bnd-p018-0000-0000-0000-000000000018', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'pos.bank_transfer_payment_info', 'Havale/EFT tutarını girin', 'Enter bank transfer amount'),
     ('bnd-p019-0000-0000-0000-000000000019', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'pos.card_amount', 'Kart Tutarı', 'Card Amount'),
@@ -2133,6 +2153,12 @@ VALUES
 
 -- ── HRM ──────────────────────────────────────────────────────
 ('bnd-hr001-000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'hrm.title', 'İnsan Kaynakları', 'Human Resources'),
+('bnd-hr002-000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'hrm.department', 'Departman', 'Department'),
+('bnd-hr003-000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'hrm.hire_date', 'İşe Giriş', 'Hire Date'),
+('bnd-hr004-000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'hrm.no_employees', 'Çalışan bulunamadı', 'No employees found'),
+('bnd-hr005-000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'hrm.no_employees_hint', 'Henüz kayıtlı çalışan yok. Eklemek için + butonuna tıklayın.', 'No employees yet. Tap + to add one.'),
+('bnd-hr006-000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'hrm.delete_employee', 'Çalışanı Sil', 'Delete Employee'),
+('bnd-hr007-000-0000-0000-000000000007', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'hrm.delete_employee_confirm', 'Bu çalışanı silmek istediğinizden emin misiniz?', 'Are you sure you want to delete this employee?'),
 
 -- ── MENU (eksik) ─────────────────────────────────────────────
 ('bnd-mn001-000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'menu.sales', 'Satışlar', 'Sales'),

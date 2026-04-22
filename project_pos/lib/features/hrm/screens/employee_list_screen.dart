@@ -1,8 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/services/hrm_service.dart';
 import 'package:project_pos/services/service_locator.dart';
@@ -18,6 +19,7 @@ class EmployeeListScreen extends ConsumerStatefulWidget {
 class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
   String Function(String) get t => i18nOf(ref);
   late HrmService _hrmService;
+  final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _employees = [];
   List<String> _departments = [];
   bool _isLoading = false;
@@ -25,18 +27,18 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
   String? _selectedStatus;
   String _searchQuery = '';
 
-  final _statusOptions = [
-    {'value': null, 'label': 'Tümü'}, // TODO: i18n
-    {'value': 'active', 'label': 'Aktif'}, // TODO: i18n
-    {'value': 'inactive', 'label': 'Pasif'}, // TODO: i18n
-  ];
-
   @override
   void initState() {
     super.initState();
     _hrmService = ref.read(hrmServiceProvider);
     _loadEmployees();
     _loadDepartments();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadEmployees() async {
@@ -71,29 +73,38 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
   Future<void> _toggleStatus(Map<String, dynamic> employee) async {
     try {
       await _hrmService.toggleEmployeeStatus(employee['id']);
-      AppToast.success(context, t('common.saved'));
+      if (mounted) {
+        AppToast.success(context, t('common.saved'));
+      }
       _loadEmployees();
     } catch (e) {
-      AppToast.error(context, t('common.error'));
+      if (mounted) {
+        AppToast.error(context, t('common.error'));
+      }
     }
   }
 
   Future<void> _deleteEmployee(Map<String, dynamic> employee) async {
+    final fullName = '${employee['firstName']} ${employee['lastName']}';
     final confirmed = await AppConfirmationDialog.showDelete(
       context: context,
-      title: t('hrm.title'), // TODO: i18n delete_employee key
-      message: 'Bu çalışanı silmek istediğinizden emin misiniz?', // TODO: i18n
-      itemName: '${employee['firstName']} ${employee['lastName']}',
+      title: t('hrm.delete_employee'),
+      message: t('hrm.delete_employee_confirm'),
+      itemName: fullName,
     );
 
     if (!confirmed) return;
 
     try {
       await _hrmService.deleteEmployee(employee['id']);
-      AppToast.success(context, t('common.saved'));
+      if (mounted) {
+        AppToast.success(context, t('common.saved'));
+      }
       _loadEmployees();
     } catch (e) {
-      AppToast.error(context, t('common.error'));
+      if (mounted) {
+        AppToast.error(context, t('common.error'));
+      }
     }
   }
 
@@ -108,6 +119,7 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
           IconButton(
             onPressed: _loadEmployees,
             icon: const Icon(Icons.refresh),
+            tooltip: t('common.refresh'),
           ),
         ],
       ),
@@ -115,22 +127,19 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
           ? const AppSkeletonList(itemCount: 8)
           : Column(
               children: [
-                // Stats
                 _buildStatsSection(),
                 const SizedBox(height: 16),
-                // Filters
                 _buildFiltersSection(isMobile),
                 const SizedBox(height: 16),
-                // Employee List
                 Expanded(
                   child: _employees.isEmpty
                       ? AppEmptyState(
                           icon: Icons.people_outline,
-                          title: t('hrm.employees'), // TODO: i18n no_employees key
-                          actionText: 'Henüz hiç çalışan kaydı yok', // TODO: i18n
+                          title: t('hrm.no_employees'),
+                          description: t('hrm.no_employees_hint'),
                         )
                       : ListView.separated(
-                          padding: const EdgeInsets.all(16),
+                          padding: AppConstants.pagePadding,
                           itemCount: _employees.length,
                           separatorBuilder: (context, index) =>
                               const SizedBox(height: 12),
@@ -143,11 +152,11 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
               ],
             ),
       floatingActionButton: FloatingActionButton.extended(
-        
         onPressed: () => context.go('/hrm/employees/add'),
         icon: const Icon(Icons.person_add),
         label: Text(t('hrm.add_employee')),
         backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
       ),
     );
   }
@@ -155,50 +164,97 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
   Widget _buildStatsSection() {
     final total = _employees.length;
     final active = _employees.where((e) => e['status'] == 'active').length;
-    final inactive = _employees.where((e) => e['status'] == 'inactive').length;
+    final inactive =
+        _employees.where((e) => e['status'] == 'inactive').length;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppConstants.pagePadding,
       color: Colors.white,
       child: Row(
         children: [
-          _buildStatCard('👥 Toplam', total.toString(), t('hrm.employees'), AppColors.primary), // TODO: i18n total key
+          _buildStatCard(
+            t('common.total'),
+            total.toString(),
+            Icons.people_outline,
+            AppColors.primary,
+          ),
           const SizedBox(width: 12),
-          _buildStatCard('✅ Aktif', active.toString(), t('hrm.employees'), AppColors.success), // TODO: i18n active key
+          _buildStatCard(
+            t('common.active'),
+            active.toString(),
+            Icons.check_circle_outline,
+            AppColors.success,
+          ),
           const SizedBox(width: 12),
-          _buildStatCard('⏸️ Pasif', inactive.toString(), t('hrm.employees'), AppColors.warning), // TODO: i18n inactive key
+          _buildStatCard(
+            t('common.passive'),
+            inactive.toString(),
+            Icons.pause_circle_outline,
+            AppColors.warning,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatCard(String title, String value, String subtitle, Color color) {
+  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Expanded(
       child: AppCard(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.textMuted,
-                fontWeight: FontWeight.w500,
-              ),
+            Row(
+              children: [
+                Icon(icon, size: 16, color: color),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
               value,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color),
-            ),
-            Text(
-              subtitle,
-              style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  InputDecoration _filterDecoration(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon, size: 18, color: AppColors.textMuted),
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: AppConstants.borderRadiusMedium,
+        borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: AppConstants.borderRadiusMedium,
+        borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: AppConstants.borderRadiusMedium,
+        borderSide: const BorderSide(color: AppColors.primary, width: 2),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     );
   }
 
@@ -209,42 +265,40 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
       child: Column(
         children: [
           const SizedBox(height: 12),
-          TextField(
+          AppSearchInput(
+            controller: _searchController,
+            hint: t('common.search'),
             onChanged: (value) {
               setState(() => _searchQuery = value);
               _loadEmployees();
             },
-            decoration: InputDecoration(
-              hintText: t('common.search'),
-              prefixIcon: const Icon(Icons.search),
-              filled: true,
-              fillColor: AppColors.bgLight,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-            ),
+            onClear: () {
+              _searchController.clear();
+              setState(() => _searchQuery = '');
+              _loadEmployees();
+            },
           ),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
                 child: DropdownButtonFormField<String?>(
-                  value: _selectedDepartment,
-                  decoration: InputDecoration(
-                    labelText: 'Departman',
-                    filled: true,
-                    fillColor: AppColors.bgLight,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
+                  initialValue: _selectedDepartment,
+                  decoration: _filterDecoration(
+                    t('hrm.department'),
+                    Icons.business_outlined,
                   ),
                   items: [
-                    const DropdownMenuItem<String?>(value: null, child: Text('Tümü')),
+                    DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text(t('common.all')),
+                    ),
                     ..._departments.map<DropdownMenuItem<String?>>((dept) {
-                      return DropdownMenuItem<String?>(value: dept, child: Text(dept));
-                    }).toList(),
+                      return DropdownMenuItem<String?>(
+                        value: dept,
+                        child: Text(dept),
+                      );
+                    }),
                   ],
                   onChanged: (value) {
                     setState(() => _selectedDepartment = value);
@@ -254,23 +308,26 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: DropdownButtonFormField<String>(
-                  value: _selectedStatus,
-                  decoration: InputDecoration(
-                    labelText: 'Durum',
-                    filled: true,
-                    fillColor: AppColors.bgLight,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
+                child: DropdownButtonFormField<String?>(
+                  initialValue: _selectedStatus,
+                  decoration: _filterDecoration(
+                    t('common.status'),
+                    Icons.flag_outlined,
                   ),
-                  items: _statusOptions.map<DropdownMenuItem<String>>((opt) {
-                    return DropdownMenuItem<String>(
-                      value: opt['value'],
-                      child: Text(opt['label'] as String),
-                    );
-                  }).toList(),
+                  items: [
+                    DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text(t('common.all')),
+                    ),
+                    DropdownMenuItem<String?>(
+                      value: 'active',
+                      child: Text(t('common.active')),
+                    ),
+                    DropdownMenuItem<String?>(
+                      value: 'inactive',
+                      child: Text(t('common.passive')),
+                    ),
+                  ],
                   onChanged: (value) {
                     setState(() => _selectedStatus = value);
                     _loadEmployees();
@@ -297,7 +354,6 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
         children: [
           Row(
             children: [
-              // Avatar
               CircleAvatar(
                 radius: 30,
                 backgroundColor: AppColors.primary.withValues(alpha: 0.1),
@@ -311,7 +367,6 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              // Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,23 +374,29 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          '${employee['firstName']} ${employee['lastName']}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: Text(
+                            '${employee['firstName']} ${employee['lastName']}',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        const SizedBox(width: 8),
                         AppBadge(
-                          text: isActive ? 'Aktif' : 'Pasif', // TODO: i18n active/inactive keys
-                          variant: isActive ? BadgeVariant.success : BadgeVariant.warning,
+                          text: isActive ? t('common.active') : t('common.passive'),
+                          variant: isActive
+                              ? BadgeVariant.success
+                              : BadgeVariant.warning,
                         ),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      employee['position'],
-                      style: TextStyle(
+                      employee['position'] ?? '',
+                      style: const TextStyle(
                         fontSize: 14,
                         color: AppColors.textSecondary,
                         fontWeight: FontWeight.w500,
@@ -343,8 +404,9 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      employee['department'],
-                      style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                      employee['department'] ?? '',
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.textMuted),
                     ),
                   ],
                 ),
@@ -354,22 +416,26 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
           const SizedBox(height: 12),
           Row(
             children: [
-              Icon(Icons.email_outlined, size: 14, color: AppColors.textMuted),
+              const Icon(Icons.email_outlined, size: 14, color: AppColors.textMuted),
               const SizedBox(width: 4),
-              Text(
-                employee['email'],
-                style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+              Expanded(
+                child: Text(
+                  employee['email'] ?? '',
+                  style: const TextStyle(
+                      fontSize: 12, color: AppColors.textMuted),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 4),
           Row(
             children: [
-              Icon(Icons.phone_outlined, size: 14, color: AppColors.textMuted),
+              const Icon(Icons.phone_outlined, size: 14, color: AppColors.textMuted),
               const SizedBox(width: 4),
               Text(
-                employee['phone'],
-                style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                employee['phone'] ?? '',
+                style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
               ),
             ],
           ),
@@ -379,11 +445,13 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.calendar_today, size: 14, color: AppColors.textMuted),
+                  const Icon(Icons.calendar_today,
+                      size: 14, color: AppColors.textMuted),
                   const SizedBox(width: 4),
                   Text(
-                    'İşe giriş: ${DateFormat('dd.MM.yyyy').format(hireDate)}',
-                    style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                    '${t('hrm.hire_date')}: ${DateFormat('dd.MM.yyyy').format(hireDate)}',
+                    style: const TextStyle(
+                        fontSize: 11, color: AppColors.textMuted),
                   ),
                 ],
               ),
@@ -391,14 +459,19 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
                 children: [
                   IconButton(
                     icon: Icon(
-                      isActive ? Icons.pause_circle_outline : Icons.play_circle_outline,
+                      isActive
+                          ? Icons.pause_circle_outline
+                          : Icons.play_circle_outline,
                       color: isActive ? AppColors.warning : AppColors.success,
                     ),
                     onPressed: () => _toggleStatus(employee),
-                    tooltip: isActive ? 'Pasif Yap' : 'Aktif Yap', // TODO: i18n
+                    tooltip: isActive
+                        ? t('inventory.deactivate')
+                        : t('inventory.activate'),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.delete_outline, color: AppColors.danger),
+                    icon: const Icon(Icons.delete_outline,
+                        color: AppColors.danger),
                     onPressed: () => _deleteEmployee(employee),
                     tooltip: t('common.delete'),
                   ),

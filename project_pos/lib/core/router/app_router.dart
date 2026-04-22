@@ -39,6 +39,9 @@ import 'package:project_pos/features/suppliers/screens/supplier_list_screen.dart
 import 'package:project_pos/features/suppliers/screens/add_supplier_screen.dart';
 import 'package:project_pos/features/suppliers/screens/supplier_account_detail_screen.dart';
 import 'package:project_pos/features/suppliers/screens/upload/supplier_upload_wizard_screen.dart';
+// Supplier Claims
+import 'package:project_pos/features/supplier_claims/screens/supplier_claims_list_screen.dart';
+import 'package:project_pos/features/supplier_claims/screens/supplier_claim_detail_screen.dart';
 // Customers
 import 'package:project_pos/features/customers/screens/customer_list_screen.dart';
 import 'package:project_pos/features/customers/screens/add_customer_screen.dart';
@@ -348,6 +351,17 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) {
               final id = state.pathParameters['id']!;
               return SupplierAccountDetailScreen(supplierId: id);
+            },
+          ),
+          GoRoute(
+            path: '/supplier-claims',
+            builder: (context, state) => const SupplierClaimsListScreen(),
+          ),
+          GoRoute(
+            path: '/supplier-claims/:id',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return SupplierClaimDetailScreen(claimId: id);
             },
           ),
           GoRoute(

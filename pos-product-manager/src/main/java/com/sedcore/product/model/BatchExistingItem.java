@@ -24,6 +24,15 @@ public class BatchExistingItem {
     @NotBlank(message = "Varyant ID zorunludur")
     private String variantId;
 
+    /**
+     * Fatura üzerindeki miktar. null ise {@code quantity} değeri kullanılır.
+     */
+    private Integer invoiceQuantity;
+
+    /**
+     * Depoya giren fiziksel miktar (stoka yansır).
+     * null ise invoiceQuantity kadar geldi varsayılır.
+     */
     @NotNull
     @Min(value = 1, message = "Miktar en az 1 olmalıdır")
     private Integer quantity;
@@ -35,4 +44,14 @@ public class BatchExistingItem {
     private BigDecimal taxRate;
 
     private String notes;
+
+    /** Fatura miktarını döner; invoiceQuantity null ise quantity kullanılır. */
+    public int resolvedInvoiceQty() {
+        return invoiceQuantity != null ? invoiceQuantity : quantity;
+    }
+
+    /** Eksik miktar. */
+    public int shortageQty() {
+        return Math.max(0, resolvedInvoiceQty() - quantity);
+    }
 }

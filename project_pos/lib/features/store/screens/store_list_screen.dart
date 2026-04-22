@@ -77,21 +77,16 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
   }
 
   Future<void> _deleteStore(String id, String name) async {
-    final confirm = await showDialog<bool>(
+    final confirm = await AppConfirmationDialog.showDelete(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [const Icon(Icons.warning_amber_rounded, color: AppColors.warning), const SizedBox(width: 12), Text(t('stores.delete_title'))],
-        ),
-        content: Text('$name ${t('stores.delete_confirm')}'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(t('common.cancel'))),
-          AppButton.danger(text: t('common.delete'), onPressed: () => Navigator.pop(context, true)),
-        ],
-      ),
+      title: t('stores.delete_title'),
+      message: t('stores.delete_confirm'),
+      itemName: name,
+      confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
     );
 
-    if (confirm == true) {
+    if (confirm) {
       try {
         await _storeService.deleteStore(id);
         if (mounted) {
@@ -122,17 +117,14 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
                     children: [
                       _buildStatsSection(),
                       const SizedBox(height: 16),
-                      TextField(
+                      AppSearchInput(
                         controller: _searchController,
+                        hint: t('stores.search_hint'),
                         onChanged: _filterStores,
-                        decoration: InputDecoration(
-                          hintText: t('stores.search_hint'),
-                          prefixIcon: const Icon(Icons.search),
-                          suffixIcon: _searchController.text.isNotEmpty ? IconButton(icon: const Icon(Icons.clear), onPressed: () {_searchController.clear(); _filterStores('');}) : null,
-                          border: OutlineInputBorder(borderRadius: AppConstants.borderRadiusMedium),
-                          filled: true,
-                          fillColor: AppColors.bgLight,
-                        ),
+                        onClear: () {
+                          _searchController.clear();
+                          _filterStores('');
+                        },
                       ),
                       const SizedBox(height: 12),
                       SingleChildScrollView(
@@ -233,70 +225,64 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
       'outlet': t('stores.type_outlet'),
     };
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: AppConstants.borderRadiusMedium),
-      child: InkWell(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: AppCard(
         onTap: () => context.push('/stores/${store['id']}'),
-        borderRadius: AppConstants.borderRadiusMedium,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isActive ? AppColors.primary.withValues(alpha: 0.1) : AppColors.textMuted.withValues(alpha: 0.1),
-                      borderRadius: AppConstants.borderRadiusMedium,
-                    ),
-                    child: Icon(Icons.store, color: isActive ? AppColors.primary : AppColors.textMuted, size: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isActive ? AppColors.primary.withValues(alpha: 0.1) : AppColors.textMuted.withValues(alpha: 0.1),
+                    borderRadius: AppConstants.borderRadiusMedium,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(child: Text(store['name'] ?? '', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
-                            AppBadge(text: isActive ? t('common.active') : t('common.passive'), variant: isActive ? BadgeVariant.success : BadgeVariant.danger),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(store['code'] ?? '', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                      ],
-                    ),
+                  child: Icon(Icons.store, color: isActive ? AppColors.primary : AppColors.textMuted, size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(child: Text(store['name'] ?? '', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+                          AppBadge(text: isActive ? t('common.active') : t('common.passive'), variant: isActive ? BadgeVariant.success : BadgeVariant.danger),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(store['code'] ?? '', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _buildInfoChip(Icons.category, typeLabels[store['type']] ?? '', AppColors.info),
-                  _buildInfoChip(Icons.person, store['managerName'] ?? '', AppColors.purple),
-                  _buildInfoChip(Icons.people, '${store['employeeCount']} ${t('stores.employee_suffix')}', AppColors.success),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(children: [const Icon(Icons.location_on, size: 16, color: AppColors.textSecondary), const SizedBox(width: 4), Expanded(child: Text('${store['district']}, ${store['city']}', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)))]),
-              const SizedBox(height: 4),
-              Row(children: [const Icon(Icons.access_time, size: 16, color: AppColors.textSecondary), const SizedBox(width: 4), Text(store['openingHours'] ?? '', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary))]),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(child: AppButton.outline(text: t('common.edit'), icon: Icons.edit, onPressed: () => context.push('/stores/edit/${store['id']}'))),
-                  const SizedBox(width: 8),
-                  AppIconButton(icon: Icons.delete, variant: ButtonVariant.danger, onPressed: () => _deleteStore(store['id'], store['name']), tooltip: t('common.delete')),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildInfoChip(Icons.category, typeLabels[store['type']] ?? '', AppColors.info),
+                _buildInfoChip(Icons.person, store['managerName'] ?? '', AppColors.purple),
+                _buildInfoChip(Icons.people, '${store['employeeCount']} ${t('stores.employee_suffix')}', AppColors.success),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(children: [const Icon(Icons.location_on, size: 16, color: AppColors.textSecondary), const SizedBox(width: 4), Expanded(child: Text('${store['district']}, ${store['city']}', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)))]),
+            const SizedBox(height: 4),
+            Row(children: [const Icon(Icons.access_time, size: 16, color: AppColors.textSecondary), const SizedBox(width: 4), Text(store['openingHours'] ?? '', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary))]),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(child: AppButton.outline(text: t('common.edit'), icon: Icons.edit, onPressed: () => context.push('/stores/edit/${store['id']}'))),
+                const SizedBox(width: 8),
+                AppIconButton(icon: Icons.delete, variant: ButtonVariant.danger, onPressed: () => _deleteStore(store['id'], store['name']), tooltip: t('common.delete')),
+              ],
+            ),
+          ],
         ),
       ),
     );

@@ -88,31 +88,16 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
   }
 
   Future<void> _deleteWarehouse(String id, String name) async {
-    final confirm = await showDialog<bool>(
+    final confirm = await AppConfirmationDialog.showDelete(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
-            const SizedBox(width: 12),
-            Text(t('warehouses.delete_title')),
-          ],
-        ),
-        content: Text(t('warehouses.delete_confirm').replaceAll('{name}', name)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(t('common.cancel')),
-          ),
-          AppButton.danger(
-            text: t('common.delete'),
-            onPressed: () => Navigator.pop(context, true),
-          ),
-        ],
-      ),
+      title: t('warehouses.delete_title'),
+      message: t('warehouses.delete_confirm').replaceAll('{name}', ''),
+      itemName: name,
+      confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
     );
 
-    if (confirm == true) {
+    if (confirm) {
       try {
         await _warehouseService.deleteWarehouse(id);
         if (mounted) {
@@ -171,27 +156,14 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
                       const SizedBox(height: 16),
 
                       // Search Bar
-                      TextField(
+                      AppSearchInput(
                         controller: _searchController,
+                        hint: t('warehouses.search_hint'),
                         onChanged: _filterWarehouses,
-                        decoration: InputDecoration(
-                          hintText: t('warehouses.search_hint'),
-                          prefixIcon: const Icon(Icons.search),
-                          suffixIcon: _searchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    _filterWarehouses('');
-                                  },
-                                )
-                              : null,
-                          border: OutlineInputBorder(
-                            borderRadius: AppConstants.borderRadiusMedium,
-                          ),
-                          filled: true,
-                          fillColor: AppColors.bgLight,
-                        ),
+                        onClear: () {
+                          _searchController.clear();
+                          _filterWarehouses('');
+                        },
                       ),
                       const SizedBox(height: 12),
 
@@ -374,18 +346,13 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
       'backup': t('warehouses.type_backup'),
     };
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: AppConstants.borderRadiusMedium),
-      child: InkWell(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: AppCard(
         onTap: () => context.push('/warehouses/${warehouse['id']}'),
-        borderRadius: AppConstants.borderRadiusMedium,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
               // Header
               Row(
                 children: [
@@ -575,8 +542,7 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildInfoChip(IconData icon, String label, Color color) {

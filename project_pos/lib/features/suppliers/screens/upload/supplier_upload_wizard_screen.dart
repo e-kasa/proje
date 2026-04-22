@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/utils/app_logger.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/models/supplier_upload_models.dart';
@@ -62,7 +63,7 @@ class _SupplierUploadWizardScreenState
   Widget _buildProgressIndicator() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: Colors.grey[100],
+      color: AppColors.bgLight,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -80,7 +81,7 @@ class _SupplierUploadWizardScreenState
                 '$decidedCount karar verildi',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[700],
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
@@ -88,8 +89,8 @@ class _SupplierUploadWizardScreenState
           const SizedBox(height: 8),
           LinearProgressIndicator(
             value: (currentProductIndex + 1) / totalProducts,
-            backgroundColor: Colors.grey[300],
-            valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
+            backgroundColor: AppColors.border,
+            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.info),
           ),
         ],
       ),
@@ -119,12 +120,12 @@ class _SupplierUploadWizardScreenState
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.blue[50],
+        color: AppColors.bgInfo,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
-          const Icon(Icons.inventory_2, size: 32, color: Colors.blue),
+          const Icon(Icons.inventory_2, size: 32, color: AppColors.info),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -142,7 +143,7 @@ class _SupplierUploadWizardScreenState
                   '${currentProduct.readStock} adet',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey[700],
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ],
@@ -170,7 +171,7 @@ class _SupplierUploadWizardScreenState
           title: 'YENI ÜRÜN OLUŞTUR', // TODO: i18n bulk_import.create_new_product
           subtitle: 'Sistemde hiç olmayan yeni bir ürün ekle', // TODO: i18n
           icon: Icons.add_circle_outline,
-          color: Colors.green,
+          color: AppColors.success,
           isSelected: decision?.action == DecisionAction.createNew,
           onTap: () => _selectAction(DecisionAction.createNew),
           expandedContent:
@@ -194,7 +195,7 @@ class _SupplierUploadWizardScreenState
               ? 'Benzer ürün bulunamadı'
               : '${currentProduct.similarProducts.length} benzer ürün bulundu',
           icon: Icons.link,
-          color: Colors.blue,
+          color: AppColors.info,
           isSelected: decision?.action == DecisionAction.matchExisting,
           isEnabled: currentProduct.similarProducts.isNotEmpty,
           onTap: currentProduct.similarProducts.isNotEmpty
@@ -220,7 +221,7 @@ class _SupplierUploadWizardScreenState
               ? 'Benzer ürün bulunamadı'
               : 'Var olan bir ürüne yeni varyant ekle',
           icon: Icons.playlist_add,
-          color: Colors.orange,
+          color: AppColors.warning,
           isSelected: decision?.action == DecisionAction.addVariant,
           isEnabled: currentProduct.similarProducts.isNotEmpty,
           onTap: currentProduct.similarProducts.isNotEmpty
@@ -256,7 +257,7 @@ class _SupplierUploadWizardScreenState
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
           border: Border.all(
-            color: isSelected ? color : Colors.grey[300]!,
+            color: isSelected ? color : AppColors.border,
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(8),
@@ -276,7 +277,7 @@ class _SupplierUploadWizardScreenState
                         : null,
                     activeColor: color,
                   ),
-                  Icon(icon, color: isEnabled ? color : Colors.grey),
+                  Icon(icon, color: isEnabled ? color : AppColors.textMuted),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -287,7 +288,7 @@ class _SupplierUploadWizardScreenState
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
-                            color: isEnabled ? Colors.black : Colors.grey,
+                            color: isEnabled ? AppColors.textPrimary : AppColors.textMuted,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -295,7 +296,7 @@ class _SupplierUploadWizardScreenState
                           subtitle,
                           style: TextStyle(
                             fontSize: 13,
-                            color: isEnabled ? Colors.grey[700] : Colors.grey,
+                            color: isEnabled ? AppColors.textSecondary : AppColors.textMuted,
                           ),
                         ),
                       ],
@@ -446,23 +447,23 @@ class _SupplierUploadWizardScreenState
 
     if (decision == null) {
       icon = Icons.warning_amber;
-      color = Colors.orange;
+      color = AppColors.warning;
       actionText = 'ATLANDI';
     } else {
       switch (decision.action) {
         case DecisionAction.createNew:
           icon = Icons.add_circle;
-          color = Colors.green;
+          color = AppColors.success;
           actionText = 'YENİ ÜRÜN';
           break;
         case DecisionAction.matchExisting:
           icon = Icons.link;
-          color = Colors.blue;
+          color = AppColors.info;
           actionText = 'MEVCUT ÜRÜNE EŞLE';
           break;
         case DecisionAction.addVariant:
           icon = Icons.playlist_add;
-          color = Colors.orange;
+          color = AppColors.warning;
           actionText = 'YENİ VARYANT';
           break;
       }
@@ -530,8 +531,8 @@ class _SupplierUploadWizardScreenState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
-        border: Border(top: BorderSide(color: Colors.grey[300]!)),
+        color: AppColors.bgLight,
+        border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -544,10 +545,10 @@ class _SupplierUploadWizardScreenState
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildSummaryStat('Yeni Ürün', newProductCount, Colors.green),
-              _buildSummaryStat('Eşleşme', matchCount, Colors.blue),
-              _buildSummaryStat('Yeni Varyant', variantCount, Colors.orange),
-              _buildSummaryStat('Atlanan', skippedCount, Colors.grey),
+              _buildSummaryStat('Yeni Ürün', newProductCount, AppColors.success),
+              _buildSummaryStat('Eşleşme', matchCount, AppColors.info),
+              _buildSummaryStat('Yeni Varyant', variantCount, AppColors.warning),
+              _buildSummaryStat('Atlanan', skippedCount, AppColors.textMuted),
             ],
           ),
           const SizedBox(height: 16),
@@ -568,7 +569,7 @@ class _SupplierUploadWizardScreenState
               label: Text(_isLoading ? 'Kaydediliyor...' : 'KAYDET VE TAMAMLA'), // TODO: i18n bulk_import.save_and_complete / bulk_import.saving
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: Colors.green,
+                backgroundColor: AppColors.success,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -592,7 +593,7 @@ class _SupplierUploadWizardScreenState
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
       ],
     );
@@ -915,7 +916,7 @@ class _SuccessScreen extends StatelessWidget {
             const Icon(
               Icons.check_circle,
               size: 64,
-              color: Colors.green,
+              color: AppColors.success,
             ),
             const SizedBox(height: 16),
             const Text(

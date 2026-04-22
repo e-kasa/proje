@@ -389,6 +389,7 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
           'tempId': row.id,
           'variantId': row.existingVariantId,
           'quantity': row.quantity,
+          if (row.invoiceQuantity != null) 'invoiceQuantity': row.invoiceQuantity,
           'unitPrice': row.purchasePrice,
           'taxRate': row.vatRate,
         }).toList();

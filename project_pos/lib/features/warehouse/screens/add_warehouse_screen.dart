@@ -155,41 +155,33 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
                       icon: Icons.category,
                       children: _warehouseTypes.map((type) {
                         final isSelected = _selectedType == type['value'];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppConstants.borderRadiusMedium,
-                            side: BorderSide(
-                              color: isSelected ? AppColors.primary : AppColors.border,
-                              width: isSelected ? 2 : 1,
-                            ),
-                          ),
-                          child: InkWell(
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: AppCard(
                             onTap: () => setState(() => _selectedType = type['value']),
-                            borderRadius: AppConstants.borderRadiusMedium,
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    type['icon'],
-                                    color: isSelected ? AppColors.primary : AppColors.textMuted,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      t(type['labelKey'] as String),
-                                      style: TextStyle(
-                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                        color: isSelected ? AppColors.primary : AppColors.textPrimary,
-                                      ),
+                            color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : null,
+                            borderColor: isSelected ? AppColors.primary : AppColors.border,
+                            borderWidth: isSelected ? 2 : 1,
+                            hasShadow: false,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  type['icon'],
+                                  color: isSelected ? AppColors.primary : AppColors.textMuted,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    t(type['labelKey'] as String),
+                                    style: TextStyle(
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      color: isSelected ? AppColors.primary : AppColors.textPrimary,
                                     ),
                                   ),
-                                  if (isSelected)
-                                    const Icon(Icons.check_circle, color: AppColors.primary),
-                                ],
-                              ),
+                                ),
+                                if (isSelected)
+                                  const Icon(Icons.check_circle, color: AppColors.primary),
+                              ],
                             ),
                           ),
                         );
@@ -206,72 +198,52 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
                         Row(
                           children: [
                             Expanded(
-                              child: TextFormField(
+                              child: AppInput(
                                 controller: _codeController,
-                                decoration: InputDecoration(
-                                  labelText: t('warehouses.code_required'),
-                                  hintText: 'WH-001',
-                                  prefixIcon: Icon(Icons.qr_code),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return t('warehouses.code_required_msg');
-                                  }
-                                  return null;
-                                },
+                                label: t('warehouses.code_required'),
+                                hint: 'WH-001',
+                                prefixIcon: Icons.qr_code,
+                                validator: (value) => value == null || value.trim().isEmpty
+                                    ? t('warehouses.code_required_msg')
+                                    : null,
                               ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: TextFormField(
+                              child: AppInput(
                                 controller: _capacityController,
-                                decoration: InputDecoration(
-                                  labelText: t('warehouses.capacity_required'),
-                                  hintText: '5000',
-                                  prefixIcon: Icon(Icons.inventory),
-                                  suffixText: t('warehouses.unit'),
-                                ),
+                                label: t('warehouses.capacity_required'),
+                                hint: '5000',
+                                prefixIcon: Icons.inventory,
+                                suffixText: t('warehouses.unit'),
                                 keyboardType: TextInputType.number,
                                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return t('warehouses.capacity_required_msg');
-                                  }
-                                  return null;
-                                },
+                                validator: (value) => value == null || value.trim().isEmpty
+                                    ? t('warehouses.capacity_required_msg')
+                                    : null,
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(
+                        AppInput(
                           controller: _nameController,
-                          decoration: InputDecoration(
-                            labelText: t('warehouses.name_required'),
-                            hintText: t('warehouses.name_hint'),
-                            prefixIcon: Icon(Icons.warehouse),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return t('warehouses.name_required_msg');
-                            }
-                            return null;
-                          },
+                          label: t('warehouses.name_required'),
+                          hint: t('warehouses.name_hint'),
+                          prefixIcon: Icons.warehouse,
+                          validator: (value) => value == null || value.trim().isEmpty
+                              ? t('warehouses.name_required_msg')
+                              : null,
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(
+                        AppInput(
                           controller: _managerNameController,
-                          decoration: InputDecoration(
-                            labelText: t('warehouses.manager_required'),
-                            hintText: t('warehouses.manager_hint'),
-                            prefixIcon: Icon(Icons.person),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return t('warehouses.manager_required_msg');
-                            }
-                            return null;
-                          },
+                          label: t('warehouses.manager_required'),
+                          hint: t('warehouses.manager_hint'),
+                          prefixIcon: Icons.person,
+                          validator: (value) => value == null || value.trim().isEmpty
+                              ? t('warehouses.manager_required_msg')
+                              : null,
                         ),
                       ],
                     ),
@@ -286,55 +258,40 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
                         Row(
                           children: [
                             Expanded(
-                              child: TextFormField(
+                              child: AppInput(
                                 controller: _cityController,
-                                decoration: InputDecoration(
-                                  labelText: t('warehouses.city_required'),
-                                  hintText: t('warehouses.city_hint'),
-                                  prefixIcon: Icon(Icons.location_city),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return t('warehouses.city_required_msg');
-                                  }
-                                  return null;
-                                },
+                                label: t('warehouses.city_required'),
+                                hint: t('warehouses.city_hint'),
+                                prefixIcon: Icons.location_city,
+                                validator: (value) => value == null || value.trim().isEmpty
+                                    ? t('warehouses.city_required_msg')
+                                    : null,
                               ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: TextFormField(
+                              child: AppInput(
                                 controller: _districtController,
-                                decoration: InputDecoration(
-                                  labelText: t('warehouses.district_required'),
-                                  hintText: t('warehouses.district_hint'),
-                                  prefixIcon: Icon(Icons.place),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return t('warehouses.district_required_msg');
-                                  }
-                                  return null;
-                                },
+                                label: t('warehouses.district_required'),
+                                hint: t('warehouses.district_hint'),
+                                prefixIcon: Icons.place,
+                                validator: (value) => value == null || value.trim().isEmpty
+                                    ? t('warehouses.district_required_msg')
+                                    : null,
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(
+                        AppInput(
                           controller: _addressController,
-                          decoration: InputDecoration(
-                            labelText: t('warehouses.address_required'),
-                            hintText: t('warehouses.address_hint'),
-                            prefixIcon: Icon(Icons.home),
-                          ),
+                          label: t('warehouses.address_required'),
+                          hint: t('warehouses.address_hint'),
+                          prefixIcon: Icons.home,
                           maxLines: 2,
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return t('warehouses.address_required_msg');
-                            }
-                            return null;
-                          },
+                          validator: (value) => value == null || value.trim().isEmpty
+                              ? t('warehouses.address_required_msg')
+                              : null,
                         ),
                       ],
                     ),
@@ -346,20 +303,15 @@ class _AddWarehouseScreenState extends ConsumerState<AddWarehouseScreen> {
                       title: t('warehouses.contact_info'),
                       icon: Icons.phone,
                       children: [
-                        TextFormField(
+                        AppInput(
                           controller: _phoneController,
-                          decoration: InputDecoration(
-                            labelText: t('warehouses.phone_required'),
-                            hintText: '+90 (212) 555-0101',
-                            prefixIcon: Icon(Icons.phone_android),
-                          ),
+                          label: t('warehouses.phone_required'),
+                          hint: '+90 (212) 555-0101',
+                          prefixIcon: Icons.phone_android,
                           keyboardType: TextInputType.phone,
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return t('warehouses.phone_required_msg');
-                            }
-                            return null;
-                          },
+                          validator: (value) => value == null || value.trim().isEmpty
+                              ? t('warehouses.phone_required_msg')
+                              : null,
                         ),
                       ],
                     ),

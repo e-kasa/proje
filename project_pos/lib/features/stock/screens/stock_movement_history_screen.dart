@@ -113,7 +113,17 @@ class _StockMovementHistoryScreenState
       }).toList();
     }
 
-    return list;
+    // Tarih DESC — en yeni hareketler en üstte
+    final sorted = List<Map<String, dynamic>>.from(list);
+    sorted.sort((a, b) {
+      final aDate = DateTime.tryParse(a['createTime']?.toString() ?? '');
+      final bDate = DateTime.tryParse(b['createTime']?.toString() ?? '');
+      if (aDate == null && bDate == null) return 0;
+      if (aDate == null) return 1;  // null'lar sona
+      if (bDate == null) return -1;
+      return bDate.compareTo(aDate);  // DESC: yeni → eski
+    });
+    return sorted;
   }
 
   void _onSearchChanged(String _) {

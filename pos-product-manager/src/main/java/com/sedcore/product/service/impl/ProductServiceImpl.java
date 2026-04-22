@@ -20,6 +20,9 @@ import com.sedcore.inventory.entity.InventoryView;
 import com.sedcore.product.entity.Product;
 import com.sedcore.product.entity.ProductVariant;
 import com.sedcore.purchase.entity.Purchase;
+import com.sedcore.purchase.entity.SupplierClaim;
+import com.sedcore.purchase.model.ClaimLineSpec;
+import com.sedcore.purchase.model.SupplierClaimSummary;
 import com.sedcore.inventory.entity.StockMovement;
 import com.sedcore.common.enums.BarcodeType;
 import com.sedcore.common.enums.ProductStatus;
@@ -64,6 +67,11 @@ import com.sedcore.inventory.service.StockMovementService;
 import com.sedcore.inventory.service.StockLevelService;
 import com.sedcore.common.context.CompanyContext;
 import com.sedcore.company.repository.CompanySettingRepository;
+import com.sedcore.common.exception.NotFoundException;
+import com.sedcore.common.enums.TransactionType;
+import com.sedcore.finance.entity.AccountTransaction;
+import com.sedcore.finance.service.AccountTransactionService;
+import com.sedcore.supplier.entity.SupplierAccount;
 import com.towpen.base.security.BaseDbServiceImp;
 
 import jakarta.validation.Valid;
@@ -72,6 +80,8 @@ import com.towpen.base.enums.model.TMessageType;
 import com.towpen.base.exceptions.TOpenException;
 import com.towpen.base.restservice.model.TOpenMessage;
 import lombok.extern.slf4j.Slf4j;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 
 @Service
@@ -95,6 +105,7 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
     private final StockLevelService stockLevelService;
     private final SupplierClaimService supplierClaimService;
     private final SupplierAccountService supplierAccountService;
+    private final AccountTransactionService accountTransactionService;
 
     /**
      * Ürün Oluştur (Tüm Detaylarıyla)
@@ -312,7 +323,7 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
 
         // 1. Tedarikçi
         Supplier supplier = supplierService.findById(req.getSupplierId())
-                .orElseThrow(() -> new RuntimeException("Tedarikçi bulunamadı: " + req.getSupplierId()));
+                .orElseThrow(() -> new NotFoundException("Tedarikçi bulunamadı: " + req.getSupplierId()));
 
         // 2. Purchase başlığını oluştur
         Purchase purchase = new Purchase();
@@ -322,6 +333,8 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
             purchase.setDeliveryNoteNumber(req.getDeliveryNoteNumber());
         }
         purchase.setPurchaseDate(req.getPurchaseDate());
+        purchase.setLocationId(req.getLocationId());
+        purchase.setLocationType(req.getLocationType() != null ? req.getLocationType() : "STORE");
         purchase.setTotalAmount(BigDecimal.ZERO);
         purchase.setPaidAmount(BigDecimal.ZERO);
         purchase.setIsCancelled(false);
@@ -329,7 +342,9 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
         log.info("Purchase oluşturuldu: id={}", purchase.getId());
 
         List<BatchItemResult> results = new ArrayList<>();
+        List<ClaimLineSpec> shortageLines = new ArrayList<>();
         BigDecimal totalAmount            = BigDecimal.ZERO; // depoya giren mal tutarı (stok+cari)
+        BigDecimal allInvoiceTotal        = BigDecimal.ZERO; // faturada yazan toplam tutar
         BigDecimal existingInvoiceTotal   = BigDecimal.ZERO; // mevcut ürün fatura tutarı
         BigDecimal existingReceivedTotal  = BigDecimal.ZERO; // mevcut ürün teslim tutarı
 
@@ -348,21 +363,53 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
 
                     ProductResponse created = _createProductWithPurchase(cpr, purchase);
 
-                    // Toplam tutara ekle
+                    // Toplam tutara ekle + yeni ürün shortage hesapla
+                    int newItemReceivedTotal = 0;
+                    BigDecimal newItemFirstPrice = BigDecimal.ZERO;
                     if (item.getVariants() != null) {
-                        for (ProductVariantRequest vr : item.getVariants()) {
+                        for (int vi = 0; vi < item.getVariants().size(); vi++) {
+                            ProductVariantRequest vr = item.getVariants().get(vi);
                             BigDecimal price = (vr.getPricing() != null && vr.getPricing().getPurchasePrice() != null)
                                     ? vr.getPricing().getPurchasePrice() : BigDecimal.ZERO;
-                            int qty = 0;
+                            int receivedQty = 0;
                             if (vr.getInitialStocks() != null) {
-                                for (var s : vr.getInitialStocks()) qty += s.getQuantity();
+                                for (var s : vr.getInitialStocks()) receivedQty += s.getQuantity();
                             }
-                            totalAmount = totalAmount.add(price.multiply(BigDecimal.valueOf(qty)));
+                            totalAmount = totalAmount.add(price.multiply(BigDecimal.valueOf(receivedQty)));
+                            newItemReceivedTotal += receivedQty;
+                            if (vi == 0) newItemFirstPrice = price;
+
+                            // Yeni ürün fatura miktarı: item.invoiceQuantity yoksa receivedQty varsayılır
+                            int invoiceQty = item.getInvoiceQuantity() != null
+                                    ? item.getInvoiceQuantity() : receivedQty;
+                            allInvoiceTotal = allInvoiceTotal.add(price.multiply(BigDecimal.valueOf(invoiceQty)));
                         }
+                    } else {
+                        // Variant yoksa fatura toplamını da received ile eşit tut
+                        allInvoiceTotal = allInvoiceTotal.add(BigDecimal.ZERO);
                     }
 
                     String firstVariantId = (created.getVariants() != null && !created.getVariants().isEmpty())
                             ? created.getVariants().get(0).getId() : null;
+
+                    // Yeni ürün eksik teslimat: ilk variant'a bağlı tek satır spec (v1 basitleştirme)
+                    int newItemInvoiceQty = item.getInvoiceQuantity() != null
+                            ? item.getInvoiceQuantity() : newItemReceivedTotal;
+                    if (firstVariantId != null && newItemInvoiceQty > newItemReceivedTotal) {
+                        ProductVariant firstVariant = variantService.findById(firstVariantId).orElse(null);
+                        if (firstVariant != null) {
+                            shortageLines.add(new ClaimLineSpec(
+                                    firstVariant,
+                                    firstVariant.getSku(),
+                                    item.getProduct() != null ? item.getProduct().getName() : firstVariant.getName(),
+                                    newItemInvoiceQty,
+                                    newItemReceivedTotal,
+                                    newItemFirstPrice,
+                                    ClaimReason.SHORTAGE,
+                                    "Yeni ürün eksik teslimat"
+                            ));
+                        }
+                    }
 
                     results.add(BatchItemResult.builder()
                             .tempId(item.getTempId())
@@ -397,6 +444,7 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                     sm.setLocationType(req.getLocationType() != null ? req.getLocationType() : "STORE");
                     sm.setMovementType(StockMovementType.PURCHASE_IN);
                     sm.setQuantity(item.getQuantity());
+                    sm.setUnitPrice(item.getUnitPrice());   // son alış fiyatı enrichment için zorunlu
                     sm.setPurchase(purchase);
                     stockMovementService.save(sm);
                     // Anlık bakiyeyi güncelle
@@ -411,6 +459,21 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                     totalAmount           = totalAmount.add(lineReceived);
                     existingInvoiceTotal  = existingInvoiceTotal.add(lineInvoice);
                     existingReceivedTotal = existingReceivedTotal.add(lineReceived);
+
+                    if (item.shortageQty() > 0) {
+                        String productName = variant.getProduct() != null
+                                ? variant.getProduct().getName() : variant.getName();
+                        shortageLines.add(new ClaimLineSpec(
+                                variant,
+                                variant.getSku(),
+                                productName,
+                                item.resolvedInvoiceQty(),
+                                item.getQuantity(),
+                                item.getUnitPrice(),
+                                ClaimReason.SHORTAGE,
+                                item.getNotes()
+                        ));
+                    }
 
                     results.add(BatchItemResult.builder()
                             .tempId(item.getTempId())
@@ -434,16 +497,21 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
 
         // 5. Purchase toplam tutar + shortage güncelle
         //
-        // Yeni ürünlerde invoiceQty = receivedQty (shortage kavramı yok).
-        // Yalnızca mevcut ürünlerde shortage takip edilir.
+        // allInvoiceTotal = yeni ürünler dahil TÜM kalemlerin fatura tutarı
+        // existingInvoiceTotal/existingReceivedTotal = mevcut ürünlerin invoice/received farkı
+        // totalAmount = depoya giren tüm mal tutarı (yeni + mevcut received)
         //
-        // newProductsTotal  = totalAmount - existingReceivedTotal
-        // finalInvoiceAmount = existingInvoiceTotal + newProductsTotal
-        //                    = existingInvoiceTotal + totalAmount - existingReceivedTotal
-        // shortageAmount    = existingInvoiceTotal - existingReceivedTotal
-        BigDecimal shortageAmount = existingInvoiceTotal.subtract(existingReceivedTotal);
+        // finalInvoiceAmount = allInvoiceTotal + existingInvoice
+        //   (yeni ürünlerin invoice allInvoiceTotal'de, mevcut ürünlerin invoice existingInvoiceTotal'de)
+        // shortageAmount = (existingInvoiceTotal - existingReceivedTotal)   [mevcut ürün eksikleri]
+        //                + allInvoiceTotal - (totalAmount - existingReceivedTotal) [yeni ürün eksikleri]
+        // Basitleştirilmiş:
+        // newReceivedTotal = totalAmount - existingReceivedTotal
+        // finalInvoiceAmount = allInvoiceTotal + existingInvoiceTotal
+        // shortageAmount = finalInvoiceAmount - totalAmount
+        BigDecimal finalInvoiceAmount = allInvoiceTotal.add(existingInvoiceTotal);
+        BigDecimal shortageAmount = finalInvoiceAmount.subtract(totalAmount);
         if (shortageAmount.compareTo(BigDecimal.ZERO) < 0) shortageAmount = BigDecimal.ZERO;
-        BigDecimal finalInvoiceAmount = totalAmount.add(shortageAmount);
 
         purchase.setInvoiceAmount(finalInvoiceAmount);
         purchase.setTotalAmount(totalAmount);
@@ -454,27 +522,54 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
         log.info("Purchase toplam güncellendi: id={}, invoiceAmount={}, totalAmount={}, shortage={}",
                 purchase.getId(), finalInvoiceAmount, totalAmount, shortageAmount);
 
-        // 6. Eksik teslimat varsa otomatik SupplierClaim aç
-        if (shortageAmount.compareTo(BigDecimal.ZERO) > 0) {
-            supplierClaimService.openClaim(purchase, shortageAmount, ClaimReason.SHORTAGE,
-                    "Toplu giriş — fatura ile teslim miktarı arasında fark: " + shortageAmount + " TL");
-            log.info("SupplierClaim açıldı: purchaseId={}, shortage={}", purchase.getId(), shortageAmount);
+        // 6. Eksik teslimat varsa otomatik SupplierClaim aç (satır detaylı)
+        SupplierClaimSummary claimSummary = null;
+        if (!shortageLines.isEmpty()) {
+            SupplierClaim claim = supplierClaimService.openClaim(
+                    purchase,
+                    shortageLines,
+                    "Toplu giriş — " + shortageLines.size() + " kalemde fatura/teslim farkı: "
+                            + shortageAmount + " TL"
+            );
+            claimSummary = SupplierClaimSummary.of(claim);
+            log.info("SupplierClaim açıldı: purchaseId={}, claimId={}, satır={}, tutar={}",
+                    purchase.getId(), claim.getId(), shortageLines.size(), shortageAmount);
         }
 
         // 7. Tedarikçi cari hesabına borç olarak işle (toplam teslim tutarı)
-        // invoiceAmount değil totalAmount kullanılır — çünkü eksik teslimat
-        // SupplierClaim üzerinden takip edilir, cari hesaba gerçek teslim girişi yazılır.
+        // invoiceAmount değil totalAmount kullanılır — eksik teslimat SupplierClaim'de takip edilir.
         if (totalAmount.compareTo(BigDecimal.ZERO) > 0) {
-            try {
-                supplierAccountService.applyDebit(supplier, totalAmount);
-                log.info("SupplierAccount borç uygulandı: supplierId={}, amount={}, purchaseId={}",
-                        supplier.getId(), totalAmount, purchase.getId());
-            } catch (Exception e) {
-                // Cari hesap güncelleme başarısız olsa bile batch başarılı — log'la
-                // ve manuel düzeltme için uyarı ver (outer transaction rollback OLMAZ).
-                log.error("SupplierAccount güncellenemedi: supplierId={}, amount={}, hata={}",
-                        supplier.getId(), totalAmount, e.getMessage());
+            SupplierAccount account = supplierAccountService.applyDebit(supplier, totalAmount);
+            log.info("SupplierAccount borç uygulandı: supplierId={}, amount={}, purchaseId={}",
+                    supplier.getId(), totalAmount, purchase.getId());
+
+            // Cari defter kaydı (AccountTransaction) — audit trail için zorunlu
+            String txDesc = "Toplu alım - Fatura: " + purchase.getInvoiceNumber();
+            if (shortageAmount.compareTo(BigDecimal.ZERO) > 0) {
+                txDesc += " | Eksik teslimat: " + shortageAmount + " TL";
             }
+            LocalDate dueDate = purchase.getPurchaseDate() != null
+                    ? purchase.getPurchaseDate().plusDays(
+                            supplier.getPaymentTermDays() != null ? supplier.getPaymentTermDays() : 30)
+                    : LocalDate.now().plusDays(30);
+            AccountTransaction tx = AccountTransaction.builder()
+                    .supplier(supplier)
+                    .purchase(purchase)
+                    .transactionType(TransactionType.PURCHASE)
+                    .debitAmount(totalAmount)
+                    .creditAmount(BigDecimal.ZERO)
+                    .balance(account.getCurrentBalance())
+                    .referenceId(purchase.getId())
+                    .referenceType("PURCHASE")
+                    .referenceNumber(purchase.getInvoiceNumber())
+                    .description(txDesc)
+                    .transactionDate(LocalDateTime.now())
+                    .dueDate(dueDate)
+                    .isOverdue(false)
+                    .isCancelled(false)
+                    .build();
+            accountTransactionService.save(tx);
+            log.info("AccountTransaction kaydedildi: purchaseId={}, amount={}", purchase.getId(), totalAmount);
         }
 
         long successCount = results.stream().filter(BatchItemResult::isSuccess).count();
@@ -489,6 +584,7 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                 .failCount((int) failCount)
                 .totalAmount(totalAmount)
                 .results(results)
+                .claim(claimSummary)
                 .build();
     }
 

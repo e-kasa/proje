@@ -93,7 +93,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
     return AppScaffold(
       appBar: AppAppBar.standard(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: t('stock.count_review'),
@@ -104,7 +104,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
               child: Text(
                 '${_decidedCount}/${_response!.productCount}',
                 style: const TextStyle(
-                  color: Colors.black,
+                  color: AppColors.textPrimary,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -149,7 +149,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
       color: Colors.white,
       child: Row(
         children: [
-          Icon(Icons.fact_check, color: Colors.blue[700], size: 24),
+          const Icon(Icons.fact_check, color: AppColors.info, size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -165,9 +165,9 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                 const SizedBox(height: 4),
                 Text(
                   '${t('stock.counted_by')}: ${_response!.countedBy}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[600],
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ],
@@ -203,7 +203,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                   entry.value,
                   style: TextStyle(
                     fontSize: 12,
-                    color: isSelected ? Colors.white : Colors.black87,
+                    color: isSelected ? Colors.white : AppColors.textPrimary,
                     fontWeight:
                         isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
@@ -214,7 +214,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                     _filterType = entry.key;
                   });
                 },
-                selectedColor: Colors.blue[700],
+                selectedColor: AppColors.info,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
@@ -241,17 +241,17 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
             children: [
               Text(
                 t('stock.review_progress'),
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 13,
-                  color: Colors.grey[700],
+                  color: AppColors.textSecondary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
                 '${(_decidedCount / _response!.productCount * 100).toInt()}%',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 13,
-                  color: Colors.blue[700],
+                  color: AppColors.info,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -262,7 +262,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
               value: progress,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue[700]!),
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.info),
               minHeight: 8,
             ),
           ),
@@ -275,26 +275,26 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
     final t = i18nOf(ref);
     final hasDecision = product.hasDecision;
 
-    Color borderColor = Colors.grey[300]!;
-    Color headerColor = Colors.grey[50]!;
+    Color borderColor = AppColors.border;
+    Color headerColor = AppColors.bgLight;
     String statusLabel = t('stock.no_difference');
 
     if (hasDecision) {
-      borderColor = Colors.green[400]!;
-      headerColor = Colors.green[50]!;
+      borderColor = AppColors.success;
+      headerColor = AppColors.bgSuccess;
       statusLabel = t('stock.decided');
     } else if (product.hasDifference) {
       if (product.differenceLevel == DifferenceLevel.HIGH) {
-        borderColor = Colors.red[400]!;
-        headerColor = Colors.red[50]!;
+        borderColor = AppColors.danger;
+        headerColor = AppColors.bgDanger;
         statusLabel = t('stock.high_difference');
       } else if (product.differenceLevel == DifferenceLevel.MEDIUM) {
-        borderColor = Colors.orange[400]!;
-        headerColor = Colors.orange[50]!;
+        borderColor = AppColors.warning;
+        headerColor = AppColors.bgWarning;
         statusLabel = t('stock.medium_difference');
       } else {
-        borderColor = Colors.yellow[700]!;
-        headerColor = Colors.yellow[50]!;
+        borderColor = AppColors.warning;
+        headerColor = AppColors.bgWarning;
         statusLabel = t('stock.low_difference');
       }
     }
@@ -356,7 +356,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.green,
+                      color: AppColors.success,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: const Text(
@@ -386,23 +386,23 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                         children: [
                           Text(
                             'SKU: ${product.sku ?? '-'}',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 12,
-                              color: Colors.grey[600],
+                              color: AppColors.textSecondary,
                             ),
                           ),
                           Text(
                             '${t('stock.barcode')}: ${product.barcode ?? '-'}',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 12,
-                              color: Colors.grey[600],
+                              color: AppColors.textSecondary,
                             ),
                           ),
                           Text(
                             '${t('stock.location')}: ${product.locationName}',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 12,
-                              color: Colors.grey[600],
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ],
@@ -420,15 +420,15 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                         t('stock.system_stock'),
                         product.systemStock,
                         Icons.computer,
-                        Colors.blue,
+                        AppColors.info,
                       ),
                     ),
                     Container(
                       width: 40,
                       alignment: Alignment.center,
-                      child: Icon(
+                      child: const Icon(
                         Icons.swap_horiz,
-                        color: Colors.grey[400],
+                        color: AppColors.textMuted,
                         size: 24,
                       ),
                     ),
@@ -437,7 +437,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                         t('stock.counted_stock'),
                         product.countedStock,
                         Icons.fact_check,
-                        Colors.green,
+                        AppColors.success,
                       ),
                     ),
                   ],
@@ -450,16 +450,16 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                   decoration: BoxDecoration(
                     color: product.hasDifference
                         ? (product.isOverage
-                            ? Colors.green[50]
-                            : Colors.red[50])
-                        : Colors.grey[100],
+                            ? AppColors.bgSuccess
+                            : AppColors.bgDanger)
+                        : AppColors.bgLight,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: product.hasDifference
                           ? (product.isOverage
-                              ? Colors.green[200]!
-                              : Colors.red[200]!)
-                          : Colors.grey[300]!,
+                              ? AppColors.success.withValues(alpha: 0.3)
+                              : AppColors.danger.withValues(alpha: 0.3))
+                          : AppColors.border,
                     ),
                   ),
                   child: Row(
@@ -473,9 +473,9 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                                 : Icons.check_circle_outline,
                         color: product.hasDifference
                             ? (product.isOverage
-                                ? Colors.green[700]
-                                : Colors.red[700])
-                            : Colors.grey[700],
+                                ? AppColors.success
+                                : AppColors.danger)
+                            : AppColors.textSecondary,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
@@ -486,9 +486,9 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                           fontWeight: FontWeight.bold,
                           color: product.hasDifference
                               ? (product.isOverage
-                                  ? Colors.green[700]
-                                  : Colors.red[700])
-                              : Colors.grey[700],
+                                  ? AppColors.success
+                                  : AppColors.danger)
+                              : AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -552,10 +552,10 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
     final t = i18nOf(ref);
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
+      decoration: const BoxDecoration(
+        color: AppColors.bgLight,
         border: Border(
-          top: BorderSide(color: Colors.grey[300]!),
+          top: BorderSide(color: AppColors.border),
         ),
       ),
       child: Column(
@@ -569,7 +569,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                       child: _buildDecisionButton(
                         t('stock.accept_count'),
                         Icons.check_circle,
-                        Colors.green,
+                        AppColors.success,
                         () => _makeDecision(product, CountAction.ACCEPT_COUNT),
                       ),
                     ),
@@ -582,7 +582,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                       child: _buildDecisionButton(
                         t('stock.recount'),
                         Icons.replay,
-                        Colors.orange,
+                        AppColors.warning,
                         () => _makeDecision(product, CountAction.RECOUNT),
                       ),
                     ),
@@ -591,7 +591,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
                       child: _buildDecisionButton(
                         t('stock.ignore'),
                         Icons.close,
-                        Colors.grey,
+                        AppColors.textMuted,
                         () => _makeDecision(product, CountAction.IGNORE),
                       ),
                     ),
@@ -603,7 +603,7 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
             _buildDecisionButton(
               t('stock.approve'),
               Icons.check,
-              Colors.green,
+              AppColors.success,
               () => _makeDecision(product, CountAction.ACCEPT_COUNT),
             ),
         ],
@@ -630,28 +630,28 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
     final decision = product.userDecision!;
     String actionText = '';
     IconData actionIcon = Icons.check;
-    Color actionColor = Colors.green;
+    Color actionColor = AppColors.success;
 
     switch (decision.action) {
       case CountAction.ACCEPT_COUNT:
         actionText = t('stock.count_accepted');
         actionIcon = Icons.check_circle;
-        actionColor = Colors.green;
+        actionColor = AppColors.success;
         break;
       case CountAction.RECOUNT:
         actionText = t('stock.recount_scheduled');
         actionIcon = Icons.replay;
-        actionColor = Colors.orange;
+        actionColor = AppColors.warning;
         break;
       case CountAction.MANUAL_ADJUST:
         actionText = t('stock.manual_adjust_scheduled');
         actionIcon = Icons.edit;
-        actionColor = Colors.blue;
+        actionColor = AppColors.info;
         break;
       case CountAction.IGNORE:
         actionText = t('stock.difference_ignored');
         actionIcon = Icons.close;
-        actionColor = Colors.grey;
+        actionColor = AppColors.textMuted;
         break;
     }
 

@@ -29,4 +29,10 @@ public class BatchProductItem {
     private List<OemNumberRequest> oemNumbers;
 
     private List<CrossReferenceRequest> crossReferences;
+
+    /**
+     * Fatura üzerindeki toplam miktar. null ise initialStocks toplamı kullanılır.
+     * invoiceQuantity > initialStocks toplamı → eksik teslimat → SupplierClaim açılır.
+     */
+    private Integer invoiceQuantity;
 }

@@ -417,88 +417,139 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDs) => AlertDialog(
-          title: Text(t('suppliers.record_payment')),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: amountCtrl,
-                autofocus: true,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: '${t('suppliers.amount')} (₺) *',
-                  prefixIcon: const Icon(Icons.attach_money),
+        builder: (ctx, setDs) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: AppConstants.borderRadiusMedium),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 440),
+            padding: AppConstants.paddingLarge,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 44, height: 44,
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withValues(alpha: 0.12),
+                        borderRadius: AppConstants.borderRadiusMedium,
+                      ),
+                      child: const Icon(Icons.payments_outlined,
+                          color: AppColors.success, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(t('suppliers.record_payment'),
+                          style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary)),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: selectedType,
-                decoration: InputDecoration(labelText: t('suppliers.payment_method')),
-                items: [
-                  DropdownMenuItem(value: 'CASH', child: Text(t('suppliers.cash'))),
-                  DropdownMenuItem(value: 'BANK_TRANSFER', child: Text(t('suppliers.bank_transfer'))),
-                  DropdownMenuItem(value: 'CREDIT_CARD', child: Text(t('suppliers.credit_card'))),
-                  DropdownMenuItem(value: 'CHECK', child: Text(t('suppliers.check'))),
-                  DropdownMenuItem(value: 'OTHER', child: Text(t('common.other'))),
-                ],
-                onChanged: (v) => setDs(() => selectedType = v ?? 'CASH'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: descCtrl,
-                decoration: InputDecoration(labelText: t('suppliers.description_optional')),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(t('common.cancel')),
-            ),
-            StatefulBuilder(
-              builder: (ctx2, setSaving) {
-                return ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.success,
-                      foregroundColor: Colors.white),
-                  onPressed: () async {
-                          final amount = double.tryParse(
-                              amountCtrl.text.trim().replaceAll(',', '.'));
-                          if (amount == null || amount <= 0) return;
-                          setSaving(() => saving = true);
-                          try {
-                            await ref.read(supplierServiceProvider).recordPayment(
-                              _editId!,
-                              {
-                                'amount': amount,
-                                'paymentType': selectedType,
-                                if (descCtrl.text.trim().isNotEmpty)
-                                  'description': descCtrl.text.trim(),
+                const SizedBox(height: AppConstants.spacing16),
+                AppInput(
+                  controller: amountCtrl,
+                  label: '${t('suppliers.amount')} *',
+                  prefixIcon: Icons.attach_money,
+                  suffixText: '₺',
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                ),
+                const SizedBox(height: AppConstants.spacing12),
+                DropdownButtonFormField<String>(
+                  value: selectedType,
+                  decoration: InputDecoration(
+                    labelText: t('suppliers.payment_method'),
+                    prefixIcon: const Icon(Icons.payment_outlined,
+                        size: AppConstants.iconMedium),
+                    border: OutlineInputBorder(
+                      borderRadius: AppConstants.borderRadiusMedium,
+                      borderSide:
+                          const BorderSide(color: AppColors.border, width: 1.5),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: AppConstants.borderRadiusMedium,
+                      borderSide:
+                          const BorderSide(color: AppColors.border, width: 1.5),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: AppConstants.borderRadiusMedium,
+                      borderSide:
+                          const BorderSide(color: AppColors.primary, width: 2),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                  items: [
+                    DropdownMenuItem(value: 'CASH', child: Text(t('suppliers.cash'))),
+                    DropdownMenuItem(value: 'BANK_TRANSFER', child: Text(t('suppliers.bank_transfer'))),
+                    DropdownMenuItem(value: 'CREDIT_CARD', child: Text(t('suppliers.credit_card'))),
+                    DropdownMenuItem(value: 'CHECK', child: Text(t('suppliers.check'))),
+                    DropdownMenuItem(value: 'OTHER', child: Text(t('common.other'))),
+                  ],
+                  onChanged: (v) => setDs(() => selectedType = v ?? 'CASH'),
+                ),
+                const SizedBox(height: AppConstants.spacing12),
+                AppInput(
+                  controller: descCtrl,
+                  label: t('suppliers.description_optional'),
+                  prefixIcon: Icons.notes_outlined,
+                ),
+                const SizedBox(height: AppConstants.spacing24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppButton.outline(
+                        text: t('common.cancel'),
+                        onPressed: saving ? null : () => Navigator.pop(ctx),
+                      ),
+                    ),
+                    const SizedBox(width: AppConstants.spacing12),
+                    Expanded(
+                      child: AppButton.success(
+                        text: t('common.save'),
+                        icon: Icons.save,
+                        isLoading: saving,
+                        onPressed: saving
+                            ? null
+                            : () async {
+                                final amount = double.tryParse(
+                                    amountCtrl.text.trim().replaceAll(',', '.'));
+                                if (amount == null || amount <= 0) return;
+                                setDs(() => saving = true);
+                                try {
+                                  await ref
+                                      .read(supplierServiceProvider)
+                                      .recordPayment(
+                                    _editId!,
+                                    {
+                                      'amount': amount,
+                                      'paymentType': selectedType,
+                                      if (descCtrl.text.trim().isNotEmpty)
+                                        'description': descCtrl.text.trim(),
+                                    },
+                                  );
+                                  if (ctx.mounted) Navigator.pop(ctx);
+                                  await _loadAccountData();
+                                  if (mounted) {
+                                    AppToast.success(context,
+                                        t('suppliers.payment_saved'));
+                                  }
+                                } catch (e) {
+                                  setDs(() => saving = false);
+                                  if (ctx.mounted) {
+                                    AppToast.error(context, '$e');
+                                  }
+                                }
                               },
-                            );
-                            if (ctx.mounted) Navigator.pop(ctx);
-                            await _loadAccountData();
-                            if (mounted) {
-                              AppToast.success(context, t('suppliers.payment_saved'));
-                            }
-                          } catch (e) {
-                            setSaving(() => saving = false);
-                            if (ctx.mounted) {
-                              AppToast.error(context, '$e');
-                            }
-                          }
-                        },
-                  child: saving
-                      ? const SizedBox(
-                          width: 16, height: 16,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white))
-                      : Text(t('common.save')),
-                );
-              },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -514,59 +565,93 @@ class _AddSupplierScreenState extends ConsumerState<AddSupplierScreen> {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDs) {
-          return AlertDialog(
-            title: Text(t('suppliers.edit_credit_limit')),
-            content: TextField(
-              controller: limitCtrl,
-              autofocus: true,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                labelText: '${t('suppliers.new_credit_limit')} (₺)',
-                prefixIcon: const Icon(Icons.credit_card_outlined),
-              ),
+        builder: (ctx, setDs) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: AppConstants.borderRadiusMedium),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 400),
+            padding: AppConstants.paddingLarge,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 44, height: 44,
+                      decoration: BoxDecoration(
+                        color: AppColors.info.withValues(alpha: 0.12),
+                        borderRadius: AppConstants.borderRadiusMedium,
+                      ),
+                      child: const Icon(Icons.credit_card_outlined,
+                          color: AppColors.info, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(t('suppliers.edit_credit_limit'),
+                          style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppConstants.spacing16),
+                AppInput(
+                  controller: limitCtrl,
+                  label: t('suppliers.new_credit_limit'),
+                  prefixIcon: Icons.credit_card_outlined,
+                  suffixText: '₺',
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                ),
+                const SizedBox(height: AppConstants.spacing24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppButton.outline(
+                        text: t('common.cancel'),
+                        onPressed: saving ? null : () => Navigator.pop(ctx),
+                      ),
+                    ),
+                    const SizedBox(width: AppConstants.spacing12),
+                    Expanded(
+                      child: AppButton(
+                        text: t('common.save'),
+                        icon: Icons.save,
+                        variant: ButtonVariant.primary,
+                        isLoading: saving,
+                        onPressed: saving
+                            ? null
+                            : () async {
+                                final limit = double.tryParse(
+                                    limitCtrl.text.trim().replaceAll(',', '.'));
+                                if (limit == null || limit < 0) return;
+                                setDs(() => saving = true);
+                                try {
+                                  await ref
+                                      .read(supplierServiceProvider)
+                                      .updateCreditLimit(_editId!, limit);
+                                  if (ctx.mounted) Navigator.pop(ctx);
+                                  await _loadAccountData();
+                                  if (mounted) {
+                                    AppToast.success(context,
+                                        t('suppliers.credit_limit_updated'));
+                                  }
+                                } catch (e) {
+                                  setDs(() => saving = false);
+                                  if (ctx.mounted) {
+                                    AppToast.error(context, '$e');
+                                  }
+                                }
+                              },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(t('common.cancel')),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.info,
-                    foregroundColor: Colors.white),
-                onPressed: () async {
-                        final limit = double.tryParse(
-                            limitCtrl.text.trim().replaceAll(',', '.'));
-                        if (limit == null || limit < 0) return;
-                        setDs(() => saving = true);
-                        try {
-                          await ref
-                              .read(supplierServiceProvider)
-                              .updateCreditLimit(_editId!, limit);
-                          if (ctx.mounted) Navigator.pop(ctx);
-                          await _loadAccountData();
-                          if (mounted) {
-                            AppToast.success(context, t('suppliers.credit_limit_updated'));
-                          }
-                        } catch (e) {
-                          setDs(() => saving = false);
-                          if (ctx.mounted) {
-                            AppToast.error(context, '$e');
-                          }
-                        }
-                      },
-                child: saving
-                    ? const SizedBox(
-                        width: 16, height: 16,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
-                    : Text(t('common.save')),
-              ),
-            ],
-          );
-        },
+          ),
+        ),
       ),
     );
   }

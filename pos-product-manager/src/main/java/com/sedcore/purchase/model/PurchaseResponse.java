@@ -1,5 +1,6 @@
 package com.sedcore.purchase.model;
 
+import com.sedcore.common.enums.PurchaseStatus;
 import com.towpen.base.restservice.model.DtoBaseModel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,17 +32,24 @@ public class PurchaseResponse extends DtoBaseModel {
     private LocalDate purchaseDate;
 
     // Tutarlar
-    private BigDecimal totalAmount;
+    private BigDecimal invoiceAmount;    // Faturanın brüt toplamı
+    private BigDecimal totalAmount;      // Depoya giren mal tutarı (cari borca yansıyan)
     private BigDecimal paidAmount;
     private BigDecimal remainingDebt;
+    private BigDecimal discountAmount;   // Uygulanan toplam iskonto
+    private BigDecimal shortageAmount;   // Henüz kapatılmamış eksik teslimat tutarı
 
     // Lokasyon
     private String locationId;
     private String locationType;
 
     // Durum
+    private PurchaseStatus purchaseStatus;
     private Boolean isCancelled;
     private String notes;
+
+    // Açık talep sayısı (opsiyonel, servis doldurmayabilir)
+    private Integer openClaimCount;
 
     // Kalemler
     private List<PurchaseItemResponse> items;

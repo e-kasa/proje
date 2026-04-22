@@ -165,26 +165,21 @@ class _AddStoreScreenState extends ConsumerState<AddStoreScreen> {
                       icon: Icons.category,
                       children: _storeTypes.map((type) {
                         final isSelected = _selectedType == type['value'];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppConstants.borderRadiusMedium,
-                            side: BorderSide(color: isSelected ? AppColors.primary : AppColors.border, width: isSelected ? 2 : 1),
-                          ),
-                          child: InkWell(
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: AppCard(
                             onTap: () => setState(() => _selectedType = type['value']),
-                            borderRadius: AppConstants.borderRadiusMedium,
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Row(
-                                children: [
-                                  Icon(type['icon'], color: isSelected ? AppColors.primary : AppColors.textMuted),
-                                  const SizedBox(width: 12),
-                                  Expanded(child: Text(t(type['labelKey'] as String), style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? AppColors.primary : AppColors.textPrimary))),
-                                  if (isSelected) const Icon(Icons.check_circle, color: AppColors.primary),
-                                ],
-                              ),
+                            color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : null,
+                            borderColor: isSelected ? AppColors.primary : AppColors.border,
+                            borderWidth: isSelected ? 2 : 1,
+                            hasShadow: false,
+                            child: Row(
+                              children: [
+                                Icon(type['icon'], color: isSelected ? AppColors.primary : AppColors.textMuted),
+                                const SizedBox(width: 12),
+                                Expanded(child: Text(t(type['labelKey'] as String), style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? AppColors.primary : AppColors.textPrimary))),
+                                if (isSelected) const Icon(Icons.check_circle, color: AppColors.primary),
+                              ],
                             ),
                           ),
                         );
@@ -197,17 +192,53 @@ class _AddStoreScreenState extends ConsumerState<AddStoreScreen> {
                       children: [
                         Row(
                           children: [
-                            Expanded(child: TextFormField(controller: _codeController, decoration: InputDecoration(labelText: t('stores.code_required'), hintText: 'STR-001', prefixIcon: const Icon(Icons.qr_code)), validator: (v) => v == null || v.trim().isEmpty ? t('stores.code_required_msg') : null)),
+                            Expanded(
+                              child: AppInput(
+                                controller: _codeController,
+                                label: t('stores.code_required'),
+                                hint: 'STR-001',
+                                prefixIcon: Icons.qr_code,
+                                validator: (v) => v == null || v.trim().isEmpty ? t('stores.code_required_msg') : null,
+                              ),
+                            ),
                             const SizedBox(width: 12),
-                            Expanded(child: TextFormField(controller: _employeeCountController, decoration: InputDecoration(labelText: t('stores.employee_count_required'), prefixIcon: const Icon(Icons.people), suffixText: t('stores.person_suffix')), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly], validator: (v) => v == null || v.trim().isEmpty ? t('stores.employee_count_required_msg') : null)),
+                            Expanded(
+                              child: AppInput(
+                                controller: _employeeCountController,
+                                label: t('stores.employee_count_required'),
+                                prefixIcon: Icons.people,
+                                suffixText: t('stores.person_suffix'),
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                validator: (v) => v == null || v.trim().isEmpty ? t('stores.employee_count_required_msg') : null,
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(controller: _nameController, decoration: InputDecoration(labelText: t('stores.name_required'), hintText: t('stores.name_hint'), prefixIcon: const Icon(Icons.store)), validator: (v) => v == null || v.trim().isEmpty ? t('stores.name_required_msg') : null),
+                        AppInput(
+                          controller: _nameController,
+                          label: t('stores.name_required'),
+                          hint: t('stores.name_hint'),
+                          prefixIcon: Icons.store,
+                          validator: (v) => v == null || v.trim().isEmpty ? t('stores.name_required_msg') : null,
+                        ),
                         const SizedBox(height: 16),
-                        TextFormField(controller: _managerController, decoration: InputDecoration(labelText: t('stores.manager_required'), hintText: t('stores.manager_hint'), prefixIcon: const Icon(Icons.person)), validator: (v) => v == null || v.trim().isEmpty ? t('stores.manager_required_msg') : null),
+                        AppInput(
+                          controller: _managerController,
+                          label: t('stores.manager_required'),
+                          hint: t('stores.manager_hint'),
+                          prefixIcon: Icons.person,
+                          validator: (v) => v == null || v.trim().isEmpty ? t('stores.manager_required_msg') : null,
+                        ),
                         const SizedBox(height: 16),
-                        TextFormField(controller: _openingHoursController, decoration: InputDecoration(labelText: t('stores.opening_hours_required'), hintText: '09:00 - 22:00', prefixIcon: const Icon(Icons.access_time)), validator: (v) => v == null || v.trim().isEmpty ? t('stores.opening_hours_required_msg') : null),
+                        AppInput(
+                          controller: _openingHoursController,
+                          label: t('stores.opening_hours_required'),
+                          hint: '09:00 - 22:00',
+                          prefixIcon: Icons.access_time,
+                          validator: (v) => v == null || v.trim().isEmpty ? t('stores.opening_hours_required_msg') : null,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -217,13 +248,36 @@ class _AddStoreScreenState extends ConsumerState<AddStoreScreen> {
                       children: [
                         Row(
                           children: [
-                            Expanded(child: TextFormField(controller: _cityController, decoration: InputDecoration(labelText: t('stores.city_required'), hintText: t('stores.city_hint'), prefixIcon: const Icon(Icons.location_city)), validator: (v) => v == null || v.trim().isEmpty ? t('stores.city_required_msg') : null)),
+                            Expanded(
+                              child: AppInput(
+                                controller: _cityController,
+                                label: t('stores.city_required'),
+                                hint: t('stores.city_hint'),
+                                prefixIcon: Icons.location_city,
+                                validator: (v) => v == null || v.trim().isEmpty ? t('stores.city_required_msg') : null,
+                              ),
+                            ),
                             const SizedBox(width: 12),
-                            Expanded(child: TextFormField(controller: _districtController, decoration: InputDecoration(labelText: t('stores.district_required'), hintText: t('stores.district_hint'), prefixIcon: const Icon(Icons.place)), validator: (v) => v == null || v.trim().isEmpty ? t('stores.district_required_msg') : null)),
+                            Expanded(
+                              child: AppInput(
+                                controller: _districtController,
+                                label: t('stores.district_required'),
+                                hint: t('stores.district_hint'),
+                                prefixIcon: Icons.place,
+                                validator: (v) => v == null || v.trim().isEmpty ? t('stores.district_required_msg') : null,
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(controller: _addressController, decoration: InputDecoration(labelText: t('stores.address_required'), hintText: t('stores.address_hint'), prefixIcon: const Icon(Icons.home)), maxLines: 2, validator: (v) => v == null || v.trim().isEmpty ? t('stores.address_required_msg') : null),
+                        AppInput(
+                          controller: _addressController,
+                          label: t('stores.address_required'),
+                          hint: t('stores.address_hint'),
+                          prefixIcon: Icons.home,
+                          maxLines: 2,
+                          validator: (v) => v == null || v.trim().isEmpty ? t('stores.address_required_msg') : null,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -231,9 +285,22 @@ class _AddStoreScreenState extends ConsumerState<AddStoreScreen> {
                       title: t('stores.contact_info'),
                       icon: Icons.phone,
                       children: [
-                        TextFormField(controller: _phoneController, decoration: InputDecoration(labelText: t('stores.phone_required'), hintText: '+90 (216) 555-0201', prefixIcon: const Icon(Icons.phone_android)), keyboardType: TextInputType.phone, validator: (v) => v == null || v.trim().isEmpty ? t('stores.phone_required_msg') : null),
+                        AppInput(
+                          controller: _phoneController,
+                          label: t('stores.phone_required'),
+                          hint: '+90 (216) 555-0201',
+                          prefixIcon: Icons.phone_android,
+                          keyboardType: TextInputType.phone,
+                          validator: (v) => v == null || v.trim().isEmpty ? t('stores.phone_required_msg') : null,
+                        ),
                         const SizedBox(height: 16),
-                        TextFormField(controller: _emailController, decoration: InputDecoration(labelText: t('stores.email'), hintText: 'merkez@magaza.com', prefixIcon: const Icon(Icons.email)), keyboardType: TextInputType.emailAddress),
+                        AppInput(
+                          controller: _emailController,
+                          label: t('stores.email'),
+                          hint: 'merkez@magaza.com',
+                          prefixIcon: Icons.email,
+                          keyboardType: TextInputType.emailAddress,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -243,9 +310,27 @@ class _AddStoreScreenState extends ConsumerState<AddStoreScreen> {
                       children: [
                         Row(
                           children: [
-                            Expanded(child: TextFormField(controller: _totalAreaController, decoration: InputDecoration(labelText: t('stores.total_area'), prefixIcon: const Icon(Icons.aspect_ratio), suffixText: 'm²'), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+                            Expanded(
+                              child: AppInput(
+                                controller: _totalAreaController,
+                                label: t('stores.total_area'),
+                                prefixIcon: Icons.aspect_ratio,
+                                suffixText: 'm²',
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                              ),
+                            ),
                             const SizedBox(width: 12),
-                            Expanded(child: TextFormField(controller: _salesAreaController, decoration: InputDecoration(labelText: t('stores.sales_area'), prefixIcon: const Icon(Icons.shopping_cart), suffixText: 'm²'), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+                            Expanded(
+                              child: AppInput(
+                                controller: _salesAreaController,
+                                label: t('stores.sales_area'),
+                                prefixIcon: Icons.shopping_cart,
+                                suffixText: 'm²',
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                              ),
+                            ),
                           ],
                         ),
                       ],

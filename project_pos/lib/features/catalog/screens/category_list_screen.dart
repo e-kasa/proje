@@ -133,25 +133,17 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
     setState(() => _filteredCategories = filtered);
   }
 
-  Future<void> _deleteCategory(String id) async {
-    final confirm = await showDialog<bool>(
+  Future<void> _deleteCategory(String id, {String? name}) async {
+    final confirm = await AppConfirmationDialog.showDelete(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(t('common.delete')),
-        content: Text(t('common.are_you_sure')),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(t('common.cancel'))),
-          AppButton.danger(
-            text: t('common.delete'),
-            onPressed: () => Navigator.pop(ctx, true),
-          ),
-        ],
-      ),
+      title: t('common.delete'),
+      message: t('common.are_you_sure'),
+      itemName: name,
+      confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
     );
 
-    if (confirm == true) {
+    if (confirm) {
       try {
         await ref.read(categoryServiceProvider).deleteCategory(id);
         _loadCategories();
@@ -167,24 +159,15 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
   }
 
   Future<void> _bulkDelete() async {
-    final confirm = await showDialog<bool>(
+    final confirm = await AppConfirmationDialog.showDelete(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(t('common.delete')),
-        content: Text(t('common.are_you_sure')),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(t('common.cancel'))),
-          AppButton.danger(
-            text: t('common.delete'),
-            onPressed: () => Navigator.pop(ctx, true),
-          ),
-        ],
-      ),
+      title: t('common.delete'),
+      message: t('common.are_you_sure'),
+      confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
     );
 
-    if (confirm == true) {
+    if (confirm) {
       final errors = <String>[];
       for (final id in _selectedCategoryIds) {
         try {
@@ -276,28 +259,14 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
       color: Colors.white,
       child: Column(
         children: [
-          TextField(
+          AppSearchInput(
             controller: _searchController,
-            decoration: InputDecoration(
-              hintText: t('common.search'),
-              prefixIcon:
-                  const Icon(Icons.search, color: AppColors.primary),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        _searchController.clear();
-                        _filterCategories();
-                      })
-                  : null,
-              filled: true,
-              fillColor: AppColors.bgLight,
-              border: OutlineInputBorder(
-                  borderRadius: AppConstants.borderRadiusMedium,
-                  borderSide: BorderSide.none),
-              contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 12),
-            ),
+            hint: t('common.search'),
+            onChanged: (_) => _filterCategories(),
+            onClear: () {
+              _searchController.clear();
+              _filterCategories();
+            },
           ),
           const SizedBox(height: 12),
           SingleChildScrollView(
@@ -338,37 +307,16 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.category_outlined,
-              size: 80,
-              color: AppColors.textMuted.withValues(alpha: 0.5)),
-          const SizedBox(height: 16),
-          Text(
-            _searchController.text.isNotEmpty ||
-                    _selectedStatus != 'ALL'
-                ? t('common.no_records')
-                : t('common.no_data'),
-            style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _searchController.text.isNotEmpty ||
-                    _selectedStatus != 'ALL'
-                ? t('common.filter')
-                : t('common.no_records'),
-            style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textMuted.withValues(alpha: 0.8)),
-          ),
-        ],
-      ),
-    );
+    final isFiltered = _searchController.text.isNotEmpty || _selectedStatus != 'ALL';
+    return isFiltered
+        ? AppEmptyState.search(
+            title: t('common.no_records'),
+            description: t('common.filter'),
+          )
+        : AppEmptyState.noData(
+            title: t('common.no_data'),
+            description: t('common.no_records'),
+          );
   }
 
   Widget _buildCategoryList() {
@@ -389,6 +337,7 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
           isActive: isActive,
           isSelected: isSelected,
           isSelectionMode: _isSelectionMode,
+          t: t,
           onSelect: () => setState(() {
             if (isSelected) {
               _selectedCategoryIds.remove(id);
@@ -408,7 +357,7 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
             );
             if (result == true) _loadCategories();
           },
-          onDelete: () => _deleteCategory(id),
+          onDelete: () => _deleteCategory(id, name: cat['name']?.toString()),
         );
       },
     );
@@ -430,6 +379,7 @@ class _CategoryTile extends StatelessWidget {
   final VoidCallback onLongPress;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final String Function(String) t;
 
   const _CategoryTile({
     required this.category,
@@ -442,13 +392,14 @@ class _CategoryTile extends StatelessWidget {
     required this.onLongPress,
     required this.onEdit,
     required this.onDelete,
+    required this.t,
   });
 
   /// Her seviye için görsel ayarlar
   static const _levelColors = [
-    Colors.blue,
-    Colors.orange,
-    Colors.purple,
+    AppColors.info,
+    AppColors.orange,
+    AppColors.purple,
   ];
   static const _levelPrefixes = ['📁', '   └─', '      └─'];
   static const _levelLabels = ['Kök', 'Alt', 'Torun'];
@@ -456,7 +407,7 @@ class _CategoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color =
-        level < _levelColors.length ? _levelColors[level] : Colors.grey;
+        level < _levelColors.length ? _levelColors[level] : AppColors.textMuted;
     final prefix =
         level < _levelPrefixes.length ? _levelPrefixes[level] : '  ';
     final levelLabel =
@@ -465,21 +416,14 @@ class _CategoryTile extends StatelessWidget {
     // Girinti genişliği seviyeye göre
     final indent = level * 16.0;
 
-    return Card(
-      margin: EdgeInsets.only(bottom: 8, left: indent),
-      shape: RoundedRectangleBorder(
-        borderRadius: AppConstants.borderRadiusMedium,
-        side: isSelected
-            ? const BorderSide(color: AppColors.primary, width: 2)
-            : BorderSide(
-                color: color.withValues(alpha: 0.3),
-                width: 1,
-              ),
-      ),
-      child: InkWell(
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8, left: indent),
+      child: AppCard(
         onTap: isSelectionMode ? onSelect : onEdit,
         onLongPress: onLongPress,
-        borderRadius: AppConstants.borderRadiusMedium,
+        borderColor: isSelected ? AppColors.primary : color.withValues(alpha: 0.3),
+        borderWidth: isSelected ? 2 : 1,
+        padding: EdgeInsets.zero,
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(
@@ -590,7 +534,7 @@ class _CategoryTile extends StatelessWidget {
                             borderRadius: AppConstants.borderRadiusSmall,
                           ),
                           child: Text(
-                            isActive ? 'Aktif' : 'Pasif', // TODO: i18n common.active / common.passive
+                            isActive ? t('common.active') : t('common.passive'),
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
@@ -612,22 +556,22 @@ class _CategoryTile extends StatelessWidget {
                   icon: const Icon(Icons.more_vert,
                       color: AppColors.textMuted),
                   itemBuilder: (_) => [
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'edit',
                       child: Row(children: [
-                        Icon(Icons.edit, size: 20),
-                        SizedBox(width: 12),
-                        Text('Düzenle'), // TODO: i18n common.edit
+                        const Icon(Icons.edit, size: 20),
+                        const SizedBox(width: 12),
+                        Text(t('common.edit')),
                       ]),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'delete',
                       child: Row(children: [
-                        Icon(Icons.delete,
+                        const Icon(Icons.delete,
                             size: 20, color: AppColors.danger),
-                        SizedBox(width: 12),
-                        Text('Sil', // TODO: i18n common.delete
-                            style: TextStyle(color: AppColors.danger)),
+                        const SizedBox(width: 12),
+                        Text(t('common.delete'),
+                            style: const TextStyle(color: AppColors.danger)),
                       ]),
                     ),
                   ],

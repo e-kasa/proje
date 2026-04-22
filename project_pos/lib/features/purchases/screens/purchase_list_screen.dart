@@ -255,7 +255,7 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
           padding: const EdgeInsets.only(bottom: 10),
           child: AppCard(
           borderColor: cancelled
-              ? Colors.red.withValues(alpha: 0.3)
+              ? AppColors.danger.withValues(alpha: 0.3)
               : null,
           onTap: () async {
             await context.push('/purchases/detail/${p['id']}');
@@ -271,13 +271,13 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
                         height: 40,
                         decoration: BoxDecoration(
                           color: cancelled
-                              ? Colors.red.withValues(alpha: 0.1)
+                              ? AppColors.danger.withValues(alpha: 0.1)
                               : AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: AppConstants.borderRadiusSmall,
                         ),
                         child: Icon(
                           cancelled ? Icons.cancel_outlined : Icons.receipt_long_rounded,
-                          color: cancelled ? Colors.red : AppColors.primary,
+                          color: cancelled ? AppColors.danger : AppColors.primary,
                           size: 20,
                         ),
                       ),
@@ -310,14 +310,14 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
                             fmt.format(total),
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: cancelled ? Colors.grey : AppColors.primary,
+                              color: cancelled ? AppColors.textMuted : AppColors.primary,
                             ),
                           ),
                           if (remaining > 0 && !cancelled)
                             Text(
                               '${t('purchases.debt')}: ${fmt.format(remaining)}',
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: Colors.orange[700],
+                                color: AppColors.warning,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -338,16 +338,16 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
                           ),
                         const Spacer(),
                         if (cancelled)
-                          _tag(t('common.cancelled'), Icons.cancel_outlined, Colors.red, theme)
+                          _tag(t('common.cancelled'), Icons.cancel_outlined, AppColors.danger, theme)
                         else if (remaining > 0)
-                          _tag(t('purchases.on_credit'), Icons.schedule_rounded, Colors.orange, theme)
+                          _tag(t('purchases.on_credit'), Icons.schedule_rounded, AppColors.warning, theme)
                         else
-                          _tag(t('purchases.paid'), Icons.check_circle_outline, Colors.green, theme),
+                          _tag(t('purchases.paid'), Icons.check_circle_outline, AppColors.success, theme),
                         if (!cancelled) ...[
                           const SizedBox(width: 8),
                           GestureDetector(
                             onTap: () => _confirmCancel(p['id'] as String),
-                            child: _tag(t('common.cancel'), Icons.close_rounded, Colors.red, theme),
+                            child: _tag(t('common.cancel'), Icons.close_rounded, AppColors.danger, theme),
                           ),
                         ],
                       ],

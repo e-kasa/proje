@@ -72,8 +72,16 @@ public class StockMovementControllerImpl {
             } else {
                 movements = (List<StockMovement>)stockMovementService.findAll();
             }
+            // Tarih DESC — en yeni hareketler en üstte (variantId/locationId
+            // query'leri zaten ORDER BY createTime DESC; findAll() için sort).
             var filtered = movements.stream()
                 .filter(m -> movementType == null || movementType.equals(m.getMovementType().name()))
+                .sorted((a, b) -> {
+                    if (a.getCreateTime() == null && b.getCreateTime() == null) return 0;
+                    if (a.getCreateTime() == null) return 1;
+                    if (b.getCreateTime() == null) return -1;
+                    return b.getCreateTime().compareTo(a.getCreateTime()); // DESC
+                })
                 .map(this::toMap)
                 .collect(Collectors.toList());
             return ResponseEntity.ok(ApiResponse.success(filtered));

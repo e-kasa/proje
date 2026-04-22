@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.sedcore.common.enums.PurchaseStatus;
 import com.towpen.base.db.model.TOpenSimpleCompanyEntity;
 import com.sedcore.supplier.entity.Supplier;
 import com.sedcore.inventory.entity.StockMovement;
@@ -49,13 +50,41 @@ public class Purchase extends TOpenSimpleCompanyEntity {
 
     // ===== TUTAR BİLGİLERİ =====
 
+    /**
+     * Faturadaki brüt toplam (tüm kalemler × invoiceQty × birimFiyat).
+     * Eksik teslimat olsa bile faturanın tam tutarıdır.
+     */
+    @Column(name = "invoice_amount", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal invoiceAmount = BigDecimal.ZERO;
+
+    /**
+     * Gerçekte depoya/mağazaya giren mal tutarı (receivedQty × birimFiyat).
+     * Cari hesaba yansıyan borç bu tutardır — invoiceAmount'tan farklı olabilir.
+     */
     @Column(name = "total_amount", precision = 15, scale = 2, nullable = false)
     @Builder.Default
-    private BigDecimal totalAmount = BigDecimal.ZERO; // Toplam tutar
+    private BigDecimal totalAmount = BigDecimal.ZERO;
 
     @Column(name = "paid_amount", precision = 15, scale = 2)
     @Builder.Default
-    private BigDecimal paidAmount = BigDecimal.ZERO; // Ödenen tutar
+    private BigDecimal paidAmount = BigDecimal.ZERO;
+
+    /**
+     * Tedarikçi iskontosu/kredi notu ile kapatılan toplam tutar.
+     * applyDiscount() çağrıldıkça birikimli artar.
+     */
+    @Column(name = "discount_amount", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
+    /**
+     * Henüz çözüme kavuşturulmamış eksik teslimat tutarı.
+     * invoiceAmount - totalAmount ile başlar; iskonto/teslimat ile azalır, 0'da kapanır.
+     */
+    @Column(name = "shortage_amount", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal shortageAmount = BigDecimal.ZERO;
 
     // ===== STOK HAREKETLERİ =====
 
@@ -76,6 +105,11 @@ public class Purchase extends TOpenSimpleCompanyEntity {
     private String locationType;
 
     // ===== DURUM =====
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "purchase_status", length = 20)
+    @Builder.Default
+    private PurchaseStatus purchaseStatus = PurchaseStatus.COMPLETED;
 
     @Column(name = "is_cancelled")
     @Builder.Default

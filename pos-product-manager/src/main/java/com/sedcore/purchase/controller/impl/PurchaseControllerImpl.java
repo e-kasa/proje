@@ -1,9 +1,13 @@
 package com.sedcore.purchase.controller.impl;
 
+import com.sedcore.common.enums.ClaimStatus;
+import com.sedcore.purchase.model.ClaimResolveRequest;
+import com.sedcore.purchase.model.PurchaseDiscountRequest;
 import com.sedcore.purchase.model.PurchaseRequest;
 import com.sedcore.purchase.model.PurchaseResponse;
 import com.sedcore.purchase.model.PurchaseReturnRequest;
 import com.sedcore.purchase.model.PurchaseReturnResponse;
+import com.sedcore.purchase.model.SupplierClaimResponse;
 import com.towpen.base.exceptions.ApiResponse;
 import com.sedcore.purchase.service.PurchaseService;
 import jakarta.validation.Valid;
@@ -135,6 +139,77 @@ public class PurchaseControllerImpl {
         } catch (Exception e) {
             log.error("Exception occurred", e);
             throw ExceptionMapper.mapAndLog(e, "cancelPurchase(" + id + ")");
+        }
+    }
+
+    // POST /api/v1/purchases/{id}/discount
+    @PostMapping("/{id}/discount")
+    public ResponseEntity<ApiResponse<PurchaseResponse>> applyDiscount(
+            @PathVariable String id,
+            @Valid @RequestBody PurchaseDiscountRequest request) {
+        try {
+            PurchaseResponse response = purchaseService.applyDiscount(id, request);
+            log.info("Iskonto uygulandi: purchaseId={}, tutar={}", id, request.getDiscountAmount());
+            return ResponseEntity.ok(ApiResponse.success(response));
+        } catch (TOpenException e) {
+
+            throw e;
+
+        } catch (Exception e) {
+            log.error("Exception occurred", e);
+            throw ExceptionMapper.mapAndLog(e, "applyDiscount(" + id + ")");
+        }
+    }
+
+    // GET /api/v1/purchases/{id}/claims
+    @GetMapping("/{id}/claims")
+    public ResponseEntity<ApiResponse<List<SupplierClaimResponse>>> listClaims(@PathVariable String id) {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(purchaseService.listClaims(id)));
+        } catch (TOpenException e) {
+
+            throw e;
+
+        } catch (Exception e) {
+            log.error("Exception occurred", e);
+            throw ExceptionMapper.mapAndLog(e, "listClaims(" + id + ")");
+        }
+    }
+
+    // GET /api/v1/purchases/claims/supplier/{supplierId}?status=
+    @GetMapping("/claims/supplier/{supplierId}")
+    public ResponseEntity<ApiResponse<List<SupplierClaimResponse>>> listClaimsBySupplier(
+            @PathVariable String supplierId,
+            @RequestParam(required = false) ClaimStatus status) {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(
+                    purchaseService.listClaimsBySupplier(supplierId, status)));
+        } catch (TOpenException e) {
+
+            throw e;
+
+        } catch (Exception e) {
+            log.error("Exception occurred", e);
+            throw ExceptionMapper.mapAndLog(e, "listClaimsBySupplier(" + supplierId + ")");
+        }
+    }
+
+    // PATCH /api/v1/purchases/claims/{claimId}/resolve
+    @PatchMapping("/claims/{claimId}/resolve")
+    public ResponseEntity<ApiResponse<SupplierClaimResponse>> resolveClaim(
+            @PathVariable String claimId,
+            @Valid @RequestBody ClaimResolveRequest request) {
+        try {
+            SupplierClaimResponse response = purchaseService.resolveClaim(claimId, request);
+            log.info("Claim kapatildi: claimId={}, resolution={}", claimId, request.getResolution());
+            return ResponseEntity.ok(ApiResponse.success(response));
+        } catch (TOpenException e) {
+
+            throw e;
+
+        } catch (Exception e) {
+            log.error("Exception occurred", e);
+            throw ExceptionMapper.mapAndLog(e, "resolveClaim(" + claimId + ")");
         }
     }
 

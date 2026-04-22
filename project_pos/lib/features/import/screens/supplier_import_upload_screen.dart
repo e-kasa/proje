@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
+import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
@@ -183,7 +184,7 @@ class _SupplierImportUploadScreenState
           children: [
             Row(
               children: [
-                Icon(Icons.info_outline, color: Colors.blue[700]),
+                Icon(Icons.info_outline, color: AppColors.info),
                 const SizedBox(width: 8),
                 Text(
                   t('bulk_import.how_it_works'), // TODO: i18n
@@ -215,7 +216,7 @@ class _SupplierImportUploadScreenState
             width: 24,
             height: 24,
             decoration: BoxDecoration(
-              color: Colors.blue[100],
+              color: AppColors.bgInfo,
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -224,7 +225,7 @@ class _SupplierImportUploadScreenState
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue[700],
+                  color: AppColors.info,
                 ),
               ),
             ),
@@ -243,10 +244,10 @@ class _SupplierImportUploadScreenState
       child: Container(
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: _selectedFile != null ? Colors.green[50] : Colors.white,
+          color: _selectedFile != null ? AppColors.bgSuccess : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: _selectedFile != null ? Colors.green : Colors.grey.shade300,
+            color: _selectedFile != null ? AppColors.success : AppColors.border,
             width: 2,
             style: BorderStyle.solid,
           ),
@@ -256,7 +257,7 @@ class _SupplierImportUploadScreenState
             Icon(
               _selectedFile != null ? Icons.check_circle : Icons.cloud_upload,
               size: 64,
-              color: _selectedFile != null ? Colors.green : Colors.grey,
+              color: _selectedFile != null ? AppColors.success : AppColors.textMuted,
             ),
             const SizedBox(height: 16),
             Text(
@@ -266,7 +267,7 @@ class _SupplierImportUploadScreenState
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: _selectedFile != null ? Colors.green[700] : Colors.grey[700],
+                color: _selectedFile != null ? AppColors.success : AppColors.textSecondary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -277,7 +278,7 @@ class _SupplierImportUploadScreenState
                   : t('supplier_upload.click_select'), // TODO: i18n
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[600],
+                color: AppColors.textSecondary,
               ),
             ),
           ],
@@ -371,18 +372,18 @@ class _SupplierImportUploadScreenState
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.red[50],
+        color: AppColors.bgDanger,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.red.shade300),
+        border: Border.all(color: AppColors.danger.withValues(alpha: 0.4)),
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline, color: Colors.red[700]),
+          Icon(Icons.error_outline, color: AppColors.danger),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               _errorMessage!,
-              style: TextStyle(color: Colors.red[700]),
+              style: TextStyle(color: AppColors.danger),
             ),
           ),
         ],
@@ -399,7 +400,7 @@ class _SupplierImportUploadScreenState
           children: [
             Row(
               children: [
-                Icon(Icons.help_outline, color: Colors.orange[700]),
+                Icon(Icons.help_outline, color: AppColors.warning),
                 const SizedBox(width: 8),
                 Text(
                   t('supplier_upload.excel_csv_format'), // TODO: i18n
@@ -441,8 +442,8 @@ class _SupplierImportUploadScreenState
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
               color: requirement == 'zorunlu'
-                  ? Colors.red[100]
-                  : Colors.blue[100],
+                  ? AppColors.bgDanger
+                  : AppColors.bgInfo,
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
@@ -450,8 +451,8 @@ class _SupplierImportUploadScreenState
               style: TextStyle(
                 fontSize: 11,
                 color: requirement == 'zorunlu'
-                    ? Colors.red[700]
-                    : Colors.blue[700],
+                    ? AppColors.danger
+                    : AppColors.info,
               ),
             ),
           ),
@@ -475,7 +476,7 @@ class _SupplierImportUploadScreenState
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey[800],
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 12),
@@ -484,7 +485,7 @@ class _SupplierImportUploadScreenState
                 child: LinearProgressIndicator(
                   value: _uploadProgress,
                   minHeight: 8,
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
+                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.info),
                 ),
               ),
               const SizedBox(height: 8),
@@ -492,7 +493,7 @@ class _SupplierImportUploadScreenState
                 '${(_uploadProgress * 100).toInt()}%',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[600],
+                  color: AppColors.textSecondary,
                 ),
               ),
             ] else if (_analyzing) ...[
@@ -503,7 +504,7 @@ class _SupplierImportUploadScreenState
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey[800],
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 12),
@@ -511,7 +512,7 @@ class _SupplierImportUploadScreenState
                 t('supplier_upload.searching_similar'), // TODO: i18n
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[600],
+                  color: AppColors.textSecondary,
                 ),
               ),
               const SizedBox(height: 8),

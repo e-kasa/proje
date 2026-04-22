@@ -30,12 +30,12 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
 
   // Roller için ikon ve renk eşlemeleri (kod bazlı)
   static const Map<String, Color> _roleColors = {
-    'ADMIN':       Colors.purple,
-    'SUPER_ADMIN': Colors.deepPurple,
-    'STORE_ADMIN': Colors.indigo,
-    'CASHIER':     Colors.green,
-    'WAREHOUSE':   Colors.orange,
-    'USER':        Colors.blueGrey,
+    'ADMIN':       AppColors.purple,
+    'SUPER_ADMIN': AppColors.secondary,
+    'STORE_ADMIN': AppColors.indigo,
+    'CASHIER':     AppColors.success,
+    'WAREHOUSE':   AppColors.warning,
+    'USER':        AppColors.textSecondary,
   };
 
   static const Map<String, IconData> _roleIcons = {
@@ -253,7 +253,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                             value: null,
                             child: Text(
                               'Tüm mağazalar (sınırsız)',
-                              style: TextStyle(color: Colors.grey),
+                              style: TextStyle(color: AppColors.textMuted),
                             ),
                           ),
                           ..._stores.map((store) => DropdownMenuItem<String>(
@@ -330,7 +330,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
       builder: (ctx) => AlertDialog(
         title: Row(
           children: [
-            const Icon(Icons.lock_reset, color: Colors.orange),
+            const Icon(Icons.lock_reset, color: AppColors.warning),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -347,12 +347,12 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
+                color: AppColors.warning.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline, color: Colors.orange, size: 18),
+                  const Icon(Icons.info_outline, color: AppColors.warning, size: 18),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -705,7 +705,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                           _badge(
                             icon: Icons.warning_amber_rounded,
                             label: 'Mağaza atanmamış',
-                            color: Colors.orange,
+                            color: AppColors.warning,
                           ),
                       ],
                     ),
@@ -758,7 +758,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                     value: 'reset_password',
                     child: Row(
                       children: [
-                        Icon(Icons.lock_reset, size: 18, color: Colors.orange),
+                        Icon(Icons.lock_reset, size: 18, color: AppColors.warning),
                         SizedBox(width: 8),
                         Text('Şifre Sıfırla'),
                       ],
@@ -795,10 +795,10 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
               ),
               const SizedBox(height: 12),
               ...[
-                ('ADMIN',       Icons.admin_panel_settings, Colors.purple,   'Tüm firma yetkisi — kullanıcı oluşturabilir'),
-                ('STORE_ADMIN', Icons.store,                Colors.indigo,   'Mağaza yöneticisi — raporlar ve satış yetkisi'),
-                ('CASHIER',     Icons.point_of_sale,        Colors.green,    'Kasiyer — mağaza atanması gerekir'),
-                ('WAREHOUSE',   Icons.warehouse,            Colors.orange,   'Depo sorumlusu — stok ve transfer yetkisi'),
+                ('ADMIN',       Icons.admin_panel_settings, AppColors.purple,  'Tüm firma yetkisi — kullanıcı oluşturabilir'),
+                ('STORE_ADMIN', Icons.store,                AppColors.indigo,  'Mağaza yöneticisi — raporlar ve satış yetkisi'),
+                ('CASHIER',     Icons.point_of_sale,        AppColors.success, 'Kasiyer — mağaza atanması gerekir'),
+                ('WAREHOUSE',   Icons.warehouse,            AppColors.warning, 'Depo sorumlusu — stok ve transfer yetkisi'),
               ].map((item) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(
@@ -852,7 +852,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
           if (isRequired)
-            const Text(' *', style: TextStyle(color: Colors.red, fontSize: 13)),
+            const Text(' *', style: TextStyle(color: AppColors.danger, fontSize: 13)),
           if (subtitle != null) ...[
             const SizedBox(width: 6),
             Text(

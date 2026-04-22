@@ -13,6 +13,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../providers/sector_provider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/features/inventory/screens/batch_entry/widgets/document_analyze_result_sheet.dart';
@@ -3652,6 +3653,10 @@ class _ResultSheet extends StatelessWidget {
               ),
             ),
           ],
+          if (result.claim != null) ...[
+            const SizedBox(height: 16),
+            _ClaimBanner(claim: result.claim!, currency: currency, t: t),
+          ],
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
@@ -3671,6 +3676,63 @@ class _ResultSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+class _ClaimBanner extends StatelessWidget {
+  final BatchClaimInfo claim;
+  final NumberFormat currency;
+  final Function(String) t;
+  const _ClaimBanner({required this.claim, required this.currency, required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.report_problem_outlined,
+                  color: AppColors.warning, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  t('su.claim_batch_toast'),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.warning,
+                      fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${claim.lineCount} ${t('batch.items')}  •  ${currency.format(claim.claimAmount)}',
+            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+              label: Text(t('su.claim_view_action')),
+              onPressed: () {
+                Navigator.pop(context);
+                context.push('/supplier-claims/${claim.claimId}');
+              },
+            ),
+          ),
         ],
       ),
     );

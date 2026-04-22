@@ -521,9 +521,9 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                     height: 40,
                     decoration: BoxDecoration(
                       color: cancelled
-                          ? Colors.red.withValues(alpha: 0.1)
+                          ? AppColors.danger.withValues(alpha: 0.1)
                           : isPending
-                              ? Colors.orange.withValues(alpha: 0.1)
+                              ? AppColors.warning.withValues(alpha: 0.1)
                               : AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: AppConstants.borderRadiusSmall,
                     ),
@@ -534,9 +534,9 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                               ? Icons.schedule_rounded
                               : Icons.point_of_sale_rounded,
                       color: cancelled
-                          ? Colors.red
+                          ? AppColors.danger
                           : isPending
-                              ? Colors.orange
+                              ? AppColors.warning
                               : AppColors.primary,
                       size: 20,
                     ),
@@ -588,7 +588,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                         _fmt.format(total),
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: cancelled ? Colors.grey : AppColors.primary,
+                          color: cancelled ? AppColors.textMuted : AppColors.primary,
                         ),
                       ),
                       if (paymentMethod.isNotEmpty)
@@ -617,20 +617,20 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
                   if (hasReturn) ...[
                     const SizedBox(width: 6),
                     _tag(t('sales.has_return'), Icons.assignment_return_outlined,
-                        Colors.deepOrange, theme),
+                        AppColors.orange, theme),
                   ],
                   const Spacer(),
                   if (cancelled)
-                    _tag(t('sales.cancelled'), Icons.cancel_outlined, Colors.red,
+                    _tag(t('sales.cancelled'), Icons.cancel_outlined, AppColors.danger,
                         theme)
                   else if (isPending)
-                    _tag(t('sales.pending'), Icons.schedule_rounded, Colors.orange,
+                    _tag(t('sales.pending'), Icons.schedule_rounded, AppColors.warning,
                         theme)
                   else if (isPaid)
-                    _tag(t('sales.paid'), Icons.check_circle_outline, Colors.green,
+                    _tag(t('sales.paid'), Icons.check_circle_outline, AppColors.success,
                         theme)
                   else
-                    _tag(t('sales.open'), Icons.hourglass_empty, Colors.blue, theme),
+                    _tag(t('sales.open'), Icons.hourglass_empty, AppColors.info, theme),
                 ],
               ),
             ],
@@ -685,7 +685,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+          const Icon(Icons.error_outline, size: 48, color: AppColors.danger),
           const SizedBox(height: 12),
           Text(error, textAlign: TextAlign.center),
           const SizedBox(height: 16),

@@ -127,7 +127,7 @@ class _SupplierImportReviewScreenState
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        icon: const Icon(Icons.check_circle, color: Colors.green, size: 64),
+        icon: const Icon(Icons.check_circle, color: AppColors.success, size: 64),
         title: const Text('Başarılı!'), // TODO: i18n common.success
         content: Text('$_decidedCount ürün başarıyla kaydedildi.'), // TODO: i18n bulk_import.products_saved
         actions: [
@@ -272,7 +272,7 @@ class _SupplierImportReviewScreenState
                       '$_pendingCount ürün inceleme bekliyor',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey[600],
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -281,7 +281,7 @@ class _SupplierImportReviewScreenState
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.green[50],
+                  color: AppColors.bgSuccess,
                   shape: BoxShape.circle,
                 ),
                 child: Text(
@@ -289,7 +289,7 @@ class _SupplierImportReviewScreenState
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.green[700],
+                    color: AppColors.success,
                   ),
                 ),
               ),
@@ -302,7 +302,7 @@ class _SupplierImportReviewScreenState
               value: progress,
               minHeight: 8,
               valueColor: AlwaysStoppedAnimation<Color>(
-                progress == 1.0 ? Colors.green : Colors.blue,
+                progress == 1.0 ? AppColors.success : AppColors.info,
               ),
             ),
           ),
@@ -322,7 +322,7 @@ class _SupplierImportReviewScreenState
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: hasDecision ? Colors.green : Colors.transparent,
+          color: hasDecision ? AppColors.success : Colors.transparent,
           width: 2,
         ),
       ),
@@ -342,8 +342,8 @@ class _SupplierImportReviewScreenState
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: isNew
-                      ? [Colors.blue[400]!, Colors.blue[600]!]
-                      : [Colors.orange[400]!, Colors.orange[600]!],
+                      ? [AppColors.info, AppColors.primary]
+                      : [AppColors.warning, AppColors.orange],
                 ),
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(14),
@@ -361,7 +361,7 @@ class _SupplierImportReviewScreenState
                       '#${index + 1}',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: isNew ? Colors.blue[700] : Colors.orange[700],
+                        color: isNew ? AppColors.info : AppColors.warning,
                       ),
                     ),
                   ),
@@ -397,14 +397,14 @@ class _SupplierImportReviewScreenState
                         children: [
                           Icon(
                             Icons.check_circle,
-                            color: Colors.green[700],
+                            color: AppColors.success,
                             size: 16,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             'Karar Verildi',
                             style: TextStyle(
-                              color: Colors.green[700],
+                              color: AppColors.success,
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
                             ),
@@ -435,12 +435,12 @@ class _SupplierImportReviewScreenState
                       width: 64,
                       height: 64,
                       decoration: BoxDecoration(
-                        color: Colors.grey[200],
+                        color: AppColors.bgLight,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
                         Icons.inventory_2,
-                        color: Colors.grey[400],
+                        color: AppColors.textMuted,
                         size: 32,
                       ),
                     ),
@@ -460,13 +460,13 @@ class _SupplierImportReviewScreenState
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                Icon(Icons.label, size: 14, color: Colors.grey[600]),
+                                Icon(Icons.label, size: 14, color: AppColors.textSecondary),
                                 const SizedBox(width: 4),
                                 Text(
                                   item.readBrand!,
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: Colors.grey[600],
+                                    color: AppColors.textSecondary,
                                   ),
                                 ),
                               ],
@@ -476,13 +476,13 @@ class _SupplierImportReviewScreenState
                             const SizedBox(height: 2),
                             Row(
                               children: [
-                                Icon(Icons.qr_code, size: 14, color: Colors.grey[600]),
+                                Icon(Icons.qr_code, size: 14, color: AppColors.textSecondary),
                                 const SizedBox(width: 4),
                                 Text(
                                   item.readBarcode!,
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: Colors.grey[600],
+                                    color: AppColors.textSecondary,
                                   ),
                                 ),
                               ],
@@ -500,14 +500,14 @@ class _SupplierImportReviewScreenState
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.blue[50],
+                            color: AppColors.bgInfo,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             '${item.readStock} Adet',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Colors.blue[700],
+                              color: AppColors.info,
                               fontSize: 16,
                             ),
                           ),
@@ -518,7 +518,7 @@ class _SupplierImportReviewScreenState
                             '${item.readPrice!.toStringAsFixed(2)} ₺',
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey[600],
+                              color: AppColors.textSecondary,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -545,7 +545,7 @@ class _SupplierImportReviewScreenState
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: Colors.grey[700],
+                      color: AppColors.textSecondary,
                       letterSpacing: 1.2,
                     ),
                   ),
@@ -571,27 +571,27 @@ class _SupplierImportReviewScreenState
       case ProductImportAction.CREATE_NEW:
         icon = Icons.add_circle;
         text = 'Yeni ürün olarak oluşturulacak';
-        color = Colors.green;
+        color = AppColors.success;
         break;
       case ProductImportAction.MATCH_EXISTING:
         icon = Icons.inventory;
         text = 'Mevcut ürüne stok eklenecek';
-        color = Colors.blue;
+        color = AppColors.info;
         break;
       case ProductImportAction.ADD_AS_VARIANT:
         icon = Icons.category;
         text = 'Yeni varyant olarak eklenecek';
-        color = Colors.purple;
+        color = AppColors.purple;
         break;
       case ProductImportAction.SKIP:
         icon = Icons.block;
         text = 'Atlandı';
-        color = Colors.grey;
+        color = AppColors.textMuted;
         break;
       default:
         icon = Icons.help;
         text = 'İşleniyor';
-        color = Colors.orange;
+        color = AppColors.warning;
     }
 
     return Container(
@@ -693,7 +693,7 @@ class _SupplierImportReviewScreenState
         tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         childrenPadding: const EdgeInsets.all(12),
         leading: CircleAvatar(
-          child: Icon(Icons.inventory, color: Colors.orange[700], size: 20),
+          child: Icon(Icons.inventory, color: AppColors.warning, size: 20),
         ),
         title: Text(
           product.name,
@@ -717,7 +717,7 @@ class _SupplierImportReviewScreenState
                   margin: const EdgeInsets.only(bottom: 4),
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.grey[50],
+                    color: AppColors.bgLight,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -735,7 +735,7 @@ class _SupplierImportReviewScreenState
                                 '${variant.pricing!.salePrice.toStringAsFixed(2)} ₺',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.grey[600],
+                                  color: AppColors.textSecondary,
                                 ),
                               ),
                           ],
@@ -777,7 +777,7 @@ class _DecisionBottomSheet extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: AppColors.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -799,7 +799,7 @@ class _DecisionBottomSheet extends StatelessWidget {
                     '${item.readStock} Adet',
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.grey[600],
+                      color: AppColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -808,7 +808,7 @@ class _DecisionBottomSheet extends StatelessWidget {
                       icon: Icons.add_circle,
                       title: 'Yeni Ürün Oluştur',
                       subtitle: 'Tamamen yeni bir ürün olarak sisteme ekle',
-                      color: Colors.green,
+                      color: AppColors.success,
                       onTap: () {
                         onDecisionMade(UserProductDecision(
                           action: ProductImportAction.CREATE_NEW,
@@ -823,7 +823,7 @@ class _DecisionBottomSheet extends StatelessWidget {
                               title: 'Stoğa Ekle: ${product.name}',
                               subtitle:
                                   'Mevcut ürüne ${item.readStock} adet stok ekle',
-                              color: Colors.blue,
+                              color: AppColors.info,
                               onTap: () {
                                 onDecisionMade(UserProductDecision(
                                   action: ProductImportAction.MATCH_EXISTING,
@@ -836,7 +836,7 @@ class _DecisionBottomSheet extends StatelessWidget {
                               icon: Icons.category,
                               title: 'Varyant Ekle: ${product.name}',
                               subtitle: 'Mevcut ürüne yeni varyant olarak ekle',
-                              color: Colors.purple,
+                              color: AppColors.purple,
                               onTap: () {
                                 onDecisionMade(UserProductDecision(
                                   action: ProductImportAction.ADD_AS_VARIANT,
@@ -851,7 +851,7 @@ class _DecisionBottomSheet extends StatelessWidget {
                       icon: Icons.add_circle,
                       title: 'Yeni Ürün Oluştur',
                       subtitle: 'Hiçbiri değil, yeni ürün olarak ekle',
-                      color: Colors.green,
+                      color: AppColors.success,
                       onTap: () {
                         onDecisionMade(UserProductDecision(
                           action: ProductImportAction.CREATE_NEW,
@@ -864,7 +864,7 @@ class _DecisionBottomSheet extends StatelessWidget {
                     icon: Icons.block,
                     title: 'Atla',
                     subtitle: 'Bu ürünü şimdilik işleme',
-                    color: Colors.grey,
+                    color: AppColors.textMuted,
                     onTap: () {
                       onDecisionMade(UserProductDecision(
                         action: ProductImportAction.SKIP,

@@ -1,5 +1,6 @@
 package com.sedcore.product.model;
 
+import com.sedcore.purchase.model.SupplierClaimSummary;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -31,4 +32,7 @@ public class BatchCreateResponse {
 
     /** Kalem bazlı sonuçlar — tempId ile Flutter'a eşlenir */
     private List<BatchItemResult> results;
+
+    /** Eksik teslimat nedeniyle açılan SupplierClaim özeti (null → claim açılmadı). */
+    private SupplierClaimSummary claim;
 }

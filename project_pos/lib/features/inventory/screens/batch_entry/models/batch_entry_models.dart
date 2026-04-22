@@ -253,6 +253,10 @@ class BatchEntryRow {
   String? errorMessage;
   bool isExpanded;
 
+  /// Fatura üzerindeki miktar. null ise [quantity] değeri kullanılır.
+  /// Eksik teslimat durumunda invoiceQuantity > quantity olur.
+  int? invoiceQuantity;
+
   // Ek bilgiler (quick_product_dialog)
   String? description;
   String? shelfLocation;
@@ -279,6 +283,7 @@ class BatchEntryRow {
     this.salePrice = 0,
     this.vatRate = 20.0,
     this.quantity = 1,
+    this.invoiceQuantity,
     this.status = RowStatus.newProduct,
     this.existingProductId,
     this.existingVariantId,
@@ -298,6 +303,14 @@ class BatchEntryRow {
         oemList = oemList ?? [],
         crossRefList = crossRefList ?? [],
         variantRows = variantRows ?? [];
+
+  /// Depoya giren fiziksel adet
+  int get receivedQty => quantity;
+  /// Fatura miktarı (eksik teslimat yoksa receivedQty ile aynı)
+  int get resolvedInvoiceQty => invoiceQuantity ?? quantity;
+  /// Eksik adet (0 = tam teslimat)
+  int get shortageQty => (resolvedInvoiceQty - receivedQty).clamp(0, 9999);
+  bool get hasShortage => shortageQty > 0;
 
   double get lineTotal => salePrice * quantity;
   double get lineCost => purchasePrice * quantity;
@@ -324,6 +337,8 @@ class BatchEntryRow {
     double? salePrice,
     double? vatRate,
     int? quantity,
+    int? invoiceQuantity,
+    bool clearInvoiceQuantity = false,
     RowStatus? status,
     String? existingProductId,
     String? existingVariantId,
@@ -353,6 +368,7 @@ class BatchEntryRow {
       salePrice: salePrice ?? this.salePrice,
       vatRate: vatRate ?? this.vatRate,
       quantity: quantity ?? this.quantity,
+      invoiceQuantity: clearInvoiceQuantity ? null : (invoiceQuantity ?? this.invoiceQuantity),
       status: status ?? this.status,
       existingProductId: existingProductId ?? this.existingProductId,
       existingVariantId: existingVariantId ?? this.existingVariantId,
@@ -409,6 +425,10 @@ class BatchEntryState {
   double get totalCost => rows.fold(0, (sum, r) => sum + r.lineCost);
   double get totalSale => rows.fold(0, (sum, r) => sum + r.lineTotal);
   double get totalProfit => totalSale - totalCost;
+
+  /// Eksik teslimat olan satır sayısı
+  int get shortageItems => rows.where((r) => r.isExisting && r.hasShortage).length;
+  bool get hasAnyShortage => shortageItems > 0;
 
   bool get isValid =>
       rows.isNotEmpty &&

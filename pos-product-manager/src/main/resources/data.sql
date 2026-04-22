@@ -923,3 +923,9 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 select * from user_def_access;
+
+-- ── supplier_claims ─────────────────────────────────────────────────────────
+-- Tablo Hibernate tarafından yönetilir (ddl-auto=create).
+-- Seed veri yok — claim'ler createPurchase() veya resolveClaim() ile oluşturulur.
+-- Yeni alanlar (Purchase): invoice_amount, discount_amount, shortage_amount, purchase_status
+-- Yeni enum'lar: PurchaseStatus, ClaimReason, ClaimStatus

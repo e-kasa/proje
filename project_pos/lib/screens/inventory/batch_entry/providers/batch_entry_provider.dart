@@ -591,6 +591,10 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
         (response['results'] as List?) ?? [],
       );
       final purchaseId = response['purchaseId']?.toString();
+      final claimRaw = response['claim'];
+      final BatchClaimInfo? claimInfo = claimRaw is Map<String, dynamic>
+          ? BatchClaimInfo.fromJson(claimRaw)
+          : null;
 
       // Sonuçları satırlara eşle
       int newCreated = 0;
@@ -630,6 +634,7 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
         errors: errors,
         errorMessages: errorMessages,
         purchaseId: purchaseId,
+        claim: claimInfo,
       );
     } catch (e) {
       // Tüm satırları error yap

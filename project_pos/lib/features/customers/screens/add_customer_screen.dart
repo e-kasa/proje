@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
@@ -184,9 +185,9 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                                 duration: const Duration(milliseconds: 150),
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                 decoration: BoxDecoration(
-                                  color: selected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                                  color: selected ? AppColors.primary : Colors.transparent,
                                   border: Border.all(
-                                      color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor,
+                                      color: selected ? AppColors.primary : AppColors.border,
                                       width: selected ? 1.5 : 1),
                                   borderRadius: AppConstants.borderRadiusXLarge,
                                 ),
@@ -194,13 +195,13 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(type.icon, size: 15,
-                                        color: selected ? Colors.white : Theme.of(context).textTheme.bodySmall?.color),
+                                        color: selected ? Colors.white : AppColors.textSecondary),
                                     const SizedBox(width: 6),
                                     Text(type.label,
                                         style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w500,
-                                            color: selected ? Colors.white : Theme.of(context).textTheme.bodySmall?.color)),
+                                            color: selected ? Colors.white : AppColors.textSecondary)),
                                   ],
                                 ),
                               ),
@@ -215,7 +216,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
                     child: AppSectionCard(
-                      title: t('customers.name'), // TODO: i18n key for 'Temel Bilgiler'
+                      title: t('customers.basic_info'),
                       icon: Icons.person_outline,
                       children: [
                         Padding(
@@ -224,7 +225,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                             label: '${t('customers.name')} *',
                             controller: _nameController,
                             prefixIcon: Icons.person_outline,
-                            validator: (v) => (v == null || v.trim().isEmpty) ? t('customers.name') : null,
+                            validator: (v) => (v == null || v.trim().isEmpty) ? t('customers.name_required') : null,
                           ),
                         ),
                         Padding(
@@ -246,7 +247,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                             validator: (v) {
                               if (v != null && v.trim().isNotEmpty &&
                                   !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(v)) {
-                                return t('customers.email'); // TODO: i18n 'Geçerli bir e-posta adresi girin'
+                                return t('customers.email_invalid');
                               }
                               return null;
                             },
@@ -255,7 +256,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                         Padding(
                           padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
                           child: AppInput(
-                            label: 'Adres', // TODO: i18n
+                            label: t('customers.address'),
                             controller: _addressController,
                             prefixIcon: Icons.location_on_outlined,
                             maxLines: 2,
@@ -270,13 +271,13 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
                       child: AppSectionCard(
-                        title: 'Kurumsal Bilgiler', // TODO: i18n
+                        title: t('customers.corporate_info'),
                         icon: Icons.receipt_long_outlined,
                         children: [
                           Padding(
                             padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
                             child: AppInput(
-                              label: 'Vergi Numarası', // TODO: i18n
+                              label: t('customers.tax_number'),
                               controller: _taxNumberController,
                               prefixIcon: Icons.numbers_outlined,
                               keyboardType: TextInputType.number,
@@ -285,7 +286,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                           Padding(
                             padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
                             child: AppInput(
-                              label: 'Vergi Dairesi', // TODO: i18n
+                              label: t('customers.tax_office'),
                               controller: _taxOfficeController,
                               prefixIcon: Icons.account_balance_outlined,
                             ),
@@ -298,13 +299,13 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
                     child: AppSectionCard(
-                      title: 'Notlar', // TODO: i18n
+                      title: t('customers.notes'),
                       icon: Icons.note_outlined,
                       children: [
                         Padding(
                           padding: const EdgeInsets.only(bottom: AppConstants.formFieldSpacing),
                           child: AppInput(
-                            label: 'Notlar (opsiyonel)', // TODO: i18n
+                            label: t('customers.notes_optional'),
                             controller: _notesController,
                             prefixIcon: Icons.edit_note_outlined,
                             maxLines: 3,
@@ -340,6 +341,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
   // ── Widgets ────────────────────────────────────────────────────────────────
 
   Widget _buildStatusCard() {
+    final statusColor = _isActive ? AppColors.success : AppColors.textMuted;
     return AppCard(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -348,12 +350,12 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
             Container(
               width: 40, height: 40,
               decoration: BoxDecoration(
-                color: (_isActive ? const Color(0xFF10B981) : Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey).withValues(alpha: 0.12),
+                color: statusColor.withValues(alpha: 0.12),
                 borderRadius: AppConstants.borderRadiusMedium,
               ),
               child: Icon(
                 _isActive ? Icons.check_circle_outline : Icons.cancel_outlined,
-                color: _isActive ? const Color(0xFF10B981) : Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey,
+                color: statusColor,
                 size: 22,
               ),
             ),
@@ -362,14 +364,17 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Müşteri Durumu', // TODO: i18n
-                      style: Theme.of(context).textTheme.titleSmall),
+                  Text(t('customers.status'),
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary)),
                   const SizedBox(height: 2),
                   Text(
-                    _isActive ? 'Aktif — satış ve işlemlerde kullanılabilir' // TODO: i18n
-                              : 'Pasif — işlemlerde görünmez', // TODO: i18n
-                    style: TextStyle(fontSize: 12,
-                        color: _isActive ? const Color(0xFF10B981) : Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey),
+                    _isActive
+                        ? t('customers.active_description')
+                        : t('customers.passive_description'),
+                    style: TextStyle(fontSize: 12, color: statusColor),
                   ),
                 ],
               ),
@@ -378,9 +383,9 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _statusBtn(t('common.active'),  _isActive,  const Color(0xFF10B981), () => setState(() => _isActive = true)),
+                _statusBtn(t('common.active'),  _isActive,  AppColors.success, () => setState(() => _isActive = true)),
                 const SizedBox(width: 6),
-                _statusBtn(t('common.passive'), !_isActive, const Color(0xFFEF4444),  () => setState(() => _isActive = false)),
+                _statusBtn(t('common.passive'), !_isActive, AppColors.danger,  () => setState(() => _isActive = false)),
               ],
             ),
           ],
@@ -397,12 +402,12 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: selected ? color : Colors.transparent,
-          border: Border.all(color: selected ? color : Theme.of(context).dividerColor, width: 1.5),
+          border: Border.all(color: selected ? color : AppColors.border, width: 1.5),
           borderRadius: AppConstants.borderRadiusXLarge,
         ),
         child: Text(label,
             style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-                color: selected ? Colors.white : Theme.of(context).textTheme.bodySmall?.color)),
+                color: selected ? Colors.white : AppColors.textSecondary)),
       ),
     );
   }

@@ -497,6 +497,9 @@ class BatchEntryState {
   double get totalSale => rows.fold(0, (sum, r) => sum + r.lineTotal);
   double get totalProfit => totalSale - totalCost;
 
+  int get shortageItems => rows.where((r) => r.hasShortage).length;
+  bool get hasAnyShortage => shortageItems > 0;
+
   bool get isValid =>
       rows.isNotEmpty &&
       supplierId != null &&
@@ -538,6 +541,7 @@ class BatchSaveResult {
   final int errors;
   final List<String> errorMessages;
   final String? purchaseId;
+  final BatchClaimInfo? claim;
 
   const BatchSaveResult({
     this.totalProcessed = 0,
@@ -546,5 +550,26 @@ class BatchSaveResult {
     this.errors = 0,
     this.errorMessages = const [],
     this.purchaseId,
+    this.claim,
   });
+}
+
+/// Backend `BatchCreateResponse.claim` alanı — fatura/teslim farkı varsa açılan
+/// SupplierClaim'in özeti. Result sheet'te CTA olarak gösterilir.
+class BatchClaimInfo {
+  final String claimId;
+  final double claimAmount;
+  final int lineCount;
+
+  const BatchClaimInfo({
+    required this.claimId,
+    this.claimAmount = 0,
+    this.lineCount = 0,
+  });
+
+  factory BatchClaimInfo.fromJson(Map<String, dynamic> json) => BatchClaimInfo(
+        claimId: json['claimId']?.toString() ?? '',
+        claimAmount: (json['claimAmount'] as num?)?.toDouble() ?? 0,
+        lineCount: (json['lineCount'] as num?)?.toInt() ?? 0,
+      );
 }

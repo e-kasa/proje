@@ -1,33 +1,39 @@
 package com.sedcore.purchase.service.impl;
 
-import com.sedcore.product.entity.Product;
-import com.sedcore.product.entity.ProductVariant;
-import com.sedcore.purchase.entity.Purchase;
-import com.sedcore.supplier.entity.Supplier;
-import com.sedcore.supplier.entity.SupplierAccount;
-import com.sedcore.inventory.entity.StockMovement;
-import com.sedcore.finance.entity.AccountTransaction;
+import com.sedcore.common.enums.ClaimReason;
+import com.sedcore.common.enums.ClaimStatus;
+import com.sedcore.common.enums.PurchaseStatus;
 import com.sedcore.common.enums.StockMovementType;
 import com.sedcore.common.enums.TransactionType;
+import com.sedcore.common.exception.BusinessException;
+import com.sedcore.common.exception.NotFoundException;
+import com.sedcore.finance.entity.AccountTransaction;
+import com.sedcore.finance.service.AccountTransactionService;
+import com.sedcore.inventory.entity.StockMovement;
+import com.sedcore.inventory.service.StockLevelService;
+import com.sedcore.inventory.service.StockMovementService;
+import com.sedcore.product.entity.ProductVariant;
+import com.sedcore.product.service.ProductVariantService;
+import com.sedcore.purchase.entity.Purchase;
+import com.sedcore.purchase.model.ClaimLineSpec;
+import com.sedcore.purchase.model.ClaimResolveRequest;
+import com.sedcore.purchase.model.PurchaseDiscountRequest;
 import com.sedcore.purchase.model.PurchaseItemRequest;
 import com.sedcore.purchase.model.PurchaseRequest;
 import com.sedcore.purchase.model.PurchaseResponse;
 import com.sedcore.purchase.model.PurchaseReturnItemRequest;
 import com.sedcore.purchase.model.PurchaseReturnRequest;
 import com.sedcore.purchase.model.PurchaseReturnResponse;
+import com.sedcore.purchase.model.SupplierClaimResponse;
 import com.sedcore.purchase.repository.PurchaseRepository;
-import com.sedcore.product.service.ProductVariantService;
 import com.sedcore.purchase.service.PurchaseService;
-import com.sedcore.supplier.service.SupplierService;
+import com.sedcore.purchase.service.SupplierClaimService;
+import com.sedcore.supplier.entity.Supplier;
+import com.sedcore.supplier.entity.SupplierAccount;
 import com.sedcore.supplier.service.SupplierAccountService;
-import com.sedcore.inventory.service.StockLevelService;
-import com.sedcore.inventory.service.StockMovementService;
-import com.sedcore.finance.service.AccountTransactionService;
+import com.sedcore.supplier.service.SupplierService;
 import com.towpen.base.security.BaseDbServiceImp;
 import lombok.extern.slf4j.Slf4j;
-import com.towpen.base.enums.model.TMessageType;
-import com.towpen.base.exceptions.TOpenException;
-import com.towpen.base.restservice.model.TOpenMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,6 +59,7 @@ public class PurchaseServiceImpl
     @Autowired private StockMovementService stockMovementService;
     @Autowired private ProductVariantService productVariantService;
     @Autowired private StockLevelService stockLevelService;
+    @Autowired private SupplierClaimService supplierClaimService;
 
     @Override
     public Class<?> getDTOClassForService() {
@@ -64,10 +71,11 @@ public class PurchaseServiceImpl
     /**
      * Satın alma tam akışı:
      * 1. Supplier doğrula
-     * 2. Purchase kaydet
-     * 3. Her kalem için StockMovement(PURCHASE_IN)
-     * 4. SupplierAccount güncelle (applyDebit)
+     * 2. Purchase kaydet (invoiceAmount, totalAmount, shortageAmount hesapla)
+     * 3. Her kalem için PURCHASE_IN stok hareketi (receivedQty kadar)
+     * 4. SupplierAccount debit (totalAmount — sadece gelen mal tutarı)
      * 5. AccountTransaction(PURCHASE) kaydet
+     * 6. shortageAmount > 0 ise SupplierClaim otomatik aç
      */
     @Override
     public PurchaseResponse createPurchase(PurchaseRequest request) {
@@ -76,11 +84,18 @@ public class PurchaseServiceImpl
 
         // 1. Tedarikçi doğrula
         Supplier supplier = supplierService.findById(request.getSupplierId())
-                .orElseThrow(() -> new RuntimeException(
+                .orElseThrow(() -> new NotFoundException(
                         "Tedarikci bulunamadi: " + request.getSupplierId()));
 
-        // 2. Purchase oluştur
-        BigDecimal totalAmount = calculateTotal(request.getItems());
+        // 2. Tutar hesapla: invoiceAmount (brüt), totalAmount (gelen)
+        BigDecimal invoiceAmount = calculateInvoiceTotal(request.getItems());
+        BigDecimal totalAmount   = calculateReceivedTotal(request.getItems());
+        BigDecimal shortageAmount = invoiceAmount.subtract(totalAmount);
+
+        PurchaseStatus status = shortageAmount.compareTo(BigDecimal.ZERO) > 0
+                ? PurchaseStatus.PARTIAL
+                : PurchaseStatus.COMPLETED;
+
         Purchase purchase = Purchase.builder()
                 .supplier(supplier)
                 .purchaseDate(request.getPurchaseDate())
@@ -88,45 +103,54 @@ public class PurchaseServiceImpl
                 .deliveryNoteNumber(request.getDeliveryNoteNumber())
                 .locationId(request.getLocationId())
                 .locationType(request.getLocationType())
+                .invoiceAmount(invoiceAmount)
                 .totalAmount(totalAmount)
+                .shortageAmount(shortageAmount)
+                .discountAmount(BigDecimal.ZERO)
                 .paidAmount(BigDecimal.ZERO)
+                .purchaseStatus(status)
                 .isCancelled(false)
                 .notes(request.getNotes())
                 .build();
         purchase = save(purchase);
-        log.info("Purchase kaydedildi: id={}, tutar={}", purchase.getId(), totalAmount);
+        log.info("Purchase kaydedildi: id={}, invoiceAmount={}, totalAmount={}, shortage={}",
+                purchase.getId(), invoiceAmount, totalAmount, shortageAmount);
 
-        // 3. Stok hareketleri (PURCHASE_IN) + StockLevel güncelle
-        List<StockMovement> movements = new ArrayList<>();
+        // 3. Stok hareketleri — sadece receivedQty kadar
         for (PurchaseItemRequest item : request.getItems()) {
             ProductVariant variant = productVariantService.findById(item.getVariantId())
-                    .orElseThrow(() -> new RuntimeException(
+                    .orElseThrow(() -> new NotFoundException(
                             "Varyant bulunamadi: " + item.getVariantId()));
 
-            // 3a. Anlık stok bakiyesini artır (upsert)
-            stockLevelService.addStock(
-                    variant.getId(),
-                    request.getLocationId(),
-                    request.getLocationType(),
-                    item.getQuantity());
+            int receivedQty = item.resolvedReceivedQty();
+            if (receivedQty > 0) {
+                stockLevelService.addStock(
+                        variant.getId(),
+                        request.getLocationId(),
+                        request.getLocationType(),
+                        receivedQty);
 
-            // 3b. Hareket kaydı (audit)
-            StockMovement movement = StockMovement.builder()
-                    .variant(variant)
-                    .locationId(request.getLocationId())
-                    .locationType(request.getLocationType())
-                    .movementType(StockMovementType.PURCHASE_IN)
-                    .quantity(item.getQuantity())
-                    .unitPrice(item.getUnitPrice())
-                    .purchase(purchase)
-                    .build();
-            movements.add(stockMovementService.saveMovement(movement));
+                StockMovement movement = StockMovement.builder()
+                        .variant(variant)
+                        .locationId(request.getLocationId())
+                        .locationType(request.getLocationType())
+                        .movementType(StockMovementType.PURCHASE_IN)
+                        .quantity(receivedQty)
+                        .unitPrice(item.getUnitPrice())
+                        .purchase(purchase)
+                        .build();
+                stockMovementService.saveMovement(movement);
+            }
         }
 
-        // 4. Tedarikçi cari hesap: borç ekle (currentBalance ↑, totalDebt ↑)
+        // 4. Tedarikçi cari: sadece gelen mal tutarı kadar borç
         SupplierAccount account = supplierAccountService.applyDebit(supplier, totalAmount);
 
         // 5. Cari hareket kaydı
+        String desc = "Satin alma - Fatura: " + purchase.getInvoiceNumber();
+        if (shortageAmount.compareTo(BigDecimal.ZERO) > 0) {
+            desc += " | Eksik teslimat: " + shortageAmount + " TL (claim açıldı)";
+        }
         AccountTransaction tx = AccountTransaction.builder()
                 .supplier(supplier)
                 .purchase(purchase)
@@ -137,7 +161,7 @@ public class PurchaseServiceImpl
                 .referenceId(purchase.getId())
                 .referenceType("PURCHASE")
                 .referenceNumber(purchase.getInvoiceNumber())
-                .description("Satin alma - Fatura No: " + purchase.getInvoiceNumber())
+                .description(desc)
                 .transactionDate(LocalDateTime.now())
                 .dueDate(dueDateFor(purchase.getPurchaseDate(), supplier.getPaymentTermDays()))
                 .isOverdue(false)
@@ -145,44 +169,62 @@ public class PurchaseServiceImpl
                 .build();
         accountTransactionService.save(tx);
 
-        // DB'den yeniden yükle — Hibernate movements collection'ı doğru şekilde yüklesin
-        Purchase saved = findById(purchase.getId())
-                .orElseThrow(() -> new RuntimeException("Satin alma bulunamadi: " ));
+        // 6. Eksik varsa claim otomatik aç (satır detaylı)
+        if (shortageAmount.compareTo(BigDecimal.ZERO) > 0) {
+            List<ClaimLineSpec> shortageLines = new ArrayList<>();
+            for (PurchaseItemRequest item : request.getItems()) {
+                if (item.shortageQty() <= 0) continue;
+                ProductVariant v = productVariantService.findById(item.getVariantId()).orElse(null);
+                if (v == null) continue;
+                String name = v.getProduct() != null ? v.getProduct().getName() : v.getName();
+                shortageLines.add(new ClaimLineSpec(
+                        v,
+                        v.getSku(),
+                        name,
+                        item.resolvedInvoiceQty(),
+                        item.resolvedReceivedQty(),
+                        item.getUnitPrice(),
+                        ClaimReason.SHORTAGE,
+                        item.getNotes()
+                ));
+            }
+            if (!shortageLines.isEmpty()) {
+                supplierClaimService.openClaim(
+                        purchase,
+                        shortageLines,
+                        "Otomatik - eksik teslimat: " + purchase.getInvoiceNumber()
+                                + " | Fatura: " + invoiceAmount + " TL, Gelen: " + totalAmount + " TL"
+                );
+            }
+        }
 
-        log.info("Satin alma tamamlandi: id={}", saved.getId());
+        Purchase finalPurchase = purchase;
+        Purchase saved = findById(purchase.getId())
+                .orElseThrow(() -> new NotFoundException("Satin alma bulunamadi: " + finalPurchase.getId()));
+        log.info("Satin alma tamamlandi: id={}, status={}", saved.getId(), status);
         return mapToResponse(saved);
     }
 
     // ─── CANCEL ──────────────────────────────────────────────────────────────
 
-    /**
-     * Satın alma iptali:
-     * 1. Zaten iptal mi kontrol
-     * 2. PURCHASE_RETURN_OUT stok hareketleri
-     * 3. SupplierAccount ters kayıt (reverseDebit)
-     * 4. İlgili AccountTransaction'ları iptal et
-     * 5. Purchase.isCancelled = true
-     */
     @Override
     public PurchaseResponse cancelPurchase(String id) {
         Purchase purchase = findById(id)
-                .orElseThrow(() -> new RuntimeException("Satin alma bulunamadi: " + id));
+                .orElseThrow(() -> new NotFoundException("Satin alma bulunamadi: " + id));
 
         if (Boolean.TRUE.equals(purchase.getIsCancelled())) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw new BusinessException("Bu satin alma zaten iptal edilmis: " + id);
         }
 
-        // 2. PURCHASE_RETURN_OUT hareketleri (mevcut PURCHASE_IN satırları için)
+        // PURCHASE_RETURN_OUT — gelen malları stoktan geri çıkar
         List<StockMovement> originals = stockMovementService.findByPurchaseId(id);
         for (StockMovement orig : originals) {
             if (orig.getMovementType() == StockMovementType.PURCHASE_IN) {
-                // 2a. Anlık stok bakiyesini düş (iptal = stok geri gider)
                 stockLevelService.deductStock(
                         orig.getVariant().getId(),
                         orig.getLocationId(),
                         orig.getQuantity());
 
-                // 2b. Ters hareket kaydı (audit)
                 StockMovement reversal = StockMovement.builder()
                         .variant(orig.getVariant())
                         .locationId(orig.getLocationId())
@@ -195,23 +237,20 @@ public class PurchaseServiceImpl
             }
         }
 
-        // 3. Tedarikçi cari hesap: borç geri al (currentBalance ↓, totalDebt ↓)
         Purchase finalPurchase = purchase;
         Supplier supplier = supplierService.findById(purchase.getSupplier().getId())
-                .orElseThrow(() -> new RuntimeException(
+                .orElseThrow(() -> new NotFoundException(
                         "Tedarikci bulunamadi: " + finalPurchase.getSupplier().getId()));
         supplierAccountService.reverseDebit(supplier, purchase.getTotalAmount());
 
-        // 4. Bağlı AccountTransaction'ları iptal et
         accountTransactionService.getByPurchase(id).forEach(txResp ->
                 accountTransactionService.cancelTransaction(
                         txResp.getId(), "Satin alma iptali: " + id));
 
-        // 5. Purchase iptal et
         purchase.setIsCancelled(true);
+        purchase.setPurchaseStatus(PurchaseStatus.CANCELLED);
         purchase = save(purchase);
         log.info("Satin alma iptal edildi: id={}, tedarikci={}", id, supplier.getName());
-
         return mapToResponse(purchase);
     }
 
@@ -243,7 +282,7 @@ public class PurchaseServiceImpl
     @Transactional(readOnly = true)
     public PurchaseResponse getPurchase(String id) {
         Purchase purchase = findById(id)
-                .orElseThrow(() -> new RuntimeException("Satin alma bulunamadi: " + id));
+                .orElseThrow(() -> new NotFoundException("Satin alma bulunamadi: " + id));
         return mapToResponse(purchase);
     }
 
@@ -252,25 +291,16 @@ public class PurchaseServiceImpl
     @Override
     public PurchaseResponse updatePurchase(String id, PurchaseRequest request) {
         Purchase purchase = findById(id)
-                .orElseThrow(() -> new RuntimeException("Satin alma bulunamadi: " + id));
+                .orElseThrow(() -> new NotFoundException("Satin alma bulunamadi: " + id));
 
         if (Boolean.TRUE.equals(purchase.getIsCancelled())) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw new BusinessException("Iptal edilmis satin alma guncellenemez: " + id);
         }
 
-        // Belge bilgilerini güncelle
-        if (request.getInvoiceNumber() != null) {
-            purchase.setInvoiceNumber(request.getInvoiceNumber());
-        }
-        if (request.getDeliveryNoteNumber() != null) {
-            purchase.setDeliveryNoteNumber(request.getDeliveryNoteNumber());
-        }
-        if (request.getPurchaseDate() != null) {
-            purchase.setPurchaseDate(request.getPurchaseDate());
-        }
-        if (request.getNotes() != null) {
-            purchase.setNotes(request.getNotes());
-        }
+        if (request.getInvoiceNumber() != null) purchase.setInvoiceNumber(request.getInvoiceNumber());
+        if (request.getDeliveryNoteNumber() != null) purchase.setDeliveryNoteNumber(request.getDeliveryNoteNumber());
+        if (request.getPurchaseDate() != null) purchase.setPurchaseDate(request.getPurchaseDate());
+        if (request.getNotes() != null) purchase.setNotes(request.getNotes());
 
         purchase = save(purchase);
         log.info("Satin alma guncellendi: id={}", id);
@@ -279,38 +309,28 @@ public class PurchaseServiceImpl
 
     // ─── PURCHASE RETURN ─────────────────────────────────────────────────────
 
-    /**
-     * Kısmi iade akışı:
-     * 1. Purchase doğrula (iptal edilmemiş olmalı)
-     * 2. Her kalem için PURCHASE_RETURN_OUT StockMovement
-     * 3. SupplierAccount alacak kaydı (applyCredit)
-     * 4. AccountTransaction(SUPPLIER_RETURN) kaydet
-     */
     @Override
     public PurchaseReturnResponse createPurchaseReturn(String purchaseId, PurchaseReturnRequest request) {
         log.info("Satin alma iadesi baslatiliyor - purchaseId={}, neden={}",
                 purchaseId, request.getReason());
 
-        // 1. Purchase doğrula
         Purchase purchase = findById(purchaseId)
-                .orElseThrow(() -> new RuntimeException("Satin alma bulunamadi: " + purchaseId));
+                .orElseThrow(() -> new NotFoundException("Satin alma bulunamadi: " + purchaseId));
 
         if (Boolean.TRUE.equals(purchase.getIsCancelled())) {
-            throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            throw new BusinessException("Iptal edilmis satin almada iade yapilamaz: " + purchaseId);
         }
 
         Supplier supplier = supplierService.findById(purchase.getSupplier().getId())
-                .orElseThrow(() -> new RuntimeException(
+                .orElseThrow(() -> new NotFoundException(
                         "Tedarikci bulunamadi: " + purchase.getSupplier().getId()));
 
-        // 2. Stok hareketleri (PURCHASE_RETURN_OUT)
-        // Orijinal alımın PURCHASE_IN hareketinden locationId/locationType al
-        String originalLocationId = purchase.getLocationId();
+        String originalLocationId   = purchase.getLocationId();
         String originalLocationType = purchase.getLocationType();
         if (originalLocationId == null && purchase.getMovements() != null) {
             for (StockMovement m : purchase.getMovements()) {
                 if (m.getMovementType() == StockMovementType.PURCHASE_IN) {
-                    originalLocationId = m.getLocationId();
+                    originalLocationId   = m.getLocationId();
                     originalLocationType = m.getLocationType();
                     break;
                 }
@@ -321,15 +341,13 @@ public class PurchaseServiceImpl
         List<PurchaseReturnResponse.ReturnItemResponse> responseItems = new ArrayList<>();
 
         for (PurchaseReturnItemRequest item : request.getItems()) {
-            // productId aslında variantId olarak gelir (Flutter mapping)
             String variantId = item.getProductId();
             ProductVariant variant = productVariantService.findById(variantId)
-                    .orElseThrow(() -> new RuntimeException("Varyant bulunamadi: " + variantId));
+                    .orElseThrow(() -> new NotFoundException("Varyant bulunamadi: " + variantId));
 
             BigDecimal unitPrice = item.getUnitPrice() != null ? item.getUnitPrice() : BigDecimal.ZERO;
             int qty = item.getQuantity() != null ? item.getQuantity() : 0;
 
-            // Anlık stok bakiyesini düş (iade = stok geri gider)
             if (originalLocationId != null && qty > 0) {
                 stockLevelService.deductStock(variant.getId(), originalLocationId, qty);
             }
@@ -351,22 +369,20 @@ public class PurchaseServiceImpl
             responseItems.add(PurchaseReturnResponse.ReturnItemResponse.builder()
                     .variantId(variantId)
                     .variantSku(variant.getSku())
-                    .productName(variant.getProduct() != null ? variant.getProduct().getName() : item.getProductName())
+                    .productName(variant.getProduct() != null
+                            ? variant.getProduct().getName() : item.getProductName())
                     .quantity(qty)
                     .unitPrice(unitPrice)
                     .lineTotal(lineTotal)
                     .build());
         }
 
-        // totalReturnAmount: request'ten geleni kullan, yoksa hesapladığımızı kullan
         BigDecimal effectiveReturnAmount = request.getTotalReturnAmount() != null
                 ? request.getTotalReturnAmount()
                 : totalReturnAmount;
 
-        // 3. SupplierAccount alacak kaydı (borcumuz azalır)
         SupplierAccount account = supplierAccountService.applyCredit(supplier, effectiveReturnAmount);
 
-        // 4. AccountTransaction(SUPPLIER_RETURN) kaydet
         AccountTransaction tx = AccountTransaction.builder()
                 .supplier(supplier)
                 .purchase(purchase)
@@ -386,7 +402,6 @@ public class PurchaseServiceImpl
         accountTransactionService.save(tx);
 
         log.info("Satin alma iadesi tamamlandi - purchaseId={}, tutar={}", purchaseId, effectiveReturnAmount);
-
         return PurchaseReturnResponse.builder()
                 .purchaseId(purchaseId)
                 .supplierName(supplier.getName())
@@ -400,24 +415,133 @@ public class PurchaseServiceImpl
                 .build();
     }
 
+    // ─── APPLY DISCOUNT ──────────────────────────────────────────────────────
+
+    /**
+     * Tedarikçi iskontosu / kredi notu uygulama.
+     *
+     * <p>Finansal model:
+     * Eksik kalemler için baştan debit yazılmamıştı (sadece gelen mal tutarı yazıldı).
+     * Bu nedenle iskonto uygulandığında SupplierAccount'a ek credit yazılmaz.
+     * shortageAmount azaltılır, discountAmount birikir.
+     * AccountTransaction(DISCOUNT) yalnızca audit trail amaçlı kayıt tutar.</p>
+     */
+    @Override
+    public PurchaseResponse applyDiscount(String purchaseId, PurchaseDiscountRequest request) {
+        Purchase purchase = findById(purchaseId)
+                .orElseThrow(() -> new NotFoundException("Satin alma bulunamadi: " + purchaseId));
+
+        if (Boolean.TRUE.equals(purchase.getIsCancelled())) {
+            throw new BusinessException("Iptal edilmis satin almada iskonto uygulanamaz: " + purchaseId);
+        }
+        if (purchase.getShortageAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("Bu satin almada acik eksik teslimat bulunmuyor: " + purchaseId);
+        }
+        if (request.getDiscountAmount().compareTo(purchase.getShortageAmount()) > 0) {
+            throw new BusinessException(
+                    "Iskonto tutari acik eksik miktardan fazla olamaz. Acik: "
+                            + purchase.getShortageAmount() + ", Istenen: " + request.getDiscountAmount());
+        }
+
+        // shortage azalt, discount birikimli artır
+        BigDecimal newShortage  = purchase.getShortageAmount().subtract(request.getDiscountAmount());
+        BigDecimal newDiscount  = purchase.getDiscountAmount().add(request.getDiscountAmount());
+
+        purchase.setShortageAmount(newShortage);
+        purchase.setDiscountAmount(newDiscount);
+        purchase.setPurchaseStatus(
+                newShortage.compareTo(BigDecimal.ZERO) == 0
+                        ? PurchaseStatus.DISCOUNTED
+                        : PurchaseStatus.PARTIAL);
+        purchase = save(purchase);
+
+        // Audit transaction — cari bakiyeye etki yok, sadece kayıt
+        Supplier supplier = purchase.getSupplier();
+        SupplierAccount account = supplierAccountService.getOrCreate(supplier);
+        AccountTransaction tx = AccountTransaction.builder()
+                .supplier(supplier)
+                .purchase(purchase)
+                .transactionType(TransactionType.DISCOUNT)
+                .debitAmount(BigDecimal.ZERO)
+                .creditAmount(request.getDiscountAmount())
+                .balance(account.getCurrentBalance())   // bakiye değişmiyor, güncel değer kaydedilir
+                .referenceId(purchase.getId())
+                .referenceType("PURCHASE_DISCOUNT")
+                .referenceNumber(request.getCreditNoteNumber() != null
+                        ? request.getCreditNoteNumber() : purchase.getInvoiceNumber())
+                .description("Tedarikci iskontosu - Fatura: " + purchase.getInvoiceNumber()
+                        + (request.getCreditNoteNumber() != null
+                            ? " | KN: " + request.getCreditNoteNumber() : ""))
+                .transactionDate(LocalDateTime.now())
+                .isOverdue(false)
+                .isCancelled(false)
+                .build();
+        accountTransactionService.save(tx);
+
+        // Mevcut OPEN claim'i DISCOUNT ile kapat (tam kapanma veya kısmi)
+        supplierClaimService.listByPurchase(purchaseId).stream()
+                .filter(c -> c.getStatus() == ClaimStatus.OPEN)
+                .findFirst()
+                .ifPresent(c -> {
+                    ClaimResolveRequest resolve = ClaimResolveRequest.builder()
+                            .resolution(newShortage.compareTo(BigDecimal.ZERO) == 0
+                                    ? ClaimStatus.RESOLVED_DISCOUNT
+                                    : ClaimStatus.OPEN)      // kısmi: claim açık kalmaya devam eder
+                            .resolvedAmount(request.getDiscountAmount())
+                            .creditNoteNumber(request.getCreditNoteNumber())
+                            .notes(request.getNotes())
+                            .build();
+                    if (newShortage.compareTo(BigDecimal.ZERO) == 0) {
+                        supplierClaimService.resolveClaim(c.getId(), resolve);
+                    }
+                    // Kısmi iskonto: claim tutarını güncelle (claimAmount azalt)
+                    else {
+                        supplierClaimService.findById(c.getId()).ifPresent(claim -> {
+                            claim.setClaimAmount(newShortage);
+                            supplierClaimService.save(claim);
+                        });
+                    }
+                });
+
+        log.info("Iskonto uygulandı: purchaseId={}, iskonto={}, kalanShortage={}",
+                purchaseId, request.getDiscountAmount(), newShortage);
+        return mapToResponse(purchase);
+    }
+
+    // ─── CLAIM DELEGATIONS ───────────────────────────────────────────────────
+
+    @Override
+    public List<SupplierClaimResponse> listClaims(String purchaseId) {
+        return supplierClaimService.listByPurchase(purchaseId);
+    }
+
+    @Override
+    public List<SupplierClaimResponse> listClaimsBySupplier(String supplierId, ClaimStatus status) {
+        return supplierClaimService.listBySupplier(supplierId, status);
+    }
+
+    @Override
+    public SupplierClaimResponse resolveClaim(String claimId, ClaimResolveRequest request) {
+        return supplierClaimService.resolveClaim(claimId, request);
+    }
+
     // ─── HELPERS ─────────────────────────────────────────────────────────────
 
     private PurchaseResponse mapToResponse(Purchase purchase) {
-        // toDTO(): id, invoiceNumber, deliveryNoteNumber, purchaseDate, totalAmount,
-        //          paidAmount, remainingDebt, isCancelled, notes kopyalanır
         PurchaseResponse dto = toDTO(purchase);
 
-        // Supplier FK alanları — BeanUtils doğrudan kopyalamaz
         if (purchase.getSupplier() != null) {
             dto.setSupplierId(purchase.getSupplier().getId());
             dto.setSupplierName(purchase.getSupplier().getName());
         }
 
-        // Lokasyon
         dto.setLocationId(purchase.getLocationId());
         dto.setLocationType(purchase.getLocationType());
+        dto.setInvoiceAmount(purchase.getInvoiceAmount());
+        dto.setDiscountAmount(purchase.getDiscountAmount());
+        dto.setShortageAmount(purchase.getShortageAmount());
+        dto.setPurchaseStatus(purchase.getPurchaseStatus());
 
-        // Kalemler — StockMovement ilişkisinden derlenir
         List<PurchaseResponse.PurchaseItemResponse> items = new ArrayList<>();
         if (purchase.getMovements() != null) {
             items = purchase.getMovements().stream()
@@ -430,7 +554,8 @@ public class PurchaseServiceImpl
                                 .variantId(v != null ? v.getId() : null)
                                 .variantSku(v != null ? v.getSku() : null)
                                 .variantName(v != null ? v.getName() : null)
-                                .productName(v != null && v.getProduct() != null ? v.getProduct().getName() : null)
+                                .productName(v != null && v.getProduct() != null
+                                        ? v.getProduct().getName() : null)
                                 .quantity(m.getQuantity())
                                 .unitPrice(price)
                                 .lineTotal(price.multiply(BigDecimal.valueOf(m.getQuantity())))
@@ -443,9 +568,17 @@ public class PurchaseServiceImpl
         return dto;
     }
 
-    private BigDecimal calculateTotal(List<PurchaseItemRequest> items) {
+    /** Fatura toplam = her kalem invoiceQty × birimFiyat */
+    private BigDecimal calculateInvoiceTotal(List<PurchaseItemRequest> items) {
         return items.stream()
-                .map(i -> i.getUnitPrice().multiply(BigDecimal.valueOf(i.getQuantity())))
+                .map(i -> i.getUnitPrice().multiply(BigDecimal.valueOf(i.resolvedInvoiceQty())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /** Gelen mal toplam = her kalem receivedQty × birimFiyat */
+    private BigDecimal calculateReceivedTotal(List<PurchaseItemRequest> items) {
+        return items.stream()
+                .map(i -> i.getUnitPrice().multiply(BigDecimal.valueOf(i.resolvedReceivedQty())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 

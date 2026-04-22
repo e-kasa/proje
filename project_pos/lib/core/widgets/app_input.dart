@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_constants.dart';
 
@@ -13,9 +14,11 @@ class AppInput extends StatelessWidget {
   final int? maxLines;
   final IconData? prefixIcon;
   final IconData? suffixIcon;
+  final String? suffixText;
   final VoidCallback? onSuffixTap;
   final void Function(String)? onChanged;
   final bool enabled;
+  final List<TextInputFormatter>? inputFormatters;
 
   const AppInput({
     super.key,
@@ -28,9 +31,11 @@ class AppInput extends StatelessWidget {
     this.maxLines = 1,
     this.prefixIcon,
     this.suffixIcon,
+    this.suffixText,
     this.onSuffixTap,
     this.onChanged,
     this.enabled = true,
+    this.inputFormatters,
   });
 
   @override
@@ -43,6 +48,7 @@ class AppInput extends StatelessWidget {
       maxLines: maxLines,
       onChanged: onChanged,
       enabled: enabled,
+      inputFormatters: inputFormatters,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
@@ -53,6 +59,7 @@ class AppInput extends StatelessWidget {
                 onPressed: onSuffixTap,
               )
             : null,
+        suffixText: suffixText,
         border: OutlineInputBorder(
           borderRadius: AppConstants.borderRadiusMedium,
           borderSide: const BorderSide(color: AppColors.border, width: 1.5),

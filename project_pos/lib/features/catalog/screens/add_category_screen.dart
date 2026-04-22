@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
@@ -31,27 +31,26 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
 
   String _selectedIcon = 'category';
   bool _isActive = true;
-  String? _parentId; // UUID String veya null
+  String? _parentId;
   bool _isLoading = false;
   bool _loadingParents = true;
 
   List<Map<String, dynamic>> _parentCandidates = [];
 
-  // Sabit ikon listesi
-  final List<_CategoryIcon> _availableIcons = [
-    _CategoryIcon('category', Icons.category, 'Genel'),
-    _CategoryIcon('devices', Icons.devices, 'Elektronik'),
-    _CategoryIcon('checkroom', Icons.checkroom, 'Giyim'),
-    _CategoryIcon('sports_tennis', Icons.sports_tennis, 'Ayakkabı'),
-    _CategoryIcon('shopping_bag', Icons.shopping_bag, 'Aksesuar'),
-    _CategoryIcon('home', Icons.home, 'Ev & Yaşam'),
-    _CategoryIcon('fitness_center', Icons.fitness_center, 'Spor'),
-    _CategoryIcon('restaurant', Icons.restaurant, 'Gıda'),
-    _CategoryIcon('toys', Icons.toys, 'Oyuncak'),
-    _CategoryIcon('local_florist', Icons.local_florist, 'Kozmetik'),
-    _CategoryIcon('inventory_2', Icons.inventory_2, 'Depo'),
-    _CategoryIcon('storefront', Icons.storefront, 'Mağaza'),
-  ];
+  List<_CategoryIcon> _availableIcons(String Function(String) t) => [
+        _CategoryIcon('category', Icons.category, t('categories.icon_general')),
+        _CategoryIcon('devices', Icons.devices, t('categories.icon_electronics')),
+        _CategoryIcon('checkroom', Icons.checkroom, t('categories.icon_clothing')),
+        _CategoryIcon('sports_tennis', Icons.sports_tennis, t('categories.icon_footwear')),
+        _CategoryIcon('shopping_bag', Icons.shopping_bag, t('categories.icon_accessories')),
+        _CategoryIcon('home', Icons.home, t('categories.icon_home')),
+        _CategoryIcon('fitness_center', Icons.fitness_center, t('categories.icon_sport')),
+        _CategoryIcon('restaurant', Icons.restaurant, t('categories.icon_food')),
+        _CategoryIcon('toys', Icons.toys, t('categories.icon_toys')),
+        _CategoryIcon('local_florist', Icons.local_florist, t('categories.icon_cosmetics')),
+        _CategoryIcon('inventory_2', Icons.inventory_2, t('categories.icon_warehouse')),
+        _CategoryIcon('storefront', Icons.storefront, t('categories.icon_store')),
+      ];
 
   @override
   void initState() {
@@ -95,7 +94,6 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
         _parentCandidates = cats.where((c) {
           final level = (c['level'] as int?) ?? 0;
           final id = c['id']?.toString() ?? '';
-          // Sadece level 0 ve 1 ebeveyn olabilir; kendini hariç tut
           return level < 2 && id != editId;
         }).toList();
         _loadingParents = false;
@@ -177,114 +175,76 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
         child: ListView(
           padding: AppConstants.pagePadding,
           children: [
-            // ── Temel Bilgiler ──────────────────────────────────────
-            _buildCard(
-              title: 'Temel Bilgiler', // TODO: i18n
+            AppSectionCard(
+              title: t('categories.basic_info'),
               icon: Icons.info_outline,
               children: [
-                TextFormField(
+                AppInput(
                   controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: '${t('categories.title')} *',
-                    hintText: 'Örn: Elektronik, Giyim', // TODO: i18n
-                    border: const OutlineInputBorder(),
-                  ),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? t('categories.title') : null,
+                  label: '${t('categories.title')} *',
+                  hint: t('categories.name_hint'),
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? t('categories.name_required')
+                      : null,
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
+                AppInput(
                   controller: _descriptionController,
-                  decoration: InputDecoration(
-                    labelText: 'Açıklama (Opsiyonel)', // TODO: i18n
-                    hintText: 'Kategori açıklaması', // TODO: i18n
-                    border: const OutlineInputBorder(),
-                  ),
+                  label: t('categories.description'),
+                  hint: t('categories.description_hint'),
                   maxLines: 3,
                 ),
               ],
             ),
-
             const SizedBox(height: 16),
-
-            // ── İkon Seçimi ──────────────────────────────────────────
-            _buildCard(
-              title: 'İkon Seçimi', // TODO: i18n
+            AppSectionCard(
+              title: t('categories.icon_selection'),
               icon: Icons.widgets_outlined,
               children: [
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: _availableIcons.map((iconData) {
-                    final sel = _selectedIcon == iconData.name;
-                    return InkWell(
-                      onTap: () => setState(() => _selectedIcon = iconData.name),
-                      borderRadius: AppConstants.borderRadiusMedium,
-                      child: Container(
-                        width: 70,
-                        height: 70,
-                        decoration: BoxDecoration(
-                          color: sel
-                              ? AppColors.primary.withValues(alpha: 0.12)
-                              : Colors.grey.shade100,
-                          borderRadius: AppConstants.borderRadiusMedium,
-                          border: Border.all(
-                            color: sel ? AppColors.primary : Colors.grey.shade300,
-                            width: sel ? 2 : 1,
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              iconData.icon,
-                              color: sel ? AppColors.primary : Colors.grey.shade600,
-                              size: 26,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              iconData.label,
-                              style: TextStyle(
-                                fontSize: 9,
-                                color: sel ? AppColors.primary : Colors.grey.shade600,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                  children: _availableIcons(t).map(_buildIconTile).toList(),
                 ),
               ],
             ),
-
             const SizedBox(height: 16),
-
-            // ── Gelişmiş Ayarlar ─────────────────────────────────────
-            _buildCard(
-              title: 'Gelişmiş Ayarlar', // TODO: i18n
+            AppSectionCard(
+              title: t('categories.advanced_settings'),
               icon: Icons.settings_outlined,
               children: [
-                // Üst Kategori seçimi
                 _loadingParents
-                    ? const Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: CircularProgressIndicator(),
-                        ),
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Center(child: CircularProgressIndicator()),
                       )
                     : DropdownButtonFormField<String?>(
-                        value: _parentId,
+                        initialValue: _parentId,
                         decoration: InputDecoration(
-                          labelText: 'Üst Kategori (Opsiyonel)', // TODO: i18n
-                          hintText: 'Seçin — boş bırakırsanız kök kategori olur', // TODO: i18n
-                          border: const OutlineInputBorder(),
+                          labelText: t('categories.parent_category'),
+                          hintText: t('categories.parent_hint'),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: AppConstants.borderRadiusMedium,
+                            borderSide:
+                                const BorderSide(color: AppColors.border, width: 1.5),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: AppConstants.borderRadiusMedium,
+                            borderSide:
+                                const BorderSide(color: AppColors.border, width: 1.5),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: AppConstants.borderRadiusMedium,
+                            borderSide:
+                                const BorderSide(color: AppColors.primary, width: 2),
+                          ),
                         ),
                         items: [
-                          const DropdownMenuItem<String?>(
+                          DropdownMenuItem<String?>(
                             value: null,
-                            child: Text('─ Ana Kategori (Kök)'),
+                            child: Text('─ ${t('categories.parent_root')}'),
                           ),
                           ..._parentCandidates.map((cat) {
                             return DropdownMenuItem<String?>(
@@ -298,60 +258,94 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
                         ],
                         onChanged: (v) => setState(() => _parentId = v),
                       ),
-
                 const SizedBox(height: 16),
-
-                // Sıra numarası
-                TextFormField(
+                AppInput(
                   controller: _sortOrderController,
-                  decoration: const InputDecoration(
-                    labelText: 'Sıra Numarası', // TODO: i18n
-                    hintText: '0',
-                    border: OutlineInputBorder(),
-                    helperText: 'Düşük numara önce gösterilir', // TODO: i18n
-                  ),
+                  label: t('categories.sort_order'),
+                  hint: '0',
                   keyboardType: TextInputType.number,
                 ),
-
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, left: 4),
+                  child: Text(
+                    t('categories.sort_order_help'),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 16),
-
-                // Durum toggle
                 SwitchListTile(
-                  title: const Text('Kategori Durumu'), // TODO: i18n
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(t('categories.status')),
                   subtitle: Text(
                     _isActive ? t('common.active') : t('common.passive'),
                     style: TextStyle(
-                      color: _isActive ? AppColors.success : AppColors.danger,
+                      color:
+                          _isActive ? AppColors.success : AppColors.danger,
                       fontSize: 12,
                     ),
                   ),
                   value: _isActive,
                   onChanged: (v) => setState(() => _isActive = v),
-                  activeColor: AppColors.success,
+                  activeThumbColor: AppColors.success,
                 ),
               ],
             ),
-
-            // Seviye bilgisi (edit modunda)
             if (isEdit) ...[
               const SizedBox(height: 12),
               _buildLevelBadge(widget.category!),
             ],
-
             const SizedBox(height: 24),
-
-            // Kaydet butonu
-            SizedBox(
-              height: 50,
-              child: AppButton.primary(
-                text: isEdit ? t('common.edit') : t('common.save'),
-                onPressed: _isLoading ? null : _saveCategory,
-                isLoading: _isLoading,
-                fullWidth: true,
-              ),
+            AppButton.primary(
+              text: isEdit ? t('common.edit') : t('common.save'),
+              onPressed: _isLoading ? null : _saveCategory,
+              isLoading: _isLoading,
+              fullWidth: true,
             ),
-
             const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIconTile(_CategoryIcon data) {
+    final sel = _selectedIcon == data.name;
+    return InkWell(
+      onTap: () => setState(() => _selectedIcon = data.name),
+      borderRadius: AppConstants.borderRadiusMedium,
+      child: Container(
+        width: 70,
+        height: 70,
+        decoration: BoxDecoration(
+          color: sel
+              ? AppColors.primary.withValues(alpha: 0.12)
+              : AppColors.bgLight,
+          borderRadius: AppConstants.borderRadiusMedium,
+          border: Border.all(
+            color: sel ? AppColors.primary : AppColors.border,
+            width: sel ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              data.icon,
+              color: sel ? AppColors.primary : AppColors.textMuted,
+              size: 26,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              data.label,
+              style: TextStyle(
+                fontSize: 9,
+                color: sel ? AppColors.primary : AppColors.textMuted,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),
@@ -361,10 +355,14 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
   /// Edit modunda mevcut seviyeyi gösteren bilgi etiketi
   Widget _buildLevelBadge(Map<String, dynamic> cat) {
     final level = (cat['level'] as int?) ?? 0;
-    const labels = ['Kök Kategori (Seviye 0)', 'Alt Kategori (Seviye 1)', 'İkinci Alt Kategori (Seviye 2)'];
-    const colors = [Colors.blue, Colors.orange, Colors.purple];
-    final label = level < labels.length ? labels[level] : 'Seviye $level';
-    final color = level < colors.length ? colors[level] : Colors.grey;
+    final labels = [
+      t('categories.level_root'),
+      t('categories.level_sub'),
+      t('categories.level_sub2'),
+    ];
+    const colors = [AppColors.info, AppColors.warning, AppColors.purple];
+    final label = level < labels.length ? labels[level] : 'L$level';
+    final color = level < colors.length ? colors[level] : AppColors.textMuted;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -380,55 +378,22 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
           const SizedBox(width: 8),
           Text(
             label,
-            style: TextStyle(fontSize: 13, color: color, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontSize: 13,
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          const SizedBox(width: 8),
-          if (level >= 2)
+          if (level >= 2) ...[
+            const SizedBox(width: 8),
             Text(
-              '(Maksimum derinlik — alt kategori eklenemez)',
-              style: TextStyle(fontSize: 11, color: color.withValues(alpha: 0.7)),
+              '(${t('categories.level_max_depth')})',
+              style: TextStyle(
+                fontSize: 11,
+                color: color.withValues(alpha: 0.7),
+              ),
             ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCard({
-    required String title,
-    required IconData icon,
-    required List<Widget> children,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: AppConstants.borderRadiusMedium,
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Icon(icon, color: AppColors.primary, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(children: children),
-          ),
+          ],
         ],
       ),
     );

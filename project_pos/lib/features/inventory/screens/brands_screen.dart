@@ -51,7 +51,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        AppToast.error(context, 'Markalar yüklenirken hata oluştu: $e');
+        AppToast.error(context, '${t('inventory.brand_load_error')}: $e');
       }
     }
   }
@@ -71,194 +71,174 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
     });
   }
 
-  void _showAddBrandDialog() {
-    final nameController = TextEditingController();
-    final codeController = TextEditingController();
-    final descriptionController = TextEditingController();
+  void _showAddBrandDialog() => _showBrandDialog(null);
+
+  void _showEditBrandDialog(Map<String, dynamic> brand) => _showBrandDialog(brand);
+
+  void _showBrandDialog(Map<String, dynamic>? brand) {
+    final isEdit = brand != null;
+    final nameController = TextEditingController(text: brand?['name'] ?? '');
+    final codeController = TextEditingController(text: brand?['code'] ?? '');
+    final descriptionController =
+        TextEditingController(text: brand?['description'] ?? '');
+    final formKey = GlobalKey<FormState>();
+    bool submitting = false;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.branding_watermark, color: AppColors.primary),
-            const SizedBox(width: 12),
-            Text(t('inventory.new_brand')),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: 'Marka Adı *',
-                  hintText: 'Örn: Nike, Apple, Samsung',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.label),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: codeController,
-                decoration: const InputDecoration(
-                  labelText: 'Kod',
-                  hintText: 'Örn: NIKE, APPLE',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.code),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: descriptionController,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Açıklama',
-                  hintText: 'Marka hakkında kısa açıklama',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.description),
-                ),
-              ),
-            ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: AppConstants.borderRadiusMedium,
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(t('common.cancel')),
-          ),
-          ElevatedButton.icon(
-            onPressed: () async {
-              final name = nameController.text.trim();
-              final code = codeController.text.trim();
-              final description = descriptionController.text.trim();
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Header
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: (isEdit
+                                    ? AppColors.info
+                                    : AppColors.primary)
+                                .withValues(alpha: 0.12),
+                            borderRadius: AppConstants.borderRadiusSmall,
+                          ),
+                          child: Icon(
+                            isEdit
+                                ? Icons.edit
+                                : Icons.branding_watermark,
+                            color: isEdit
+                                ? AppColors.info
+                                : AppColors.primary,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            isEdit
+                                ? t('inventory.edit_brand')
+                                : t('inventory.new_brand'),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close,
+                              color: AppColors.textMuted),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
 
-              if (name.isNotEmpty) {
-                Navigator.pop(context);
-                try {
-                  await ref.read(brandServiceProvider).createBrand({
-                    'name': name,
-                    'code': code,
-                    'description': description,
-                    'isActive': true,
-                  });
-                  if (mounted) {
-                    AppToast.success(context, '$name markası eklendi');
-                  }
-                  _loadBrands();
-                } catch (e) {
-                  if (mounted) {
-                    AppToast.error(context, 'Marka eklenirken hata oluştu: $e');
-                  }
-                }
-              }
-            },
-            icon: const Icon(Icons.save),
-            label: Text(t('common.save')),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+                    AppInput(
+                      controller: nameController,
+                      label: '${t('inventory.brand_name')} *',
+                      hint: t('inventory.brand_name_hint'),
+                      prefixIcon: Icons.label,
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty)
+                              ? t('inventory.brand_name')
+                              : null,
+                    ),
+                    const SizedBox(height: 16),
+                    AppInput(
+                      controller: codeController,
+                      label: t('inventory.brand_code'),
+                      hint: t('inventory.brand_code_hint'),
+                      prefixIcon: Icons.code,
+                    ),
+                    const SizedBox(height: 16),
+                    AppInput(
+                      controller: descriptionController,
+                      label: t('inventory.brand_description'),
+                      hint: t('inventory.brand_description_hint'),
+                      prefixIcon: Icons.description,
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 24),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        AppButton.outline(
+                          text: t('common.cancel'),
+                          onPressed: submitting
+                              ? null
+                              : () => Navigator.pop(context),
+                        ),
+                        const SizedBox(width: 12),
+                        AppButton.primary(
+                          text: isEdit
+                              ? t('common.update')
+                              : t('common.save'),
+                          isLoading: submitting,
+                          onPressed: () async {
+                            if (!formKey.currentState!.validate()) return;
+                            setDialogState(() => submitting = true);
+                            final name = nameController.text.trim();
+                            final code = codeController.text.trim();
+                            final description =
+                                descriptionController.text.trim();
+                            final payload = {
+                              'name': name,
+                              'code': code,
+                              'description': description,
+                              'isActive':
+                                  isEdit ? brand['active'] : true,
+                            };
+                            final navigator = Navigator.of(context);
+                            try {
+                              if (isEdit) {
+                                await ref
+                                    .read(brandServiceProvider)
+                                    .updateBrand(brand['id'], payload);
+                              } else {
+                                await ref
+                                    .read(brandServiceProvider)
+                                    .createBrand(payload);
+                              }
+                              navigator.pop();
+                              if (!mounted) return;
+                              AppToast.success(
+                                this.context,
+                                isEdit
+                                    ? t('inventory.brand_updated')
+                                    : '$name ${t('inventory.brand_added')}',
+                              );
+                              _loadBrands();
+                            } catch (e) {
+                              if (!mounted) return;
+                              AppToast.error(
+                                this.context,
+                                '${t('inventory.brand_save_error')}: $e',
+                              );
+                              setDialogState(() => submitting = false);
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  void _showEditBrandDialog(Map<String, dynamic> brand) {
-    final nameController = TextEditingController(text: brand['name']);
-    final codeController = TextEditingController(text: brand['code'] ?? '');
-    final descriptionController = TextEditingController(text: brand['description'] ?? '');
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.edit, color: AppColors.info),
-            const SizedBox(width: 12),
-            Text(t('inventory.edit_brand')),
-          ],
         ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: 'Marka Adı',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.label),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: codeController,
-                decoration: const InputDecoration(
-                  labelText: 'Kod',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.code),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: descriptionController,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Açıklama',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.description),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(t('common.cancel')),
-          ),
-          ElevatedButton.icon(
-            onPressed: () async {
-              final name = nameController.text.trim();
-              final code = codeController.text.trim();
-              final description = descriptionController.text.trim();
-
-              if (name.isNotEmpty) {
-                Navigator.pop(context);
-                try {
-                  await ref.read(brandServiceProvider).updateBrand(
-                    brand['id'],
-                    {
-                      'name': name,
-                      'code': code,
-                      'description': description,
-                      'isActive': brand['active'],
-                    },
-                  );
-                  if (mounted) {
-                    AppToast.success(context, 'Marka güncellendi');
-                  }
-                  _loadBrands();
-                } catch (e) {
-                  if (mounted) {
-                    AppToast.error(context, 'Marka güncellenirken hata oluştu: $e');
-                  }
-                }
-              }
-            },
-            icon: const Icon(Icons.save),
-            label: Text(t('common.update')),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.info,
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -267,7 +247,8 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
     final confirmed = await AppConfirmationDialog.showDelete(
       context: context,
       title: t('inventory.delete_brand'),
-      message: '${brand['name']} markasını silmek istediğinizden emin misiniz?',
+      message:
+          '${brand['name']} ${t('inventory.brand_delete_confirm')}',
       itemName: brand['name'] ?? '',
     );
 
@@ -276,12 +257,15 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
     try {
       await ref.read(brandServiceProvider).deleteBrand(brand['id']);
       if (mounted) {
-        AppToast.success(context, '${brand['name']} silindi');
+        AppToast.success(
+          context,
+          '${brand['name']} ${t('inventory.brand_deleted')}',
+        );
       }
       _loadBrands();
     } catch (e) {
       if (mounted) {
-        AppToast.error(context, 'Marka silinirken hata oluştu: $e');
+        AppToast.error(context, '${t('common.error')}: $e');
       }
     }
   }
@@ -293,14 +277,17 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
         AppToast.success(
           context,
           brand['active']
-              ? '${brand['name']} pasife alındı'
-              : '${brand['name']} aktife alındı',
+              ? '${brand['name']} ${t('inventory.brand_deactivated_msg')}'
+              : '${brand['name']} ${t('inventory.brand_activated_msg')}',
         );
       }
       _loadBrands();
     } catch (e) {
       if (mounted) {
-        AppToast.error(context, 'Durum değiştirilirken hata oluştu: $e');
+        AppToast.error(
+          context,
+          '${t('inventory.brand_status_changed')}: $e',
+        );
       }
     }
   }
@@ -330,35 +317,21 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: TextField(
+                      child: AppSearchInput(
                         controller: _searchController,
+                        hint: '${t('common.search')}...',
                         onChanged: _filterBrands,
-                        decoration: InputDecoration(
-                          hintText: '${t('common.search')}...',
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          filled: true,
-                          fillColor: AppColors.bgLight,
-                          border: OutlineInputBorder(
-                            borderRadius: AppConstants.borderRadiusMedium,
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        ),
+                        onClear: () {
+                          _searchController.clear();
+                          _filterBrands('');
+                        },
                       ),
                     ),
                     const SizedBox(width: 12),
-                    ElevatedButton.icon(
+                    AppButton.primary(
+                      text: t('inventory.new_brand'),
+                      icon: Icons.add,
                       onPressed: _showAddBrandDialog,
-                      icon: const Icon(Icons.add, size: 20),
-                      label: Text(t('inventory.new_brand')),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: AppConstants.borderRadiusMedium,
-                        ),
-                      ),
                     ),
                   ],
                 ),

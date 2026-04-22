@@ -300,7 +300,9 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
     _markRowsAsSaving(pendingRows.map((r) => r.id).toList());
 
     // ── Yeni ürün kalemlerini oluştur ─────────────────────────────────────
-    final newRows = pendingRows.where((r) => r.isNew).toList();
+    final newRows = pendingRows
+        .where((r) => r.isNew || (r.hasError && r.existingVariantId == null))
+        .toList();
     final newProductItems = newRows.map((row) {
       final sku = _generateSku();
 
@@ -384,7 +386,9 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
     }).toList();
 
     // ── Mevcut ürün kalemlerini oluştur ───────────────────────────────────
-    final existingRows = pendingRows.where((r) => r.isExisting).toList();
+    final existingRows = pendingRows
+        .where((r) => r.isExisting || (r.hasError && r.existingVariantId != null))
+        .toList();
     final existingItems = existingRows.map((row) => {
           'tempId': row.id,
           'variantId': row.existingVariantId,

@@ -9,8 +9,6 @@ import 'package:project_pos/features/supplier_claims/di/supplier_claims_di.dart'
 import 'package:project_pos/features/supplier_claims/models/supplier_claim.dart';
 import 'package:project_pos/features/supplier_claims/services/supplier_claims_service.dart';
 
-/// Sprint A — sadece indirim (DISCOUNT) çözümü aktif.
-/// Diğer sekmeler (teslim, iade) Sprint B'de açılacak.
 class ClaimResolveSheet extends ConsumerStatefulWidget {
   final SupplierClaim claim;
   const ClaimResolveSheet({super.key, required this.claim});
@@ -19,28 +17,39 @@ class ClaimResolveSheet extends ConsumerStatefulWidget {
   ConsumerState<ClaimResolveSheet> createState() => _ClaimResolveSheetState();
 }
 
-class _ClaimResolveSheetState extends ConsumerState<ClaimResolveSheet> {
+class _ClaimResolveSheetState extends ConsumerState<ClaimResolveSheet>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabs;
   final _formKey = GlobalKey<FormState>();
   final _amountCtrl = TextEditingController();
   final _creditNoteCtrl = TextEditingController();
+  final _deliveryNoteCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
   bool _busy = false;
 
   @override
   void initState() {
     super.initState();
-    // Default: kalan tutar.
+    _tabs = TabController(length: 3, vsync: this);
     final remaining = widget.claim.remainingAmount;
     _amountCtrl.text = remaining > 0 ? remaining.toStringAsFixed(2) : '';
   }
 
   @override
   void dispose() {
+    _tabs.dispose();
     _amountCtrl.dispose();
     _creditNoteCtrl.dispose();
+    _deliveryNoteCtrl.dispose();
     _notesCtrl.dispose();
     super.dispose();
   }
+
+  ClaimResolution get _selectedResolution => switch (_tabs.index) {
+        0 => ClaimResolution.discount,
+        1 => ClaimResolution.delivery,
+        _ => ClaimResolution.refund,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -77,68 +86,34 @@ class _ClaimResolveSheetState extends ConsumerState<ClaimResolveSheet> {
             ),
             const SizedBox(height: 16),
             Text(t('su.claim_resolve'),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 4),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 2),
             Text('${t('common.remaining')}: ${fmt.format(remaining)}',
                 style: const TextStyle(color: AppColors.textSecondary)),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.info.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.discount_outlined,
-                      color: AppColors.info, size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(t('su.claim_resolve_by_discount'),
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w600, color: AppColors.info)),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _amountCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+            const SizedBox(height: 12),
+            TabBar(
+              controller: _tabs,
+              labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              tabs: [
+                Tab(
+                  icon: const Icon(Icons.discount_outlined, size: 18),
+                  text: t('su.resolve_tab_discount'),
+                ),
+                Tab(
+                  icon: const Icon(Icons.local_shipping_outlined, size: 18),
+                  text: t('su.resolve_tab_delivery'),
+                ),
+                Tab(
+                  icon: const Icon(Icons.currency_lira, size: 18),
+                  text: t('su.resolve_tab_refund'),
+                ),
               ],
-              decoration: InputDecoration(
-                labelText: t('su.claim_resolved_amount'),
-                prefixText: '₺ ',
-                border: const OutlineInputBorder(),
-              ),
-              validator: (v) {
-                final d = _parse(v);
-                if (d == null || d <= 0) return t('common.required');
-                if (d > remaining + 0.01) {
-                  return t('common.exceeds_remaining');
-                }
-                return null;
-              },
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _creditNoteCtrl,
-              decoration: InputDecoration(
-                labelText: t('su.claim_credit_note_number'),
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _notesCtrl,
-              maxLines: 2,
-              decoration: InputDecoration(
-                labelText: t('su.claim_notes'),
-                border: const OutlineInputBorder(),
-              ),
+            const SizedBox(height: 16),
+            AnimatedBuilder(
+              animation: _tabs,
+              builder: (_, __) => _buildTabContent(t, fmt, remaining),
             ),
             const SizedBox(height: 16),
             Row(
@@ -166,6 +141,148 @@ class _ClaimResolveSheetState extends ConsumerState<ClaimResolveSheet> {
     );
   }
 
+  Widget _buildTabContent(
+      String Function(String) t, NumberFormat fmt, double remaining) {
+    return switch (_tabs.index) {
+      0 => _buildDiscountTab(t, remaining),
+      1 => _buildDeliveryTab(t),
+      _ => _buildRefundTab(t, remaining),
+    };
+  }
+
+  Widget _buildDiscountTab(String Function(String) t, double remaining) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _infoBox(AppColors.info, Icons.discount_outlined,
+            t('su.claim_resolve_by_discount')),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _amountCtrl,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+          ],
+          decoration: InputDecoration(
+            labelText: t('su.claim_resolved_amount'),
+            prefixText: '₺ ',
+            border: const OutlineInputBorder(),
+          ),
+          validator: _tabs.index == 0 ? (v) {
+            final d = _parse(v);
+            if (d == null || d <= 0) return t('common.required');
+            if (d > remaining + 0.01) return t('common.exceeds_remaining');
+            return null;
+          } : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _creditNoteCtrl,
+          decoration: InputDecoration(
+            labelText: t('su.claim_credit_note_number'),
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _notesCtrl,
+          maxLines: 2,
+          decoration: InputDecoration(
+            labelText: t('su.claim_notes'),
+            border: const OutlineInputBorder(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDeliveryTab(String Function(String) t) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _infoBox(AppColors.teal, Icons.local_shipping_outlined,
+            t('su.claim_resolve_by_delivery')),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _deliveryNoteCtrl,
+          decoration: InputDecoration(
+            labelText: t('su.claim_delivery_note_number'),
+            prefixIcon: const Icon(Icons.receipt_outlined, size: 20),
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _notesCtrl,
+          maxLines: 2,
+          decoration: InputDecoration(
+            labelText: t('su.claim_notes'),
+            border: const OutlineInputBorder(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRefundTab(String Function(String) t, double remaining) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _infoBox(AppColors.success, Icons.currency_lira,
+            t('su.claim_resolve_by_refund')),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _amountCtrl,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+          ],
+          decoration: InputDecoration(
+            labelText: t('su.claim_resolved_amount'),
+            prefixText: '₺ ',
+            border: const OutlineInputBorder(),
+          ),
+          validator: _tabs.index == 2 ? (v) {
+            final d = _parse(v);
+            if (d == null || d <= 0) return t('common.required');
+            if (d > remaining + 0.01) return t('common.exceeds_remaining');
+            return null;
+          } : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _notesCtrl,
+          maxLines: 2,
+          decoration: InputDecoration(
+            labelText: t('su.claim_notes'),
+            border: const OutlineInputBorder(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _infoBox(Color color, IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(label,
+                style: TextStyle(fontWeight: FontWeight.w600, color: color)),
+          ),
+        ],
+      ),
+    );
+  }
+
   double? _parse(String? v) {
     if (v == null) return null;
     final cleaned = v.replaceAll('.', '').replaceAll(',', '.');
@@ -176,16 +293,24 @@ class _ClaimResolveSheetState extends ConsumerState<ClaimResolveSheet> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _busy = true);
     final t = i18nOf(ref);
+    final resolution = _selectedResolution;
+
+    final resolvedAmount = resolution == ClaimResolution.delivery
+        ? widget.claim.remainingAmount
+        : (_parse(_amountCtrl.text) ?? 0);
+
     try {
       await ref.read(supplierClaimsServiceProvider).resolve(
             widget.claim.id,
             ResolveClaimRequest(
-              resolution: ClaimResolution.discount,
-              resolvedAmount: _parse(_amountCtrl.text)!,
+              resolution: resolution,
+              resolvedAmount: resolvedAmount,
               creditNoteNumber: _creditNoteCtrl.text.trim().isEmpty
                   ? null
                   : _creditNoteCtrl.text.trim(),
-              notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+              notes: _notesCtrl.text.trim().isEmpty
+                  ? null
+                  : _notesCtrl.text.trim(),
             ),
           );
       if (mounted) {

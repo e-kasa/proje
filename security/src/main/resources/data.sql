@@ -2224,6 +2224,12 @@ VALUES
 ('bnd-pu080-000-0000-0000-000000000080', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'purchases.updated_success', 'Güncellendi', 'Updated'),
 ('bnd-pu081-000-0000-0000-000000000081', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'purchases.variants', 'Varyantlar', 'Variants'),
 ('bnd-pu082-000-0000-0000-000000000082', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'purchases.warehouse_required', 'Depo zorunludur', 'Warehouse is required'),
+('bnd-pu083-000-0000-0000-000000000083', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'purchases.partial_delivery', 'Kısmi Teslimat', 'Partial Delivery'),
+('bnd-pu084-000-0000-0000-000000000084', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'purchases.shortage', 'Eksik', 'Shortage'),
+('bnd-pu085-000-0000-0000-000000000085', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'purchases.invoice_amount', 'Fatura Tutarı', 'Invoice Amount'),
+('bnd-pu086-000-0000-0000-000000000086', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'purchases.received_amount', 'Alınan Tutar', 'Received Amount'),
+('bnd-pu087-000-0000-0000-000000000087', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'purchases.shortage_amount', 'Eksik Tutar', 'Shortage Amount'),
+('bnd-pu088-000-0000-0000-000000000088', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'purchases.related_claims', 'İlgili Talepler', 'Related Claims'),
 
 -- ── REPORTS ──────────────────────────────────────────────────
 ('bnd-rp001-000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'reports.average', 'Ortalama', 'Average'),
@@ -2588,6 +2594,11 @@ VALUES
 ('bnd-suc45-000-0000-0000-000000000045', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_reason_wrong_item', 'Yanlış Ürün', 'Wrong Item'),
 ('bnd-suc46-000-0000-0000-000000000046', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_status_partially_resolved', 'Kısmi Kapandı', 'Partially Resolved'),
 ('bnd-suc47-000-0000-0000-000000000047', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_batch_toast', 'Fatura eksik geldi — talep açıldı', 'Invoice shortage — claim opened'),
+('bnd-suc48-000-0000-0000-000000000048', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_filter_partial', 'Kısmi Kapandı', 'Partially Resolved'),
+('bnd-suc49-000-0000-0000-000000000049', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.resolve_tab_discount', 'İskonto', 'Discount'),
+('bnd-suc50-000-0000-0000-000000000050', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.resolve_tab_delivery', 'Teslimat', 'Delivery'),
+('bnd-suc51-000-0000-0000-000000000051', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.resolve_tab_refund', 'İade', 'Refund'),
+('bnd-suc52-000-0000-0000-000000000052', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_delivery_note_number', 'İrsaliye No', 'Delivery Note Number'),
 ('bnd-cmc50-000-0000-0000-000000000050', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'common.remaining', 'Kalan', 'Remaining'),
 ('bnd-cmc51-000-0000-0000-000000000051', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'common.exceeds_remaining', 'Kalan tutarı aşıyor', 'Exceeds remaining amount'),
 ('bnd-cmc52-000-0000-0000-000000000052', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'nav.supplier_claims', 'Tedarikçi Talepleri', 'Supplier Claims')

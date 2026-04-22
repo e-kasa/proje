@@ -12,8 +12,8 @@ import com.sedcore.purchase.model.ClaimResolveRequest;
 import com.sedcore.purchase.model.SupplierClaimLineResponse;
 import com.sedcore.purchase.model.SupplierClaimResponse;
 import com.sedcore.purchase.repository.PurchaseRepository;
-import com.sedcore.purchase.repository.SupplierClaimLineRepository;
 import com.sedcore.purchase.repository.SupplierClaimRepository;
+import com.sedcore.purchase.service.SupplierClaimLineService;
 import com.sedcore.purchase.service.SupplierClaimService;
 import com.towpen.base.security.BaseDbServiceImp;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +35,7 @@ public class SupplierClaimServiceImpl
         implements SupplierClaimService {
 
     @Autowired private PurchaseRepository purchaseRepository;
-    @Autowired private SupplierClaimLineRepository claimLineRepository;
+    @Autowired private SupplierClaimLineService claimLineService;
 
     @Override
     public Class<?> getDTOClassForService() {
@@ -54,7 +54,6 @@ public class SupplierClaimServiceImpl
                 .map(ClaimLineSpec::lineAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Aggregate reason: tümü aynıysa onu kullan, karışıksa SHORTAGE fallback (v1).
         ClaimReason aggregateReason = lineSpecs.stream()
                 .map(ClaimLineSpec::reason)
                 .distinct()
@@ -88,7 +87,7 @@ public class SupplierClaimServiceImpl
                     .resolvedAmount(BigDecimal.ZERO)
                     .isResolved(false)
                     .build();
-            claimLineRepository.save(line);
+            claimLineService.save(line);
         }
 
         log.info("SupplierClaim açıldı: id={}, purchase={}, tutar={}, satır={}, sebep={}",
@@ -140,8 +139,7 @@ public class SupplierClaimServiceImpl
             claim.setNotes(request.getNotes());
         }
 
-        // Satırları orantılı kapat (v1 — basit dağılım). Tam kapanışta hepsi resolved.
-        List<SupplierClaimLine> lines = claimLineRepository.findByClaimId(claimId);
+        List<SupplierClaimLine> lines = claimLineService.findByClaimId(claimId);
         boolean fullyResolved = resolvedAmount.compareTo(claim.getClaimAmount()) == 0;
         for (SupplierClaimLine ln : lines) {
             if (fullyResolved) {
@@ -149,7 +147,6 @@ public class SupplierClaimServiceImpl
                 ln.setResolvedAmount(ln.getLineAmount());
                 ln.setIsResolved(true);
             } else {
-                // Oransal dağılım
                 BigDecimal ratio = resolvedAmount.divide(claim.getClaimAmount(), 4, java.math.RoundingMode.HALF_UP);
                 BigDecimal lineResolved = ln.getLineAmount().multiply(ratio);
                 ln.setResolvedAmount(lineResolved);
@@ -157,7 +154,7 @@ public class SupplierClaimServiceImpl
                 ln.setResolvedQty(lineResolvedQty);
                 ln.setIsResolved(lineResolvedQty >= ln.shortageQty());
             }
-            claimLineRepository.save(ln);
+            claimLineService.update(ln);
         }
         claim.setIsFullyResolved(fullyResolved);
 
@@ -249,7 +246,7 @@ public class SupplierClaimServiceImpl
 
     @Override
     public SupplierClaimResponse toResponseWithLines(SupplierClaim c) {
-        List<SupplierClaimLine> lines = claimLineRepository.findByClaimId(c.getId());
+        List<SupplierClaimLine> lines = claimLineService.findByClaimId(c.getId());
         List<SupplierClaimLineResponse> lineDtos = lines.stream()
                 .map(this::toLineResponse)
                 .collect(Collectors.toList());

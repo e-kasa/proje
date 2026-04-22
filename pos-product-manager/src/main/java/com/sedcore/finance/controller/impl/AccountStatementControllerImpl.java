@@ -17,7 +17,9 @@ import com.sedcore.common.util.ExceptionMapper;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -34,9 +36,11 @@ public class AccountStatementControllerImpl {
     public ResponseEntity<ApiResponse<AccountStatementEntry>> getStatement(
             @RequestParam String accountType,
             @RequestParam String accountId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
+            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDateParam,
+            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDateParam) {
         try {
+            LocalDateTime startDate = startDateParam.atStartOfDay();
+            LocalDateTime endDate = endDateParam.atTime(LocalTime.MAX);
             List<AccountTransaction> transactions;
             if ("CUSTOMER".equalsIgnoreCase(accountType)) {
                 transactions = accountTransactionRepository.findByCustomerId(accountId);

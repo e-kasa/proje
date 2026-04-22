@@ -7,6 +7,9 @@ import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
+import 'package:project_pos/features/supplier_claims/di/supplier_claims_di.dart';
+import 'package:project_pos/features/supplier_claims/models/supplier_claim.dart';
+import 'package:project_pos/features/supplier_claims/widgets/claim_status_chip.dart';
 
 class PurchaseDetailScreen extends ConsumerStatefulWidget {
   final String purchaseId;
@@ -25,6 +28,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
   String? _error;
   Map<String, dynamic> _purchase = {};
   List<Map<String, dynamic>> _items = [];
+  List<SupplierClaim> _relatedClaims = [];
 
   // Düzenleme modu
   bool _isEditing = false;
@@ -72,9 +76,17 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
             .toList();
       }
 
+      List<SupplierClaim> claims = [];
+      try {
+        claims = await ref
+            .read(supplierClaimsServiceProvider)
+            .listByPurchase(widget.purchaseId);
+      } catch (_) {}
+
       setState(() {
         _purchase = data;
         _items = items;
+        _relatedClaims = claims;
         _isLoading = false;
         _populateEditFields();
       });
@@ -223,6 +235,10 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
                         _buildAmountCard(theme),
                         const SizedBox(height: 16),
                         _buildItemsSection(theme),
+                        if (_relatedClaims.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          _buildRelatedClaimsSection(theme),
+                        ],
                         if ((_purchase['notes'] ?? '').toString().isNotEmpty ||
                             _isEditing) ...[
                           const SizedBox(height: 16),
@@ -250,71 +266,52 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
 
   Widget _buildStatusBanner(bool cancelled, ThemeData theme) {
     if (cancelled) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: AppColors.danger.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.cancel_outlined, color: AppColors.danger, size: 20),
-            const SizedBox(width: 10),
-            Text(
-              t('purchases.purchase_cancelled'),
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: AppColors.danger, fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
+      return _banner(AppColors.danger, Icons.cancel_outlined,
+          t('purchases.purchase_cancelled'), theme);
+    }
+
+    final purchaseStatus = _purchase['purchaseStatus']?.toString();
+    final shortageAmount =
+        (_purchase['shortageAmount'] as num?)?.toDouble() ?? 0;
+
+    if (purchaseStatus == 'PARTIAL' || shortageAmount > 0) {
+      return _banner(
+        AppColors.warning,
+        Icons.warning_amber_rounded,
+        '${t('purchases.partial_delivery')} — ${t('purchases.shortage')}: ${_fmt.format(shortageAmount)}',
+        theme,
       );
     }
 
-    final remaining =
-        ((_purchase['remainingDebt'] as num?)?.toDouble() ?? 0);
+    final remaining = (_purchase['remainingDebt'] as num?)?.toDouble() ?? 0;
     if (remaining > 0) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: AppColors.warning.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.schedule, color: AppColors.warning, size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                '${t('purchases.remaining_debt')}: ${_fmt.format(remaining)}',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                    color: AppColors.warning, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
-        ),
-      );
+      return _banner(AppColors.warning, Icons.schedule,
+          '${t('purchases.remaining_debt')}: ${_fmt.format(remaining)}', theme);
     }
 
+    return _banner(AppColors.success, Icons.check_circle_outline,
+        t('purchases.payment_complete'), theme);
+  }
+
+  Widget _banner(Color color, IconData icon, String text, ThemeData theme) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.success.withValues(alpha: 0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.check_circle_outline, color: AppColors.success, size: 20),
+          Icon(icon, color: color, size: 20),
           const SizedBox(width: 10),
-          Text(
-            t('purchases.payment_complete'),
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(color: AppColors.success, fontWeight: FontWeight.w600),
+          Expanded(
+            child: Text(
+              text,
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: color, fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
@@ -494,6 +491,8 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
 
   Widget _buildAmountCard(ThemeData theme) {
     final total = (_purchase['totalAmount'] as num?)?.toDouble() ?? 0;
+    final invoice = (_purchase['invoiceAmount'] as num?)?.toDouble() ?? 0;
+    final shortage = (_purchase['shortageAmount'] as num?)?.toDouble() ?? 0;
     final paid = (_purchase['paidAmount'] as num?)?.toDouble() ?? 0;
     final remaining = (_purchase['remainingDebt'] as num?)?.toDouble() ?? 0;
 
@@ -542,8 +541,28 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
               ),
             ],
           ),
+          if (shortage > 0) ...[
+            const SizedBox(height: 12),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _amountTile(
+                      t('purchases.invoice_amount'), invoice, AppColors.textSecondary, theme),
+                ),
+                Expanded(
+                  child: _amountTile(
+                      t('purchases.received_amount'), total, AppColors.teal, theme),
+                ),
+                Expanded(
+                  child: _amountTile(
+                      t('purchases.shortage_amount'), shortage, AppColors.danger, theme),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 12),
-          // Ödeme ilerleme çubuğu
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
@@ -767,6 +786,92 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
                   fontSize: 11, color: color, fontWeight: FontWeight.w500)),
         ],
       ),
+    );
+  }
+
+  // ─── Related Claims Section ───────────────────────────────────────────────
+
+  Widget _buildRelatedClaimsSection(ThemeData theme) {
+    final fmt = NumberFormat.currency(locale: 'tr_TR', symbol: '₺');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.report_problem_outlined,
+                size: 20, color: AppColors.warning),
+            const SizedBox(width: 8),
+            Text(
+              t('purchases.related_claims'),
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${_relatedClaims.length} ${t('common.records')}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.warning,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        ..._relatedClaims.map((claim) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => context
+                    .push('/supplier-claims/${claim.id}')
+                    .then((_) => _load()),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: AppColors.warning.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              claim.supplierName ?? t('su.claim_col_supplier'),
+                              style: theme.textTheme.bodyMedium
+                                  ?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              fmt.format(claim.claimAmount),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                  color: AppColors.warning,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ClaimStatusChip(status: claim.status, t: t),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.chevron_right, size: 18,
+                          color: AppColors.textSecondary),
+                    ],
+                  ),
+                ),
+              ),
+            )),
+      ],
     );
   }
 

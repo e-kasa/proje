@@ -166,9 +166,8 @@ Tüm tablolarda: `company_code`, `created_at`, `updated_at`, `is_deleted`.
 ### inventory_view
 
 ```sql
--- data.sql ilk 3 satır — sıra önemli
-DROP TABLE IF EXISTS inventory_view;   -- Hibernate bazen tablo yapar
-DROP VIEW IF EXISTS inventory_view;    -- Önceki view
+-- data.sql
+DROP VIEW IF EXISTS inventory_view;
 CREATE VIEW inventory_view AS ...;
 ```
 

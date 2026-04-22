@@ -496,6 +496,8 @@ class BatchEntryState {
   double get totalCost => rows.fold(0, (sum, r) => sum + r.lineCost);
   double get totalSale => rows.fold(0, (sum, r) => sum + r.lineTotal);
   double get totalProfit => totalSale - totalCost;
+  int get shortageItems => rows.where((r) => r.isExisting && r.hasShortage).length;
+  bool get hasAnyShortage => shortageItems > 0;
 
   int get shortageItems => rows.where((r) => r.hasShortage).length;
   bool get hasAnyShortage => shortageItems > 0;

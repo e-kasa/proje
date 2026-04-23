@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import '../providers/batch_entry_provider.dart';
+import 'multi_match_picker_sheet.dart';
 
 class BarcodeSearchInput extends ConsumerStatefulWidget {
   const BarcodeSearchInput({super.key});
@@ -37,8 +38,27 @@ class _BarcodeSearchInputState extends ConsumerState<BarcodeSearchInput> {
     _controller.clear();
     _focusNode.requestFocus();
 
-    if (result != null) {
-      AppToast.info(context, result);
+    final t = i18nOf(ref);
+
+    // 2+ eşleşme → picker sheet
+    if (result.needsPicker) {
+      final chosen = await showModalBottomSheet<Map<String, dynamic>>(
+        context: context,
+        isScrollControlled: true,
+        builder: (ctx) => MultiMatchPickerSheet(
+          matches: result.matches!,
+          t: t,
+        ),
+      );
+      if (chosen != null && mounted) {
+        final msg = notifier.addByPickedProduct(chosen, result.barcode ?? value.trim());
+        AppToast.info(context, msg);
+      }
+      return;
+    }
+
+    if (result.messageKey != null) {
+      AppToast.info(context, result.messageKey!);
     }
   }
 

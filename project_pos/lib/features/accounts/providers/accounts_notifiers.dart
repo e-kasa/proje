@@ -45,12 +45,14 @@ class AccountSummaryNotifier extends StateNotifier<AccountSummaryState> {
         _service.getAccountSummary(),
         _service.getOverdueAccounts(),
       ]);
+      if (!mounted) return;
       state = state.copyWith(
         summary: results[0] as Map<String, dynamic>?,
         overdueList: results[1] as List<Map<String, dynamic>>,
         isLoading: false,
       );
     } catch (e) {
+      if (!mounted) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -107,6 +109,7 @@ class OverdueTrackingNotifier extends StateNotifier<OverdueTrackingState> {
     state = state.copyWith(loadingCustomer: true, errorCustomer: null);
     try {
       final data = await _service.getOverdueAccounts(accountType: 'CUSTOMER');
+      if (!mounted) return;
       data.sort((a, b) {
         final dateA = a['dueDate']?.toString() ?? '';
         final dateB = b['dueDate']?.toString() ?? '';
@@ -114,6 +117,7 @@ class OverdueTrackingNotifier extends StateNotifier<OverdueTrackingState> {
       });
       state = state.copyWith(customerOverdue: data, loadingCustomer: false);
     } catch (e) {
+      if (!mounted) return;
       state =
           state.copyWith(loadingCustomer: false, errorCustomer: e.toString());
     }
@@ -123,6 +127,7 @@ class OverdueTrackingNotifier extends StateNotifier<OverdueTrackingState> {
     state = state.copyWith(loadingSupplier: true, errorSupplier: null);
     try {
       final data = await _service.getOverdueAccounts(accountType: 'SUPPLIER');
+      if (!mounted) return;
       data.sort((a, b) {
         final dateA = a['dueDate']?.toString() ?? '';
         final dateB = b['dueDate']?.toString() ?? '';
@@ -130,6 +135,7 @@ class OverdueTrackingNotifier extends StateNotifier<OverdueTrackingState> {
       });
       state = state.copyWith(supplierOverdue: data, loadingSupplier: false);
     } catch (e) {
+      if (!mounted) return;
       state =
           state.copyWith(loadingSupplier: false, errorSupplier: e.toString());
     }
@@ -226,8 +232,10 @@ class AccountStatementNotifier extends StateNotifier<AccountStatementState> {
         startDate: _fmt(state.startDate),
         endDate: _fmt(state.endDate),
       );
+      if (!mounted) return;
       state = state.copyWith(statement: data, isLoading: false);
     } catch (e) {
+      if (!mounted) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }

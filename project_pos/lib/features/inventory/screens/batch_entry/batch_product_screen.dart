@@ -17,6 +17,7 @@ import 'package:go_router/go_router.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/features/inventory/screens/batch_entry/widgets/document_analyze_result_sheet.dart';
+import 'widgets/multi_match_picker_sheet.dart';
 import 'providers/batch_entry_provider.dart';
 import 'models/batch_entry_models.dart';
 import 'widgets/batch_header_form.dart';
@@ -164,7 +165,14 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
     }
 
     if (!mounted) return;
+    await _analyzeBytes(fileBytes!, fileName, t);
+  }
 
+  /// Dosya bytes'ını /document/analyze endpoint'ine gönder, sonucu göster.
+  /// Bu metot `_uploadDocument` tarafından çağrılır; hata halinde SnackBar
+  /// "Tekrar Dene" action'ıyla aynı bytes ile yeniden denetlenir.
+  Future<void> _analyzeBytes(
+      Uint8List fileBytes, String fileName, String Function(String) t) async {
     // 3. Loading dialog
     showDialog(
       context: context,
@@ -236,20 +244,57 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
           key = 'batch.document_parse_error';
         }
       }
-      AppToast.error(context, t(key));
+      // Retry action'lı SnackBar — kullanıcı aynı bytes'larla tekrar denesin.
+      // Toast + Future.delayed kullanılmıyor (fragile timer), action doğrudan
+      // _analyzeBytes'ı re-invoke eder.
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(
+            content: Text(t(key)),
+            backgroundColor: AppColors.danger,
+            duration: const Duration(seconds: 6),
+            action: SnackBarAction(
+              label: t('batch.retry_analyze'),
+              textColor: Colors.white,
+              onPressed: () => _analyzeBytes(fileBytes, fileName, t),
+            ),
+          ));
+      }
     }
   }
 
   Future<void> _addByBarcode() async {
     final input = _barcodeController.text.trim();
     if (input.isEmpty) return;
-    final msg =
+    final result =
         await ref.read(batchEntryProvider.notifier).addByBarcode(input);
     _barcodeController.clear();
     _barcodeFocus.requestFocus();
-    if (msg != null && mounted) {
-      final t = i18nOf(ref);
-      AppToast.info(context, _formatBarcodeMsg(msg, t));
+    if (!mounted) return;
+    final t = i18nOf(ref);
+
+    // 2+ eşleşme → kullanıcıya picker sheet göster
+    if (result.needsPicker) {
+      final chosen = await showModalBottomSheet<Map<String, dynamic>>(
+        context: context,
+        isScrollControlled: true,
+        builder: (ctx) => MultiMatchPickerSheet(
+          matches: result.matches!,
+          t: t,
+        ),
+      );
+      if (chosen != null && mounted) {
+        final msg = ref
+            .read(batchEntryProvider.notifier)
+            .addByPickedProduct(chosen, result.barcode ?? input);
+        AppToast.info(context, _formatBarcodeMsg(msg, t));
+      }
+      return;
+    }
+
+    if (result.messageKey != null) {
+      AppToast.info(context, _formatBarcodeMsg(result.messageKey!, t));
     }
   }
 
@@ -540,22 +585,28 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
 
   // ── BODY ─────────────────────────────────────────────────────────────────
   Widget _buildBody(BatchEntryState state, SectorConfig cfg, Function(String) t) {
-    return TabBarView(
-      controller: _tabController,
-      children: _tabs.map((tab) {
-        final rows = _filteredRows(state.rows, tab.status);
-        if (rows.isEmpty) return _buildEmptyState(tab.status, t);
-        return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
-          itemCount: rows.length,
-          itemBuilder: (_, i) => _BatchRowCard(
-            row: rows[i],
-            rowIndex: i,
-            currency: _currency,
-            cfg: cfg,
-          ),
-        );
-      }).toList(),
+    // Submit sırasında satır düzenlemesini engelle — concurrent edit riski
+    // ortadan kalksın. Kaydet butonu zaten CircularProgress gösteriyor,
+    // listeyi pointer-ignore ile kilitlemek yeterli.
+    return IgnorePointer(
+      ignoring: state.isSubmitting,
+      child: TabBarView(
+        controller: _tabController,
+        children: _tabs.map((tab) {
+          final rows = _filteredRows(state.rows, tab.status);
+          if (rows.isEmpty) return _buildEmptyState(tab.status, t);
+          return ListView.builder(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+            itemCount: rows.length,
+            itemBuilder: (_, i) => _BatchRowCard(
+              row: rows[i],
+              rowIndex: i,
+              currency: _currency,
+              cfg: cfg,
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
@@ -760,14 +811,17 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
                           ),
                         ),
                       )
-                    : GestureDetector(
-                        onTap: state.rows.isEmpty
-                            ? null
-                            : () => _submit(state),
-                        child: Container(
+                    : Builder(builder: (ctx) {
+                        // Tüm satırlar zaten saved ise submit mantıksız
+                        final hasPending = state.rows
+                            .any((r) => r.status != RowStatus.saved);
+                        final canSubmit = state.rows.isNotEmpty && hasPending;
+                        return GestureDetector(
+                          onTap: !canSubmit ? null : () => _submit(state),
+                          child: Container(
                           width: 140,
                           decoration: BoxDecoration(
-                            gradient: state.rows.isEmpty
+                            gradient: !canSubmit
                                 ? const LinearGradient(
                                     colors: [
                                       Color(0xFFc8ccd8),
@@ -776,7 +830,7 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
                                   )
                                 : AppGradients.primaryGradient,
                             borderRadius: BorderRadius.circular(14),
-                            boxShadow: state.rows.isEmpty
+                            boxShadow: !canSubmit
                                 ? []
                                 : [
                                     BoxShadow(
@@ -806,7 +860,8 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
                             ],
                           ),
                         ),
-                      ),
+                      );
+                      }),
               ),
             ],
           ),
@@ -1243,6 +1298,8 @@ class _BatchRowEditDialog extends ConsumerStatefulWidget {
 }
 
 class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
+  String Function(String) get t => i18nOf(ref);
+
   late final TextEditingController _nameCtrl;
   late final TextEditingController _barcodeCtrl;
   late final TextEditingController _oemCtrl;
@@ -1357,40 +1414,54 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
   /// Kart alış fiyatını TÜM variant satırlarına uygular (üzerine yazar).
   void _applyPurchaseToAllVariants(BatchEntryRow row) {
     final val = double.tryParse(_purchaseCtrl.text.replaceAll(',', '.')) ?? 0;
-    if (val <= 0) return;
+    if (val <= 0) {
+      AppToast.warning(context, t('batch.apply_all_no_price'));
+      return;
+    }
+    final count = row.variantRows.length;
     _update(
       purchasePrice: val,
       variantRows: row.variantRows.map((vr) => vr.copyWith(purchasePrice: val)).toList(),
     );
+    AppToast.success(context, '$count ${t('batch.apply_all_success')}');
   }
 
   /// Kart satış fiyatını TÜM variant satırlarına uygular (üzerine yazar).
   void _applySaleToAllVariants(BatchEntryRow row) {
     final val = double.tryParse(_saleCtrl.text.replaceAll(',', '.')) ?? 0;
-    if (val <= 0) return;
+    if (val <= 0) {
+      AppToast.warning(context, t('batch.apply_all_no_price'));
+      return;
+    }
+    final count = row.variantRows.length;
     _update(
       salePrice: val,
       variantRows: row.variantRows.map((vr) => vr.copyWith(salePrice: val)).toList(),
     );
+    AppToast.success(context, '$count ${t('batch.apply_all_success')}');
   }
 
   /// Toplam satır fiyatını variant adet oranına göre birim fiyatlara böl.
   /// Senaryoda: 5 beden Tshirt × toplam 500 TL → her variant 100 TL birim fiyat.
   /// [which] 'purchase' | 'sale' | 'both' — hangi alan güncellensin.
+  /// Not: copyWith çağrısında clearXxx flag'i kullanılmazsa mevcut değer korunur
+  /// (null parametre "temizle" anlamına gelmez).
   void _distributeTotalToVariants(BatchEntryRow row, double totalPrice, String which) {
     if (totalPrice <= 0 || row.variantRows.isEmpty) return;
     final totalQty = row.variantRows.fold<int>(0, (s, v) => s + v.quantity);
     if (totalQty <= 0) return;
     final splitUnitPrice = totalPrice / totalQty;
+    final touchPurchase = which == 'purchase' || which == 'both';
+    final touchSale     = which == 'sale'     || which == 'both';
     final updated = row.variantRows.map((vr) {
       return vr.copyWith(
-        purchasePrice: (which == 'purchase' || which == 'both') ? splitUnitPrice : null,
-        salePrice:     (which == 'sale'     || which == 'both') ? splitUnitPrice : null,
+        purchasePrice: touchPurchase ? splitUnitPrice : null,
+        salePrice:     touchSale     ? splitUnitPrice : null,
       );
     }).toList();
     _update(
-      purchasePrice: (which == 'purchase' || which == 'both') ? splitUnitPrice : null,
-      salePrice:     (which == 'sale'     || which == 'both') ? splitUnitPrice : null,
+      purchasePrice: touchPurchase ? splitUnitPrice : null,
+      salePrice:     touchSale     ? splitUnitPrice : null,
       variantRows: updated,
     );
     // Ctrl'leri de senkronize et ki field içinde görünüm tutarlı olsun
@@ -3606,35 +3677,70 @@ class _ResultSheet extends StatelessWidget {
           ),
           if (result.errorMessages.isNotEmpty) ...[
             const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.danger.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: result.errorMessages
-                    .map((e) => Padding(
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 2),
-                          child: Row(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              const Icon(Icons.error_outline,
-                                  size: 14,
-                                  color: AppColors.danger),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                  child: Text(e,
+            Theme(
+              // ExpansionTile default divider gözükmesin
+              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.danger.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ExpansionTile(
+                  initiallyExpanded: true,
+                  tilePadding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 4),
+                  childrenPadding:
+                      const EdgeInsets.fromLTRB(14, 0, 14, 12),
+                  leading: const Icon(Icons.error_outline,
+                      size: 18, color: AppColors.danger),
+                  title: Text(
+                    '${t('batch.error_rows_title')} (${result.errorMessages.length})',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.danger,
+                    ),
+                  ),
+                  children: result.errorMessages
+                      .asMap()
+                      .entries
+                      .map((entry) => Padding(
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 3),
+                            child: Row(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 20,
+                                  height: 20,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.danger
+                                        .withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '${entry.key + 1}',
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.danger,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(entry.value,
                                       style: const TextStyle(
                                           fontSize: 12,
-                                          color: AppColors.danger))),
-                            ],
-                          ),
-                        ))
-                    .toList(),
+                                          color: AppColors.danger)),
+                                ),
+                              ],
+                            ),
+                          ))
+                      .toList(),
+                ),
               ),
             ),
           ],
@@ -4722,35 +4828,38 @@ class _BatchVariantBuilderState extends State<_BatchVariantBuilder> {
   /// Parent değişikliklerini (örn. _distributeTotalToVariants ile fiyat
   /// güncellemesi) controller text'lerine yansıt.
   /// Aksi halde row.purchasePrice değişse de UI'da eski değer görünür.
+  /// Cursor pozisyonu sonuna alınır (senkronize edilen değer kullanıcı girdisi
+  /// değil, external patch; cursor kaybı zaten kabul edilebilir UX).
   @override
   void didUpdateWidget(covariant _BatchVariantBuilder oldWidget) {
     super.didUpdateWidget(oldWidget);
+    void setTextSafe(TextEditingController c, String value) {
+      if (c.text == value) return;
+      c.value = TextEditingValue(
+        text: value,
+        selection: TextSelection.collapsed(offset: value.length),
+      );
+    }
+
     for (final row in widget.variantRows) {
       // purchase
       final pCtrl = _ctrls['${row.id}_purchase'];
       if (pCtrl != null) {
         final expected = (row.purchasePrice ?? widget.defaultPurchasePrice)
             .toStringAsFixed(2);
-        if (pCtrl.text != expected && expected != '0.00') {
-          pCtrl.text = expected;
-        }
+        if (expected != '0.00') setTextSafe(pCtrl, expected);
       }
       // sale
       final sCtrl = _ctrls['${row.id}_sale'];
       if (sCtrl != null) {
         final expected = (row.salePrice ?? widget.defaultSalePrice)
             .toStringAsFixed(2);
-        if (sCtrl.text != expected && expected != '0.00') {
-          sCtrl.text = expected;
-        }
+        if (expected != '0.00') setTextSafe(sCtrl, expected);
       }
       // quantity
       final qCtrl = _ctrls['${row.id}_quantity'];
       if (qCtrl != null) {
-        final expected = row.quantity.toString();
-        if (qCtrl.text != expected) {
-          qCtrl.text = expected;
-        }
+        setTextSafe(qCtrl, row.quantity.toString());
       }
     }
   }

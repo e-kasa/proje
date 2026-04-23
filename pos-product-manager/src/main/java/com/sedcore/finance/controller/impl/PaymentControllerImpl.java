@@ -98,7 +98,8 @@ public class PaymentControllerImpl implements PaymentController {
             if (purchaseId != null) {
                 return ResponseEntity.ok(ApiResponse.success(paymentService.getByPurchase(purchaseId)));
             }
-            throw new TOpenException(new TOpenMessage(TMessageType.FIELD_IS_REQUIRED_1001));
+            // Filtresiz — firmaya ait tum odemeler (AccountsHub).
+            return ResponseEntity.ok(ApiResponse.success(paymentService.getAll()));
         } catch (TOpenException e) {
             throw e;
         } catch (Exception e) {

@@ -219,6 +219,14 @@ public class PaymentServiceImpl
         return dao.findByPurchaseId(purchaseId).stream().map(this::mapToResponse).toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<PaymentResponse> getAll() {
+        List<PaymentResponse> out = new java.util.ArrayList<>();
+        dao.findAll().forEach(p -> out.add(mapToResponse(p)));
+        return out;
+    }
+
     // =========================================================================
     // İPTAL / ONAY
     // =========================================================================

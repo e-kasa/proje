@@ -113,18 +113,6 @@ class StockService {
     }
   }
 
-  /// Toplu stok guncelleme yapar.
-  ///
-  /// [items] her biri `productId` ve `quantity` iceren liste.
-  Future<List<Map<String, dynamic>>> bulkStockUpdate(List<Map<String, dynamic>> items) async {
-    try {
-      final response = await _apiClient.post('product/api/v1/stock-movements/bulk-update', data: {'items': items});
-      return List<Map<String, dynamic>>.from(response.data['data'] ?? []);
-    } catch (e) {
-      rethrow;
-    }
-  }
-
   /// Depolar/magazalar arasi stok transferi olusturur.
   Future<Map<String, dynamic>> createTransfer(Map<String, dynamic> data) async {
     try {

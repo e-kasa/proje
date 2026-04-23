@@ -214,6 +214,16 @@ class BatchVariantRow {
 
   bool get isValid => size.trim().isNotEmpty && quantity > 0;
 
+  /// Submit öncesi katı kontrol: fiyat alanı karttan devralınabilir, ama
+  /// sonuçta **etkili** alış & satış fiyatı > 0 olmalı. Aksi halde backend
+  /// (purchase) kırılır. UI tarafı bu getter'ı submit-guard'da kullanmalı.
+  bool isSubmittableWith({double? parentPurchase, double? parentSale}) {
+    if (!isValid) return false;
+    final effPurchase = purchasePrice ?? parentPurchase ?? 0;
+    final effSale = salePrice ?? parentSale ?? 0;
+    return effPurchase > 0 && effSale > 0;
+  }
+
   BatchVariantRow copyWith({
     String? size,
     String? color,

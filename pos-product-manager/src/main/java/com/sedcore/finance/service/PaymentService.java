@@ -27,6 +27,9 @@ public interface PaymentService extends BaseDbService<Payment> {
     /** Satın almaya ait ödemeler */
     List<PaymentResponse> getByPurchase(String purchaseId);
 
+    /** Filtresiz — firmaya ait tüm ödemeler (AccountsHub icin). */
+    List<PaymentResponse> getAll();
+
     /** Ödemeyi iptal et */
     PaymentResponse cancelPayment(String id, String reason);
 

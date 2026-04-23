@@ -515,10 +515,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
     // Backend: variant.barcodes[].barcodeCode  (primary öncelikli)
     final barcodeList = (variant['barcodes'] as List?)
         ?.cast<Map<String, dynamic>>();
-    final primaryBarcode = barcodeList
-        ?.firstWhere((b) => b['isPrimary'] == true, orElse: () => barcodeList.first)
-        ['barcodeCode']
-        ?.toString();
+    String? primaryBarcode;
+    if (barcodeList != null && barcodeList.isNotEmpty) {
+      final picked = barcodeList.firstWhere(
+        (b) => b['isPrimary'] == true,
+        orElse: () => barcodeList.first,
+      );
+      primaryBarcode = picked['barcodeCode']?.toString();
+    }
     final rawBarcode = variant['barcode']?.toString() ?? primaryBarcode;
     final vp = _VariantPrint(
       variantId:      variant['id']?.toString() ?? '',
@@ -537,7 +541,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
         borderRadius: BorderRadius.circular(9),
         border: Border.all(color: AppColors.border),
       ),
-      child: Row(
+      child: IntrinsicHeight(
+        child: Row(
         children: [
           // ── Sol: isim + SKU + barkod bilgisi ────────────────────────
           Expanded(
@@ -640,6 +645,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
             ),
           ),
         ],
+      ),
       ),
     );
   }

@@ -1871,8 +1871,7 @@ VALUES
     ('bnd-bt208-0000-0000-000000000208', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.hint_attr_name',    'ör: Renk, Beden, Model',                                       'e.g. Color, Size, Model'),
 
     -- ── BATCH — UX iyileştirme (sprint 3) ─────────────────────────────
-    ('bnd-bt209-0000-0000-000000000209', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.apply_to_variants',       'Varyantlara Uygula',                                           'Apply to Variants'),
-    ('bnd-bt210-0000-0000-000000000210', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.sale_price_locked_tooltip','Satış fiyatı sistemden gelir, değiştirilemez',                'Sale price is set by system, cannot be changed'),
+    -- NOT: batch.apply_to_variants zaten bt160'ta, batch.system_price_locked_tooltip bt198'de tanımlı.
     ('bnd-bt211-0000-0000-000000000211', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.apply_all_success',       'varyanta uygulandı',                                           'variants updated'),
     ('bnd-bt212-0000-0000-000000000212', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.apply_all_no_price',      'Önce kart fiyatını girin',                                     'Enter card price first'),
     ('bnd-bt213-0000-0000-000000000213', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.retry_analyze',           'Tekrar Dene',                                                  'Retry'),

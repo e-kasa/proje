@@ -10,6 +10,22 @@ import '../models/batch_entry_models.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/features/inventory/services/document_analyze_service.dart';
 
+/// Barkod arama sonucu.
+/// [matches] 2+ ise UI picker sheet açmalı, sonra [BatchEntryNotifier.addByPickedProduct]
+/// çağırmalı. Aksi halde satır zaten [messageKey] ile eklenmiş demektir.
+class BarcodeAddResult {
+  /// UI tarafına gösterilecek i18n mesaj anahtarı (pipe ile parametreler).
+  final String? messageKey;
+  /// 2+ eşleşme olduğunda dolu; UI bottom-sheet'te listeler.
+  final List<Map<String, dynamic>>? matches;
+  /// Picker'a bağlı barkod — seçim sonrasında fallback barkod olarak kullanılır.
+  final String? barcode;
+
+  const BarcodeAddResult({this.messageKey, this.matches, this.barcode});
+
+  bool get needsPicker => matches != null && matches!.length >= 2;
+}
+
 class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
   final ProductService _productService;
   // ignore: unused_field
@@ -23,8 +39,8 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
   ) : super(BatchEntryState());
 
   // --- Barkod/Arama ile Urun Ekle -------------------------------------------
-  Future<String?> addByBarcode(String input) async {
-    if (input.trim().isEmpty) return null;
+  Future<BarcodeAddResult> addByBarcode(String input) async {
+    if (input.trim().isEmpty) return const BarcodeAddResult();
     final trimmed = input.trim();
 
     // Ayni barkod zaten tabloda var mi?
@@ -36,13 +52,20 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
       final row = updatedRows[existingIndex];
       updatedRows[existingIndex] = row.copyWith(quantity: row.quantity + 1);
       state = state.copyWith(rows: updatedRows);
-      return 'batch.barcode_qty_increased|${row.productName}|${row.quantity + 1}';
+      return BarcodeAddResult(
+        messageKey: 'batch.barcode_qty_increased|${row.productName}|${row.quantity + 1}',
+      );
     }
 
     // Backend'te ara
     try {
       final products =
           await _productService.getProducts(search: trimmed, size: 5);
+
+      // ── 2+ eşleşme → UI picker gereksin ─────────────────────────────────
+      if (products.length >= 2) {
+        return BarcodeAddResult(matches: products, barcode: trimmed);
+      }
 
       if (products.isNotEmpty) {
         final p = products.first;
@@ -66,6 +89,30 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
               }
               if (oemCodes.length >= 3) break;
             }
+          }
+        }
+
+        // ── Varyant özetini populate et (PDF akışıyla simetri) ──────────────
+        // Barkod okutulunca kart detayda "N varyant var" sayısı ve liste görünsün.
+        final existingVariantsList = <Map<String, dynamic>>[];
+        int? existingVariantCount;
+        if (variants != null && variants.isNotEmpty) {
+          existingVariantCount = variants.length;
+          final matchedSku = p['sku']?.toString();
+          for (final v in variants) {
+            if (v is! Map) continue;
+            existingVariantsList.add({
+              'variantId': v['id']?.toString() ?? v['variantId']?.toString(),
+              'sku': v['sku']?.toString(),
+              'name': v['name']?.toString() ?? v['variantName']?.toString(),
+              'attributes': v['attributes'] ?? v['attributeValues'],
+              'currentStock': (v['currentStock'] as num?)?.toDouble() ??
+                  (v['stock'] as num?)?.toDouble(),
+              'salePrice': (v['sellingPrice'] as num?)?.toDouble() ??
+                  (v['salePrice'] as num?)?.toDouble(),
+              'shelfLocationCode': v['shelfLocationCode']?.toString(),
+              'isMatched': matchedSku != null && v['sku'] == matchedSku,
+            });
           }
         }
         // KURAL: Mevcut ürün eşleşmesinde
@@ -94,9 +141,13 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
           existingShelfLocation: p['shelfLocationCode']?.toString(),
           existingBrandName: p['brand']?.toString(),
           existingOemCodes: oemCodes,
+          existingVariantCount: existingVariantCount,
+          existingVariants: existingVariantsList,
         );
         state = state.copyWith(rows: [row, ...state.rows]);
-        return 'batch.barcode_added|${row.productName}';
+        return BarcodeAddResult(
+          messageKey: 'batch.barcode_added|${row.productName}',
+        );
       }
     } catch (e) {
       AppLogger.error('Barkod arama hatasi', tag: 'BatchEntry', error: e);
@@ -109,7 +160,83 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
       vatRate: 20.0,
     );
     state = state.copyWith(rows: [row, ...state.rows]);
-    return 'batch.new_product_row_opened';
+    return const BarcodeAddResult(messageKey: 'batch.new_product_row_opened');
+  }
+
+  /// Multi-match picker'dan seçilen ürünü satır olarak ekle.
+  /// `addByBarcode` ile aynı satır yapısını üretir — sadece [products.first]
+  /// yerine kullanıcının seçtiği ürün kullanılır.
+  String addByPickedProduct(Map<String, dynamic> p, String barcodeFallback) {
+    final sysSale = (p['sellingPrice'] as num?)?.toDouble() ??
+        (p['basePrice'] as num?)?.toDouble();
+    final sysPurchase = (p['purchasePrice'] as num?)?.toDouble();
+    final sysStock = (p['stock'] as num?)?.toDouble();
+    final oemCodes = <String>[];
+    final variants = p['variants'] as List?;
+    if (variants != null) {
+      for (final v in variants) {
+        final oems = (v as Map?)?['oemNumbers'] as List?;
+        if (oems != null) {
+          for (final o in oems) {
+            final code = (o as Map?)?['oemNumber']?.toString();
+            if (code != null && code.isNotEmpty) {
+              oemCodes.add(code);
+              if (oemCodes.length >= 3) break;
+            }
+          }
+          if (oemCodes.length >= 3) break;
+        }
+      }
+    }
+
+    final existingVariantsList = <Map<String, dynamic>>[];
+    int? existingVariantCount;
+    if (variants != null && variants.isNotEmpty) {
+      existingVariantCount = variants.length;
+      final matchedSku = p['sku']?.toString();
+      for (final v in variants) {
+        if (v is! Map) continue;
+        existingVariantsList.add({
+          'variantId': v['id']?.toString() ?? v['variantId']?.toString(),
+          'sku': v['sku']?.toString(),
+          'name': v['name']?.toString() ?? v['variantName']?.toString(),
+          'attributes': v['attributes'] ?? v['attributeValues'],
+          'currentStock': (v['currentStock'] as num?)?.toDouble() ??
+              (v['stock'] as num?)?.toDouble(),
+          'salePrice': (v['sellingPrice'] as num?)?.toDouble() ??
+              (v['salePrice'] as num?)?.toDouble(),
+          'shelfLocationCode': v['shelfLocationCode']?.toString(),
+          'isMatched': matchedSku != null && v['sku'] == matchedSku,
+        });
+      }
+    }
+
+    final row = BatchEntryRow(
+      barcode: p['barcode']?.toString() ?? barcodeFallback,
+      productName: p['name']?.toString() ?? '',
+      brandName: p['brand']?.toString(),
+      categoryId: p['categoryId']?.toString(),
+      categoryName: p['categoryName']?.toString(),
+      purchasePrice: 0,
+      salePrice: sysSale ?? 0,
+      vatRate: (p['taxRate'] as num?)?.toDouble() ?? 20.0,
+      quantity: 1,
+      status: RowStatus.existing,
+      existingProductId: p['id']?.toString(),
+      existingVariantId: p['variantId']?.toString(),
+      existingVariantSku: p['sku']?.toString(),
+      existingCurrentStock: sysStock,
+      existingSalePrice: sysSale,
+      existingPurchasePrice: sysPurchase,
+      existingLastPurchasePrice: sysPurchase,
+      existingShelfLocation: p['shelfLocationCode']?.toString(),
+      existingBrandName: p['brand']?.toString(),
+      existingOemCodes: oemCodes,
+      existingVariantCount: existingVariantCount,
+      existingVariants: existingVariantsList,
+    );
+    state = state.copyWith(rows: [row, ...state.rows]);
+    return 'batch.barcode_added|${row.productName}';
   }
 
   // --- Döküman Analizi'nden Satır Ekle ----------------------------------------
@@ -641,10 +768,16 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
         claim: claimInfo,
       );
     } catch (e) {
-      // Tüm satırları error yap
+      // Network/parse hatası → satırlar "saving"de takılı kalmasın.
+      // Her satırın ORİJİNAL status'una dön (existing→existing, new→newProduct).
+      // Hata mesajı UI'a rethrow ile gider; satırların errorMessage'ı set edilmez
+      // (çünkü satır başı hata değil, toplu istek hatası).
+      final pendingIds = pendingRows.map((p) => p.id).toSet();
       final updatedRows = state.rows.map((r) {
-        if (!pendingRows.any((p) => p.id == r.id)) return r;
-        return r.copyWith(status: RowStatus.error, errorMessage: '$e');
+        if (!pendingIds.contains(r.id)) return r;
+        // saving iken sahip olduğu özgün status'u bul
+        final original = pendingRows.firstWhere((p) => p.id == r.id);
+        return r.copyWith(status: original.status);
       }).toList();
       state = state.copyWith(rows: updatedRows, isSubmitting: false);
       rethrow;

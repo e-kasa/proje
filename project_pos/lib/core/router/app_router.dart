@@ -47,10 +47,7 @@ import 'package:project_pos/features/customers/screens/customer_list_screen.dart
 import 'package:project_pos/features/customers/screens/add_customer_screen.dart';
 import 'package:project_pos/features/customers/screens/customer_account_detail_screen.dart';
 // Accounts
-import 'package:project_pos/features/accounts/models/statement_args.dart';
-import 'package:project_pos/features/accounts/screens/account_summary_dashboard_screen.dart';
-import 'package:project_pos/features/accounts/screens/account_statement_screen.dart';
-import 'package:project_pos/features/accounts/screens/overdue_tracking_screen.dart';
+import 'package:project_pos/features/accounts/screens/accounts_hub_screen.dart';
 // Stock
 import 'package:project_pos/features/stock/screens/enhanced_stock_screen.dart';
 import 'package:project_pos/features/stock/screens/multi_warehouse_stock_screen.dart';
@@ -65,7 +62,6 @@ import 'package:project_pos/features/finance/screens/finance_dashboard_screen.da
 import 'package:project_pos/features/finance/screens/expense_list_screen.dart';
 import 'package:project_pos/features/finance/screens/add_expense_screen.dart';
 import 'package:project_pos/features/finance/screens/add_income_screen.dart';
-import 'package:project_pos/features/finance/screens/payment_list_screen.dart';
 import 'package:project_pos/features/finance/screens/cash_flow_screen.dart';
 // Reports
 import 'package:project_pos/features/reports/screens/reports_screen.dart';
@@ -433,10 +429,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const AddIncomeScreen(),
           ),
           GoRoute(
-            path: '/finance/payments',
-            builder: (context, state) => const PaymentListScreen(),
-          ),
-          GoRoute(
             path: '/finance/cash-flow',
             builder: (context, state) => const CashFlowScreen(),
           ),
@@ -500,22 +492,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/accounts',
-            builder: (context, state) => const AccountSummaryDashboardScreen(),
-          ),
-          GoRoute(
-            path: '/accounts/statement',
-            builder: (context, state) {
-              final args = StatementArgs.from(state.extra);
-              return AccountStatementScreen(
-                accountType: args?.accountType,
-                accountId: args?.accountId,
-                accountName: args?.accountName,
-              );
-            },
-          ),
-          GoRoute(
-            path: '/accounts/overdue',
-            builder: (context, state) => const OverdueTrackingScreen(),
+            builder: (context, state) => const AccountsHubScreen(),
           ),
           GoRoute(
             path: '/stock/movements',

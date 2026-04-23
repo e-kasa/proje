@@ -5,7 +5,6 @@ import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/services/service_locator.dart';
-import 'package:project_pos/features/accounts/widgets/statement_nav_button.dart';
 import 'package:project_pos/features/accounts/screens/payment_record_modal.dart';
 
 class SupplierAccountDetailScreen extends ConsumerStatefulWidget {
@@ -137,11 +136,6 @@ class _SupplierAccountDetailScreenState
         ),
         title: supplierName,
         actions: [
-          StatementNavButton(
-            accountType: 'SUPPLIER',
-            accountId: widget.supplierId,
-            accountName: supplierName,
-          ),
           IconButton(
             icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
             onPressed: _loadAll,

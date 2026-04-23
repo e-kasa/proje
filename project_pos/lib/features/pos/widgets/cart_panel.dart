@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
@@ -383,7 +384,33 @@ class _CustomerPickerSheetState extends ConsumerState<_CustomerPickerSheet> {
                       },
                     ),
         ),
-        const SizedBox(height: 16),
+        // Yeni müşteri ekle — /customers/add route'una yönlendir, dönüşte listeyi yenile
+        const Divider(height: 1),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          child: SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                await context.push('/customers/add');
+                if (!mounted) return;
+                _searchCtrl.clear();
+                setState(() { _loading = true; });
+                await _load();
+              },
+              icon: const Icon(Icons.person_add_alt_1, size: 18),
+              label: const Text('Yeni Müşteri Ekle'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ),
+        ),
       ]),
     );
   }

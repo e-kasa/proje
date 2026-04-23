@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
-import 'package:project_pos/features/accounts/widgets/statement_nav_button.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/features/accounts/screens/payment_record_modal.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
@@ -127,11 +126,6 @@ class _CustomerAccountDetailScreenState
         ),
         title: customerName,
         actions: [
-          StatementNavButton(
-            accountType: 'CUSTOMER',
-            accountId: widget.customerId,
-            accountName: customerName,
-          ),
           IconButton(
             icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
             onPressed: _loadAll,

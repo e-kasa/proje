@@ -1,13 +1,16 @@
 package com.sedcore.supplier.controller.impl;
 
+import com.sedcore.common.enums.CustomerType;
 import com.sedcore.supplier.entity.Supplier;
 import com.sedcore.finance.model.AccountTransactionResponse;
 import com.sedcore.supplier.model.SupplierAccountResponse;
 import com.sedcore.supplier.model.SupplierDto;
 import com.sedcore.supplier.model.SupplierPaymentDto;
 import com.sedcore.supplier.model.SupplierResponse;
+import com.sedcore.supplier.repository.SupplierRepository;
 import com.towpen.base.exceptions.ApiResponse;
 import com.sedcore.supplier.service.SupplierService;
+import org.springframework.transaction.annotation.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +35,7 @@ import java.util.stream.Collectors;
 public class SupplierControllerImpl {
 
     private final SupplierService supplierService;
+    private final SupplierRepository supplierRepository;
 
     // GET /product/api/v1/suppliers?search=...&isActive=true
     @GetMapping
@@ -144,22 +148,20 @@ public class SupplierControllerImpl {
     }
 
     // GET /product/api/v1/suppliers/stats
+    // DB-side COUNT queries — no findAll() / MAX_VALUE page.
+    @Transactional(readOnly = true)
     @GetMapping("/stats")
     public ResponseEntity<ApiResponse<Map<String, Object>>> stats() {
         try {
-            // Tüm aktif tedarikçileri çek (silinmemiş)
-            var allPage = supplierService.listSuppliers(PageRequest.of(0, Integer.MAX_VALUE), null);
+            long total = supplierRepository.countByIsDeleted(Boolean.FALSE);
+            long active = supplierRepository.countByIsActiveAndIsDeleted(Boolean.TRUE, Boolean.FALSE);
+            long corporate = supplierRepository.countByCustomerTypeAndIsDeleted(
+                    CustomerType.CORPORATE, Boolean.FALSE);
             Map<String, Object> result = new HashMap<>();
-            result.put("totalSuppliers", allPage.getTotalElements());
-            result.put("activeSuppliers",
-                allPage.stream().filter(s -> Boolean.TRUE.equals(s.getIsActive())).count());
-            result.put("inactiveSuppliers",
-                allPage.stream().filter(s -> !Boolean.TRUE.equals(s.getIsActive())).count());
-            result.put("corporateSuppliers",
-                allPage.stream()
-                    .filter(s -> s.getCustomerType() != null
-                        && s.getCustomerType().name().equals("CORPORATE"))
-                    .count());
+            result.put("totalSuppliers", total);
+            result.put("activeSuppliers", active);
+            result.put("inactiveSuppliers", total - active);
+            result.put("corporateSuppliers", corporate);
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (TOpenException e) {
 

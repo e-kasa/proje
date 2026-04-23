@@ -22,7 +22,10 @@ import java.time.LocalDateTime;
 @Table(name = "account_transactions", indexes = {
     @Index(name = "idx_customer_date", columnList = "customer_id,transaction_date"),
     @Index(name = "idx_reference", columnList = "reference_type,reference_id"),
-    @Index(name = "idx_transaction_type", columnList = "transaction_type")
+    @Index(name = "idx_transaction_type", columnList = "transaction_type"),
+    @Index(name = "idx_supplier_date", columnList = "supplier_id,transaction_date"),
+    @Index(name = "idx_overdue_hot", columnList = "is_cancelled,is_overdue,due_date"),
+    @Index(name = "idx_customer_cancel_date", columnList = "customer_id,is_cancelled,transaction_date")
 })
 @Getter @Setter
 @NoArgsConstructor
@@ -113,6 +116,12 @@ public class AccountTransaction extends TOpenSimpleCompanyEntity {
 
     @Column(name = "cancelled_by")
     private String cancelledBy; // İptal eden kullanıcı
+
+    // ===== OPTIMISTIC LOCKING =====
+    // Why: Eşzamanlı ödeme/iptal yazılımlarında lost update'i önler.
+    @Version
+    @Column(name = "version")
+    private Long version;
 
     // ===== HELPER METODLAR =====
 

@@ -1,11 +1,13 @@
 package com.sedcore.customer.controller.impl;
 
+import com.sedcore.common.enums.CustomerType;
 import com.sedcore.customer.entity.Customer;
 import com.sedcore.finance.model.AccountTransactionResponse;
 import com.sedcore.customer.model.CustomerAccountResponse;
 import com.sedcore.customer.model.CustomerDto;
 import com.sedcore.customer.model.CustomerPaymentDto;
 import com.sedcore.customer.repository.CustomerRepository;
+import org.springframework.transaction.annotation.Transactional;
 import com.towpen.base.exceptions.ApiResponse;
 import com.sedcore.customer.service.CustomerService;
 import com.sedcore.common.util.EntityAuditHelper;
@@ -36,21 +38,18 @@ public class CustomerControllerImpl {
     private final EntityAuditHelper entityAuditHelper;
 
     // GET /product/api/v1/customers
+    // DB-side search + active filter (LOWER/LIKE on name+phone+email).
+    @Transactional(readOnly = true)
     @GetMapping
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> list(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Boolean isActive
     ) {
         try {
-           List<Customer> all = (List<Customer>) customerRepository.findAll();
-            var filtered = all.stream()
-                .filter(c -> isActive == null || isActive.equals(c.getIsActive()))
-                .filter(c -> search == null
-                    || (c.getName() != null && c.getName().toLowerCase().contains(search.toLowerCase()))
-                    || (c.getPhone() != null && c.getPhone().contains(search))
-                    || (c.getEmail() != null && c.getEmail().toLowerCase().contains(search.toLowerCase())))
-                .map(this::toMap)
-                .collect(Collectors.toList());
+            List<Customer> rows = customerRepository.search(search, isActive);
+            List<Map<String, Object>> filtered = rows.stream()
+                    .map(this::toMap)
+                    .collect(Collectors.toList());
             return ResponseEntity.ok(ApiResponse.success(filtered));
         } catch (TOpenException e) {
 
@@ -177,15 +176,19 @@ public class CustomerControllerImpl {
     }
 
     // GET /product/api/v1/customers/stats
+    // DB-side COUNT queries — no findAll().
+    @Transactional(readOnly = true)
     @GetMapping("/stats")
     public ResponseEntity<ApiResponse<Map<String, Object>>> stats() {
         try {
-            List<Customer>  all =( List<Customer> ) customerRepository.findAll();
+            long active = customerRepository.countByIsActive(Boolean.TRUE);
+            long inactive = customerRepository.countByIsActive(Boolean.FALSE);
+            long corporate = customerRepository.countByCustomerType(CustomerType.CORPORATE);
             Map<String, Object> stats = new HashMap<>();
-            stats.put("totalCustomers", all.size());
-            stats.put("activeCustomers", all.stream().filter(c -> Boolean.TRUE.equals(c.getIsActive())).count());
-            stats.put("inactiveCustomers", all.stream().filter(c -> !Boolean.TRUE.equals(c.getIsActive())).count());
-            stats.put("corporateCustomers", all.stream().filter(c -> c.getCustomerType() != null && c.getCustomerType().name().equals("CORPORATE")).count());
+            stats.put("totalCustomers", active + inactive);
+            stats.put("activeCustomers", active);
+            stats.put("inactiveCustomers", inactive);
+            stats.put("corporateCustomers", corporate);
             return ResponseEntity.ok(ApiResponse.success(stats));
         } catch (Exception e) {
             log.error("Exception occurred", e);

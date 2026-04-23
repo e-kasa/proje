@@ -9,9 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.towpen.base.enums.model.TMessageType;
-import com.towpen.base.exceptions.TOpenException;
-import com.towpen.base.restservice.model.TOpenMessage;
 import com.sedcore.common.util.ExceptionMapper;
 
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +18,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("api/v1/account-statements")
@@ -32,6 +28,9 @@ public class AccountStatementControllerImpl {
     private final AccountTransactionRepository accountTransactionRepository;
 
     // GET /product/api/v1/account-statements
+    // DB-side filter + sort (idx_customer_cancel_date / idx_supplier_date);
+    // opening balance as a single scalar aggregate.
+    @Transactional(readOnly = true)
     @GetMapping
     public ResponseEntity<ApiResponse<AccountStatementEntry>> getStatement(
             @RequestParam String accountType,
@@ -41,30 +40,18 @@ public class AccountStatementControllerImpl {
         try {
             LocalDateTime startDate = startDateParam.atStartOfDay();
             LocalDateTime endDate = endDateParam.atTime(LocalTime.MAX);
-            List<AccountTransaction> transactions;
-            if ("CUSTOMER".equalsIgnoreCase(accountType)) {
-                transactions = accountTransactionRepository.findByCustomerId(accountId);
-            } else {
-                transactions = accountTransactionRepository.findBySupplierId(accountId);
-            }
 
-            // Filter by date and sort
-            List<AccountTransaction> filtered = transactions.stream()
-                    .filter(t -> !Boolean.TRUE.equals(t.getIsCancelled()))
-                    .filter(t -> t.getTransactionDate() != null
-                            && !t.getTransactionDate().isBefore(startDate)
-                            && !t.getTransactionDate().isAfter(endDate))
-                    .sorted(Comparator.comparing(AccountTransaction::getTransactionDate))
-                    .collect(Collectors.toList());
+            final boolean isCustomer = "CUSTOMER".equalsIgnoreCase(accountType);
 
-            // Calculate opening balance from transactions before startDate
-            BigDecimal openingBalance = transactions.stream()
-                    .filter(t -> !Boolean.TRUE.equals(t.getIsCancelled()))
-                    .filter(t -> t.getTransactionDate() != null && t.getTransactionDate().isBefore(startDate))
-                    .map(t -> t.getDebitAmount().subtract(t.getCreditAmount()))
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            List<AccountTransaction> filtered = isCustomer
+                    ? accountTransactionRepository.findCustomerStatement(accountId, startDate, endDate)
+                    : accountTransactionRepository.findSupplierStatement(accountId, startDate, endDate);
 
-            // Build transaction lines with running balance
+            BigDecimal openingBalance = isCustomer
+                    ? accountTransactionRepository.customerOpeningBalance(accountId, startDate)
+                    : accountTransactionRepository.supplierOpeningBalance(accountId, startDate);
+            if (openingBalance == null) openingBalance = BigDecimal.ZERO;
+
             BigDecimal runningBalance = openingBalance;
             BigDecimal totalDebit = BigDecimal.ZERO;
             BigDecimal totalCredit = BigDecimal.ZERO;
@@ -103,47 +90,37 @@ public class AccountStatementControllerImpl {
     }
 
     // GET /product/api/v1/account-statements/overdue
-    // PERF WARNING: findAll() loads entire table into memory — should be replaced with
-    // a repository query like findByIsOverdueTrue() or a native query with date filtering
+    // DB-side filter + sort via idx_overdue_hot; LEFT JOIN FETCH avoids N+1 on customer/supplier.
     @Transactional(readOnly = true)
     @GetMapping("/overdue")
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getOverdue(
             @RequestParam(required = false) String accountType) {
         try {
-            List<AccountTransaction> all = (List<AccountTransaction>) accountTransactionRepository.findAll();
-            List<AccountTransaction> overdue = all.stream()
-                    .filter(t -> !Boolean.TRUE.equals(t.getIsCancelled()))
-                    .filter(t -> Boolean.TRUE.equals(t.getIsOverdue()) || t.checkOverdue())
-                    .filter(t -> {
-                        if ("CUSTOMER".equalsIgnoreCase(accountType)) return t.getCustomer() != null;
-                        if ("SUPPLIER".equalsIgnoreCase(accountType)) return t.getSupplier() != null;
-                        return true;
-                    })
-                    .sorted(Comparator.comparing(t -> t.getDueDate() != null ? t.getDueDate() : java.time.LocalDate.MAX))
-                    .collect(Collectors.toList());
+            String typeParam = accountType == null ? null : accountType.toUpperCase();
+            List<AccountTransaction> overdue =
+                    accountTransactionRepository.findOverdue(typeParam);
 
-            List<Map<String, Object>> result = overdue.stream()
-                    .map(t -> {
-                        Map<String, Object> m = new HashMap<>();
-                        m.put("id", t.getId());
-                        m.put("transactionType", t.getTransactionType());
-                        m.put("debitAmount", t.getDebitAmount());
-                        m.put("creditAmount", t.getCreditAmount());
-                        m.put("dueDate", t.getDueDate());
-                        m.put("description", t.getDescription());
-                        m.put("referenceNumber", t.getReferenceNumber());
-                        if (t.getCustomer() != null) {
-                            m.put("accountType", "CUSTOMER");
-                            m.put("accountId", t.getCustomer().getId());
-                            m.put("accountName", t.getCustomer().getName());
-                        } else if (t.getSupplier() != null) {
-                            m.put("accountType", "SUPPLIER");
-                            m.put("accountId", t.getSupplier().getId());
-                            m.put("accountName", t.getSupplier().getName());
-                        }
-                        return m;
-                    })
-                    .collect(Collectors.toList());
+            List<Map<String, Object>> result = new ArrayList<>(overdue.size());
+            for (AccountTransaction t : overdue) {
+                Map<String, Object> m = new HashMap<>();
+                m.put("id", t.getId());
+                m.put("transactionType", t.getTransactionType());
+                m.put("debitAmount", t.getDebitAmount());
+                m.put("creditAmount", t.getCreditAmount());
+                m.put("dueDate", t.getDueDate());
+                m.put("description", t.getDescription());
+                m.put("referenceNumber", t.getReferenceNumber());
+                if (t.getCustomer() != null) {
+                    m.put("accountType", "CUSTOMER");
+                    m.put("accountId", t.getCustomer().getId());
+                    m.put("accountName", t.getCustomer().getName());
+                } else if (t.getSupplier() != null) {
+                    m.put("accountType", "SUPPLIER");
+                    m.put("accountId", t.getSupplier().getId());
+                    m.put("accountName", t.getSupplier().getName());
+                }
+                result.add(m);
+            }
 
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
@@ -153,50 +130,62 @@ public class AccountStatementControllerImpl {
     }
 
     // GET /product/api/v1/account-statements/summary
-    // PERF WARNING: findAll() loads entire table into memory — should be replaced with
-    // aggregate queries (SUM/COUNT) at the database level
+    // Single round-trip: one scalar aggregate @Query instead of findAll() + 4 stream passes.
+    // accountType parameter preserved for backwards-compat; aggregation already separates by entity.
     @Transactional(readOnly = true)
     @GetMapping("/summary")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getSummary(
             @RequestParam(required = false) String accountType) {
         try {
-            List<AccountTransaction> all = (List<AccountTransaction>) accountTransactionRepository.findAll();
-            List<AccountTransaction> active = all.stream()
-                    .filter(t -> !Boolean.TRUE.equals(t.getIsCancelled()))
-                    .collect(Collectors.toList());
+            Object[] agg = accountTransactionRepository.fetchSummaryAggregates();
+
+            // JPQL returns: [BigDecimal, BigDecimal, BigDecimal, Long, Long]
+            Object[] row = unwrapAggRow(agg);
+
+            BigDecimal totalCustomerDebt = asBigDecimal(row[0]);
+            BigDecimal totalSupplierDebt = asBigDecimal(row[1]);
+            BigDecimal totalOverdue = asBigDecimal(row[2]);
+            long overdueCount = asLong(row[3]);
+            long totalTxCount = asLong(row[4]);
 
             Map<String, Object> summary = new HashMap<>();
-
-            // Customer totals
-            BigDecimal totalCustomerDebt = active.stream()
-                    .filter(t -> t.getCustomer() != null)
-                    .map(t -> t.getDebitAmount().subtract(t.getCreditAmount()))
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            BigDecimal totalSupplierDebt = active.stream()
-                    .filter(t -> t.getSupplier() != null)
-                    .map(t -> t.getDebitAmount().subtract(t.getCreditAmount()))
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            BigDecimal totalOverdue = active.stream()
-                    .filter(t -> Boolean.TRUE.equals(t.getIsOverdue()) || t.checkOverdue())
-                    .map(t -> t.getDebitAmount().subtract(t.getCreditAmount()))
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            long overdueCount = active.stream()
-                    .filter(t -> Boolean.TRUE.equals(t.getIsOverdue()) || t.checkOverdue())
-                    .count();
-
             summary.put("totalCustomerReceivable", totalCustomerDebt);
             summary.put("totalSupplierPayable", totalSupplierDebt);
             summary.put("totalOverdueAmount", totalOverdue);
             summary.put("overdueTransactionCount", overdueCount);
-            summary.put("totalTransactionCount", (long) active.size());
+            summary.put("totalTransactionCount", totalTxCount);
 
             return ResponseEntity.ok(ApiResponse.success(summary));
         } catch (Exception e) {
             log.error("Hesap ozeti hatasi", e);
             throw ExceptionMapper.map(e);
         }
+    }
+
+    /**
+     * Hibernate can return either `Object[]` (5 columns) or `Object[]{Object[]{...}}`
+     * depending on dialect/version. Normalize to the inner row.
+     */
+    private static Object[] unwrapAggRow(Object[] agg) {
+        if (agg == null || agg.length == 0) {
+            return new Object[]{BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 0L, 0L};
+        }
+        if (agg.length == 1 && agg[0] instanceof Object[] inner) {
+            return inner;
+        }
+        return agg;
+    }
+
+    private static BigDecimal asBigDecimal(Object o) {
+        if (o == null) return BigDecimal.ZERO;
+        if (o instanceof BigDecimal bd) return bd;
+        if (o instanceof Number n) return BigDecimal.valueOf(n.doubleValue());
+        return BigDecimal.ZERO;
+    }
+
+    private static long asLong(Object o) {
+        if (o == null) return 0L;
+        if (o instanceof Number n) return n.longValue();
+        return 0L;
     }
 }

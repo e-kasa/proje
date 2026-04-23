@@ -405,7 +405,7 @@ BatchEntryRow(
     - Tesseract OCR fallback (taranmış PDF desteği)
 
   Sprint 3: Mimari iyileştirme
-    - lib/screens/ → lib/features/ migration (batch_entry + wizard)
+    - lib/screens/ → lib/features/ migration TAMAMLANDI (2026-04-23)
     - AsyncNotifier geçişi (StateNotifier'dan)
     - freezed paketi (copyWith boilerplate azalt)
     - Repository Layer ekle (Services → Repo → API)
@@ -768,7 +768,6 @@ Sprint 2: WebSocket stok alarm (/topic/stock/{companyCode})
 ### 15.6 Mimari Geçiş
 
 ```
-lib/screens/   → lib/features/  migration ZORUNLU (iki path paralel yürüyor)
-Batch entry + wizard hâlâ lib/screens/ altında (router bunu kullanıyor)
-Migration sırasında router güncellenmeli (app_router.dart)
+lib/screens/ → lib/features/ migration TAMAMLANDI (2026-04-23)
+Tüm ekranlar features/ altında; lib/screens/ kaldırıldı.
 ```

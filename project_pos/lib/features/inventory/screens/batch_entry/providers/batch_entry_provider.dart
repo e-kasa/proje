@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/services/product_service.dart';
 import 'package:project_pos/services/oem_service.dart';
@@ -5,9 +6,9 @@ import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/app_logger.dart';
 import 'package:project_pos/core/config/sector_config.dart';
 import 'package:project_pos/providers/sector_provider.dart';
-import 'package:project_pos/features/inventory/services/document_analyze_service.dart';
 import '../models/batch_entry_models.dart';
 import 'package:intl/intl.dart';
+import 'package:project_pos/features/inventory/services/document_analyze_service.dart';
 
 class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
   final ProductService _productService;
@@ -35,7 +36,7 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
       final row = updatedRows[existingIndex];
       updatedRows[existingIndex] = row.copyWith(quantity: row.quantity + 1);
       state = state.copyWith(rows: updatedRows);
-      return '${row.productName} — adet artirildi (${row.quantity + 1})';
+      return 'batch.barcode_qty_increased|${row.productName}|${row.quantity + 1}';
     }
 
     // Backend'te ara
@@ -45,26 +46,57 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
 
       if (products.isNotEmpty) {
         final p = products.first;
+        final sysSale = (p['sellingPrice'] as num?)?.toDouble() ??
+            (p['basePrice'] as num?)?.toDouble();
+        final sysPurchase = (p['purchasePrice'] as num?)?.toDouble();
+        final sysStock = (p['stock'] as num?)?.toDouble();
+        final oemCodes = <String>[];
+        // Varyantlar içinde oemNumbers alanı varsa topla
+        final variants = p['variants'] as List?;
+        if (variants != null) {
+          for (final v in variants) {
+            final oems = (v as Map?)?['oemNumbers'] as List?;
+            if (oems != null) {
+              for (final o in oems) {
+                final code = (o as Map?)?['oemNumber']?.toString();
+                if (code != null && code.isNotEmpty) {
+                  oemCodes.add(code);
+                  if (oemCodes.length >= 3) break;
+                }
+              }
+              if (oemCodes.length >= 3) break;
+            }
+          }
+        }
+        // KURAL: Mevcut ürün eşleşmesinde
+        //   • salePrice SİSTEM fiyatıyla AYNI olmalı (UI'da kilitli/read-only)
+        //     → existingSalePrice'dan otomatik prefill
+        //   • purchasePrice HER BATCH'te FARKLI (kullanıcı fatura fiyatını girer)
+        //     → 0 başlar, manuel doldurulur
         final row = BatchEntryRow(
           barcode: p['barcode']?.toString() ?? trimmed,
           productName: p['name']?.toString() ?? '',
           brandName: p['brand']?.toString(),
           categoryId: p['categoryId']?.toString(),
           categoryName: p['categoryName']?.toString(),
-          purchasePrice: (p['purchasePrice'] as num?)?.toDouble() ??
-              (p['basePrice'] as num?)?.toDouble() ?? 0,
-          salePrice: (p['sellingPrice'] as num?)?.toDouble() ??
-              (p['basePrice'] as num?)?.toDouble() ??
-              0,
+          purchasePrice: 0,           // Kullanıcı YENİ fatura alış fiyatı girer
+          salePrice: sysSale ?? 0,     // SİSTEM fiyatı (kilitli, değişmez)
           vatRate: (p['taxRate'] as num?)?.toDouble() ?? 20.0,
           quantity: 1,
           status: RowStatus.existing,
           existingProductId: p['id']?.toString(),
           existingVariantId: p['variantId']?.toString(),
           existingVariantSku: p['sku']?.toString(),
+          existingCurrentStock: sysStock,
+          existingSalePrice: sysSale,            // referans (sistem eski)
+          existingPurchasePrice: sysPurchase,    // referans
+          existingLastPurchasePrice: sysPurchase, // referans (son alış)
+          existingShelfLocation: p['shelfLocationCode']?.toString(),
+          existingBrandName: p['brand']?.toString(),
+          existingOemCodes: oemCodes,
         );
         state = state.copyWith(rows: [row, ...state.rows]);
-        return '${row.productName} eklendi';
+        return 'batch.barcode_added|${row.productName}';
       }
     } catch (e) {
       AppLogger.error('Barkod arama hatasi', tag: 'BatchEntry', error: e);
@@ -77,7 +109,7 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
       vatRate: 20.0,
     );
     state = state.copyWith(rows: [row, ...state.rows]);
-    return 'Yeni urun satiri acildi — bilgileri doldurun';
+    return 'batch.new_product_row_opened';
   }
 
   // --- Döküman Analizi'nden Satır Ekle ----------------------------------------
@@ -85,24 +117,131 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
     final newRows = items.map((item) {
       final vat = item.vatRate ?? 20.0;
       final vatIncluded = item.vatIncluded ?? false;
+      final discount = item.discountRate ?? 0.0;
       final unitId = _mapUnit(item.unit);
+      final productName =
+          item.matchedProductName ?? item.extractedName ?? item.rawText;
 
+      // ── Durum 2: Varyant grubu (birden fazla beden/renk satırı) ──────────
+      if (item.variantGroup && item.variants.isNotEmpty) {
+        // Toplam fiyatı variantlara bölüştür:
+        // Eğer faturada "Siyah Tshirt S/M/L/XL — toplam 500 TL" yazıyorsa ve
+        // her variant'ın kendi birim fiyatı yoksa → 500 / 5 adet = 100 TL/variant.
+        // v.unitPrice dolu ise (fatura her bedene ayrı fiyat yazmış) o kullanılır.
+        final totalVariantQty = item.variants
+            .fold<int>(0, (s, v) => s + (v.quantity?.toInt() ?? 1));
+        double? autoSplitUnitPrice;
+        if (item.totalPrice != null && totalVariantQty > 0) {
+          autoSplitUnitPrice = item.totalPrice! / totalVariantQty;
+        }
+
+        final variantRows = item.variants.map((v) {
+          final isSize = v.attributeType == 'SIZE';
+          // Öncelik: v.unitPrice (fatura satır fiyatı) → auto-split → extractedUnitPrice
+          final resolvedUnitPrice = v.unitPrice
+              ?? autoSplitUnitPrice
+              ?? item.extractedUnitPrice;
+          return BatchVariantRow(
+            size: isSize ? v.attributeValue : '',
+            color: isSize ? '' : v.attributeValue,
+            barcode: v.barcode ?? '',
+            quantity: v.quantity?.toInt() ?? 1,
+            purchasePrice: resolvedUnitPrice,
+            salePrice: resolvedUnitPrice,
+            attributesMap: {
+              if (isSize)
+                'Numara': v.attributeValue
+              else
+                'Renk': v.attributeValue,
+            },
+          );
+        }).toList();
+
+        if (item.isFound && item.matchedProductId != null) {
+          // Mevcut ürün — varyant grubu olarak existing
+          // KURAL: salePrice SİSTEM fiyatıyla aynı (kilitli),
+          // purchasePrice fatura fiyatından değişir.
+          return BatchEntryRow(
+            productName: productName,
+            barcode: item.extractedCode ?? '',
+            quantity: item.extractedQuantity?.toInt() ?? variantRows.fold(0, (s, v) => s + v.quantity),
+            purchasePrice: item.extractedUnitPrice ?? 0,      // yeni fatura
+            salePrice: item.matchedSalePrice?.toDouble() ?? 0, // SİSTEM (kilitli)
+            vatRate: vat,
+            vatIncluded: vatIncluded,
+            discountRate: discount,
+            unitId: unitId,
+            status: RowStatus.existing,
+            existingVariantId: item.matchedVariantId,
+            existingProductId: item.matchedProductId,
+            existingVariantSku: item.matchedSku,
+            existingCurrentStock: item.matchedCurrentStock,
+            existingSalePrice: item.matchedSalePrice,
+            existingPurchasePrice: item.matchedPurchasePrice,
+            existingLastPurchasePrice: item.matchedLastPurchasePrice,
+            existingShelfLocation: item.matchedShelfLocation,
+            existingBrandName: item.matchedBrandName,
+            existingOemCodes: item.matchedOemCodes,
+            existingVariantCount: item.matchedVariantCount,
+            existingVariants: item.matchedVariants
+                .map((v) => {
+                      'variantId': v.variantId,
+                      'sku': v.sku,
+                      'name': v.name,
+                      'attributes': v.attributes,
+                      'currentStock': v.currentStock,
+                      'salePrice': v.salePrice,
+                      'shelfLocationCode': v.shelfLocationCode,
+                      'isMatched': v.isMatched,
+                    })
+                .toList(),
+            variantRows: variantRows,
+          );
+        } else {
+          // Yeni ürün — varyant grubu
+          return BatchEntryRow(
+            productName: item.extractedName ?? item.rawText,
+            barcode: item.extractedCode ?? '',
+            quantity: item.extractedQuantity?.toInt() ?? variantRows.fold(0, (s, v) => s + v.quantity),
+            purchasePrice: item.extractedUnitPrice ?? 0,
+            salePrice: item.extractedUnitPrice ?? 0,
+            vatRate: vat,
+            vatIncluded: vatIncluded,
+            discountRate: discount,
+            unitId: unitId,
+            status: RowStatus.newProduct,
+            variantRows: variantRows,
+          );
+        }
+      }
+
+      // ── Durum 1: Tekil satır ──────────────────────────────────────────────
       if (item.isFound && item.matchedVariantId != null) {
+        // KURAL: Mevcut ürün eşleşmesinde salePrice SİSTEM fiyatıyla aynı
+        // kalır (kilitli). purchasePrice fatura fiyatıyla değişir (farklı).
+        final invoiceQty = item.extractedQuantity?.toInt() ?? 1;
         return BatchEntryRow(
-          productName: item.matchedProductName ??
-              item.extractedName ??
-              item.rawText,
+          productName: productName,
           barcode: item.extractedCode ?? '',
-          quantity: item.extractedQuantity?.toInt() ?? 1,
-          purchasePrice: item.extractedUnitPrice ?? 0,
-          salePrice: item.extractedUnitPrice ?? 0,
+          quantity: invoiceQty,          // başlangıçta teslim = fatura (kullanıcı değiştirir)
+          invoiceQuantity: invoiceQty,   // faturadan gelen asıl miktar
+          purchasePrice: item.extractedUnitPrice ?? 0,  // Yeni fatura alış fiyatı
+          salePrice: item.matchedSalePrice?.toDouble() ?? 0, // SİSTEM fiyatı (kilitli)
           vatRate: vat,
           vatIncluded: vatIncluded,
+          discountRate: discount,
           unitId: unitId,
           status: RowStatus.existing,
           existingVariantId: item.matchedVariantId,
           existingProductId: item.matchedProductId,
           existingVariantSku: item.matchedSku,
+          existingCurrentStock: item.matchedCurrentStock,
+          existingSalePrice: item.matchedSalePrice,
+          existingPurchasePrice: item.matchedPurchasePrice,
+          existingLastPurchasePrice: item.matchedLastPurchasePrice,
+          existingShelfLocation: item.matchedShelfLocation,
+          existingBrandName: item.matchedBrandName,
+          existingOemCodes: item.matchedOemCodes,
         );
       } else {
         return BatchEntryRow(
@@ -113,14 +252,18 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
           salePrice: item.extractedUnitPrice ?? 0,
           vatRate: vat,
           vatIncluded: vatIncluded,
+          discountRate: discount,
           unitId: unitId,
           status: RowStatus.newProduct,
         );
       }
     }).toList();
+
+    // Yeni satırları listenin başına ekle
     state = state.copyWith(rows: [...newRows, ...state.rows]);
   }
 
+  /// Faturadan gelen birim string'ini sistem birim koduna çevirir.
   String? _mapUnit(String? unit) => switch (unit?.toUpperCase()) {
     'ADET' || 'ADT' || 'PCS' => 'adet',
     'KG'   || 'KGR'          => 'kg',
@@ -128,7 +271,7 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
     'MT'   || 'MTR'          => 'mt',
     'M2'                     => 'm2',
     'GR'   || 'GRAM'         => 'gr',
-    _                        => 'adet',
+    _                        => 'adet',  // bilinmiyorsa adet default
   };
 
   // --- Manuel Satir Ekle -----------------------------------------------------
@@ -154,7 +297,10 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
     double? purchasePrice,
     double? salePrice,
     double? vatRate,
+    double? discountRate,
     int? quantity,
+    int? invoiceQuantity,
+    bool clearInvoiceQuantity = false,
     bool? isExpanded,
     String? description,
     String? shelfLocation,
@@ -179,7 +325,10 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
         purchasePrice: purchasePrice,
         salePrice: salePrice,
         vatRate: vatRate,
+        discountRate: discountRate,
         quantity: quantity,
+        invoiceQuantity: invoiceQuantity,
+        clearInvoiceQuantity: clearInvoiceQuantity,
         isExpanded: isExpanded,
         description: description,
         shelfLocation: shelfLocation,
@@ -260,24 +409,48 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
 
   // --- Validasyon ------------------------------------------------------------
   String? validateAll() {
-    if (state.rows.isEmpty) return 'En az bir urun ekleyin';
-    if (state.supplierId == null) return 'Tedarikci secimi zorunludur';
-    if (state.locationId == null) return 'Lokasyon secimi zorunludur';
+    if (state.rows.isEmpty) return 'batch.min_one_product';
+    if (state.supplierId == null) return 'batch.supplier_required';
+    if (state.locationId == null) return 'batch.location_required';
+
+    final isFootwear = _sectorConfig.type == SectorType.footwear;
 
     for (int i = 0; i < state.rows.length; i++) {
       final r = state.rows[i];
       if (r.isSaved) continue;
       if (r.isNew && r.productName.trim().isEmpty) {
-        return 'Satir ${i + 1}: Urun adi zorunludur';
+        return 'batch.row_product_name_required|${i + 1}';
       }
       if (r.isNew && (r.categoryId == null || r.categoryId!.isEmpty)) {
-        return 'Satir ${i + 1}: Kategori secimi zorunludur';
+        return 'batch.row_category_required|${i + 1}';
       }
-      if (r.salePrice <= 0) {
-        return 'Satir ${i + 1}: Satis fiyati 0\'dan buyuk olmalidir';
+      // Footwear: en az 1 geçerli varyant zorunlu (Mimari: her ürün min 1 variant)
+      if (r.isNew && isFootwear) {
+        final validVariants = r.variantRows.where((v) => v.isValid).length;
+        if (validVariants == 0) {
+          return 'batch.row_variant_required|${i + 1}';
+        }
+      } else {
+        // Diğer sektörler: salePrice + quantity row seviyesinde (default variant'a miras)
+        if (r.salePrice <= 0) {
+          return 'batch.row_sale_price_required|${i + 1}';
+        }
+        if (r.quantity <= 0) {
+          return 'batch.row_quantity_required|${i + 1}';
+        }
       }
-      if (r.quantity <= 0) {
-        return 'Satir ${i + 1}: Miktar 0\'dan buyuk olmalidir';
+      // Mevcut ürün kuralları:
+      //  • salePrice SİSTEM fiyatıyla aynı olmalı (UI kilitli ama güvenlik kontrolü)
+      //  • purchasePrice > 0 olmalı (kullanıcı yeni fatura fiyatını girmeli)
+      if (r.isExisting) {
+        if (r.existingSalePrice != null &&
+            r.existingSalePrice! > 0 &&
+            (r.salePrice - r.existingSalePrice!).abs() > 0.01) {
+          return 'batch.row_sale_price_must_match_system|${i + 1}';
+        }
+        if (r.purchasePrice <= 0) {
+          return 'batch.row_purchase_price_required|${i + 1}';
+        }
       }
     }
     return null;
@@ -313,10 +486,14 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
                 'name': '${row.productName} - ${vr.size}'
                     '${vr.color.isNotEmpty ? " ${vr.color}" : ""}',
                 'shelfLocationCode': row.shelfLocation,
-                'attributes': {
-                  'Numara': vr.size,
-                  if (vr.color.isNotEmpty) 'Renk': vr.color,
-                },
+                // attributesMap: builder'dan üretilmişse gerçek key-value map kullan,
+                // yoksa eski fallback (manual satır eklendi)
+                'attributes': (vr.attributesMap?.isNotEmpty == true)
+                    ? vr.attributesMap!
+                    : {
+                        if (vr.size.isNotEmpty) 'Numara': vr.size,
+                        if (vr.color.isNotEmpty) 'Renk': vr.color,
+                      },
                 'pricing': {
                   'purchasePrice': vr.purchasePrice ?? row.purchasePrice,
                   'salePrice': vr.salePrice ?? row.salePrice,
@@ -382,6 +559,7 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
                   'crossRefBrand': c['crossRefBrand'] ?? '',
                 })
             .toList(),
+        if (row.invoiceQuantity != null) 'invoiceQuantity': row.invoiceQuantity,
       };
     }).toList();
 
@@ -417,6 +595,10 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
         (response['results'] as List?) ?? [],
       );
       final purchaseId = response['purchaseId']?.toString();
+      final claimRaw = response['claim'];
+      final BatchClaimInfo? claimInfo = claimRaw is Map<String, dynamic>
+          ? BatchClaimInfo.fromJson(claimRaw)
+          : null;
 
       // Sonuçları satırlara eşle
       int newCreated = 0;
@@ -456,6 +638,7 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
         errors: errors,
         errorMessages: errorMessages,
         purchaseId: purchaseId,
+        claim: claimInfo,
       );
     } catch (e) {
       // Tüm satırları error yap
@@ -477,9 +660,15 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
     state = state.copyWith(rows: updatedRows);
   }
 
-  String _generateSku() =>
-      'SKU-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}'
-      '-${(DateTime.now().microsecond % 1000).toString().padLeft(3, '0')}';
+  /// SKU üretici — timestamp + 32-bit kriptografik rastgele.
+  /// Aynı milisaniyede N adet üretim güvenli (Random.secure() çarpışma sıfıra yakın).
+  /// Format: SKU-<ms-hex>-<rand-hex>  örn: SKU-18F8A12CD45-8A3F2B1C
+  static final Random _skuRandom = Random.secure();
+  String _generateSku() {
+    final ms = DateTime.now().millisecondsSinceEpoch.toRadixString(16).toUpperCase();
+    final rand = _skuRandom.nextInt(0xFFFFFFFF).toRadixString(16).padLeft(8, '0').toUpperCase();
+    return 'SKU-$ms-$rand';
+  }
 
 
   /// oemList doluysa ondan, değilse tek oemNumber field'ından oluşturur
@@ -551,4 +740,10 @@ final batchEntryProvider =
 final batchCategoriesProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>(
   (ref) => ref.read(companyCategoryServiceProvider).getMyCategoryList(),
+);
+
+/// Marka listesi — kart içindeki autocomplete için paylaşımlı cache
+final batchBrandsProvider =
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>(
+  (ref) => ref.read(brandServiceProvider).getActiveBrands(),
 );

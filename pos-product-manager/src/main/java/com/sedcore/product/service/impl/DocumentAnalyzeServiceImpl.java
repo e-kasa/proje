@@ -165,6 +165,9 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
 
         boolean scannedPdf = false;
         String parseMethod = "REGEX";
+        String invoiceNo = null;
+        String invoiceDate = null;
+        String supplierName = null;
         List<DocumentItemResult> items;
 
         if (ext.endsWith(".pdf")) {
@@ -172,6 +175,9 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
             items = pr.items();
             scannedPdf = pr.scannedPdf();
             parseMethod = pr.parseMethod();
+            invoiceNo = pr.invoiceNo();
+            invoiceDate = pr.invoiceDate();
+            supplierName = pr.supplierName();
         } else if (isImage(ext)) {
             String ocrText = callOcrService(file, true);
             items = parseText(ocrText, fileName);
@@ -217,6 +223,9 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
                 .items(items)
                 .scannedPdf(scannedPdf)
                 .parseMethod(parseMethod)
+                .invoiceNo(invoiceNo)
+                .invoiceDate(invoiceDate)
+                .supplierName(supplierName)
                 .build();
     }
 
@@ -280,8 +289,14 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
      * Response items → ParsedLine listesine adapte edilir, buildResults() ile
      * matchToProduct + enrichFromVariant zinciri standart şekilde çalışır.
      */
+    /**
+     * Python parse sonucu: satır listesi + fatura header metadata.
+     * metadata map null olabilir (Python yanıtında gelmezse).
+     */
+    private record PythonParseResult(List<ParsedLine> lines, Map<String, Object> metadata) {}
+
     @SuppressWarnings("unchecked")
-    private List<ParsedLine> callParseTextService(String pdfText) {
+    private PythonParseResult callParseTextService(String pdfText) {
         RestTemplate rest = new RestTemplate();
 
         HttpHeaders headers = new HttpHeaders();
@@ -311,13 +326,14 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
         Object footerLine = responseBody.get("footerLine");
         Object skippedCount = responseBody.get("skippedCount");
         List<Map<String, Object>> items = (List<Map<String, Object>>) responseBody.get("items");
+        Map<String, Object> metadata = (Map<String, Object>) responseBody.get("metadata");
 
-        log.info("callParseTextService: {} ms, header={}, footer={}, skipped={}, items={}",
+        log.info("callParseTextService: {} ms, header={}, footer={}, skipped={}, items={}, metadata={}",
                 elapsed, headerLine, footerLine, skippedCount,
-                items == null ? 0 : items.size());
+                items == null ? 0 : items.size(), metadata);
 
         if (items == null || items.isEmpty()) {
-            return Collections.emptyList();
+            return new PythonParseResult(Collections.emptyList(), metadata);
         }
 
         List<ParsedLine> out = new ArrayList<>();
@@ -340,7 +356,16 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
             }
             out.add(line);
         }
-        return out;
+        return new PythonParseResult(out, metadata);
+    }
+
+    /** Python metadata map'inden string alan oku (null-safe, boş string → null). */
+    private String extractMeta(Map<String, Object> meta, String key) {
+        if (meta == null) return null;
+        Object v = meta.get(key);
+        if (v == null) return null;
+        String s = v.toString().trim();
+        return s.isEmpty() ? null : s;
     }
 
     /** JSON'dan gelen Number → Double. null-safe. */
@@ -356,10 +381,17 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
 
     // ── PDF PARSE ────────────────────────────────────────────────────────────
 
-    /** parsePdf() dönüş tipi: item listesi + parse yöntemi metadata */
+    /** parsePdf() dönüş tipi: item listesi + parse yöntemi + fatura header metadata */
     private record ParseResult(List<DocumentItemResult> items,
                                 boolean scannedPdf,
-                                String parseMethod) {}
+                                String parseMethod,
+                                String invoiceNo,
+                                String invoiceDate,
+                                String supplierName) {
+        ParseResult(List<DocumentItemResult> items, boolean scannedPdf, String parseMethod) {
+            this(items, scannedPdf, parseMethod, null, null, null);
+        }
+    }
 
     private ParseResult parsePdf(MultipartFile file) throws IOException {
         byte[] bytes = file.getBytes();
@@ -388,13 +420,17 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
             log.info("parsePdf [{}]: Python parse deneniyor (metin uzunluk: {})",
                     file.getOriginalFilename(), fullText.length());
             try {
-                List<ParsedLine> pythonLines = callParseTextService(fullText);
-                if (!pythonLines.isEmpty()) {
-                    List<DocumentItemResult> results = buildResults(pythonLines);
+                PythonParseResult python = callParseTextService(fullText);
+                String invoiceNo  = extractMeta(python.metadata(), "invoiceNo");
+                String invoiceDate = extractMeta(python.metadata(), "invoiceDate");
+                String supplierName = extractMeta(python.metadata(), "supplierName");
+                if (!python.lines().isEmpty()) {
+                    List<DocumentItemResult> results = buildResults(python.lines());
                     if (!results.isEmpty()) {
-                        log.info("parsePdf [{}]: Python parse → {} ürün",
-                                file.getOriginalFilename(), results.size());
-                        return new ParseResult(results, false, "PYTHON");
+                        log.info("parsePdf [{}]: Python parse → {} ürün, invoiceNo={}, supplier={}",
+                                file.getOriginalFilename(), results.size(), invoiceNo, supplierName);
+                        return new ParseResult(results, false, "PYTHON",
+                                invoiceNo, invoiceDate, supplierName);
                     }
                 }
                 log.warn("parsePdf [{}]: Python parse 0 ürün → Java fallback",

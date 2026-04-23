@@ -19,8 +19,8 @@ import 'package:project_pos/features/inventory/screens/product_detail_screen.dar
 import 'package:project_pos/features/inventory/screens/brands_screen.dart';
 import 'package:project_pos/features/inventory/screens/units_screen.dart';
 import 'package:project_pos/features/inventory/screens/barcode_management_screen.dart';
-import 'package:project_pos/screens/inventory/add_product/add_product_wizard_screen.dart';
-import 'package:project_pos/screens/inventory/batch_entry/batch_product_screen.dart';
+import 'package:project_pos/features/inventory/screens/add_product/add_product_wizard_screen.dart';
+import 'package:project_pos/features/inventory/screens/batch_entry/batch_product_screen.dart';
 // Catalog (categories)
 import 'package:project_pos/features/catalog/screens/category_list_screen.dart';
 import 'package:project_pos/features/catalog/screens/add_category_screen.dart';
@@ -126,9 +126,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Rol bazlı route guard — menü yüklendiyse kontrol et
       if (isAuthenticated) {
         final menuState = ref.read(menuProvider);
-        const alwaysAllowed = ['/dashboard', '/menu', '/profile'];
+        // Detail/sub sayfaları: menüde kayıtlı parent route'a tıklanarak açılan
+        // ekranlar. Bunlar menü item'ı olmadan erişilmez ama guard'ı bypass eder.
+        const alwaysAllowed = [
+          '/dashboard', '/menu', '/profile',
+          '/supplier-claims',
+          '/purchases/detail',
+          '/sales/detail',
+        ];
+        final isAlways = alwaysAllowed.any(
+            (a) => loc == a || loc.startsWith('$a/'));
         if (menuState.categories.isNotEmpty &&
-            !alwaysAllowed.contains(loc) &&
+            !isAlways &&
             !ref.read(menuProvider.notifier).isRouteAllowed(loc)) {
           return '/dashboard';
         }

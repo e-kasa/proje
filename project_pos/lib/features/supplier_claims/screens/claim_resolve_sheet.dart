@@ -32,7 +32,9 @@ class _ClaimResolveSheetState extends ConsumerState<ClaimResolveSheet>
     super.initState();
     _tabs = TabController(length: 3, vsync: this);
     final remaining = widget.claim.remainingAmount;
-    _amountCtrl.text = remaining > 0 ? remaining.toStringAsFixed(2) : '';
+    // _parse() nokta'yı binlik ayraç sayıp siler; virgüllü format kullan
+    _amountCtrl.text =
+        remaining > 0 ? remaining.toStringAsFixed(2).replaceAll('.', ',') : '';
   }
 
   @override

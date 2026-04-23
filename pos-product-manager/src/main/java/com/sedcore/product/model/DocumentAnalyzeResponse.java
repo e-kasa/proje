@@ -43,4 +43,13 @@ public class DocumentAnalyzeResponse {
      * "POSITIONAL" | "REGEX" | "OCR"
      */
     private String parseMethod;
+
+    /** Faturadan çıkarılan fatura numarası (Python header regex) — null olabilir */
+    private String invoiceNo;
+
+    /** Faturadan çıkarılan fatura tarihi (ham string, "15.04.2026" vb.) — null olabilir */
+    private String invoiceDate;
+
+    /** Faturadan çıkarılan satıcı firma adı — null olabilir */
+    private String supplierName;
 }

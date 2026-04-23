@@ -166,18 +166,16 @@ final jwtStoreId = ref.read(authProvider).user?.storeId;  // kasiyerin mağazas�
 
 ---
 
-## Aktif Router Path'leri — ÖNEMLİ
+## Aktif Router Path'leri
 
-Router hâlâ `lib/screens/` path'ini kullanıyor (migration sprint 3'te):
+Tüm ekranlar `lib/features/` altında. `lib/screens/` tamamen kaldırıldı (2026-04-23).
 
 ```dart
-import 'package:project_pos/screens/inventory/add_product/add_product_wizard_screen.dart';
-import 'package:project_pos/screens/inventory/batch_entry/batch_product_screen.dart';
+import 'package:project_pos/features/inventory/screens/add_product/add_product_wizard_screen.dart';
+import 'package:project_pos/features/inventory/screens/batch_entry/batch_product_screen.dart';
 ```
 
-**Değişiklik yaparken** `lib/screens/inventory/` düzenlenir, `lib/features/inventory/` değil.
-
-POS ekranı `features/` altında: `features/pos/screens/pos_screen.dart`. `lib/screens/pos/` → dead code.
+**Değişiklik yaparken** `lib/features/inventory/` düzenlenir.
 
 ---
 
@@ -230,6 +228,5 @@ Kullanıcı modeli: `userName, displayName, roles (List<String>), storeId`.
 | `'storeId'` payload | `locationId + locationType` |
 | `state.activeStoreId` | `state.activeLocationId` |
 | `const Column([Text(t(...))])` | `const` kaldır |
-| `lib/features/inventory/` düzenlemek (wizard/batch için) | Router `lib/screens/` kullanıyor |
 | `'sector': 'parcaci'` | `sectorType.apiValue` → `'AUTO_PARTS'` |
 | Birim default `'pcs'` | `'adet'` standart |

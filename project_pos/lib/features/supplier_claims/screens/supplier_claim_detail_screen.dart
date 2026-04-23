@@ -106,8 +106,7 @@ class _Content extends StatelessWidget {
             ],
           ),
         ),
-        if (claim.isOpen || claim.status == ClaimStatus.partiallyResolved)
-          _buildActionBar(context),
+        if (claim.isOpen) _buildActionBar(context),
       ],
     );
   }

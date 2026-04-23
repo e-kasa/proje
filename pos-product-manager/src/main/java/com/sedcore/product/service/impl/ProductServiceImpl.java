@@ -228,6 +228,10 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                         sm.setLocationType(stock.getLocationType() != null ? stock.getLocationType() : "STORE");
                         sm.setMovementType(StockMovementType.PURCHASE_IN);
                         sm.setQuantity(stock.getQuantity());
+                        // Yeni ürün: birim fiyatı VariantPricing'den al (enrichment + audit için)
+                        if (v.getPricing() != null && v.getPricing().getPurchasePrice() != null) {
+                            sm.setUnitPrice(v.getPricing().getPurchasePrice());
+                        }
                         sm.setPurchase(purchase);
                         stockMovementService.save(sm);
                         // Anlık bakiyeyi güncelle
@@ -445,6 +449,10 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                     sm.setMovementType(StockMovementType.PURCHASE_IN);
                     sm.setQuantity(item.getQuantity());
                     sm.setUnitPrice(item.getUnitPrice());   // son alış fiyatı enrichment için zorunlu
+                    // Satır KDV oranı (fatura satırından geldiyse) — audit için tut
+                    if (item.getTaxRate() != null) {
+                        sm.setTaxRate(item.getTaxRate());
+                    }
                     sm.setPurchase(purchase);
                     stockMovementService.save(sm);
                     // Anlık bakiyeyi güncelle
@@ -657,6 +665,10 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
                         sm.setLocationType(stock.getLocationType() != null ? stock.getLocationType() : "STORE");
                         sm.setMovementType(StockMovementType.PURCHASE_IN);
                         sm.setQuantity(stock.getQuantity());
+                        // Yeni ürün: birim fiyatı VariantPricing'den al (enrichment + audit için)
+                        if (v.getPricing() != null && v.getPricing().getPurchasePrice() != null) {
+                            sm.setUnitPrice(v.getPricing().getPurchasePrice());
+                        }
                         sm.setPurchase(purchase);
                         stockMovementService.save(sm);
                         // Anlık bakiyeyi güncelle

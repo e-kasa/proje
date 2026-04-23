@@ -66,11 +66,24 @@ class SupplierClaim {
       (claimAmount - resolvedAmount).clamp(0, double.infinity);
 
   bool get isOpen => status == ClaimStatus.open;
-  bool get isResolved => status == ClaimStatus.resolved;
+  bool get isResolved => status.isAnyResolved;
   bool get isCancelled => status == ClaimStatus.cancelled;
 
   static DateTime? _parseDate(Object? raw) {
     if (raw == null) return null;
+    // Spring Boot dizi formatı: [2024, 4, 15] veya [2024, 4, 15, 10, 30, 0]
+    if (raw is List) {
+      if (raw.length >= 3) {
+        return DateTime(
+          (raw[0] as num).toInt(),
+          (raw[1] as num).toInt(),
+          (raw[2] as num).toInt(),
+          raw.length > 3 ? (raw[3] as num).toInt() : 0,
+          raw.length > 4 ? (raw[4] as num).toInt() : 0,
+        );
+      }
+      return null;
+    }
     final s = raw.toString();
     if (s.isEmpty) return null;
     return DateTime.tryParse(s);
@@ -162,8 +175,9 @@ class SupplierClaimSummary {
 
 enum ClaimStatus {
   open('OPEN'),
-  partiallyResolved('PARTIALLY_RESOLVED'),
-  resolved('RESOLVED'),
+  resolvedDelivery('RESOLVED_DELIVERY'),
+  resolvedDiscount('RESOLVED_DISCOUNT'),
+  resolvedReturn('RESOLVED_RETURN'),
   cancelled('CANCELLED');
 
   final String apiValue;
@@ -173,6 +187,11 @@ enum ClaimStatus {
         (s) => s.apiValue == v,
         orElse: () => ClaimStatus.open,
       );
+
+  bool get isAnyResolved =>
+      this == resolvedDelivery ||
+      this == resolvedDiscount ||
+      this == resolvedReturn;
 }
 
 enum ClaimReason {
@@ -191,11 +210,9 @@ enum ClaimReason {
 }
 
 enum ClaimResolution {
-  discount('DISCOUNT'),
-  delivery('DELIVERY'),
-  refund('REFUND'),
-  replacement('REPLACEMENT'),
-  writeOff('WRITE_OFF');
+  discount('RESOLVED_DISCOUNT'),
+  delivery('RESOLVED_DELIVERY'),
+  refund('RESOLVED_RETURN');
 
   final String apiValue;
   const ClaimResolution(this.apiValue);

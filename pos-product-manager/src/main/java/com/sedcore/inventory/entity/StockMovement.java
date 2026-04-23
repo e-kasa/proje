@@ -70,6 +70,15 @@ public class StockMovement extends TOpenSimpleCompanyEntity {
     @Column(name = "unit_price", precision = 15, scale = 2)
     private java.math.BigDecimal unitPrice;
 
+    /**
+     * Satır KDV oranı (yüzde olarak — ör. 18, 10, 20).
+     * Toplu girişte fatura satırından gelir. Audit amaçlı tutulur;
+     * {@link com.sedcore.purchase.entity.Purchase#getTotalAmount()} KDV hariçtir
+     * (toplam KDV Purchase.totalVatAmount'ta tutulur — sprint 3).
+     */
+    @Column(name = "tax_rate", precision = 5, scale = 2)
+    private java.math.BigDecimal taxRate;
+
     // 🔗 KAYNAK BELGELER
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "purchase_id")

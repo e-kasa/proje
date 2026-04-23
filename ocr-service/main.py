@@ -123,7 +123,8 @@ async def parse_text(request: ParseTextRequest):
       - firma başlığı + adres + toplam/imza/footer satırları elenir
       - her ürün satırını regex ile parse et (isim/kod/miktar/fiyat/KDV/iskonto)
 
-    Returns: {items, headerLine, footerLine, skippedCount, totalLines}
+    Returns: {items, headerLine, footerLine, skippedCount, totalLines,
+              metadata: {invoiceNo, invoiceDate, supplierName}}
     """
     if not request.text or not request.text.strip():
         raise HTTPException(400, "text alanı boş olamaz")

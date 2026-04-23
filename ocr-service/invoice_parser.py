@@ -173,6 +173,23 @@ _NON_PRODUCT_NAME_START = re.compile(
 # En az bir 3-harfli Unicode kelime olmalı (ürün adı gerekli)
 _NAME_MIN_WORD = re.compile(r'\w{3,}', re.UNICODE)
 
+# ── HEADER METADATA — fatura başlığı (no, tarih, satıcı) ─────────────────────
+# Örnek: "FATURA NO: GER2025000030968", "Fatura No : ABC-123"
+_INVOICE_NO_PATTERN = re.compile(
+    r'\b(?:fatura|belge|i?rsaliye)\s*n[oO]\s*[:.\-]?\s*([A-Z0-9][A-Z0-9\-/_.]{3,30})',
+    re.IGNORECASE,
+)
+# "FATURA TARİHİ: 15.04.2026", "15/04/2026"
+_INVOICE_DATE_PATTERN = re.compile(
+    r'\b(?:fatura|belge|d[üu]zenlenme|düzenlenme)\s*tarih[ii]?\s*[:.\-]?\s*(\d{1,2}[./\-]\d{1,2}[./\-]\d{2,4})',
+    re.IGNORECASE,
+)
+# "SAYIN: ABC TEKSTİL LTD", "SATICI: XYZ" — bir sonraki ':' ya da satır sonuna kadar
+_SUPPLIER_PATTERN = re.compile(
+    r'\b(?:say[ıi]n|sat[ıi]c[ıi]|al[ıi]c[ıi]|fatura\s*eden|firma)\s*[:.\-]\s*([^\n:]{3,80})',
+    re.IGNORECASE,
+)
+
 
 # ── YARDIMCI FONKSİYONLAR ────────────────────────────────────────────────────
 
@@ -236,6 +253,38 @@ def _is_non_product_line(line: str) -> bool:
     """Telefon, VKN, email, fatura no vs. satırları — ürün değil."""
     lower = line.lower()
     return any(r.search(lower) for r in _NON_PRODUCT_RE)
+
+
+def _parse_header_metadata(lines: list[str], header_idx: int) -> dict:
+    """
+    Header satırından ÖNCEKİ satırlarda fatura no, tarih, satıcı adı ara.
+    header_idx -1 ise tüm metnin ilk 40 satırında ara.
+
+    Returns: {'invoiceNo': str|None, 'invoiceDate': str|None, 'supplierName': str|None}
+    """
+    meta = {'invoiceNo': None, 'invoiceDate': None, 'supplierName': None}
+    scan_end = header_idx if header_idx > 0 else min(40, len(lines))
+    scan_lines = lines[:scan_end]
+    blob = '\n'.join(scan_lines)
+
+    m = _INVOICE_NO_PATTERN.search(blob)
+    if m:
+        meta['invoiceNo'] = m.group(1).strip()
+
+    m = _INVOICE_DATE_PATTERN.search(blob)
+    if m:
+        meta['invoiceDate'] = m.group(1).strip()
+
+    m = _SUPPLIER_PATTERN.search(blob)
+    if m:
+        name = m.group(1).strip()
+        # "ABC TEKSTİL LTD\n" gibi alt satırda kalmış kısımları kes
+        name = re.split(r'\s{2,}|\n', name)[0].strip()
+        # Kısa kelimeleri (LTD, ŞTI vb.) koru ama tel/vkn satırlarını filtrele
+        if len(name) >= 3 and not re.search(r'\d{10,}', name):
+            meta['supplierName'] = name[:80]
+
+    return meta
 
 
 def _detect_table_range(lines: list[str]) -> tuple[int, int]:
@@ -484,9 +533,11 @@ def parse_invoice_text(text: str) -> dict:
 
     # Tablo aralığını tespit et
     header_idx, footer_idx = _detect_table_range(lines)
+    # Header öncesi satırlarda fatura no / tarih / satıcı adı yakala
+    metadata = _parse_header_metadata(lines, header_idx)
     log.info(
-        "parse_invoice_text: %d satır, header=%d, footer=%d",
-        total_lines, header_idx, footer_idx,
+        "parse_invoice_text: %d satır, header=%d, footer=%d, meta=%s",
+        total_lines, header_idx, footer_idx, metadata,
     )
 
     # Aralık içi satırları işle (header sonrası, footer öncesi)
@@ -531,4 +582,5 @@ def parse_invoice_text(text: str) -> dict:
         'footerLine': footer_idx,
         'skippedCount': skipped,
         'totalLines': total_lines,
+        'metadata': metadata,
     }

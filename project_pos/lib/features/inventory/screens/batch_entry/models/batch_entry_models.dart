@@ -73,18 +73,18 @@ class BatchRowCompletion {
       if (row.productName.trim().isNotEmpty) {
         filled++;
       } else {
-        missing.add('Ürün adı');
+        missing.add('batch.field_product_name');
       }
       if (row.categoryId != null && row.categoryId!.isNotEmpty) {
         filled++;
       } else {
-        missing.add('Kategori');
+        missing.add('batch.field_category');
       }
       if (brandRequired) {
         if (row.brandName != null && row.brandName!.trim().isNotEmpty) {
           filled++;
         } else {
-          missing.add('Marka');
+          missing.add('batch.field_brand');
         }
       }
       sectionA = filled == required
@@ -99,16 +99,16 @@ class BatchRowCompletion {
     if (row.salePrice > 0) {
       bFilled++;
     } else {
-      missing.add('Satış fiyatı');
+      missing.add('batch.field_sale_price');
     }
     if (row.quantity > 0) {
       bFilled++;
     } else {
-      missing.add('Adet');
+      missing.add('batch.field_quantity');
     }
     // Mevcut ürünlerde alış fiyatı da zorunlu (cari kaydı için)
     if (isExisting && row.purchasePrice <= 0) {
-      missing.add('Alış fiyatı');
+      missing.add('batch.field_purchase_price');
     }
     final SectionStatus sectionB = bFilled >= 2
         ? SectionStatus.complete
@@ -125,17 +125,17 @@ class BatchRowCompletion {
         sectionC = SectionStatus.complete;
       } else if (row.variantRows.isNotEmpty) {
         sectionC = SectionStatus.partial;
-        missing.add('Varyant (numara/beden)');
+        missing.add('batch.field_variant');
       } else {
         sectionC = SectionStatus.empty;
-        missing.add('Varyant (numara/beden)');
+        missing.add('batch.field_variant');
       }
     } else {
       bool cHasRequired = true;
       bool cHasAny = row.barcode.isNotEmpty;
       if (showOem && oemRequired) {
         if (row.oemNumber == null || row.oemNumber!.trim().isEmpty) {
-          missing.add('OEM No');
+          missing.add('batch.field_oem');
           cHasRequired = false;
         } else {
           cHasAny = true;
@@ -143,7 +143,7 @@ class BatchRowCompletion {
       }
       if (showShelf && shelfRequired) {
         if (row.shelfLocation == null || row.shelfLocation!.trim().isEmpty) {
-          missing.add('Raf kodu');
+          missing.add('batch.field_shelf');
           cHasRequired = false;
         } else {
           cHasAny = true;
@@ -191,12 +191,15 @@ String _generateId() {
 // ── Footwear varyant satırı ───────────────────────────────────────────────────
 class BatchVariantRow {
   final String id;
-  String size;    // Numara / Beden
+  String size;    // Numara / Beden (display / single non-color attr value)
   String color;   // Renk
   String barcode;
   int quantity;
   double? purchasePrice; // null = karttan miras alınır
   double? salePrice;     // null = karttan miras alınır
+  /// Tam attribute map'i — builder'dan üretildiğinde doldurulur.
+  /// Backend'e gönderilirken bu map kullanılır (hardcoded 'Numara' yerine).
+  Map<String, String>? attributesMap;
 
   BatchVariantRow({
     String? id,
@@ -206,6 +209,7 @@ class BatchVariantRow {
     this.quantity = 1,
     this.purchasePrice,
     this.salePrice,
+    this.attributesMap,
   }) : id = id ?? _generateId();
 
   bool get isValid => size.trim().isNotEmpty && quantity > 0;
@@ -219,6 +223,7 @@ class BatchVariantRow {
     bool clearPurchasePrice = false,
     double? salePrice,
     bool clearSalePrice = false,
+    Map<String, String>? attributesMap,
   }) {
     return BatchVariantRow(
       id: id,
@@ -228,6 +233,7 @@ class BatchVariantRow {
       quantity: quantity ?? this.quantity,
       purchasePrice: clearPurchasePrice ? null : (purchasePrice ?? this.purchasePrice),
       salePrice: clearSalePrice ? null : (salePrice ?? this.salePrice),
+      attributesMap: attributesMap ?? this.attributesMap,
     );
   }
 }
@@ -245,17 +251,36 @@ class BatchEntryRow {
   double purchasePrice;
   double salePrice;
   double vatRate;
+  double discountRate; // iskonto oranı (%) — faturadan veya manuel, default 0
   int quantity;
+  /// Fatura üzerindeki miktar. null ise [quantity] değeri kullanılır.
+  /// Eksik teslimat durumunda invoiceQuantity > quantity olur.
+  int? invoiceQuantity;
   RowStatus status;
   String? existingProductId;
   String? existingVariantId;
   String? existingVariantSku;
+
+  // Mevcut ürün enrichment (FOUND olduğunda kart üzerinde read-only gösterilir)
+  double? existingCurrentStock;
+  double? existingSalePrice;
+  double? existingPurchasePrice;
+  double? existingLastPurchasePrice;
+  String? existingShelfLocation;
+  String? existingBrandName;
+  List<String> existingOemCodes;
+
+  /// Mevcut ürünün TOPLAM variant sayısı (tek variantlı=1, çoklu footwear=N).
+  /// null → eşleşme yok veya backend enrichment yapmadı.
+  int? existingVariantCount;
+
+  /// Mevcut ürünün tüm varyantlarının özet listesi (Map format — JSON hazır).
+  /// Her entry: {variantId, sku, name, attributes, currentStock, salePrice,
+  /// shelfLocationCode, isMatched}. Kart detay UI'da tablo olarak gösterilir.
+  List<Map<String, dynamic>> existingVariants;
+
   String? errorMessage;
   bool isExpanded;
-
-  /// Fatura üzerindeki miktar. null ise [quantity] değeri kullanılır.
-  /// Eksik teslimat durumunda invoiceQuantity > quantity olur.
-  int? invoiceQuantity;
 
   // Ek bilgiler (quick_product_dialog)
   String? description;
@@ -282,12 +307,22 @@ class BatchEntryRow {
     this.purchasePrice = 0,
     this.salePrice = 0,
     this.vatRate = 20.0,
+    this.discountRate = 0,
     this.quantity = 1,
     this.invoiceQuantity,
     this.status = RowStatus.newProduct,
     this.existingProductId,
     this.existingVariantId,
     this.existingVariantSku,
+    this.existingCurrentStock,
+    this.existingSalePrice,
+    this.existingPurchasePrice,
+    this.existingLastPurchasePrice,
+    this.existingShelfLocation,
+    this.existingBrandName,
+    List<String>? existingOemCodes,
+    this.existingVariantCount,
+    List<Map<String, dynamic>>? existingVariants,
     this.errorMessage,
     this.isExpanded = false,
     this.description,
@@ -299,22 +334,39 @@ class BatchEntryRow {
     List<Map<String, String>>? crossRefList,
     List<BatchVariantRow>? variantRows,
   })  : id = id ?? _generateId(),
+        existingOemCodes = existingOemCodes ?? [],
+        existingVariants = existingVariants ?? [],
         attributes = attributes ?? {},
         oemList = oemList ?? [],
         crossRefList = crossRefList ?? [],
         variantRows = variantRows ?? [];
 
-  /// Depoya giren fiziksel adet
+  /// Varyantlar varsa bunların adet toplamı, yoksa kart miktar alanı.
+  int get effectiveQuantity => variantRows.isNotEmpty
+      ? variantRows.fold(0, (s, r) => s + r.quantity)
+      : quantity;
+
+  /// Depoya giren fiziksel adet (= quantity)
   int get receivedQty => quantity;
-  /// Fatura miktarı (eksik teslimat yoksa receivedQty ile aynı)
+  /// Fatura miktarı (null → receivedQty ile aynı, eksik teslimat yok)
   int get resolvedInvoiceQty => invoiceQuantity ?? quantity;
   /// Eksik adet (0 = tam teslimat)
   int get shortageQty => (resolvedInvoiceQty - receivedQty).clamp(0, 9999);
   bool get hasShortage => shortageQty > 0;
 
-  double get lineTotal => salePrice * quantity;
-  double get lineCost => purchasePrice * quantity;
+  /// Varyantlar varsa her satır kendi fiyatı × kendi adedi, yoksa kart fiyatı × kart adedi.
+  double get lineTotal => variantRows.isNotEmpty
+      ? variantRows.fold(
+          0.0, (s, r) => s + (r.salePrice ?? salePrice) * r.quantity)
+      : salePrice * quantity;
+
+  double get lineCost => variantRows.isNotEmpty
+      ? variantRows.fold(
+          0.0, (s, r) => s + (r.purchasePrice ?? purchasePrice) * r.quantity)
+      : purchasePrice * quantity;
+
   double get lineProfit => lineTotal - lineCost;
+
   double get profitMargin =>
       salePrice > 0 ? ((salePrice - purchasePrice) / salePrice * 100) : 0;
 
@@ -336,6 +388,7 @@ class BatchEntryRow {
     double? purchasePrice,
     double? salePrice,
     double? vatRate,
+    double? discountRate,
     int? quantity,
     int? invoiceQuantity,
     bool clearInvoiceQuantity = false,
@@ -343,6 +396,15 @@ class BatchEntryRow {
     String? existingProductId,
     String? existingVariantId,
     String? existingVariantSku,
+    double? existingCurrentStock,
+    double? existingSalePrice,
+    double? existingPurchasePrice,
+    double? existingLastPurchasePrice,
+    String? existingShelfLocation,
+    String? existingBrandName,
+    List<String>? existingOemCodes,
+    int? existingVariantCount,
+    List<Map<String, dynamic>>? existingVariants,
     String? errorMessage,
     bool? isExpanded,
     String? description,
@@ -367,12 +429,23 @@ class BatchEntryRow {
       purchasePrice: purchasePrice ?? this.purchasePrice,
       salePrice: salePrice ?? this.salePrice,
       vatRate: vatRate ?? this.vatRate,
+      discountRate: discountRate ?? this.discountRate,
       quantity: quantity ?? this.quantity,
       invoiceQuantity: clearInvoiceQuantity ? null : (invoiceQuantity ?? this.invoiceQuantity),
       status: status ?? this.status,
       existingProductId: existingProductId ?? this.existingProductId,
       existingVariantId: existingVariantId ?? this.existingVariantId,
       existingVariantSku: existingVariantSku ?? this.existingVariantSku,
+      existingCurrentStock: existingCurrentStock ?? this.existingCurrentStock,
+      existingSalePrice: existingSalePrice ?? this.existingSalePrice,
+      existingPurchasePrice: existingPurchasePrice ?? this.existingPurchasePrice,
+      existingLastPurchasePrice:
+          existingLastPurchasePrice ?? this.existingLastPurchasePrice,
+      existingShelfLocation: existingShelfLocation ?? this.existingShelfLocation,
+      existingBrandName: existingBrandName ?? this.existingBrandName,
+      existingOemCodes: existingOemCodes ?? this.existingOemCodes,
+      existingVariantCount: existingVariantCount ?? this.existingVariantCount,
+      existingVariants: existingVariants ?? this.existingVariants,
       errorMessage: errorMessage ?? this.errorMessage,
       isExpanded: isExpanded ?? this.isExpanded,
       description: description ?? this.description,
@@ -393,10 +466,8 @@ class BatchEntryState {
   final String? invoiceNumber;
   final String? deliveryNoteNumber;
   final DateTime purchaseDate;
-  /// Malın teslim alındığı lokasyon kodu: Store.code veya Warehouse.code
   final String? locationId;
   final String? locationName;
-  /// 'STORE' veya 'WAREHOUSE'
   final String? locationType;
   final List<BatchEntryRow> rows;
   final bool isSubmitting;
@@ -425,9 +496,7 @@ class BatchEntryState {
   double get totalCost => rows.fold(0, (sum, r) => sum + r.lineCost);
   double get totalSale => rows.fold(0, (sum, r) => sum + r.lineTotal);
   double get totalProfit => totalSale - totalCost;
-
-  /// Eksik teslimat olan satır sayısı
-  int get shortageItems => rows.where((r) => r.isExisting && r.hasShortage).length;
+  int get shortageItems => rows.where((r) => r.hasShortage).length;
   bool get hasAnyShortage => shortageItems > 0;
 
   bool get isValid =>
@@ -471,6 +540,7 @@ class BatchSaveResult {
   final int errors;
   final List<String> errorMessages;
   final String? purchaseId;
+  final BatchClaimInfo? claim;
 
   const BatchSaveResult({
     this.totalProcessed = 0,
@@ -479,5 +549,26 @@ class BatchSaveResult {
     this.errors = 0,
     this.errorMessages = const [],
     this.purchaseId,
+    this.claim,
   });
+}
+
+/// Backend `BatchCreateResponse.claim` alanı — fatura/teslim farkı varsa açılan
+/// SupplierClaim'in özeti. Result sheet'te CTA olarak gösterilir.
+class BatchClaimInfo {
+  final String claimId;
+  final double claimAmount;
+  final int lineCount;
+
+  const BatchClaimInfo({
+    required this.claimId,
+    this.claimAmount = 0,
+    this.lineCount = 0,
+  });
+
+  factory BatchClaimInfo.fromJson(Map<String, dynamic> json) => BatchClaimInfo(
+        claimId: json['claimId']?.toString() ?? '',
+        claimAmount: (json['claimAmount'] as num?)?.toDouble() ?? 0,
+        lineCount: (json['lineCount'] as num?)?.toInt() ?? 0,
+      );
 }

@@ -1002,7 +1002,9 @@ VALUES
     ('mi-users-0000-0000-0000-000000000047', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'menu.user_management', '/settings/users', 'menu-users-0000-0000-0000-000000000018'),
     ('mi-empls-0000-0000-0000-000000000048', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'menu.employees', '/hrm/employees', 'menu-users-0000-0000-0000-000000000018')
+     'menu.employees', '/hrm/employees', 'menu-users-0000-0000-0000-000000000018'),
+    ('mi-supct-0000-0000-0000-000000000049', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'nav.supplier_claims', '/supplier-claims', 'menu-purch-0000-0000-0000-000000000010')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
@@ -1880,6 +1882,17 @@ VALUES
     ('bnd-bt207-0000-0000-000000000207', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.all_sizes_added',   'Tüm bedenler zaten ekli',                                      'All sizes already added'),
     ('bnd-bt208-0000-0000-000000000208', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.hint_attr_name',    'ör: Renk, Beden, Model',                                       'e.g. Color, Size, Model'),
 
+    -- ── BATCH — UX iyileştirme (sprint 3) ─────────────────────────────
+    ('bnd-bt209-0000-0000-000000000209', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.apply_to_variants',       'Varyantlara Uygula',                                           'Apply to Variants'),
+    ('bnd-bt210-0000-0000-000000000210', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.sale_price_locked_tooltip','Satış fiyatı sistemden gelir, değiştirilemez',                'Sale price is set by system, cannot be changed'),
+    ('bnd-bt211-0000-0000-000000000211', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.apply_all_success',       'varyanta uygulandı',                                           'variants updated'),
+    ('bnd-bt212-0000-0000-000000000212', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.apply_all_no_price',      'Önce kart fiyatını girin',                                     'Enter card price first'),
+    ('bnd-bt213-0000-0000-000000000213', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.retry_analyze',           'Tekrar Dene',                                                  'Retry'),
+    ('bnd-bt214-0000-0000-000000000214', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.multi_match_title',       'Birden fazla ürün bulundu',                                    'Multiple products found'),
+    ('bnd-bt215-0000-0000-000000000215', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.multi_match_hint',        'Eşleşecek ürünü seçin',                                        'Pick matching product'),
+    ('bnd-bt216-0000-0000-000000000216', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.error_rows_title',        'Hatalı satırlar',                                              'Error rows'),
+    ('bnd-bt217-0000-0000-000000000217', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.go_to_row',               'Satıra Git',                                                   'Go to row'),
+
     -- ── WIZARD (Ürün ekleme adımları) ─────────────────────────────
     ('bnd-wz001-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.changes_will_be_lost', 'Değişiklikler kaybolacak', 'Changes will be lost'),
     ('bnd-wz002-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.exit', 'Çıkış', 'Exit'),
@@ -1990,6 +2003,14 @@ VALUES
 ('bnd-ac017-000-0000-0000-000000000017', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.description_label', 'Açıklama (opsiyonel)', 'Description (optional)'),
 ('bnd-ac018-000-0000-0000-000000000018', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.amount_required', 'Tutar gerekli', 'Amount required'),
 ('bnd-ac019-000-0000-0000-000000000019', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.select_account', 'Hesap Seç', 'Select Account'),
+('bnd-ac020-000-0000-0000-000000000020', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.total_customer_receivable', 'Müşteri Alacağı', 'Customer Receivable'),
+('bnd-ac021-000-0000-0000-000000000021', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.total_supplier_payable', 'Tedarikçi Borcu', 'Supplier Payable'),
+('bnd-ac022-000-0000-0000-000000000022', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.total_transactions', 'Toplam Hareket', 'Total Transactions'),
+('bnd-ac023-000-0000-0000-000000000023', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.customer_label', 'MÜŞTERİ', 'CUSTOMER'),
+('bnd-ac024-000-0000-0000-000000000024', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.supplier_label', 'TEDARİKÇİ', 'SUPPLIER'),
+('bnd-ac025-000-0000-0000-000000000025', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.summary_section', 'Genel Özet', 'Summary'),
+('bnd-ac026-000-0000-0000-000000000026', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.quick_actions', 'Hızlı İşlemler', 'Quick Actions'),
+('bnd-ac027-000-0000-0000-000000000027', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.no_overdue', 'Vadesi geçmiş bakiye yok', 'No overdue balance'),
 
 -- ── AUTH ─────────────────────────────────────────────────────
 ('bnd-au001-000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'auth.company_code', 'Firma Kodu', 'Company Code'),

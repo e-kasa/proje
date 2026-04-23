@@ -120,13 +120,17 @@ extension WizardPayload on WizardState {
           'taxExempt': taxExempt,
         },
         'initialStocks': selectedWarehouses.isNotEmpty
-            ? selectedWarehouses.map((wh) =>
-                {'locationId': wh, 'locationType': 'WAREHOUSE', 'quantity': v.inventory?.physicalQuantity ?? 0}
-              ).toList()
+            ? selectedWarehouses.map((wh) => {
+                'locationId': wh,
+                'locationType': 'WAREHOUSE',
+                'quantity': v.inventory?.physicalQuantity ?? 0,
+              }).toList()
             : selectedStores.isNotEmpty
-                ? selectedStores.map((st) =>
-                    {'locationId': st, 'locationType': 'STORE', 'quantity': v.inventory?.physicalQuantity ?? 0}
-                  ).toList()
+                ? selectedStores.map((st) => {
+                    'locationId': st,
+                    'locationType': 'STORE',
+                    'quantity': v.inventory?.physicalQuantity ?? 0,
+                  }).toList()
                 : [{'locationId': v.inventory?.warehouseCode ?? '', 'locationType': 'STORE', 'quantity': v.inventory?.physicalQuantity ?? 0}],
         'barcodes': v.barcodes.map((b) => {'code': b.code, 'type': b.type, 'isPrimary': b.isPrimary}).toList(),
       }).toList(),

@@ -1,13 +1,22 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:io';
+import 'dart:typed_data';
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:project_pos/core/config/sector_config.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_gradients.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/providers/sector_provider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
+import 'package:project_pos/services/service_locator.dart';
+import 'package:project_pos/features/inventory/screens/batch_entry/widgets/document_analyze_result_sheet.dart';
 import 'providers/batch_entry_provider.dart';
 import 'models/batch_entry_models.dart';
 import 'widgets/batch_header_form.dart';
@@ -54,6 +63,183 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
     super.dispose();
   }
 
+  // ── Kaynak seçim tipi ────────────────────────────────────────────────────
+  static const _srcPdf     = 'pdf';
+  static const _srcCamera  = 'camera';
+  static const _srcGallery = 'gallery';
+
+  Future<void> _uploadDocument() async {
+    final t = i18nOf(ref);
+
+    // 1. Kaynak dialog
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(t('batch.select_source')),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, _srcPdf),
+            child: Row(children: [
+              const Icon(Icons.picture_as_pdf_rounded, color: AppColors.danger),
+              const SizedBox(width: 12),
+              Text(t('batch.upload_pdf')),
+            ]),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, _srcCamera),
+            child: Row(children: [
+              const Icon(Icons.camera_alt_rounded, color: AppColors.info),
+              const SizedBox(width: 12),
+              Text(t('batch.take_photo')),
+            ]),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, _srcGallery),
+            child: Row(children: [
+              const Icon(Icons.photo_library_rounded, color: AppColors.success),
+              const SizedBox(width: 12),
+              Text(t('batch.choose_from_gallery')),
+            ]),
+          ),
+        ],
+      ),
+    );
+    if (choice == null) return;
+
+    // 2. Dosya → bytes + filename (web ve native için ortak)
+    Uint8List? fileBytes;
+    String? fileName;
+
+    if (choice == _srcPdf) {
+      // withData: true → web'de path null olduğu için bytes gerekli
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+        allowMultiple: false,
+        withData: true,
+      );
+      if (result == null) return;
+      final pf = result.files.single;
+      if (pf.bytes != null) {
+        fileBytes = pf.bytes;
+        fileName = pf.name;
+      } else if (pf.path != null) {
+        // native fallback
+        fileBytes = await File(pf.path!).readAsBytes();
+        fileName = pf.name;
+      }
+    } else if (choice == _srcCamera) {
+      // Kamera izni
+      final status = await Permission.camera.request();
+      if (!mounted) return;
+      if (!status.isGranted) {
+        AppToast.error(context, t('batch.camera_permission_denied'));
+        return;
+      }
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+        maxWidth: 2048,
+      );
+      if (picked == null) return;
+      fileBytes = await picked.readAsBytes();
+      fileName = picked.name;
+    } else {
+      // Galeri
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+      fileBytes = await picked.readAsBytes();
+      fileName = picked.name;
+    }
+
+    if (fileBytes == null || fileName == null) return;
+
+    // 10 MB ön kontrol
+    if (fileBytes!.length > 10 * 1024 * 1024) {
+      if (mounted) AppToast.error(context, t('batch.file_too_large'));
+      return;
+    }
+
+    if (!mounted) return;
+
+    // 3. Loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(t('batch.document_uploading')),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final service = ref.read(documentAnalyzeServiceProvider);
+      final analyzeResult =
+          await service.analyzeDocumentFromBytes(fileBytes, fileName);
+
+      // Root navigator'dan pop et — showDialog useRootNavigator:true ile açar
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+
+      if (!mounted) return;
+
+      if (analyzeResult.items.isEmpty) {
+        AppToast.error(context, t('batch.document_no_items'));
+        return;
+      }
+
+      // 4. Sonuç sheet'ini göster
+      await DocumentAnalyzeResultSheet.show(
+        context: context,
+        result: analyzeResult,
+        onImport: (selected) {
+          ref.read(batchEntryProvider.notifier).addFromDocumentItems(selected);
+          AppToast.success(
+            context,
+            '${selected.length} ${t('batch.document_items_imported')}',
+          );
+          // Satış fiyatı alış fiyatına eşitlendi — kullanıcıyı uyar
+          if (selected.isNotEmpty) {
+            Future.delayed(const Duration(milliseconds: 700), () {
+              if (mounted) {
+                AppToast.warning(context, t('batch.sale_price_check_required'));
+              }
+            });
+          }
+        },
+      );
+    } catch (e) {
+      // Root navigator'dan pop et
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      if (!mounted) return;
+
+      String key = 'batch.document_analyze_error';
+      if (e is DioException) {
+        if (e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.receiveTimeout ||
+            e.type == DioExceptionType.sendTimeout) {
+          key = 'batch.document_timeout_error';
+        } else if (e.response?.statusCode == 400) {
+          final msg = (e.response?.data?['message'] as String?) ?? '';
+          key = (msg.contains('10 MB') || msg.contains('boyut'))
+              ? 'batch.file_too_large'
+              : 'batch.document_parse_error';
+        } else if (e.response?.statusCode == 500) {
+          key = 'batch.document_parse_error';
+        }
+      }
+      AppToast.error(context, t(key));
+    }
+  }
+
   Future<void> _addByBarcode() async {
     final input = _barcodeController.text.trim();
     if (input.isEmpty) return;
@@ -62,15 +248,33 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
     _barcodeController.clear();
     _barcodeFocus.requestFocus();
     if (msg != null && mounted) {
-      AppToast.info(context, msg);
+      final t = i18nOf(ref);
+      AppToast.info(context, _formatBarcodeMsg(msg, t));
     }
   }
 
+  String _formatBarcodeMsg(String msg, String Function(String) t) {
+    final parts = msg.split('|');
+    return switch (parts[0]) {
+      'batch.barcode_qty_increased' =>
+        '${parts.elementAtOrNull(1) ?? ''} — ${t("batch.barcode_qty_increased")} (${parts.elementAtOrNull(2) ?? ''})',
+      'batch.barcode_added' =>
+        '${parts.elementAtOrNull(1) ?? ''} ${t("batch.barcode_added")}',
+      _ => t(parts[0]),
+    };
+  }
+
   Future<void> _submit(BatchEntryState state) async {
-    // Validasyon
+    // validateAll() "batch.key|rowNum" formatında döner
     final err = ref.read(batchEntryProvider.notifier).validateAll();
     if (err != null) {
-      _showError(err);
+      final t = i18nOf(ref);
+      if (err.contains('|')) {
+        final parts = err.split('|');
+        _showError('${parts[1]}. ${t(parts[0])}');
+      } else {
+        _showError(t(err));
+      }
       return;
     }
 
@@ -87,7 +291,9 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
       if (!mounted) return;
       _showResultSheet(result);
     } catch (e) {
-      if (mounted) _showError(e.toString());
+      // Exception: prefix'i soy
+      final raw = e.toString().replaceFirst('Exception: ', '');
+      if (mounted) _showError(raw);
     }
   }
 
@@ -151,6 +357,7 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
         children: [
           const BatchHeaderForm(),
           _buildSearchBar(cfg, t),
+          _BulkActionsPanel(t: t),
           _buildTabBar(state, t),
           Expanded(child: _buildBody(state, cfg, t)),
           _buildSummaryBar(state, t),
@@ -225,6 +432,25 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
                   height: 46,
                   alignment: Alignment.center,
                   child: const Icon(Icons.add_rounded, color: Colors.white, size: 22),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Tooltip(
+            message: t('batch.upload_or_photo'),
+            child: Material(
+              color: AppColors.info,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                onTap: _uploadDocument,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: 46,
+                  height: 46,
+                  alignment: Alignment.center,
+                  child: const Icon(Icons.add_a_photo_rounded,
+                      color: Colors.white, size: 22),
                 ),
               ),
             ),
@@ -420,6 +646,32 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Eksik teslimat uyarısı
+              if (state.hasAnyShortage) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        size: 13, color: AppColors.warning),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${state.shortageItems} ${t('batch.shortage_summary')}',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.warning,
+                      ),
+                    ),
+                  ]),
+                ),
+              ],
               // Hazır / toplam göstergesi
               if (state.rows.isNotEmpty) ...[
                 Row(
@@ -613,6 +865,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
     int? minStockLevel,
     bool? isExpanded,
     double? vatRate,
+    double? discountRate,
     bool? vatIncluded,
     String? description,
     Map<String, String>? attributes,
@@ -794,12 +1047,19 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                                         icon: Icons.business_outlined,
                                         label: row.brandName!,
                                       ),
-                                    // Footwear: varyant sayısı chip
+                                    // Varyant chip: footwear → N varyant,
+                                    // diğer yeni ürünler → 1 varyant (otomatik)
                                     if (widget.cfg.fields.showVariantSize &&
                                         row.variantRows.isNotEmpty)
                                       _MetaChip(
                                         icon: Icons.layers_rounded,
-                                        label: '${row.variantRows.length} varyant',
+                                        label: '${row.variantRows.length} ${t('batch.variants')}',
+                                        color: accentColor,
+                                      )
+                                    else if (row.isNew)
+                                      _MetaChip(
+                                        icon: Icons.inventory_2_rounded,
+                                        label: '1 ${t('batch.variant')}',
                                         color: accentColor,
                                       ),
                                   ],
@@ -820,7 +1080,9 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                                 const SizedBox(width: 4),
                                 Expanded(
                                   child: Text(
-                                    _completion.missingFields.join(', '),
+                                    _completion.missingFields
+                                        .map((f) => i18nOf(ref)(f))
+                                        .join(', '),
                                     style: const TextStyle(
                                         fontSize: 10,
                                         color: AppColors.warning,
@@ -903,7 +1165,7 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                'Kâr %${margin.toStringAsFixed(0)}',
+                                '${t('batch.profit_percent')} ${margin.toStringAsFixed(0)}',
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
@@ -916,10 +1178,33 @@ class _BatchRowCardState extends ConsumerState<_BatchRowCard> {
                           ],
                           const SizedBox(height: 6),
                         ],
-                        _QuantityControl(
-                          quantity: row.quantity,
-                          onChanged: (q) => _update(quantity: q),
-                        ),
+                        if (row.variantRows.isNotEmpty)
+                          _VariantQtyBadge(row.effectiveQuantity)
+                        else
+                          _QuantityControl(
+                            quantity: row.quantity,
+                            onChanged: (q) => _update(quantity: q),
+                          ),
+                        // Eksik teslimat rozeti
+                        if (row.isExisting && row.hasShortage) ...[
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.warning.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: AppColors.warning, width: 0.5),
+                            ),
+                            child: Text(
+                              '${row.shortageQty} ${t('batch.shortage_badge')}',
+                              style: const TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.warning,
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                     const SizedBox(width: 8),
@@ -963,10 +1248,17 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
   late final TextEditingController _oemCtrl;
   late final TextEditingController _purchaseCtrl;
   late final TextEditingController _saleCtrl;
+  late final TextEditingController _quantityCtrl;
+  late final TextEditingController _invoiceQtyCtrl;
   late final TextEditingController _brandCtrl;
   late final TextEditingController _shelfCtrl;
   late final TextEditingController _descCtrl;
   late final TextEditingController _minStockCtrl;
+  late final TextEditingController _discountCtrl;
+  /// Toplam satır fiyatı — variant grup durumunda kullanıcı toplam girip
+  /// variantlara orantılı birim fiyat dağıtabilsin.
+  late final TextEditingController _totalPurchaseCtrl;
+  late final TextEditingController _totalSaleCtrl;
 
   @override
   void initState() {
@@ -976,21 +1268,33 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
     _nameCtrl = TextEditingController(text: r.productName);
     _barcodeCtrl = TextEditingController(text: r.barcode);
     _oemCtrl = TextEditingController(text: r.oemNumber ?? '');
+    _discountCtrl = TextEditingController(
+        text: r.discountRate > 0 ? r.discountRate.toString() : '');
     _purchaseCtrl = TextEditingController(
         text: r.purchasePrice > 0 ? r.purchasePrice.toString() : '');
     _saleCtrl = TextEditingController(
         text: r.salePrice > 0 ? r.salePrice.toString() : '');
+    _quantityCtrl = TextEditingController(text: r.quantity.toString());
+    _invoiceQtyCtrl = TextEditingController(
+        text: r.invoiceQuantity?.toString() ?? r.quantity.toString());
     _brandCtrl = TextEditingController(text: r.brandName ?? '');
     _shelfCtrl = TextEditingController(text: r.shelfLocation ?? '');
     _descCtrl = TextEditingController(text: r.description ?? '');
     _minStockCtrl = TextEditingController(text: r.minStockLevel.toString());
+    // Toplam satır fiyatı — başlangıçta lineCost/lineTotal'dan hesapla
+    _totalPurchaseCtrl = TextEditingController(
+        text: r.lineCost > 0 ? r.lineCost.toStringAsFixed(2) : '');
+    _totalSaleCtrl = TextEditingController(
+        text: r.lineTotal > 0 ? r.lineTotal.toStringAsFixed(2) : '');
   }
 
   @override
   void dispose() {
     for (final c in [
       _nameCtrl, _barcodeCtrl, _oemCtrl, _purchaseCtrl,
-      _saleCtrl, _brandCtrl, _shelfCtrl, _descCtrl, _minStockCtrl,
+      _saleCtrl, _quantityCtrl, _invoiceQtyCtrl, _brandCtrl, _shelfCtrl,
+      _descCtrl, _minStockCtrl, _discountCtrl,
+      _totalPurchaseCtrl, _totalSaleCtrl,
     ]) {
       c.dispose();
     }
@@ -1002,16 +1306,21 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
     String? barcode,
     String? oemNumber,
     List<Map<String, String>>? oemList,
+    List<Map<String, String>>? crossRefList,
     double? purchasePrice,
     double? salePrice,
     int? quantity,
+    int? invoiceQuantity,
+    bool clearInvoiceQuantity = false,
     String? categoryId,
     String? categoryName,
+    String? brandId,
     String? brandName,
     String? unitId,
     String? shelfLocation,
     int? minStockLevel,
     double? vatRate,
+    double? discountRate,
     bool? vatIncluded,
     String? description,
     Map<String, String>? attributes,
@@ -1023,21 +1332,74 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
           barcode: barcode,
           oemNumber: oemNumber,
           oemList: oemList,
+          crossRefList: crossRefList,
           purchasePrice: purchasePrice,
           salePrice: salePrice,
           quantity: quantity,
+          invoiceQuantity: invoiceQuantity,
+          clearInvoiceQuantity: clearInvoiceQuantity,
           categoryId: categoryId,
           categoryName: categoryName,
+          brandId: brandId,
           brandName: brandName,
           unitId: unitId,
           shelfLocation: shelfLocation,
           minStockLevel: minStockLevel,
           vatRate: vatRate,
+          discountRate: discountRate,
           vatIncluded: vatIncluded,
           description: description,
           attributes: attributes,
           variantRows: variantRows,
         );
+  }
+
+  /// Kart alış fiyatını TÜM variant satırlarına uygular (üzerine yazar).
+  void _applyPurchaseToAllVariants(BatchEntryRow row) {
+    final val = double.tryParse(_purchaseCtrl.text.replaceAll(',', '.')) ?? 0;
+    if (val <= 0) return;
+    _update(
+      purchasePrice: val,
+      variantRows: row.variantRows.map((vr) => vr.copyWith(purchasePrice: val)).toList(),
+    );
+  }
+
+  /// Kart satış fiyatını TÜM variant satırlarına uygular (üzerine yazar).
+  void _applySaleToAllVariants(BatchEntryRow row) {
+    final val = double.tryParse(_saleCtrl.text.replaceAll(',', '.')) ?? 0;
+    if (val <= 0) return;
+    _update(
+      salePrice: val,
+      variantRows: row.variantRows.map((vr) => vr.copyWith(salePrice: val)).toList(),
+    );
+  }
+
+  /// Toplam satır fiyatını variant adet oranına göre birim fiyatlara böl.
+  /// Senaryoda: 5 beden Tshirt × toplam 500 TL → her variant 100 TL birim fiyat.
+  /// [which] 'purchase' | 'sale' | 'both' — hangi alan güncellensin.
+  void _distributeTotalToVariants(BatchEntryRow row, double totalPrice, String which) {
+    if (totalPrice <= 0 || row.variantRows.isEmpty) return;
+    final totalQty = row.variantRows.fold<int>(0, (s, v) => s + v.quantity);
+    if (totalQty <= 0) return;
+    final splitUnitPrice = totalPrice / totalQty;
+    final updated = row.variantRows.map((vr) {
+      return vr.copyWith(
+        purchasePrice: (which == 'purchase' || which == 'both') ? splitUnitPrice : null,
+        salePrice:     (which == 'sale'     || which == 'both') ? splitUnitPrice : null,
+      );
+    }).toList();
+    _update(
+      purchasePrice: (which == 'purchase' || which == 'both') ? splitUnitPrice : null,
+      salePrice:     (which == 'sale'     || which == 'both') ? splitUnitPrice : null,
+      variantRows: updated,
+    );
+    // Ctrl'leri de senkronize et ki field içinde görünüm tutarlı olsun
+    if (which == 'purchase' || which == 'both') {
+      _purchaseCtrl.text = splitUnitPrice.toStringAsFixed(2);
+    }
+    if (which == 'sale' || which == 'both') {
+      _saleCtrl.text = splitUnitPrice.toStringAsFixed(2);
+    }
   }
 
   BatchRowCompletion _completion(BatchEntryRow row) => BatchRowCompletion.compute(
@@ -1065,6 +1427,14 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
         SectorType.general => Icons.store_outlined,
       };
 
+  void _syncExternalChanges(BatchEntryRow row) {
+    // applyBrandToAll / applyCategoryToAll gibi toplu işlemlerden sonra
+    // TextEditingController'ları senkronize et.
+    // Fiyat alanlarına dokunulmaz — kullanıcı yazarken cursor bozulur.
+    final brand = row.brandName ?? '';
+    if (_brandCtrl.text != brand) _brandCtrl.text = brand;
+  }
+
   @override
   Widget build(BuildContext context) {
     final row = ref.watch(batchEntryProvider.select(
@@ -1075,10 +1445,13 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
     // Satır silindiyse dialog'u kapat
     if (row.id != widget.rowId) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) Navigator.of(context).pop();
+        if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
       });
       return const SizedBox.shrink();
     }
+
+    // Toplu işlemlerden gelen dışsal state güncellemelerini controller'lara yansıt.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncExternalChanges(row));
 
     final t = i18nOf(ref);
     final completion = _completion(row);
@@ -1155,7 +1528,7 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(8),
-                      onTap: () => Navigator.of(context).pop(),
+                      onTap: () => Navigator.of(context, rootNavigator: true).pop(),
                       child: const Padding(
                         padding: EdgeInsets.all(6),
                         child: Icon(Icons.close_rounded,
@@ -1217,14 +1590,15 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                                   _update(categoryId: id, categoryName: name),
                             ),
                             if (widget.cfg.fields.showBrand)
-                              _Field(
+                              _BrandAutocomplete(
                                 label: t('product.brand') +
                                     (widget.cfg.fields.brandRequired ? ' *' : ''),
                                 ctrl: _brandCtrl,
-                                onChanged: (v) => _update(brandName: v),
                                 hint: widget.cfg.type == SectorType.autoParts
                                     ? t('batch.hint_auto_brand')
                                     : t('batch.hint_brand_name'),
+                                onSelected: (id, name) =>
+                                    _update(brandId: id, brandName: name),
                               )
                             else
                               const SizedBox.shrink(),
@@ -1247,10 +1621,21 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
 
                   const SizedBox(height: 14),
 
-                  // ── Bölüm 2: Fiyat & Stok ────────────────────────────────
+                  // ── Varyant Garanti Banner — yeni ürün için tek varyant ──
+                  // Mimari: her yeni ürün en az 1 variantla kaydedilir.
+                  // Birim fiyat + stok + barkod bu variant'a aktarılır.
+                  if (row.isNew && !widget.cfg.fields.showVariantSize)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _VariantSummaryBanner(row: row, accentColor: accentColor, t: t),
+                    ),
+
+                  // ── Bölüm 2: Varyant — Fiyat & Stok ──────────────────────
                   _WizardSectionHeader(
                     stepNumber: 2,
-                    title: t('batch.price_and_stock'),
+                    title: row.isNew
+                        ? t('batch.variant_price_stock')
+                        : t('batch.price_and_stock'),
                     section: completion.sectionB,
                     isRequired: true,
                     t: t,
@@ -1263,27 +1648,201 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                     showHeader: false,
                     child: Column(
                       children: [
+                        // ── Fiyat alanları ─────────────────────────────────
+                        // KURAL: Mevcut ürün eşleşmesinde salePrice SİSTEM
+                        // fiyatıyla aynı kalır (read-only, 🔒 ikon).
+                        // Yeni ürün veya manuel satırda düzenlenebilir.
                         _FormRow(children: [
                           _Field(
-                            label: '${t('batch.purchase_price')} ₺' +
-                                (row.isExisting ? ' *' : ''),
+                            label: row.variantRows.isNotEmpty
+                                ? '${t('batch.default_label')} ${t('batch.purchase_price')} ₺'
+                                : '${t('batch.purchase_price')} ₺${row.isExisting ? ' *' : ''}',
                             ctrl: _purchaseCtrl,
                             onChanged: (v) =>
-                                _update(purchasePrice: double.tryParse(v) ?? 0),
+                                _update(purchasePrice: double.tryParse(v.replaceAll(',', '.')) ?? 0),
                             keyboardType: const TextInputType.numberWithOptions(
                                 decimal: true),
                             hint: '0,00',
                           ),
-                          _Field(
-                            label: '${widget.cfg.labels.salePriceLabel} ₺ *',
-                            ctrl: _saleCtrl,
-                            onChanged: (v) =>
-                                _update(salePrice: double.tryParse(v) ?? 0),
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            hint: '0,00',
-                          ),
+                          if (row.isExisting && row.existingSalePrice != null)
+                            // Mevcut ürün — satış fiyatı SİSTEMDEN (kilitli)
+                            _LockedPriceField(
+                              label: '🔒 ${widget.cfg.labels.salePriceLabel} ₺',
+                              value: row.existingSalePrice!,
+                              tooltip: t('batch.system_price_locked_tooltip'),
+                            )
+                          else
+                            _Field(
+                              label: row.variantRows.isNotEmpty
+                                  ? '${t('batch.default_label')} ${widget.cfg.labels.salePriceLabel} ₺'
+                                  : '${widget.cfg.labels.salePriceLabel} ₺ *',
+                              ctrl: _saleCtrl,
+                              onChanged: (v) =>
+                                  _update(salePrice: double.tryParse(v.replaceAll(',', '.')) ?? 0),
+                              keyboardType: const TextInputType.numberWithOptions(
+                                  decimal: true),
+                              hint: '0,00',
+                            ),
                         ]),
+
+                        // ── Varyantlara Uygula (sadece variant varsa) ──────
+                        if (row.variantRows.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              const SizedBox(width: 2),
+                              _ApplyToVariantsBtn(
+                                label: '↓ ${t('batch.purchase_price')}',
+                                onTap: () => _applyPurchaseToAllVariants(row),
+                              ),
+                              const SizedBox(width: 8),
+                              _ApplyToVariantsBtn(
+                                label: '↓ ${widget.cfg.labels.salePriceLabel}',
+                                onTap: () => _applySaleToAllVariants(row),
+                              ),
+                              const Spacer(),
+                              // Toplam stok: varyant adetlerinin toplamı
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.info.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                      color: AppColors.info.withValues(alpha: 0.3)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.layers_rounded,
+                                        size: 11, color: AppColors.info),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${t('batch.total_stock')}: ${row.effectiveQuantity}',
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.info,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          // ── Toplam Fiyat → Variant birim fiyatına orantılı bölüşüm ─
+                          // Senaryo: 5 beden Tshirt → toplam 500 TL gir → her variant
+                          // adet başına 100 TL birim fiyat. (totalPrice / sumOfQty)
+                          const SizedBox(height: 10),
+                          _FormRow(children: [
+                            _Field(
+                              label: '${t('batch.total_purchase_price')} ₺',
+                              ctrl: _totalPurchaseCtrl,
+                              onChanged: (v) {
+                                final total = double.tryParse(
+                                    v.replaceAll(',', '.')) ?? 0;
+                                if (total > 0) {
+                                  _distributeTotalToVariants(row, total, 'purchase');
+                                }
+                              },
+                              keyboardType: const TextInputType.numberWithOptions(
+                                  decimal: true),
+                              hint: '0,00',
+                            ),
+                            _Field(
+                              label: '${t('batch.total_sale_price')} ₺',
+                              ctrl: _totalSaleCtrl,
+                              onChanged: (v) {
+                                final total = double.tryParse(
+                                    v.replaceAll(',', '.')) ?? 0;
+                                if (total > 0) {
+                                  _distributeTotalToVariants(row, total, 'sale');
+                                }
+                              },
+                              keyboardType: const TextInputType.numberWithOptions(
+                                  decimal: true),
+                              hint: '0,00',
+                            ),
+                          ]),
+                          const SizedBox(height: 4),
+                          Row(children: [
+                            const Icon(Icons.info_outline_rounded,
+                                size: 11, color: AppColors.textMuted),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                t('batch.total_price_distribute_hint'),
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.textMuted,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ),
+                          ]),
+                        ],
+
+                        // ── Adet: Fatura Adedi + Teslim Alınan (tüm ürünler) ──
+                        if (row.variantRows.isEmpty) ...[
+                          const SizedBox(height: 10),
+                          Row(children: [
+                            Expanded(
+                              child: _Field(
+                                label: t('batch.invoice_qty'),
+                                ctrl: _invoiceQtyCtrl,
+                                onChanged: (v) => _update(
+                                  invoiceQuantity: int.tryParse(v),
+                                  clearInvoiceQuantity: v.isEmpty,
+                                ),
+                                keyboardType: TextInputType.number,
+                                hint: '0',
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _Field(
+                                label: '${t('batch.received_qty')} *',
+                                ctrl: _quantityCtrl,
+                                onChanged: (v) =>
+                                    _update(quantity: int.tryParse(v) ?? 1),
+                                keyboardType: TextInputType.number,
+                                hint: '1',
+                              ),
+                            ),
+                          ]),
+                          // Shortage uyarı banner
+                          if (row.hasShortage) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: AppColors.warning.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                    color: AppColors.warning.withValues(alpha: 0.4)),
+                              ),
+                              child: Row(children: [
+                                const Icon(Icons.warning_amber_rounded,
+                                    size: 14, color: AppColors.warning),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    '${row.shortageQty} ${t('batch.shortage_note')}',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.warning,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ]),
+                            ),
+                          ],
+                        ],
+
                         const SizedBox(height: 10),
                         Row(children: [
                           Expanded(
@@ -1297,11 +1856,30 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                           Expanded(
                             child: _VatIncludedSwitch(
                               label: t('batch.vat_included'),
+                              trueLabel: t('batch.vat_included_yes'),
+                              falseLabel: t('batch.vat_included_no'),
                               value: row.vatIncluded,
                               onChanged: (v) => _update(vatIncluded: v),
                             ),
                           ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _Field(
+                              label: t('batch.field_discount'),
+                              ctrl: _discountCtrl,
+                              keyboardType: const TextInputType
+                                  .numberWithOptions(decimal: true),
+                              onChanged: (v) => _update(
+                                discountRate: double.tryParse(
+                                        v.replaceAll(',', '.')) ??
+                                    0,
+                              ),
+                              hint: '0',
+                            ),
+                          ),
                         ]),
+
+                        // ── Kâr özet banner ────────────────────────────────
                         if (row.salePrice > 0 && row.purchasePrice > 0) ...[
                           const SizedBox(height: 10),
                           Container(
@@ -1322,39 +1900,87 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                               Expanded(
                                 child: Text.rich(
                                   TextSpan(children: [
+                                    // Varyantlar varsa: Maliyet · Satış · Kâr
+                                    if (row.variantRows.isNotEmpty) ...[
+                                      TextSpan(
+                                        text: '${t("batch.cost")}: ',
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: AppColors.textSecondary),
+                                      ),
+                                      TextSpan(
+                                        text: widget.currency.format(row.lineCost),
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.warning),
+                                      ),
+                                      TextSpan(
+                                        text: '  •  ${t("common.total")} ${t("batch.sale_price")}: ',
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: AppColors.textSecondary),
+                                      ),
+                                      TextSpan(
+                                        text: widget.currency.format(row.lineTotal),
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.info),
+                                      ),
+                                      TextSpan(
+                                        text: '  •  ${t("batch.unit_profit")}: ',
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: AppColors.textSecondary),
+                                      ),
+                                      TextSpan(
+                                        text: widget.currency.format(row.lineProfit),
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: row.lineProfit >= 0
+                                                ? AppColors.success
+                                                : AppColors.danger),
+                                      ),
+                                      TextSpan(
+                                        text: '  •  ${row.effectiveQuantity} ${t("common.quantity_unit")}',
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: AppColors.textSecondary),
+                                      ),
+                                    ] else ...[
+                                      TextSpan(
+                                        text: '${t('batch.unit_profit')}: ',
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: AppColors.textSecondary),
+                                      ),
+                                      TextSpan(
+                                        text: widget.currency.format(
+                                                row.salePrice - row.purchasePrice) +
+                                            '  •  ',
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.success),
+                                      ),
+                                      TextSpan(
+                                        text: '${t('common.total')}: ',
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: AppColors.textSecondary),
+                                      ),
+                                      TextSpan(
+                                        text: widget.currency.format(row.lineProfit),
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.success),
+                                      ),
+                                    ],
                                     TextSpan(
-                                      text: t('batch.unit_profit') + ': ',
-                                      style: const TextStyle(
-                                          fontSize: 11,
-                                          color: AppColors.textSecondary),
-                                    ),
-                                    TextSpan(
-                                      text: widget.currency.format(
-                                              row.salePrice -
-                                                  row.purchasePrice) +
-                                          '  •  ',
-                                      style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.success),
-                                    ),
-                                    TextSpan(
-                                      text: t('common.total') + ': ',
-                                      style: const TextStyle(
-                                          fontSize: 11,
-                                          color: AppColors.textSecondary),
-                                    ),
-                                    TextSpan(
-                                      text: widget.currency
-                                          .format(row.lineProfit),
-                                      style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.success),
-                                    ),
-                                    TextSpan(
-                                      text:
-                                          '  •  Marj: %${margin.toStringAsFixed(1)}',
+                                      text: '  •  ${t('batch.margin')}: %${margin.toStringAsFixed(1)}',
                                       style: TextStyle(
                                           fontSize: 11,
                                           color: margin >= 20
@@ -1384,13 +2010,14 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                       t: t,
                     ),
                     const SizedBox(height: 8),
-                    _FootwearVariantTable(
+                    _BatchVariantBuilder(
                       variantRows: row.variantRows,
                       defaultPurchasePrice: row.purchasePrice,
                       defaultSalePrice: row.salePrice,
                       sizeLabel: widget.cfg.labels.variantField,
                       accentColor: accentColor,
                       onChanged: (rows) => _update(variantRows: rows),
+                      t: t,
                     ),
                   ] else if (widget.cfg.fields.showOem ||
                       widget.cfg.fields.showShelf) ...[
@@ -1422,7 +2049,12 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                                   oemNumber: v,
                                   oemList: v.trim().isEmpty
                                       ? []
-                                      : [{'oemNumber': v.trim(), 'manufacturer': ''}],
+                                      : [
+                                          {
+                                            'oemNumber': v.trim(),
+                                            'manufacturer': ''
+                                          }
+                                        ],
                                 ),
                                 hint: widget.cfg.type == SectorType.technology
                                     ? t('batch.hint_imei_serial')
@@ -1465,36 +2097,10 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                       attributes: row.attributes,
                       cfg: widget.cfg,
                       onChanged: (attrs) => _update(attributes: attrs),
+                      t: t,
                     ),
                   ],
 
-                  const SizedBox(height: 12),
-
-                  // ── Footer actions ────────────────────────────────────────
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton.icon(
-                        onPressed: () => ref
-                            .read(batchEntryProvider.notifier)
-                            .removeRow(row.id),
-                        icon: const Icon(Icons.delete_outline_rounded,
-                            size: 16, color: AppColors.danger),
-                        label: Text(t('common.remove'),
-                            style:
-                                const TextStyle(color: AppColors.danger, fontSize: 13)),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            side: BorderSide(
-                                color: AppColors.danger.withValues(alpha: 0.3)),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                   const SizedBox(height: 8),
                 ],
               ),
@@ -1513,8 +2119,9 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                 children: [
                   TextButton.icon(
                     onPressed: () {
+                      // Sadece satırı sil — build() addPostFrameCallback ile dialog'u kapatır.
+                      // İkinci Navigator.pop() ekleme: double-pop ekranı atıyor.
                       ref.read(batchEntryProvider.notifier).removeRow(widget.rowId);
-                      Navigator.of(context).pop();
                     },
                     icon: const Icon(Icons.delete_outline_rounded,
                         size: 16, color: AppColors.danger),
@@ -1530,7 +2137,7 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
                   ),
                   const Spacer(),
                   TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
                     child: Text(t('common.close'),
                         style: const TextStyle(color: AppColors.textSecondary)),
                   ),
@@ -1545,6 +2152,69 @@ class _BatchRowEditDialogState extends ConsumerState<_BatchRowEditDialog> {
 }
 
 // ── QUANTITY CONTROL ──────────────────────────────────────────────────────────
+// Kart üzerinde: varyant ürün için toplam stok rozeti (tıklanamaz)
+class _VariantQtyBadge extends StatelessWidget {
+  final int totalQty;
+  const _VariantQtyBadge(this.totalQty);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.success.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.layers_rounded, size: 12, color: AppColors.success),
+          const SizedBox(width: 4),
+          Text(
+            '$totalQty',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: AppColors.success,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Dialog Section 2: "↓ Alışı / Satışı Varyantlara Uygula" mini butonu
+class _ApplyToVariantsBtn extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _ApplyToVariantsBtn({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.success.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: AppColors.success,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _QuantityControl extends StatelessWidget {
   final int quantity;
   final ValueChanged<int> onChanged;
@@ -1717,6 +2387,7 @@ class _CategoryDropdown extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
     final asyncCats = ref.watch(batchCategoriesProvider);
 
     return Column(
@@ -1747,9 +2418,9 @@ class _CategoryDropdown extends ConsumerWidget {
               child: DropdownButtonFormField<String>(
                 value: safeValue,
                 isExpanded: true,
-                hint: const Text(
-                  '— Seçin —',
-                  style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                hint: Text(
+                  '— ${t('common.select')} —',
+                  style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
                 ),
                 style: const TextStyle(
                     fontSize: 13, color: AppColors.textPrimary),
@@ -2010,11 +2681,15 @@ class _VatDropdown extends StatelessWidget {
 // ── VAT INCLUDED SWITCH ────────────────────────────────────────────────────────
 class _VatIncludedSwitch extends StatelessWidget {
   final String label;
+  final String trueLabel;
+  final String falseLabel;
   final bool value;
   final ValueChanged<bool> onChanged;
 
   const _VatIncludedSwitch({
     required this.label,
+    required this.trueLabel,
+    required this.falseLabel,
     required this.value,
     required this.onChanged,
   });
@@ -2045,7 +2720,7 @@ class _VatIncludedSwitch extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                value ? 'Dahil' : 'Hariç',
+                value ? trueLabel : falseLabel,
                 style: TextStyle(
                   fontSize: 12,
                   color:
@@ -2424,6 +3099,10 @@ class _ExistingProductInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brandName = row.brandName ?? row.existingBrandName;
+    final shelf = row.existingShelfLocation;
+    final stock = row.existingCurrentStock;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
@@ -2435,7 +3114,7 @@ class _ExistingProductInfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Mevcut ürün etiketi
+          // ── Üst satır: Mevcut etiketi + stok rozeti + SKU ───────────────
           Row(
             children: [
               const Icon(Icons.inventory_2_rounded,
@@ -2450,6 +3129,9 @@ class _ExistingProductInfoCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
+              if (stock != null) _StockBadge(stock: stock, t: t),
+              if (stock != null && row.existingVariantSku != null)
+                const SizedBox(width: 6),
               if (row.existingVariantSku != null)
                 Container(
                   padding:
@@ -2480,7 +3162,7 @@ class _ExistingProductInfoCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          // Kategori / marka chip'leri
+          // Kategori / marka / barkod / raf chip'leri
           Wrap(
             spacing: 8,
             runSpacing: 4,
@@ -2491,10 +3173,10 @@ class _ExistingProductInfoCard extends StatelessWidget {
                   label: row.categoryName!,
                   color: accentColor,
                 ),
-              if (row.brandName != null && row.brandName!.isNotEmpty)
+              if (brandName != null && brandName.isNotEmpty)
                 _InfoChip(
                   icon: Icons.business_outlined,
-                  label: row.brandName!,
+                  label: brandName,
                   color: AppColors.textSecondary,
                 ),
               if (row.barcode.isNotEmpty)
@@ -2503,10 +3185,140 @@ class _ExistingProductInfoCard extends StatelessWidget {
                   label: row.barcode,
                   color: AppColors.textMuted,
                 ),
+              if (shelf != null && shelf.isNotEmpty)
+                _InfoChip(
+                  icon: Icons.shelves,
+                  label: shelf,
+                  color: AppColors.info,
+                ),
             ],
           ),
-          // Stok alanı bilgisi
+
+          // ── Varyant Özeti — "Bu ürünün N varyantı var" ───────────────────
+          if (row.existingVariantCount != null && row.existingVariantCount! > 0) ...[
+            const SizedBox(height: 8),
+            _ExistingVariantsSection(
+              count: row.existingVariantCount!,
+              variants: row.existingVariants,
+              accentColor: accentColor,
+              t: t,
+            ),
+          ],
+
+          // ── OEM chip listesi ─────────────────────────────────────────────
+          if (row.existingOemCodes.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${t('batch.oem_codes')}: ',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Expanded(
+                  child: Wrap(
+                    spacing: 4,
+                    runSpacing: 3,
+                    children: row.existingOemCodes
+                        .map((code) => Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.orange
+                                    .withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                    color: AppColors.orange
+                                        .withValues(alpha: 0.3)),
+                              ),
+                              child: Text(
+                                code,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.orange,
+                                ),
+                              ),
+                            ))
+                        .toList(),
+                  ),
+                ),
+              ],
+            ),
+          ],
+
+          // ── Yeni fiyat girin uyarısı (kritik — kullanıcı sistemin eski
+          // fiyatını baz alacak sanmasın) + sistemdeki son fiyat referansı ──
           const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.warning.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        size: 13, color: AppColors.warning),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        t('batch.new_price_required_note'),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.warning,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                // Referans: sistemdeki son alış + satış fiyatları
+                if (row.existingLastPurchasePrice != null ||
+                    row.existingSalePrice != null) ...[
+                  const SizedBox(height: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 19),
+                    child: Wrap(
+                      spacing: 8,
+                      children: [
+                        if (row.existingLastPurchasePrice != null &&
+                            row.existingLastPurchasePrice! > 0)
+                          Text(
+                            '${t("batch.last_purchase_price")}: ₺${row.existingLastPurchasePrice!.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: AppColors.textSecondary,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        if (row.existingSalePrice != null &&
+                            row.existingSalePrice! > 0)
+                          Text(
+                            '${t("batch.system_sale_price")}: ₺${row.existingSalePrice!.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: AppColors.textSecondary,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          // Stok + cari güncellenecek info notu (ikincil bilgi)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
@@ -2535,6 +3347,52 @@ class _ExistingProductInfoCard extends StatelessWidget {
     );
   }
 }
+
+/// Mevcut ürün kartı sağ üst — toplam stok rozeti.
+class _StockBadge extends StatelessWidget {
+  final double stock;
+  final Function(String) t;
+  const _StockBadge({required this.stock, required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    final isEmpty = stock <= 0;
+    final color = isEmpty ? AppColors.danger : AppColors.success;
+    final label = isEmpty
+        ? t('batch.no_stock')
+        : '${t('batch.current_stock')}: ${stock.toInt()}';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isEmpty
+                ? Icons.warning_amber_rounded
+                : Icons.layers_rounded,
+            size: 11,
+            color: color,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 
 class _InfoChip extends StatelessWidget {
   final IconData icon;
@@ -2780,6 +3638,10 @@ class _ResultSheet extends StatelessWidget {
               ),
             ),
           ],
+          if (result.claim != null) ...[
+            const SizedBox(height: 16),
+            _ClaimBanner(claim: result.claim!, currency: currency, t: t),
+          ],
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
@@ -2799,6 +3661,63 @@ class _ResultSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+class _ClaimBanner extends StatelessWidget {
+  final BatchClaimInfo claim;
+  final NumberFormat currency;
+  final Function(String) t;
+  const _ClaimBanner({required this.claim, required this.currency, required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.report_problem_outlined,
+                  color: AppColors.warning, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  t('su.claim_batch_toast'),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.warning,
+                      fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${claim.lineCount} ${t('batch.items')}  •  ${currency.format(claim.claimAmount)}',
+            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+              label: Text(t('su.claim_view_action')),
+              onPressed: () {
+                Navigator.pop(context);
+                context.push('/supplier-claims/${claim.claimId}');
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -2848,11 +3767,13 @@ class _BatchAttributesSection extends StatefulWidget {
   final Map<String, String> attributes;
   final SectorConfig cfg;
   final void Function(Map<String, String>) onChanged;
+  final String Function(String) t;
 
   const _BatchAttributesSection({
     required this.attributes,
     required this.cfg,
     required this.onChanged,
+    required this.t,
   });
 
   @override
@@ -3028,8 +3949,8 @@ class _BatchAttributesSectionState
                   color: AppColors.success, size: 20),
             ),
             const SizedBox(width: 12),
-            const Text('Yeni Özellik',
-                style: TextStyle(
+            Text(widget.t('batch.add_attribute'),
+                style: const TextStyle(
                     fontSize: 16, fontWeight: FontWeight.w700)),
           ]),
           content: SizedBox(
@@ -3043,8 +3964,8 @@ class _BatchAttributesSectionState
                   autofocus: true,
                   onChanged: (_) => setDs(() => nameError = null),
                   decoration: InputDecoration(
-                    labelText: 'Özellik Adı',
-                    hintText: 'ör: Renk, Beden, Model',
+                    labelText: widget.t('batch.attribute_name'),
+                    hintText: widget.t('batch.hint_attr_name'),
                     errorText: nameError,
                     border: const OutlineInputBorder(),
                     prefixIcon: Icon(selIcon,
@@ -3052,8 +3973,8 @@ class _BatchAttributesSectionState
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text('İkon Seç',
-                    style: TextStyle(
+                Text(widget.t('batch.select_icon'),
+                    style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textSecondary)),
@@ -3121,14 +4042,14 @@ class _BatchAttributesSectionState
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dCtx),
-              child: const Text('İptal'),
+              child: Text(widget.t('common.cancel')),
             ),
             AppButton.primary(
-              text: 'Ekle',
+              text: widget.t('common.add'),
               onPressed: () {
                 final name = nameCtrl.text.trim();
                 if (name.isEmpty) {
-                  setDs(() => nameError = 'Özellik adı zorunludur');
+                  setDs(() => nameError = widget.t('batch.attribute_required'));
                   return;
                 }
                 if (widget.attributes.containsKey(name)) {
@@ -3188,7 +4109,7 @@ class _BatchAttributesSectionState
                   child: Icon(Icons.tune_rounded, size: 16, color: accent),
                 ),
                 const SizedBox(width: 10),
-                Text('Varyant Özellikleri',
+                Text(widget.t('batch.variant_attributes'),
                     style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -3202,7 +4123,7 @@ class _BatchAttributesSectionState
                       color: accent.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Text('${attrs.length} özellik',
+                    child: Text('${attrs.length} ${widget.t('batch.variants')}',
                         style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
@@ -3225,14 +4146,14 @@ class _BatchAttributesSectionState
                             color: AppColors.success
                                 .withValues(alpha: 0.3)),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.add_rounded,
+                          const Icon(Icons.add_rounded,
                               size: 14, color: AppColors.success),
-                          SizedBox(width: 4),
-                          Text('Yeni',
-                              style: TextStyle(
+                          const SizedBox(width: 4),
+                          Text(widget.t('batch.add_new'),
+                              style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.success)),
@@ -3675,31 +4596,120 @@ class _SectorExtraFieldsState extends State<_SectorExtraFields> {
   }
 }
 
-// ── FOOTWEAR VARIANT TABLE ────────────────────────────────────────────────────
-class _FootwearVariantTable extends StatefulWidget {
+// ── BATCH VARIANT BUILDER ─────────────────────────────────────────────────────
+
+// Renk paleti — veri değerleri (DB'ye bu şekilde kaydedilir, i18n gerekmez)
+const _kColorPalette = [
+  ('Siyah',      Color(0xFF1a1a1a)),
+  ('Beyaz',      Color(0xFFf5f5f5)),
+  ('Kırmızı',    Color(0xFFe53935)),
+  ('Mavi',       Color(0xFF1e88e5)),
+  ('Lacivert',   Color(0xFF1a237e)),
+  ('Gri',        Color(0xFF757575)),
+  ('Yeşil',      Color(0xFF43a047)),
+  ('Sarı',       Color(0xFFfdd835)),
+  ('Mor',        Color(0xFF8e24aa)),
+  ('Pembe',      Color(0xFFe91e8c)),
+  ('Kahverengi', Color(0xFF6d4c41)),
+  ('Turuncu',    Color(0xFFf4511e)),
+];
+
+// Hızlı beden setleri — (chip etiketi, beden listesi)
+const _kSizeSets = [
+  ('35–42', ['35','36','37','38','39','40','41','42']),
+  ('37–44', ['37','38','39','40','41','42','43','44']),
+  ('S/M/L/XL', ['S','M','L','XL']),
+  ('XS–XXL', ['XS','S','M','L','XL','XXL']),
+];
+
+// Varyant özelliği — builder fazında kullanılan yerel model
+class _VAttr {
+  final String id;
+  String name;
+  IconData icon;
+  List<String> values;
+
+  _VAttr({
+    String? id,
+    required this.name,
+    required this.icon,
+    List<String>? values,
+  })  : id = id ?? 'attr-${DateTime.now().microsecondsSinceEpoch}',
+        values = values ?? [];
+}
+
+// Preset şablonlar — wizard.dart ile aynı içerik
+List<_VAttr> _buildPreset(String key) {
+  switch (key) {
+    case 'shoes':
+      return [
+        _VAttr(name: 'Renk', icon: Icons.palette_outlined,
+            values: ['Siyah', 'Beyaz', 'Mavi']),
+        _VAttr(name: 'Numara', icon: Icons.format_size_rounded,
+            values: ['38', '39', '40', '41', '42']),
+      ];
+    case 'clothing':
+      return [
+        _VAttr(name: 'Renk', icon: Icons.palette_outlined,
+            values: ['Kırmızı', 'Mavi', 'Siyah', 'Beyaz']),
+        _VAttr(name: 'Beden', icon: Icons.straighten_rounded,
+            values: ['XS', 'S', 'M', 'L', 'XL', 'XXL']),
+      ];
+    case 'electronics':
+      return [
+        _VAttr(name: 'RAM', icon: Icons.memory_rounded,
+            values: ['4 GB', '8 GB', '16 GB']),
+        _VAttr(name: 'Depolama', icon: Icons.storage_rounded,
+            values: ['128 GB', '256 GB', '512 GB']),
+        _VAttr(name: 'Renk', icon: Icons.palette_outlined,
+            values: ['Siyah', 'Beyaz', 'Gri']),
+      ];
+    default:
+      return [];
+  }
+}
+
+class _BatchVariantBuilder extends StatefulWidget {
   final List<BatchVariantRow> variantRows;
   final double defaultPurchasePrice;
   final double defaultSalePrice;
   final String sizeLabel;
   final Color accentColor;
   final void Function(List<BatchVariantRow>) onChanged;
+  final String Function(String) t;
 
-  const _FootwearVariantTable({
+  const _BatchVariantBuilder({
     required this.variantRows,
     required this.defaultPurchasePrice,
     required this.defaultSalePrice,
     required this.sizeLabel,
     required this.accentColor,
     required this.onChanged,
+    required this.t,
   });
 
   @override
-  State<_FootwearVariantTable> createState() => _FootwearVariantTableState();
+  State<_BatchVariantBuilder> createState() => _BatchVariantBuilderState();
 }
 
-class _FootwearVariantTableState extends State<_FootwearVariantTable> {
-  // key: "${rowId}_field"
+class _BatchVariantBuilderState extends State<_BatchVariantBuilder> {
+  // ── Tablo fazı için controller map ────────────────────────────────────────
   final Map<String, TextEditingController> _ctrls = {};
+
+  // ── Builder fazı state ────────────────────────────────────────────────────
+  bool _showBuilder = true;
+  List<_VAttr> _attrs = [];
+  String? _selectedPreset;
+
+  @override
+  void initState() {
+    super.initState();
+    _showBuilder = widget.variantRows.isEmpty;
+    if (_showBuilder) {
+      _selectedPreset = 'shoes';
+      _attrs = _buildPreset('shoes');
+    }
+  }
 
   @override
   void dispose() {
@@ -3709,8 +4719,52 @@ class _FootwearVariantTableState extends State<_FootwearVariantTable> {
     super.dispose();
   }
 
+  /// Parent değişikliklerini (örn. _distributeTotalToVariants ile fiyat
+  /// güncellemesi) controller text'lerine yansıt.
+  /// Aksi halde row.purchasePrice değişse de UI'da eski değer görünür.
+  @override
+  void didUpdateWidget(covariant _BatchVariantBuilder oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    for (final row in widget.variantRows) {
+      // purchase
+      final pCtrl = _ctrls['${row.id}_purchase'];
+      if (pCtrl != null) {
+        final expected = (row.purchasePrice ?? widget.defaultPurchasePrice)
+            .toStringAsFixed(2);
+        if (pCtrl.text != expected && expected != '0.00') {
+          pCtrl.text = expected;
+        }
+      }
+      // sale
+      final sCtrl = _ctrls['${row.id}_sale'];
+      if (sCtrl != null) {
+        final expected = (row.salePrice ?? widget.defaultSalePrice)
+            .toStringAsFixed(2);
+        if (sCtrl.text != expected && expected != '0.00') {
+          sCtrl.text = expected;
+        }
+      }
+      // quantity
+      final qCtrl = _ctrls['${row.id}_quantity'];
+      if (qCtrl != null) {
+        final expected = row.quantity.toString();
+        if (qCtrl.text != expected) {
+          qCtrl.text = expected;
+        }
+      }
+    }
+  }
+
   TextEditingController _ctrl(String rowId, String field, String initial) =>
       _ctrls.putIfAbsent('${rowId}_$field', () => TextEditingController(text: initial));
+
+  // ── Preset uygula ─────────────────────────────────────────────────────────
+  void _applyPreset(String key) {
+    setState(() {
+      _selectedPreset = key;
+      _attrs = _buildPreset(key);
+    });
+  }
 
   void _addRow() {
     final newRow = BatchVariantRow(
@@ -3720,8 +4774,40 @@ class _FootwearVariantTableState extends State<_FootwearVariantTable> {
     widget.onChanged([...widget.variantRows, newRow]);
   }
 
+  void _addSizeSet(List<String> sizes) {
+    // Boş size'lı (manuel boş eklenen) satırlar varsa duplicate sayma
+    final existingSizes = widget.variantRows
+        .map((r) => r.size.trim())
+        .where((s) => s.isNotEmpty)
+        .toSet();
+    final newRows = sizes
+        .where((s) => !existingSizes.contains(s))
+        .map((s) => BatchVariantRow(
+              size: s,
+              purchasePrice: widget.defaultPurchasePrice > 0 ? widget.defaultPurchasePrice : null,
+              salePrice: widget.defaultSalePrice > 0 ? widget.defaultSalePrice : null,
+            ))
+        .toList();
+    // Kullanıcıya her zaman feedback ver (0 yeni eklendi de bilgi)
+    final tot = widget.variantRows.length + newRows.length;
+    final t = widget.t;
+    if (newRows.isNotEmpty) {
+      widget.onChanged([...widget.variantRows, ...newRows]);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('${newRows.length} ${t('batch.variants_added')} $tot'),
+          duration: const Duration(seconds: 2),
+        ));
+      }
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(t('batch.all_sizes_added')),
+        duration: const Duration(seconds: 2),
+      ));
+    }
+  }
+
   void _removeRow(String rowId) {
-    // Dispose controllers for this row
     final toRemove = _ctrls.keys.where((k) => k.startsWith('${rowId}_')).toList();
     for (final k in toRemove) {
       _ctrls[k]!.dispose();
@@ -3730,16 +4816,252 @@ class _FootwearVariantTableState extends State<_FootwearVariantTable> {
     widget.onChanged(widget.variantRows.where((r) => r.id != rowId).toList());
   }
 
+  void _copyRow(BatchVariantRow source) {
+    final copy = BatchVariantRow(
+      size: source.size,
+      color: source.color,
+      barcode: '',
+      quantity: source.quantity,
+      purchasePrice: source.purchasePrice,
+      salePrice: source.salePrice,
+    );
+    final idx = widget.variantRows.indexWhere((r) => r.id == source.id);
+    final updated = [...widget.variantRows];
+    updated.insert(idx + 1, copy);
+    widget.onChanged(updated);
+  }
+
   void _updateRow(BatchVariantRow updated) {
     final rows = widget.variantRows.map((r) => r.id == updated.id ? updated : r).toList();
     widget.onChanged(rows);
   }
 
+  void _applyPurchaseToAll() {
+    if (widget.defaultPurchasePrice <= 0) return;
+    final rows = widget.variantRows
+        .map((r) => (r.purchasePrice == null || r.purchasePrice == 0)
+            ? r.copyWith(purchasePrice: widget.defaultPurchasePrice)
+            : r)
+        .toList();
+    widget.onChanged(rows);
+    // Ctrl'leri güncelle
+    for (final r in rows) {
+      final c = _ctrls['${r.id}_purchase'];
+      if (c != null && c.text.isEmpty) {
+        c.text = widget.defaultPurchasePrice.toString();
+      }
+    }
+  }
+
+  void _applySaleToAll() {
+    if (widget.defaultSalePrice <= 0) return;
+    final rows = widget.variantRows
+        .map((r) => (r.salePrice == null || r.salePrice == 0)
+            ? r.copyWith(salePrice: widget.defaultSalePrice)
+            : r)
+        .toList();
+    widget.onChanged(rows);
+    for (final r in rows) {
+      final c = _ctrls['${r.id}_sale'];
+      if (c != null && c.text.isEmpty) {
+        c.text = widget.defaultSalePrice.toString();
+      }
+    }
+  }
+
+  // ── Varyant üret (kartezyen çarpım) ──────────────────────────────────────
+  void _generateVariants() {
+    final validAttrs = _attrs.where((a) => a.values.isNotEmpty).toList();
+    if (validAttrs.isEmpty) return;
+
+    List<Map<String, String>> combos = [{}];
+    for (final attr in validAttrs) {
+      final newCombos = <Map<String, String>>[];
+      for (final combo in combos) {
+        for (final val in attr.values) {
+          newCombos.add({...combo, attr.name: val});
+        }
+      }
+      combos = newCombos;
+    }
+
+    final rows = combos.map((combo) {
+      final color = combo['Renk'] ?? '';
+      final otherVals = combo.entries
+          .where((e) => e.key != 'Renk')
+          .map((e) => e.value)
+          .join(' / ');
+      return BatchVariantRow(
+        size: otherVals,
+        color: color,
+        // Tam attribute haritasını sakla — provider backend payload'ını buradan üretir
+        attributesMap: Map<String, String>.from(combo),
+        purchasePrice: widget.defaultPurchasePrice > 0 ? widget.defaultPurchasePrice : null,
+        salePrice: widget.defaultSalePrice > 0 ? widget.defaultSalePrice : null,
+      );
+    }).toList();
+
+    // Ctrl'leri temizle — yeni satırlar geliyor
+    for (final c in _ctrls.values) { c.dispose(); }
+    _ctrls.clear();
+
+    widget.onChanged(rows);
+    setState(() => _showBuilder = false);
+  }
+
+  int get _totalVariantCount {
+    if (_attrs.isEmpty) return 0;
+    final filled = _attrs.where((a) => a.values.isNotEmpty).toList();
+    if (filled.isEmpty) return 0;
+    return filled.fold(1, (acc, a) => acc * a.values.length);
+  }
+
+  // ── Değer ekle dialogu ────────────────────────────────────────────────────
+  void _showAddValueDialog(BuildContext context, _VAttr attr) {
+    final ctrl = TextEditingController();
+    final t = widget.t;
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(attr.name,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+        contentPadding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: t('batch.add_value'),
+            border: const OutlineInputBorder(),
+            isDense: true,
+          ),
+          onSubmitted: (v) {
+            if (v.trim().isNotEmpty) {
+              setState(() => attr.values.add(v.trim()));
+              Navigator.pop(context);
+            }
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(t('common.cancel')),
+          ),
+          FilledButton(
+            onPressed: () {
+              final v = ctrl.text.trim();
+              if (v.isNotEmpty) {
+                setState(() => attr.values.add(v));
+                Navigator.pop(context);
+              }
+            },
+            child: Text(t('common.add')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Özellik ekle dialogu ──────────────────────────────────────────────────
+  void _showAddAttrDialog(BuildContext context) {
+    final nameCtrl = TextEditingController();
+    final t = widget.t;
+    IconData selectedIcon = Icons.label_outline_rounded;
+    final iconChoices = [
+      (Icons.palette_outlined, 'Renk'),
+      (Icons.format_size_rounded, 'Beden'),
+      (Icons.memory_rounded, 'RAM'),
+      (Icons.storage_rounded, 'Depo'),
+      (Icons.straighten_rounded, 'Ölçü'),
+      (Icons.devices_rounded, 'Model'),
+      (Icons.label_outline_rounded, 'Diğer'),
+    ];
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: Text(t('batch.add_attribute'),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+          contentPadding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: t('batch.attribute_name'),
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(t('batch.select_icon'),
+                  style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: iconChoices.map((item) {
+                  final isSel = selectedIcon == item.$1;
+                  return GestureDetector(
+                    onTap: () => setLocal(() => selectedIcon = item.$1),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: isSel
+                            ? widget.accentColor.withValues(alpha: 0.15)
+                            : Colors.transparent,
+                        border: Border.all(
+                          color: isSel ? widget.accentColor : AppColors.border,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(item.$1, size: 18,
+                          color: isSel ? widget.accentColor : AppColors.textMuted),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(t('common.cancel')),
+            ),
+            FilledButton(
+              onPressed: () {
+                final name = nameCtrl.text.trim();
+                if (name.isEmpty) return;
+                setState(() {
+                  _attrs.add(_VAttr(name: name, icon: selectedIcon));
+                  _selectedPreset = null;
+                });
+                Navigator.pop(ctx);
+              },
+              child: Text(t('common.add')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    return _showBuilder
+        ? _buildBuilderPhase(context)
+        : _buildTablePhase(context);
+  }
+
+  // ── BUILDER FAZI ─────────────────────────────────────────────────────────
+  Widget _buildBuilderPhase(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF1A1A2E) : Colors.white;
     final borderColor = widget.accentColor.withValues(alpha: 0.25);
+    final t = widget.t;
+    final canGenerate = _attrs.any((a) => a.values.isNotEmpty);
 
     return Container(
       decoration: BoxDecoration(
@@ -3750,33 +5072,606 @@ class _FootwearVariantTableState extends State<_FootwearVariantTable> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Tablo başlığı ──────────────────────────────────────────────────
+          // ── Başlık ───────────────────────────────────────────────────────
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: widget.accentColor.withValues(alpha: 0.07),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
             ),
             child: Row(
               children: [
-                _HeaderCell(widget.sizeLabel, flex: 2),
-                _HeaderCell('Renk', flex: 2),
-                _HeaderCell('Adet', flex: 1),
-                _HeaderCell('Barkod', flex: 2),
-                _HeaderCell('Alış ₺', flex: 2),
-                _HeaderCell('Satış ₺', flex: 2),
-                const SizedBox(width: 28), // delete button placeholder
+                Icon(Icons.tune_rounded, size: 15, color: widget.accentColor),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    t('batch.variant_attributes'),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: widget.accentColor,
+                    ),
+                  ),
+                ),
+                if (widget.variantRows.isNotEmpty)
+                  GestureDetector(
+                    onTap: () => setState(() => _showBuilder = false),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: widget.accentColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.table_rows_rounded, size: 11,
+                              color: widget.accentColor),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${widget.variantRows.length} ${t("batch.variant")}',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: widget.accentColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
-          // ── Satırlar ───────────────────────────────────────────────────────
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Preset şablonlar ────────────────────────────────────
+                Text(
+                  t('batch.variant_presets'),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textMuted,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    _buildPresetChip('shoes',       Icons.directions_walk_rounded, t('batch.preset_shoes'),       t),
+                    _buildPresetChip('clothing',    Icons.checkroom_rounded,       t('batch.preset_clothing'),    t),
+                    _buildPresetChip('electronics', Icons.devices_rounded,         t('batch.preset_electronics'), t),
+                    _buildPresetChip('custom',      Icons.tune_rounded,            t('batch.preset_custom'),      t),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                const Divider(height: 1),
+                const SizedBox(height: 12),
+
+                // ── Özellik kartları ─────────────────────────────────────
+                if (_attrs.isEmpty)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Text(
+                        t('batch.no_variants_added'),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textMuted,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  ..._attrs.asMap().entries.map((e) {
+                    return Padding(
+                      padding: EdgeInsets.only(
+                          bottom: e.key < _attrs.length - 1 ? 10 : 0),
+                      child: _buildAttrCard(context, e.value, t),
+                    );
+                  }),
+                const SizedBox(height: 10),
+
+                // ── Özellik ekle butonu ──────────────────────────────────
+                GestureDetector(
+                  onTap: () => _showAddAttrDialog(context),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                          color: widget.accentColor.withValues(alpha: 0.35)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add_rounded, size: 14,
+                            color: widget.accentColor),
+                        const SizedBox(width: 5),
+                        Text(
+                          t('batch.add_attribute'),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: widget.accentColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // ── Varyant oluştur butonu ────────────────────────────────
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: canGenerate ? _generateVariants : null,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: widget.accentColor,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: const Icon(Icons.auto_awesome_rounded, size: 15),
+                    label: Text(
+                      canGenerate
+                          ? '${t("batch.generate_variants")} ($_totalVariantCount)'
+                          : t('batch.generate_variants'),
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPresetChip(
+      String key, IconData icon, String label, String Function(String) t) {
+    final isSel = _selectedPreset == key;
+    return GestureDetector(
+      onTap: () => _applyPreset(key),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSel
+              ? widget.accentColor
+              : widget.accentColor.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSel
+                ? widget.accentColor
+                : widget.accentColor.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 12,
+                color: isSel ? Colors.white : widget.accentColor),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: isSel ? Colors.white : widget.accentColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttrCard(
+      BuildContext context, _VAttr attr, String Function(String) t) {
+    const attrColors = [
+      Colors.indigo,
+      Colors.red,
+      Colors.teal,
+      Colors.deepOrange,
+      Colors.blue,
+      Colors.purple,
+    ];
+    final idx = _attrs.indexOf(attr);
+    final cardColor = attrColors[idx % attrColors.length];
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cardColor.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: cardColor.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(attr.icon, size: 14, color: cardColor),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  attr.name,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: cardColor,
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: () => setState(() => _attrs.remove(attr)),
+                child: Icon(Icons.close_rounded, size: 15,
+                    color: cardColor.withValues(alpha: 0.6)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              ...attr.values.map((val) {
+                final colorEntry =
+                    _kColorPalette.where((c) => c.$1 == val).firstOrNull;
+                return GestureDetector(
+                  onTap: () => setState(() => attr.values.remove(val)),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: colorEntry != null
+                          ? colorEntry.$2.withValues(alpha: 0.15)
+                          : cardColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: colorEntry != null
+                            ? colorEntry.$2.withValues(alpha: 0.5)
+                            : cardColor.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (colorEntry != null) ...[
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: colorEntry.$2,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                  color: Colors.black.withValues(alpha: 0.1)),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        Text(
+                          val,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: cardColor,
+                          ),
+                        ),
+                        const SizedBox(width: 3),
+                        Icon(Icons.close_rounded, size: 10,
+                            color: cardColor.withValues(alpha: 0.5)),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+              // Renk için renk paleti, diğerleri için metin giriş
+              if (attr.name == 'Renk')
+                _buildColorAddChip(context, attr, cardColor, t)
+              else
+                GestureDetector(
+                  onTap: () => _showAddValueDialog(context, attr),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: cardColor.withValues(alpha: 0.4)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add_rounded, size: 11,
+                            color: cardColor),
+                        const SizedBox(width: 3),
+                        Text(
+                          t('batch.add_value'),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: cardColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildColorAddChip(BuildContext context, _VAttr attr, Color cardColor,
+      String Function(String) t) {
+    return GestureDetector(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          builder: (_) => _ColorPickerSheet(
+            selected: '',
+            accentColor: widget.accentColor,
+            customLabel: t('batch.variant_color_custom'),
+            onSelect: (name) {
+              Navigator.pop(context);
+              if (name == '__custom__') {
+                _showAddValueDialog(context, attr);
+              } else if (!attr.values.contains(name)) {
+                setState(() => attr.values.add(name));
+              }
+            },
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: cardColor.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.add_rounded, size: 11, color: cardColor),
+            const SizedBox(width: 3),
+            Text(
+              t('batch.add_value'),
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: cardColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── TABLO FAZI ────────────────────────────────────────────────────────────
+  Widget _buildTablePhase(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF1A1A2E) : Colors.white;
+    final borderColor = widget.accentColor.withValues(alpha: 0.25);
+    final t = widget.t;
+
+    final totalQty = widget.variantRows.fold(0, (s, r) => s + r.quantity);
+    final totalValue = widget.variantRows.fold(0.0, (s, r) {
+      final price = r.salePrice ?? widget.defaultSalePrice;
+      return s + price * r.quantity;
+    });
+    final invalidCount = widget.variantRows.where((r) => !r.isValid).length;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── Başlık + "Yapılandırmayı Düzenle" ────────────────────────────
+          Container(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+            decoration: BoxDecoration(
+              color: widget.accentColor.withValues(alpha: 0.07),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.auto_awesome_rounded, size: 14,
+                    color: widget.accentColor),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '${widget.variantRows.length} ${t("batch.variant")}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: widget.accentColor,
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => setState(() => _showBuilder = true),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: widget.accentColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.tune_rounded, size: 11,
+                            color: widget.accentColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          t('batch.back_to_builder'),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: widget.accentColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          // ── Hızlı beden seti ──────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+            child: Row(
+              children: [
+                Text(
+                  t('batch.variant_quick_sizes'),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: _kSizeSets.map((set) {
+                      return GestureDetector(
+                        onTap: () => _addSizeSet(set.$2),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 9, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: widget.accentColor.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color: widget.accentColor
+                                    .withValues(alpha: 0.35)),
+                          ),
+                          child: Text(
+                            set.$1,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: widget.accentColor,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          // ── Tablo başlığı ─────────────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: widget.accentColor.withValues(alpha: 0.07),
+            ),
+            child: Row(
+              children: [
+                _HeaderCell(widget.sizeLabel, flex: 2),
+                _HeaderCell(t('batch.variant_color'), flex: 2),
+                _HeaderCell(t('common.quantity'), flex: 1),
+                _HeaderCell(t('common.barcode'), flex: 2),
+                Expanded(
+                  flex: 2,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${t("batch.purchase")} ₺',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textMuted,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                      if (widget.defaultPurchasePrice > 0)
+                        GestureDetector(
+                          onTap: _applyPurchaseToAll,
+                          child: Tooltip(
+                            message: t('common.apply'),
+                            child: Icon(
+                              Icons.vertical_align_bottom_rounded,
+                              size: 13,
+                              color: widget.accentColor.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${t("batch.sale")} ₺',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textMuted,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                      if (widget.defaultSalePrice > 0)
+                        GestureDetector(
+                          onTap: _applySaleToAll,
+                          child: Tooltip(
+                            message: t('common.apply'),
+                            child: Icon(
+                              Icons.vertical_align_bottom_rounded,
+                              size: 13,
+                              color: widget.accentColor.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 52),
+              ],
+            ),
+          ),
+          // ── Satırlar ──────────────────────────────────────────────────────
           if (widget.variantRows.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20),
+              padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
                 child: Text(
-                  'Henüz varyant eklenmedi',
-                  style: TextStyle(
+                  t('batch.no_variants_added'),
+                  style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textMuted,
                     fontStyle: FontStyle.italic,
@@ -3788,30 +5683,98 @@ class _FootwearVariantTableState extends State<_FootwearVariantTable> {
             ...widget.variantRows.asMap().entries.map((entry) {
               final idx = entry.key;
               final vr = entry.value;
-              final rowBg = idx.isOdd
-                  ? widget.accentColor.withValues(alpha: 0.03)
-                  : Colors.transparent;
+              final isInvalid = !vr.isValid;
+              final rowBg = isInvalid
+                  ? AppColors.danger.withValues(alpha: 0.05)
+                  : idx.isOdd
+                      ? widget.accentColor.withValues(alpha: 0.03)
+                      : Colors.transparent;
               return _VariantTableRow(
                 key: ValueKey(vr.id),
                 variantRow: vr,
                 rowBg: rowBg,
+                isInvalid: isInvalid,
                 sizeCtrl: _ctrl(vr.id, 'size', vr.size),
-                colorCtrl: _ctrl(vr.id, 'color', vr.color),
                 barcodeCtrl: _ctrl(vr.id, 'barcode', vr.barcode),
-                qtyCtrl: _ctrl(vr.id, 'qty', vr.quantity > 0 ? '${vr.quantity}' : '1'),
-                purchaseCtrl: _ctrl(vr.id, 'purchase',
+                qtyCtrl: _ctrl(vr.id, 'qty',
+                    vr.quantity > 0 ? '${vr.quantity}' : '1'),
+                purchaseCtrl: _ctrl(
+                    vr.id,
+                    'purchase',
                     vr.purchasePrice != null && vr.purchasePrice! > 0
                         ? vr.purchasePrice!.toString()
                         : ''),
-                saleCtrl: _ctrl(vr.id, 'sale',
+                saleCtrl: _ctrl(
+                    vr.id,
+                    'sale',
                     vr.salePrice != null && vr.salePrice! > 0
                         ? vr.salePrice!.toString()
                         : ''),
+                accentColor: widget.accentColor,
+                t: t,
                 onUpdate: _updateRow,
                 onDelete: () => _removeRow(vr.id),
+                onCopy: () => _copyRow(vr),
               );
             }),
-          // ── Ekle butonu ────────────────────────────────────────────────────
+          // ── Özet bar ─────────────────────────────────────────────────────
+          if (widget.variantRows.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              decoration: BoxDecoration(
+                color: widget.accentColor.withValues(alpha: 0.04),
+                border: Border(
+                  top: BorderSide(
+                      color: widget.accentColor.withValues(alpha: 0.15)),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    '${widget.variantRows.length} ${t("batch.variant")}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: widget.accentColor,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text('·',
+                      style: TextStyle(
+                          color: widget.accentColor.withValues(alpha: 0.5))),
+                  const SizedBox(width: 6),
+                  Text(
+                    '$totalQty ${t("common.quantity_unit")}',
+                    style: const TextStyle(
+                        fontSize: 11, color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(width: 6),
+                  const Text('·',
+                      style: TextStyle(color: AppColors.textMuted)),
+                  const SizedBox(width: 6),
+                  Text(
+                    '₺${totalValue.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  if (invalidCount > 0) ...[
+                    const Spacer(),
+                    const Icon(Icons.warning_amber_rounded,
+                        size: 13, color: AppColors.warning),
+                    const SizedBox(width: 3),
+                    Text(
+                      '$invalidCount ${t("batch.incomplete")}',
+                      style: const TextStyle(
+                          fontSize: 10, color: AppColors.warning),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          // ── Manuel satır ekle butonu ──────────────────────────────────────
           Padding(
             padding: const EdgeInsets.all(10),
             child: Material(
@@ -3824,18 +5787,17 @@ class _FootwearVariantTableState extends State<_FootwearVariantTable> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: widget.accentColor.withValues(alpha: 0.4),
-                      style: BorderStyle.solid,
-                    ),
+                        color: widget.accentColor.withValues(alpha: 0.4)),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.add_rounded, size: 15, color: widget.accentColor),
+                      Icon(Icons.add_rounded, size: 15,
+                          color: widget.accentColor),
                       const SizedBox(width: 5),
                       Text(
-                        'Varyant Ekle',
+                        t('batch.variants_add'),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -3879,49 +5841,96 @@ class _HeaderCell extends StatelessWidget {
 class _VariantTableRow extends StatelessWidget {
   final BatchVariantRow variantRow;
   final Color rowBg;
+  final bool isInvalid;
   final TextEditingController sizeCtrl;
-  final TextEditingController colorCtrl;
   final TextEditingController barcodeCtrl;
   final TextEditingController qtyCtrl;
   final TextEditingController purchaseCtrl;
   final TextEditingController saleCtrl;
+  final Color accentColor;
+  final String Function(String) t;
   final void Function(BatchVariantRow) onUpdate;
   final VoidCallback onDelete;
+  final VoidCallback onCopy;
 
   const _VariantTableRow({
     super.key,
     required this.variantRow,
     required this.rowBg,
+    required this.isInvalid,
     required this.sizeCtrl,
-    required this.colorCtrl,
     required this.barcodeCtrl,
     required this.qtyCtrl,
     required this.purchaseCtrl,
     required this.saleCtrl,
+    required this.accentColor,
+    required this.t,
     required this.onUpdate,
     required this.onDelete,
+    required this.onCopy,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: rowBg,
+      decoration: BoxDecoration(
+        color: rowBg,
+        border: isInvalid
+            ? Border(
+                left: BorderSide(
+                  color: AppColors.warning.withValues(alpha: 0.6),
+                  width: 3,
+                ),
+              )
+            : null,
+      ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Row(
         children: [
-          _VCell(sizeCtrl, flex: 2, hint: '41', onChanged: (v) => onUpdate(variantRow.copyWith(size: v))),
-          _VCell(colorCtrl, flex: 2, hint: 'Kırmızı', onChanged: (v) => onUpdate(variantRow.copyWith(color: v))),
+          _VCell(sizeCtrl, flex: 2, hint: '41',
+              onChanged: (v) => onUpdate(variantRow.copyWith(size: v))),
+          // Renk seçici
+          Expanded(
+            flex: 2,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: _ColorPickerCell(
+                value: variantRow.color,
+                accentColor: accentColor,
+                customLabel: t('batch.variant_color_custom'),
+                onChanged: (v) => onUpdate(variantRow.copyWith(color: v)),
+              ),
+            ),
+          ),
           _VCell(qtyCtrl, flex: 1, hint: '1', isNum: true,
               onChanged: (v) => onUpdate(variantRow.copyWith(quantity: int.tryParse(v) ?? 1))),
-          _VCell(barcodeCtrl, flex: 2, hint: 'Barkod', onChanged: (v) => onUpdate(variantRow.copyWith(barcode: v))),
+          _VCell(barcodeCtrl, flex: 2, hint: t('common.barcode'),
+              onChanged: (v) => onUpdate(variantRow.copyWith(barcode: v))),
           _VCell(purchaseCtrl, flex: 2, hint: '0.00', isNum: true,
               onChanged: (v) => onUpdate(variantRow.copyWith(
                   purchasePrice: double.tryParse(v.replaceAll(',', '.'))))),
           _VCell(saleCtrl, flex: 2, hint: '0.00', isNum: true,
               onChanged: (v) => onUpdate(variantRow.copyWith(
                   salePrice: double.tryParse(v.replaceAll(',', '.'))))),
+          // Kopyala butonu
           SizedBox(
-            width: 28,
+            width: 24,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(4),
+                onTap: onCopy,
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(Icons.copy_all_rounded, size: 13,
+                      color: accentColor.withValues(alpha: 0.6)),
+                ),
+              ),
+            ),
+          ),
+          // Sil butonu
+          SizedBox(
+            width: 24,
             child: Material(
               color: Colors.transparent,
               child: InkWell(
@@ -3935,6 +5944,258 @@ class _VariantTableRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Renk Seçici Hücre ─────────────────────────────────────────────────────────
+class _ColorPickerCell extends StatefulWidget {
+  final String value;
+  final Color accentColor;
+  final String customLabel;
+  final void Function(String) onChanged;
+
+  const _ColorPickerCell({
+    required this.value,
+    required this.accentColor,
+    required this.customLabel,
+    required this.onChanged,
+  });
+
+  @override
+  State<_ColorPickerCell> createState() => _ColorPickerCellState();
+}
+
+class _ColorPickerCellState extends State<_ColorPickerCell> {
+  bool _showCustom = false;
+  late final TextEditingController _customCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    // Eğer değer palette'de yoksa "Özel" modunda başla
+    final isPreset = _kColorPalette.any((c) => c.$1 == widget.value);
+    _showCustom = widget.value.isNotEmpty && !isPreset;
+    _customCtrl = TextEditingController(text: _showCustom ? widget.value : '');
+  }
+
+  @override
+  void dispose() {
+    _customCtrl.dispose();
+    super.dispose();
+  }
+
+  Color? _presetColor(String name) {
+    for (final c in _kColorPalette) {
+      if (c.$1 == name) return c.$2;
+    }
+    return null;
+  }
+
+  void _pick(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => _ColorPickerSheet(
+        selected: widget.value,
+        accentColor: widget.accentColor,
+        customLabel: widget.customLabel,
+        onSelect: (name) {
+          Navigator.pop(context);
+          if (name == '__custom__') {
+            setState(() => _showCustom = true);
+          } else {
+            setState(() => _showCustom = false);
+            widget.onChanged(name);
+          }
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_showCustom) {
+      return TextField(
+        controller: _customCtrl,
+        onChanged: widget.onChanged,
+        style: const TextStyle(fontSize: 12),
+        decoration: InputDecoration(
+          hintText: widget.customLabel,
+          hintStyle: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(color: AppColors.border)),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(color: AppColors.border)),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6),
+              borderSide: const BorderSide(color: AppColors.primary)),
+          suffixIcon: GestureDetector(
+            onTap: () => setState(() {
+              _showCustom = false;
+              _customCtrl.clear();
+              widget.onChanged('');
+            }),
+            child: const Icon(Icons.close_rounded, size: 14),
+          ),
+        ),
+      );
+    }
+
+    final presetColor = _presetColor(widget.value);
+    return GestureDetector(
+      onTap: () => _pick(context),
+      child: Container(
+        height: 32,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            if (presetColor != null) ...[
+              Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: presetColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.black12),
+                ),
+              ),
+              const SizedBox(width: 5),
+            ],
+            Expanded(
+              child: Text(
+                widget.value.isEmpty ? '—' : widget.value,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: widget.value.isEmpty ? AppColors.textMuted : AppColors.textPrimary,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Icon(Icons.arrow_drop_down_rounded, size: 16,
+                color: widget.accentColor.withValues(alpha: 0.6)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ColorPickerSheet extends StatelessWidget {
+  final String selected;
+  final Color accentColor;
+  final String customLabel;
+  final void Function(String) onSelect;
+
+  const _ColorPickerSheet({
+    required this.selected,
+    required this.accentColor,
+    required this.customLabel,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Tutamaç
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ..._kColorPalette.map((c) {
+                  final isSelected = selected == c.$1;
+                  return GestureDetector(
+                    onTap: () => onSelect(c.$1),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? c.$2.withValues(alpha: 0.15)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected ? c.$2 : AppColors.border,
+                          width: isSelected ? 2 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: c.$2,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.black12),
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(c.$1,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: isSelected
+                                    ? FontWeight.w700
+                                    : FontWeight.w400,
+                                color: AppColors.textPrimary,
+                              )),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+                // Özel seçeneği
+                GestureDetector(
+                  onTap: () => onSelect('__custom__'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.border),
+                      color: AppColors.bgLight,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.edit_rounded, size: 12, color: AppColors.textMuted),
+                        const SizedBox(width: 5),
+                        Text(customLabel,
+                            style: const TextStyle(
+                                fontSize: 12, color: AppColors.textSecondary)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -3997,4 +6258,861 @@ class _Tab {
   final String label;
   final RowStatus? status;
   const _Tab(this.label, this.status);
+}
+
+// ── TOPLU İŞLEM PANELİ ───────────────────────────────────────────────────────
+
+/// Yeni ürün satırı varken görünür. Kategori, KDV ve marka tüm yeni satırlara
+/// tek tıkla uygulanmasını sağlar.
+class _BulkActionsPanel extends ConsumerWidget {
+  final String Function(String) t;
+  const _BulkActionsPanel({required this.t});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(batchEntryProvider);
+    final newCount = state.rows.where((r) => r.isNew).length;
+    if (newCount == 0) return const SizedBox.shrink();
+
+    return Container(
+      color: AppColors.primary.withValues(alpha: 0.05),
+      padding: const EdgeInsets.fromLTRB(12, 5, 12, 5),
+      child: Row(
+        children: [
+          const Icon(Icons.auto_fix_high_rounded, size: 13, color: AppColors.primary),
+          const SizedBox(width: 5),
+          Text(
+            '${t("batch.bulk_actions")} ($newCount)',
+            style: const TextStyle(
+                fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _BulkChip(
+                    icon: Icons.category_outlined,
+                    label: t('batch.field_category'),
+                    onTap: () => _pickCategory(context, ref),
+                  ),
+                  const SizedBox(width: 6),
+                  _BulkChip(
+                    icon: Icons.percent_rounded,
+                    label: t('batch.field_vat'),
+                    onTap: () => _pickVat(context, ref),
+                  ),
+                  const SizedBox(width: 6),
+                  _BulkChip(
+                    icon: Icons.business_outlined,
+                    label: t('batch.field_brand'),
+                    onTap: () => _enterBrand(context, ref),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickCategory(BuildContext context, WidgetRef ref) async {
+    List<Map<String, dynamic>> categories;
+    try {
+      categories = await ref.read(batchCategoriesProvider.future);
+    } catch (_) {
+      return;
+    }
+    if (!context.mounted) return;
+
+    final picked = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        maxChildSize: 0.9,
+        minChildSize: 0.3,
+        builder: (_, ctrl) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(t('batch.apply_to_new'),
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary)),
+              ),
+              const Divider(height: 16),
+              Expanded(
+                child: ListView.builder(
+                  controller: ctrl,
+                  itemCount: categories.length,
+                  itemBuilder: (_, i) {
+                    final cat = categories[i];
+                    return ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.category_outlined,
+                          size: 18, color: AppColors.primary),
+                      title: Text(cat['name']?.toString() ?? '',
+                          style: const TextStyle(fontSize: 13)),
+                      onTap: () => Navigator.pop(context, cat),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (picked != null) {
+      ref.read(batchEntryProvider.notifier).applyCategoryToAll(
+        picked['id']?.toString() ?? '',
+        picked['name']?.toString() ?? '',
+      );
+    }
+  }
+
+  Future<void> _pickVat(BuildContext context, WidgetRef ref) async {
+    const vatOptions = [0.0, 1.0, 8.0, 10.0, 18.0, 20.0];
+    final picked = await showDialog<double>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(t('batch.field_vat')),
+        children: vatOptions
+            .map((v) => SimpleDialogOption(
+                  onPressed: () => Navigator.pop(ctx, v),
+                  child: Text('${v.toInt()}%',
+                      style: const TextStyle(fontSize: 14)),
+                ))
+            .toList(),
+      ),
+    );
+    if (picked != null) {
+      ref.read(batchEntryProvider.notifier).applyVatToAll(picked);
+    }
+  }
+
+  Future<void> _enterBrand(BuildContext context, WidgetRef ref) async {
+    final controller = TextEditingController();
+    final picked = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t('batch.field_brand')),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: t('batch.field_brand'),
+            isDense: true,
+          ),
+          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(t('common.cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: Text(t('batch.apply_to_new')),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (picked != null && picked.isNotEmpty) {
+      ref.read(batchEntryProvider.notifier).applyBrandToAll('', picked);
+    }
+  }
+}
+
+class _BulkChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  const _BulkChip(
+      {required this.icon, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 12, color: AppColors.primary),
+            const SizedBox(width: 4),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w500)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── BRAND AUTOCOMPLETE ───────────────────────────────────────────────────────
+/// Marka autocomplete: mevcut markaları batchBrandsProvider'dan yükler,
+/// kullanıcı yeni marka adı yazabilir (free-text fallback).
+class _BrandAutocomplete extends ConsumerWidget {
+  final String label;
+  final TextEditingController ctrl;
+  final String? hint;
+  final void Function(String? id, String name) onSelected;
+
+  const _BrandAutocomplete({
+    required this.label,
+    required this.ctrl,
+    required this.onSelected,
+    this.hint,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(batchBrandsProvider);
+    final t = i18nOf(ref);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary)),
+        const SizedBox(height: 4),
+        async.when(
+          loading: () => const SizedBox(
+            height: 38,
+            child: Center(
+              child: SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          ),
+          error: (_, __) => TextField(
+            controller: ctrl,
+            onChanged: (v) => onSelected(null, v),
+            style: const TextStyle(fontSize: 13),
+            decoration: _brandInputDecoration(hint ?? t('batch.brand_type_new')),
+          ),
+          data: (brands) => Autocomplete<Map<String, dynamic>>(
+            initialValue: TextEditingValue(text: ctrl.text),
+            optionsBuilder: (value) {
+              final q = value.text.trim().toLowerCase();
+              if (q.isEmpty) return brands;
+              return brands.where((b) =>
+                  (b['name']?.toString().toLowerCase() ?? '').contains(q));
+            },
+            displayStringForOption: (b) => b['name']?.toString() ?? '',
+            fieldViewBuilder:
+                (context, textCtrl, focusNode, onSubmit) {
+              return TextField(
+                controller: textCtrl,
+                focusNode: focusNode,
+                style: const TextStyle(fontSize: 13),
+                decoration: _brandInputDecoration(
+                    hint ?? t('batch.brand_type_new')),
+                onChanged: (v) {
+                  // Parent ctrl'e yaz ama build'de sync yapma (state leak olmasın)
+                  ctrl.value = TextEditingValue(
+                    text: v,
+                    selection: TextSelection.collapsed(offset: v.length),
+                  );
+                  onSelected(null, v); // serbest metin — id yok
+                },
+              );
+            },
+            onSelected: (b) {
+              final id = b['id']?.toString();
+              final name = b['name']?.toString() ?? '';
+              ctrl.value = TextEditingValue(
+                text: name,
+                selection: TextSelection.collapsed(offset: name.length),
+              );
+              onSelected(id, name);
+            },
+            optionsViewBuilder: (context, onSelect, options) {
+              return Align(
+                alignment: Alignment.topLeft,
+                child: Material(
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(8),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 200, maxWidth: 300),
+                    child: ListView.builder(
+                      padding: EdgeInsets.zero,
+                      shrinkWrap: true,
+                      itemCount: options.length,
+                      itemBuilder: (_, i) {
+                        final opt = options.elementAt(i);
+                        return InkWell(
+                          onTap: () => onSelect(opt),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            child: Text(
+                              opt['name']?.toString() ?? '',
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  InputDecoration _brandInputDecoration(String hint) => InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+        isDense: true,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        ),
+      );
+}
+
+// ── VARYANT ÖZET BANNER ──────────────────────────────────────────────────────
+/// Yeni ürün kartında Section 2 üstünde gösterilen varyant özeti.
+///
+/// Mimari: her yeni ürün EN AZ 1 varyantla kaydedilir; birim fiyat, stok,
+/// barkod ve attributes bu varyanta aktarılır. Bu banner o varyantın
+/// önizlemesini yapar — kullanıcı "ürün mü? varyant mı?" ayrımını net görür.
+class _VariantSummaryBanner extends StatelessWidget {
+  final BatchEntryRow row;
+  final Color accentColor;
+  final Function(String) t;
+
+  const _VariantSummaryBanner({
+    required this.row,
+    required this.accentColor,
+    required this.t,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final barcode = row.barcode.isNotEmpty ? row.barcode : null;
+    final shelf = row.shelfLocation;
+    final attrCount = row.attributes.length;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: accentColor.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.inventory_2_rounded, size: 13, color: accentColor),
+              const SizedBox(width: 6),
+              Text(
+                t('batch.variant_auto_created'),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: accentColor,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: accentColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Text(
+                  '1',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              _VariantChip(
+                label: 'SKU',
+                value: t('batch.variant_auto_sku'),
+                icon: Icons.fingerprint_rounded,
+              ),
+              if (barcode != null)
+                _VariantChip(
+                  label: t('batch.barcode'),
+                  value: barcode,
+                  icon: Icons.qr_code_rounded,
+                ),
+              if (shelf != null && shelf.isNotEmpty)
+                _VariantChip(
+                  label: t('batch.shelf'),
+                  value: shelf,
+                  icon: Icons.shelves,
+                ),
+              if (attrCount > 0)
+                _VariantChip(
+                  label: t('batch.variant_attributes'),
+                  value: '$attrCount',
+                  icon: Icons.label_outline_rounded,
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              const Icon(Icons.info_outline_rounded,
+                  size: 11, color: AppColors.textMuted),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  t('batch.variant_price_note'),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textMuted,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VariantChip extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  const _VariantChip({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: AppColors.textMuted),
+          const SizedBox(width: 4),
+          Text(
+            '$label: ',
+            style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── EXISTING PRODUCT — VARYANT ÖZETİ ─────────────────────────────────────────
+/// Mevcut ürünün tüm varyantlarını özet halinde gösterir.
+/// Collapsed: "3 varyant" chip. Tap → expand → her varyant için
+/// attributes/stok/fiyat/raf satırı. Eşleşen varyant vurgulanır.
+class _ExistingVariantsSection extends StatefulWidget {
+  final int count;
+  final List<Map<String, dynamic>> variants;
+  final Color accentColor;
+  final Function(String) t;
+
+  const _ExistingVariantsSection({
+    required this.count,
+    required this.variants,
+    required this.accentColor,
+    required this.t,
+  });
+
+  @override
+  State<_ExistingVariantsSection> createState() =>
+      _ExistingVariantsSectionState();
+}
+
+class _ExistingVariantsSectionState extends State<_ExistingVariantsSection> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final canExpand = widget.variants.isNotEmpty;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header — sadece sayı chip'i (tek varyantta sade)
+        InkWell(
+          onTap: canExpand ? () => setState(() => _expanded = !_expanded) : null,
+          borderRadius: BorderRadius.circular(6),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: widget.accentColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                  color: widget.accentColor.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.layers_rounded, size: 12, color: widget.accentColor),
+                const SizedBox(width: 4),
+                Text(
+                  '${widget.count} ${widget.t("batch.variants")}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: widget.accentColor,
+                  ),
+                ),
+                if (canExpand) ...[
+                  const SizedBox(width: 4),
+                  Icon(
+                    _expanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    size: 14,
+                    color: widget.accentColor,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+
+        // Expanded — her varyantın satır satır detayı
+        if (_expanded && canExpand) ...[
+          const SizedBox(height: 6),
+          // Açıklayıcı not: her variantın kendi birim fiyatı vardır,
+          // gösterilen ₺X/adet ürünün toplam fiyatı DEĞİL — variantın birimi.
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.info.withValues(alpha: 0.06),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+            ),
+            child: Row(children: [
+              const Icon(Icons.info_outline_rounded,
+                  size: 11, color: AppColors.info),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  widget.t('batch.variant_independent_price_note'),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.info,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ]),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(8)),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              children: widget.variants.asMap().entries.map((e) {
+                final idx = e.key;
+                final v = e.value;
+                return _ExistingVariantRow(
+                  variant: v,
+                  accentColor: widget.accentColor,
+                  isLast: idx == widget.variants.length - 1,
+                  t: widget.t,
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _ExistingVariantRow extends StatelessWidget {
+  final Map<String, dynamic> variant;
+  final Color accentColor;
+  final bool isLast;
+  final Function(String) t;
+
+  const _ExistingVariantRow({
+    required this.variant,
+    required this.accentColor,
+    required this.isLast,
+    required this.t,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sku = variant['sku']?.toString() ?? '';
+    final name = variant['name']?.toString() ?? '';
+    final stock = (variant['currentStock'] as num?)?.toDouble();
+    final price = (variant['salePrice'] as num?)?.toDouble();
+    final shelf = variant['shelfLocationCode']?.toString();
+    final isMatched = variant['isMatched'] as bool? ?? false;
+
+    final attrs = variant['attributes'];
+    String attrDisplay = '';
+    if (attrs is Map && attrs.isNotEmpty) {
+      attrDisplay = attrs.entries
+          .map((e) => '${e.key}: ${e.value}')
+          .join(' · ');
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: isMatched
+            ? accentColor.withValues(alpha: 0.06)
+            : Colors.transparent,
+        border: isLast
+            ? null
+            : Border(bottom: BorderSide(color: AppColors.border)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Eşleşme işareti
+          Icon(
+            isMatched
+                ? Icons.check_circle_rounded
+                : Icons.circle_outlined,
+            size: 12,
+            color: isMatched ? accentColor : AppColors.textMuted,
+          ),
+          const SizedBox(width: 6),
+          // Attributes + SKU
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  attrDisplay.isNotEmpty
+                      ? attrDisplay
+                      : (name.isNotEmpty ? name : '—'),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: isMatched ? FontWeight.w700 : FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (sku.isNotEmpty)
+                  Text(
+                    sku,
+                    style: const TextStyle(
+                      fontSize: 9,
+                      color: AppColors.textMuted,
+                      fontFamily: 'monospace',
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 6),
+          // Stok + fiyat + raf
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (stock != null)
+                Text(
+                  '${t("batch.current_stock")}: ${stock.toInt()} ${t("common.quantity_unit")}',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: stock <= 0 ? AppColors.danger : AppColors.success,
+                  ),
+                ),
+              if (price != null && price > 0)
+                // /adet suffix → birim fiyat olduğu net anlaşılır
+                // (ürünün toplam fiyatı değil variantın birim fiyatı).
+                // Satır toplamı = price × stock; kullanıcı kafasında karıştırmasın.
+                Tooltip(
+                  message: '${t("batch.variant_unit_price_tooltip")}'
+                      ': ₺${price.toStringAsFixed(2)}'
+                      '${stock != null && stock > 0 ? " · ${t("common.total")}: ₺${(price * stock).toStringAsFixed(2)}" : ""}',
+                  child: Text.rich(
+                    TextSpan(children: [
+                      TextSpan(
+                        text: '₺${price.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      TextSpan(
+                        text: '/${t("common.quantity_unit")}',
+                        style: const TextStyle(
+                          fontSize: 9,
+                          color: AppColors.textMuted,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ]),
+                  ),
+                ),
+              if (shelf != null && shelf.isNotEmpty)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.shelves, size: 9, color: AppColors.info),
+                    const SizedBox(width: 2),
+                    Text(
+                      shelf,
+                      style: const TextStyle(
+                        fontSize: 9,
+                        color: AppColors.info,
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── KİLİTLİ FİYAT ALANI — mevcut ürün satış fiyatı ───────────────────────────
+/// Mevcut ürün eşleşmesinde satış fiyatı SİSTEM değeriyle aynı kalır.
+/// Kullanıcı düzenleyemez (read-only), kilit ikonu ile vurgulanır.
+/// Değer sabitlendiği için `row.salePrice = existingSalePrice` provider'da atanır.
+class _LockedPriceField extends StatelessWidget {
+  final String label;
+  final double value;
+  final String tooltip;
+
+  const _LockedPriceField({
+    required this.label,
+    required this.value,
+    required this.tooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Tooltip(
+          message: tooltip,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.bgLight,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '₺${value.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                const Icon(Icons.lock_outline_rounded,
+                    size: 13, color: AppColors.textMuted),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }

@@ -1,7 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'payment_record_modal.dart';
@@ -18,6 +20,8 @@ class AccountSummaryDashboardScreen extends ConsumerStatefulWidget {
 class _AccountSummaryDashboardScreenState
     extends ConsumerState<AccountSummaryDashboardScreen> {
   String Function(String) get t => i18nOf(ref);
+  final _fmt = NumberFormat.currency(locale: 'tr_TR', symbol: '₺');
+
   Map<String, dynamic>? _summary;
   List<Map<String, dynamic>> _overdueList = [];
   bool _loading = true;
@@ -26,7 +30,7 @@ class _AccountSummaryDashboardScreenState
   @override
   void initState() {
     super.initState();
-    _loadData();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
   }
 
   Future<void> _loadData() async {
@@ -56,17 +60,28 @@ class _AccountSummaryDashboardScreenState
   @override
   Widget build(BuildContext context) {
     return AppScaffold(
-      appBar: AppAppBar.gradient(
+      appBar: AppAppBar.standard(
         title: t('accounts.title'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: AppColors.textPrimary),
+            onPressed: _loadData,
+            tooltip: t('common.refresh'),
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: AppColors.border, height: 1),
+        ),
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadData,
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-                ? _buildError()
-                : _buildContent(),
-      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? _buildError()
+              : RefreshIndicator(
+                  onRefresh: _loadData,
+                  child: _buildContent(),
+                ),
     );
   }
 
@@ -81,137 +96,163 @@ class _AccountSummaryDashboardScreenState
 
   Widget _buildContent() {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: AppConstants.pagePadding,
+      physics: const AlwaysScrollableScrollPhysics(),
       children: [
-        _buildStatCards(),
-        const SizedBox(height: 20),
+        _sectionHeader(t('accounts.summary_section'), Icons.dashboard_outlined),
+        const SizedBox(height: 12),
+        _buildStatGrid(),
+        const SizedBox(height: 24),
+        _sectionHeader(t('accounts.quick_actions'), Icons.bolt_outlined),
+        const SizedBox(height: 12),
         _buildQuickActions(),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
         _buildOverdueSection(),
+        const SizedBox(height: 16),
       ],
     );
   }
 
-  Widget _buildStatCards() {
+  // ─── Section Header ─────────────────────────────────────────────
+
+  Widget _sectionHeader(String title, IconData icon, {Widget? action}) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: AppColors.primary),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const Spacer(),
+        if (action != null) action,
+      ],
+    );
+  }
+
+  // ─── Stat Grid (4 düz kart) ─────────────────────────────────────
+
+  Widget _buildStatGrid() {
     final totalReceivable =
         (_summary?['totalCustomerReceivable'] ?? 0).toDouble();
-    final totalPayable =
-        (_summary?['totalSupplierPayable'] ?? 0).toDouble();
-    final overdueAmount =
-        (_summary?['totalOverdueAmount'] ?? 0).toDouble();
-    final totalTransactions =
-        (_summary?['totalTransactionCount'] ?? 0);
+    final totalPayable = (_summary?['totalSupplierPayable'] ?? 0).toDouble();
+    final overdueAmount = (_summary?['totalOverdueAmount'] ?? 0).toDouble();
+    final totalTransactions = (_summary?['totalTransactionCount'] ?? 0);
 
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 1.5,
-      children: [
-        _statCard(
-          'Toplam Müşteri Alacağı', // TODO: i18n
-          _formatCurrency(totalReceivable),
-          Icons.people_alt,
-          AppColors.primary,
-          AppColors.indigo,
-        ),
-        _statCard(
-          'Toplam Tedarikçi Borcu', // TODO: i18n
-          _formatCurrency(totalPayable),
-          Icons.business,
-          AppColors.orange,
-          AppColors.pink,
-        ),
-        _statCard(
-          t('accounts.overdue'),
-          _formatCurrency(overdueAmount),
-          Icons.warning_amber_rounded,
-          AppColors.danger,
-          AppColors.orange,
-        ),
-        _statCard(
-          'Toplam Hareket', // TODO: i18n
-          totalTransactions.toString(),
-          Icons.swap_horiz,
-          AppColors.teal,
-          AppColors.cyan,
-        ),
-      ],
+    final cards = [
+      _statCard(
+        label: t('accounts.total_customer_receivable'),
+        value: _fmt.format(totalReceivable),
+        icon: Icons.people_alt_outlined,
+        color: AppColors.success,
+      ),
+      _statCard(
+        label: t('accounts.total_supplier_payable'),
+        value: _fmt.format(totalPayable),
+        icon: Icons.business_outlined,
+        color: AppColors.warning,
+      ),
+      _statCard(
+        label: t('accounts.overdue'),
+        value: _fmt.format(overdueAmount),
+        icon: Icons.warning_amber_rounded,
+        color: AppColors.danger,
+      ),
+      _statCard(
+        label: t('accounts.total_transactions'),
+        value: totalTransactions.toString(),
+        icon: Icons.swap_horiz_rounded,
+        color: AppColors.teal,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Breakpoint: < 600px → 2 kolon, ≥ 600px → 4 kolon (tek sıra)
+        // Sabit kart yüksekliği (110px) kullan; geniş ekranda kart büyümesin
+        final isWide = constraints.maxWidth >= 600;
+        final columns = isWide ? 4 : 2;
+        const spacing = 12.0;
+        final itemWidth =
+            (constraints.maxWidth - spacing * (columns - 1)) / columns;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: cards
+              .map((c) => SizedBox(width: itemWidth, height: 110, child: c))
+              .toList(),
+        );
+      },
     );
   }
 
-  Widget _statCard(
-    String title,
-    String value,
-    IconData icon,
-    Color startColor,
-    Color endColor,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [startColor, endColor],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: startColor.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+  Widget _statCard({
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return AppCard(
       padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: AppConstants.borderRadiusSmall,
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, color: Colors.white.withValues(alpha: 0.9), size: 22),
-              const Spacer(),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            title,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.85),
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
 
+  // ─── Quick Actions ──────────────────────────────────────────────
+
   Widget _buildQuickActions() {
     return Row(
       children: [
         Expanded(
-          child: _quickActionButton(
-            icon: Icons.receipt_long,
-            label: t('accounts.transactions'),
-            color: AppColors.primary,
-            onTap: () async {
+          child: AppButton.outline(
+            text: t('accounts.transactions'),
+            icon: Icons.receipt_long_outlined,
+            onPressed: () async {
               final result = await AccountSelectDialog.show(
                 context,
                 loadCustomers: () =>
@@ -227,98 +268,42 @@ class _AccountSummaryDashboardScreenState
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _quickActionButton(
+          child: AppButton.outline(
+            text: t('accounts.overdue'),
             icon: Icons.schedule,
-            label: t('accounts.overdue'),
-            color: AppColors.danger,
-            onTap: () => context.push('/accounts/overdue'),
+            onPressed: () => context.push('/accounts/overdue'),
           ),
         ),
       ],
     );
   }
 
-  Widget _quickActionButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Flexible(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: AppColors.textPrimary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  // ─── Vadesi Geçmiş Bölüm ────────────────────────────────────────
 
   Widget _buildOverdueSection() {
     final top5 = _overdueList.take(5).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              t('accounts.overdue'),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            if (_overdueList.length > 5)
-              AppButton.outline(
-                text: t('common.all'),
-                onPressed: () => context.push('/accounts/overdue'),
-                size: ButtonSize.small,
-              ),
-          ],
+        _sectionHeader(
+          t('accounts.overdue'),
+          Icons.warning_amber_rounded,
+          action: _overdueList.length > 5
+              ? AppButton.outline(
+                  text: t('common.all'),
+                  size: ButtonSize.small,
+                  onPressed: () => context.push('/accounts/overdue'),
+                )
+              : null,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         if (top5.isEmpty)
           AppEmptyState.noData(
-            title: t('accounts.overdue'),
-            description: t('common.no_data'),
+            title: t('accounts.no_overdue'),
+            description: '',
           )
         else
-          ...top5.map((item) => _overdueCard(item)),
+          ...top5.map(_overdueCard),
       ],
     );
   }
@@ -328,100 +313,107 @@ class _AccountSummaryDashboardScreenState
     final accountType = item['accountType']?.toString() ?? '';
     final isCustomer = accountType == 'CUSTOMER';
     final amount = (item['debitAmount'] ?? 0).toDouble();
-    final dueDate = item['dueDate']?.toString() ?? '-';
+    final dueDateRaw = item['dueDate']?.toString() ?? '';
+    final dueDate = dueDateRaw.length >= 10
+        ? dueDateRaw.substring(0, 10)
+        : dueDateRaw;
+    final accentColor = isCustomer ? AppColors.info : AppColors.orange;
+    final accountId = item['accountId']?.toString() ?? '';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor:
-                (isCustomer ? AppColors.info : AppColors.orange)
-                    .withValues(alpha: 0.1),
-            child: Icon(
-              isCustomer ? Icons.person : Icons.business,
-              color: isCustomer ? AppColors.info : AppColors.orange,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  accountName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: AppCard(
+        padding: const EdgeInsets.all(14),
+        onTap: accountId.isEmpty
+            ? null
+            : () => context.push(
+                  '/accounts/statement',
+                  extra: {
+                    'id': accountId,
+                    'name': accountName,
+                    'type': accountType,
+                  },
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: (isCustomer
-                                ? AppColors.info
-                                : AppColors.orange)
-                            .withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        isCustomer ? 'MÜŞTERİ' : 'TEDARİKÇİ', // TODO: i18n
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: isCustomer
-                              ? AppColors.info
-                              : AppColors.orange,
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.1),
+                borderRadius: AppConstants.borderRadiusSmall,
+              ),
+              child: Icon(
+                isCustomer ? Icons.person_outline : Icons.business_outlined,
+                color: accentColor,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    accountName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: AppColors.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: accentColor.withValues(alpha: 0.1),
+                          borderRadius: AppConstants.borderRadiusSmall,
+                        ),
+                        child: Text(
+                          isCustomer
+                              ? t('accounts.customer_label')
+                              : t('accounts.supplier_label'),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: accentColor,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(Icons.calendar_today,
-                        size: 12, color: AppColors.textMuted),
-                    const SizedBox(width: 4),
-                    Text(
-                      dueDate.length >= 10 ? dueDate.substring(0, 10) : dueDate,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.danger,
-                        fontWeight: FontWeight.w500,
+                      const SizedBox(width: 8),
+                      const Icon(Icons.calendar_today_outlined,
+                          size: 12, color: AppColors.textMuted),
+                      const SizedBox(width: 4),
+                      Text(
+                        dueDate,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.danger,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          Text(
-            _formatCurrency(amount),
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-              color: AppColors.danger,
+            const SizedBox(width: 8),
+            Text(
+              _fmt.format(amount),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: AppColors.danger,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
-  }
-
-  String _formatCurrency(double amount) {
-    final formatted = amount.toStringAsFixed(2).replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]}.',
-    );
-    return '$formatted TL';
   }
 }

@@ -11,14 +11,31 @@ class ClaimStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color, icon) = switch (status) {
-      ClaimStatus.open => (t('su.claim_status_open'), AppColors.warning, Icons.warning_amber_rounded),
-      ClaimStatus.partiallyResolved => (
-          t('su.claim_status_partially_resolved'),
-          AppColors.info,
-          Icons.timelapse_rounded,
+      ClaimStatus.open => (
+          t('su.claim_status_open'),
+          AppColors.warning,
+          Icons.warning_amber_rounded,
         ),
-      ClaimStatus.resolved => (t('su.claim_status_resolved'), AppColors.success, Icons.check_circle_outline),
-      ClaimStatus.cancelled => (t('su.claim_status_cancelled'), AppColors.textMuted, Icons.block_rounded),
+      ClaimStatus.resolvedDelivery => (
+          t('su.claim_status_resolved_delivery'),
+          AppColors.success,
+          Icons.local_shipping_outlined,
+        ),
+      ClaimStatus.resolvedDiscount => (
+          t('su.claim_status_resolved_discount'),
+          AppColors.success,
+          Icons.discount_outlined,
+        ),
+      ClaimStatus.resolvedReturn => (
+          t('su.claim_status_resolved_return'),
+          AppColors.success,
+          Icons.assignment_return_outlined,
+        ),
+      ClaimStatus.cancelled => (
+          t('su.claim_status_cancelled'),
+          AppColors.textMuted,
+          Icons.block_rounded,
+        ),
     };
 
     return Container(

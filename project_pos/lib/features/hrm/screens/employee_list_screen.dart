@@ -5,9 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
-import 'package:project_pos/services/hrm_service.dart';
-import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
+import 'package:project_pos/features/hrm/di/hrm_di.dart';
+import 'package:project_pos/features/hrm/providers/employee_list_notifier.dart';
 
 class EmployeeListScreen extends ConsumerStatefulWidget {
   const EmployeeListScreen({super.key});
@@ -18,22 +18,7 @@ class EmployeeListScreen extends ConsumerStatefulWidget {
 
 class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
   String Function(String) get t => i18nOf(ref);
-  late HrmService _hrmService;
   final TextEditingController _searchController = TextEditingController();
-  List<Map<String, dynamic>> _employees = [];
-  List<String> _departments = [];
-  bool _isLoading = false;
-  String? _selectedDepartment;
-  String? _selectedStatus;
-  String _searchQuery = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _hrmService = ref.read(hrmServiceProvider);
-    _loadEmployees();
-    _loadDepartments();
-  }
 
   @override
   void dispose() {
@@ -41,46 +26,15 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
     super.dispose();
   }
 
-  Future<void> _loadEmployees() async {
-    setState(() => _isLoading = true);
-    try {
-      final employees = await _hrmService.getEmployees(
-        department: _selectedDepartment,
-        status: _selectedStatus,
-        search: _searchQuery,
-      );
-      setState(() {
-        _employees = employees;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      if (mounted) {
-        AppToast.error(context, t('common.error'));
-      }
-    }
-  }
-
-  Future<void> _loadDepartments() async {
-    try {
-      final departments = await _hrmService.getDepartments();
-      setState(() => _departments = departments);
-    } catch (e) {
-      // Departments are optional
-    }
-  }
-
   Future<void> _toggleStatus(Map<String, dynamic> employee) async {
-    try {
-      await _hrmService.toggleEmployeeStatus(employee['id']);
-      if (mounted) {
-        AppToast.success(context, t('common.saved'));
-      }
-      _loadEmployees();
-    } catch (e) {
-      if (mounted) {
-        AppToast.error(context, t('common.error'));
-      }
+    final ok = await ref
+        .read(employeeListProvider.notifier)
+        .toggleStatus(employee['id']);
+    if (!mounted) return;
+    if (ok) {
+      AppToast.success(context, t('common.saved'));
+    } else {
+      AppToast.error(context, t('common.error'));
     }
   }
 
@@ -95,44 +49,44 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
 
     if (!confirmed) return;
 
-    try {
-      await _hrmService.deleteEmployee(employee['id']);
-      if (mounted) {
-        AppToast.success(context, t('common.saved'));
-      }
-      _loadEmployees();
-    } catch (e) {
-      if (mounted) {
-        AppToast.error(context, t('common.error'));
-      }
+    final ok = await ref
+        .read(employeeListProvider.notifier)
+        .deleteEmployee(employee['id']);
+    if (!mounted) return;
+    if (ok) {
+      AppToast.success(context, t('common.saved'));
+    } else {
+      AppToast.error(context, t('common.error'));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
+    final state = ref.watch(employeeListProvider);
+    final notifier = ref.read(employeeListProvider.notifier);
 
     return AppScaffold(
       appBar: AppAppBar.standard(
         title: t('hrm.employees'),
         actions: [
           IconButton(
-            onPressed: _loadEmployees,
+            onPressed: notifier.load,
             icon: const Icon(Icons.refresh),
             tooltip: t('common.refresh'),
           ),
         ],
       ),
-      body: _isLoading
+      body: state.isLoading
           ? const AppSkeletonList(itemCount: 8)
           : Column(
               children: [
-                _buildStatsSection(),
+                _buildStatsSection(state),
                 const SizedBox(height: 16),
-                _buildFiltersSection(isMobile),
+                _buildFiltersSection(state, notifier, isMobile),
                 const SizedBox(height: 16),
                 Expanded(
-                  child: _employees.isEmpty
+                  child: state.employees.isEmpty
                       ? AppEmptyState(
                           icon: Icons.people_outline,
                           title: t('hrm.no_employees'),
@@ -140,11 +94,11 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
                         )
                       : ListView.separated(
                           padding: AppConstants.pagePadding,
-                          itemCount: _employees.length,
+                          itemCount: state.employees.length,
                           separatorBuilder: (context, index) =>
                               const SizedBox(height: 12),
                           itemBuilder: (context, index) {
-                            final employee = _employees[index];
+                            final employee = state.employees[index];
                             return _buildEmployeeCard(employee, isMobile);
                           },
                         ),
@@ -161,11 +115,10 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
     );
   }
 
-  Widget _buildStatsSection() {
-    final total = _employees.length;
-    final active = _employees.where((e) => e['status'] == 'active').length;
-    final inactive =
-        _employees.where((e) => e['status'] == 'inactive').length;
+  Widget _buildStatsSection(EmployeeListState state) {
+    final total = state.totalCount;
+    final active = state.activeCount;
+    final inactive = state.inactiveCount;
 
     return Container(
       padding: AppConstants.pagePadding,
@@ -258,7 +211,8 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
     );
   }
 
-  Widget _buildFiltersSection(bool isMobile) {
+  Widget _buildFiltersSection(
+      EmployeeListState state, EmployeeListNotifier notifier, bool isMobile) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       color: Colors.white,
@@ -268,14 +222,10 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
           AppSearchInput(
             controller: _searchController,
             hint: t('common.search'),
-            onChanged: (value) {
-              setState(() => _searchQuery = value);
-              _loadEmployees();
-            },
+            onChanged: notifier.setSearch,
             onClear: () {
               _searchController.clear();
-              setState(() => _searchQuery = '');
-              _loadEmployees();
+              notifier.setSearch('');
             },
           ),
           const SizedBox(height: 12),
@@ -283,7 +233,7 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String?>(
-                  initialValue: _selectedDepartment,
+                  initialValue: state.selectedDepartment,
                   decoration: _filterDecoration(
                     t('hrm.department'),
                     Icons.business_outlined,
@@ -293,23 +243,21 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
                       value: null,
                       child: Text(t('common.all')),
                     ),
-                    ..._departments.map<DropdownMenuItem<String?>>((dept) {
+                    ...state.departments
+                        .map<DropdownMenuItem<String?>>((dept) {
                       return DropdownMenuItem<String?>(
                         value: dept,
                         child: Text(dept),
                       );
                     }),
                   ],
-                  onChanged: (value) {
-                    setState(() => _selectedDepartment = value);
-                    _loadEmployees();
-                  },
+                  onChanged: notifier.setDepartment,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: DropdownButtonFormField<String?>(
-                  initialValue: _selectedStatus,
+                  initialValue: state.selectedStatus,
                   decoration: _filterDecoration(
                     t('common.status'),
                     Icons.flag_outlined,
@@ -328,10 +276,7 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
                       child: Text(t('common.passive')),
                     ),
                   ],
-                  onChanged: (value) {
-                    setState(() => _selectedStatus = value);
-                    _loadEmployees();
-                  },
+                  onChanged: notifier.setStatus,
                 ),
               ),
             ],

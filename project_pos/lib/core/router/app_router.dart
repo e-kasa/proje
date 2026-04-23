@@ -47,6 +47,7 @@ import 'package:project_pos/features/customers/screens/customer_list_screen.dart
 import 'package:project_pos/features/customers/screens/add_customer_screen.dart';
 import 'package:project_pos/features/customers/screens/customer_account_detail_screen.dart';
 // Accounts
+import 'package:project_pos/features/accounts/models/statement_args.dart';
 import 'package:project_pos/features/accounts/screens/account_summary_dashboard_screen.dart';
 import 'package:project_pos/features/accounts/screens/account_statement_screen.dart';
 import 'package:project_pos/features/accounts/screens/overdue_tracking_screen.dart';
@@ -504,11 +505,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/accounts/statement',
             builder: (context, state) {
-              final extra = state.extra as Map<String, dynamic>? ?? {};
+              final args = StatementArgs.from(state.extra);
               return AccountStatementScreen(
-                accountType: extra['accountType'] as String?,
-                accountId: extra['accountId'] as String?,
-                accountName: extra['accountName'] as String?,
+                accountType: args?.accountType,
+                accountId: args?.accountId,
+                accountName: args?.accountName,
               );
             },
           ),

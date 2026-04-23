@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/features/accounts/widgets/statement_nav_button.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/features/accounts/screens/payment_record_modal.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
@@ -126,6 +127,11 @@ class _CustomerAccountDetailScreenState
         ),
         title: customerName,
         actions: [
+          StatementNavButton(
+            accountType: 'CUSTOMER',
+            accountId: widget.customerId,
+            accountName: customerName,
+          ),
           IconButton(
             icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
             onPressed: _loadAll,
@@ -145,13 +151,11 @@ class _CustomerAccountDetailScreenState
             Row(
               children: [
                 Expanded(
-                    child: _summaryCard(
-                        'Toplam Borç', // TODO: i18n
-                        totalDebt, AppColors.danger, Icons.arrow_upward)),
+                    child: _summaryCard(t('accounts.total_debt'), totalDebt,
+                        AppColors.danger, Icons.arrow_upward)),
                 const SizedBox(width: 10),
                 Expanded(
-                    child: _summaryCard(
-                        'Toplam Tahsilat', // TODO: i18n
+                    child: _summaryCard(t('accounts.total_collection'),
                         totalCredit, AppColors.success, Icons.arrow_downward)),
               ],
             ),
@@ -159,28 +163,28 @@ class _CustomerAccountDetailScreenState
             Row(
               children: [
                 Expanded(
-                    child: _summaryCard('Vadesi Geçmiş', // TODO: i18n
-                        overdueAmount,
+                    child: _summaryCard(t('accounts.overdue'), overdueAmount,
                         AppColors.warning, Icons.warning_amber)),
                 const SizedBox(width: 10),
                 Expanded(
-                    child: _summaryCard(t('customers.credit_limit'), creditLimit,
-                        AppColors.info, Icons.credit_card)),
+                    child: _summaryCard(t('customers.credit_limit'),
+                        creditLimit, AppColors.info, Icons.credit_card)),
               ],
             ),
             const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
-                    child: _summaryCard('Kullanılabilir', // TODO: i18n
+                    child: _summaryCard(
+                        t('accounts.available'),
                         availableCredit,
                         isLimitExceeded ? AppColors.danger : AppColors.success,
                         Icons.account_balance_wallet)),
                 const SizedBox(width: 10),
                 Expanded(
-                    child: _summaryCard('Hareket Sayısı', // TODO: i18n
-                        txCount.toDouble(),
-                        AppColors.primary, Icons.receipt_long,
+                    child: _summaryCard(t('accounts.movement_count'),
+                        txCount.toDouble(), AppColors.primary,
+                        Icons.receipt_long,
                         isCount: true)),
               ],
             ),
@@ -216,8 +220,8 @@ class _CustomerAccountDetailScreenState
                 scrollDirection: Axis.horizontal,
                 children: [
                   {'key': 'ALL', 'label': t('common.all'), 'color': AppColors.primary},
-                  {'key': 'DEBIT', 'label': 'Borç', 'color': AppColors.danger}, // TODO: i18n
-                  {'key': 'CREDIT', 'label': 'Alacak', 'color': AppColors.success}, // TODO: i18n
+                  {'key': 'DEBIT', 'label': t('accounts.debit_filter'), 'color': AppColors.danger},
+                  {'key': 'CREDIT', 'label': t('accounts.credit_filter'), 'color': AppColors.success},
                 ].map((entry) {
                   final key = entry['key'] as String;
                   final label = entry['label'] as String;
@@ -260,10 +264,10 @@ class _CustomerAccountDetailScreenState
   Widget _buildBalanceCard(double balance, bool isExceeded) {
     final isPositive = balance > 0;
     final balanceLabel = isPositive
-        ? 'Borçlu' // TODO: i18n
+        ? t('accounts.status_debtor')
         : balance < 0
-            ? 'Alacaklı' // TODO: i18n
-            : 'Hesap Kapalı'; // TODO: i18n
+            ? t('accounts.status_creditor')
+            : t('accounts.status_zero');
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -299,8 +303,8 @@ class _CustomerAccountDetailScreenState
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Text('LIMIT AŞILDI', // TODO: i18n
-                      style: TextStyle(
+                  child: Text(t('accounts.limit_exceeded'),
+                      style: const TextStyle(
                           color: Colors.white,
                           fontSize: 10,
                           fontWeight: FontWeight.bold)),
@@ -464,8 +468,8 @@ class _CustomerAccountDetailScreenState
                           color: AppColors.warning.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text('VADESİ GEÇMİŞ', // TODO: i18n
-                            style: TextStyle(
+                        child: Text(t('accounts.past_due_badge'),
+                            style: const TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.warning)),
@@ -478,8 +482,8 @@ class _CustomerAccountDetailScreenState
                           color: AppColors.textMuted.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text('İPTAL', // TODO: i18n
-                            style: TextStyle(
+                        child: Text(t('common.cancelled').toUpperCase(),
+                            style: const TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.textMuted)),

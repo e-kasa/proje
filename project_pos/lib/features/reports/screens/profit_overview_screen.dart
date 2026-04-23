@@ -4,8 +4,8 @@ import 'package:intl/intl.dart';
 
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
-import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
+import 'package:project_pos/features/reports/di/reports_di.dart';
 
 class ProfitOverviewScreen extends ConsumerStatefulWidget {
   const ProfitOverviewScreen({super.key});
@@ -18,50 +18,17 @@ class ProfitOverviewScreen extends ConsumerStatefulWidget {
 class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
   String Function(String) get t => i18nOf(ref);
 
-  DateTime _startDate = DateTime.now().subtract(const Duration(days: 180));
-  DateTime _endDate = DateTime.now();
-
-  bool _isLoading = false;
-  Map<String, dynamic>? _data;
+  DateTime get _startDate => ref.watch(profitOverviewProvider).startDate;
+  DateTime get _endDate => ref.watch(profitOverviewProvider).endDate;
+  bool get _isLoading => ref.watch(profitOverviewProvider).isLoading;
+  Map<String, dynamic>? get _data => ref.watch(profitOverviewProvider).data;
 
   final _currencyFormat =
   NumberFormat.currency(locale: 'tr_TR', symbol: '\u20BA');
   final _dateFormat = DateFormat('dd.MM.yyyy');
 
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-
-    try {
-      final service = ref.read(salesReportServiceProvider);
-
-      final result = await service.getProfitOverview(
-        startDate: _startDate.toIso8601String(),
-        endDate: _endDate.toIso8601String(),
-      );
-
-      if (result == null) throw Exception(t('common.no_data'));
-
-      setState(() {
-        _data = result;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _data = null;
-        _isLoading = false;
-      });
-
-      if (mounted) {
-        AppToast.error(context, t('common.error'));
-      }
-    }
-  }
+  Future<void> _loadData() =>
+      ref.read(profitOverviewProvider.notifier).load();
 
   Future<void> _pickDateRange() async {
     final picked = await showDateRangePicker(
@@ -73,19 +40,14 @@ class _ProfitOverviewScreenState extends ConsumerState<ProfitOverviewScreen> {
     );
 
     if (picked != null) {
-      setState(() {
-        _startDate = picked.start;
-        _endDate = picked.end;
-      });
-
-      _loadData();
+      ref
+          .read(profitOverviewProvider.notifier)
+          .setDateRange(picked.start, picked.end);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return AppScaffold(
       appBar: AppAppBar.standard(
         title: t('reports.profit_overview'),

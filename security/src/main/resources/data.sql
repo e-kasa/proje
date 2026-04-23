@@ -976,7 +976,7 @@ VALUES
     ('mi-incme-0000-0000-0000-000000000034', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'menu.add_income', '/finance/add-income', 'menu-finan-0000-0000-0000-000000000014'),
     ('mi-paymt-0000-0000-0000-000000000035', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'menu.payments', '/finance/payments', 'menu-finan-0000-0000-0000-000000000014'),
+     'menu.payments', '/finance/payments', 'menu-accnt-0000-0000-0000-000000000013'),
     ('mi-cashf-0000-0000-0000-000000000036', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'menu.cash_flow', '/finance/cash-flow', 'menu-finan-0000-0000-0000-000000000014'),
     ('mi-reprt-0000-0000-0000-000000000037', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
@@ -1004,7 +1004,7 @@ VALUES
     ('mi-empls-0000-0000-0000-000000000048', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'menu.employees', '/hrm/employees', 'menu-users-0000-0000-0000-000000000018'),
     ('mi-supct-0000-0000-0000-000000000049', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'nav.supplier_claims', '/supplier-claims', 'menu-purch-0000-0000-0000-000000000010')
+     'nav.supplier_claims', '/supplier-claims', 'menu-suppl-0000-0000-0000-000000000011')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
@@ -2011,6 +2011,24 @@ VALUES
 ('bnd-ac025-000-0000-0000-000000000025', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.summary_section', 'Genel Özet', 'Summary'),
 ('bnd-ac026-000-0000-0000-000000000026', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.quick_actions', 'Hızlı İşlemler', 'Quick Actions'),
 ('bnd-ac027-000-0000-0000-000000000027', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.no_overdue', 'Vadesi geçmiş bakiye yok', 'No overdue balance'),
+('bnd-ac028-000-0000-0000-000000000028', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.search_account', 'Cari ara (müşteri / tedarikçi)...', 'Search account (customer / supplier)...'),
+('bnd-ac029-000-0000-0000-000000000029', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.search_results', 'Arama Sonuçları', 'Search Results'),
+('bnd-ac030-000-0000-0000-000000000030', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.no_search_results', 'Eşleşen cari yok', 'No matching account'),
+('bnd-ac031-000-0000-0000-000000000031', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.statement', 'Hesap Ekstresi', 'Account Statement'),
+('bnd-ac032-000-0000-0000-000000000032', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.change_account', 'Hesap Değiştir', 'Change Account'),
+('bnd-ac033-000-0000-0000-000000000033', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.detailed_statement', 'Tarihli Ekstre', 'Date-Range Statement'),
+('bnd-ac034-000-0000-0000-000000000034', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.total_debt', 'Toplam Borç', 'Total Debt'),
+('bnd-ac035-000-0000-0000-000000000035', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.total_collection', 'Toplam Tahsilat', 'Total Collection'),
+('bnd-ac036-000-0000-0000-000000000036', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.available', 'Kullanılabilir', 'Available'),
+('bnd-ac037-000-0000-0000-000000000037', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.movement_count', 'Hareket Sayısı', 'Movement Count'),
+('bnd-ac038-000-0000-0000-000000000038', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.debit_filter', 'Borç', 'Debit'),
+('bnd-ac039-000-0000-0000-000000000039', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.credit_filter', 'Alacak', 'Credit'),
+('bnd-ac040-000-0000-0000-000000000040', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.status_debtor', 'Borçlu', 'In Debt'),
+('bnd-ac041-000-0000-0000-000000000041', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.status_creditor', 'Alacaklı', 'In Credit'),
+('bnd-ac042-000-0000-0000-000000000042', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.status_zero', 'Hesap Kapalı', 'Account Settled'),
+('bnd-ac043-000-0000-0000-000000000043', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.limit_exceeded', 'LİMİT AŞILDI', 'LIMIT EXCEEDED'),
+('bnd-ac044-000-0000-0000-000000000044', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.past_due_badge', 'VADESİ GEÇMİŞ', 'PAST DUE'),
+('bnd-ac045-000-0000-0000-000000000045', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.export_pdf', 'PDF Olarak Kaydet/Yazdır', 'Export PDF / Print'),
 
 -- ── AUTH ─────────────────────────────────────────────────────
 ('bnd-au001-000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'auth.company_code', 'Firma Kodu', 'Company Code'),
@@ -2153,6 +2171,7 @@ VALUES
 ('bnd-cu018-000-0000-0000-000000000018', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'customers.notes_optional', 'Notlar (opsiyonel)', 'Notes (optional)'),
 ('bnd-cu019-000-0000-0000-000000000019', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'customers.email_invalid', 'Geçerli bir e-posta adresi girin', 'Enter a valid email address'),
 ('bnd-cu020-000-0000-0000-000000000020', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'customers.name_required', 'Müşteri adı zorunludur', 'Customer name is required'),
+('bnd-cu021-000-0000-0000-000000000021', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'customers.corporate', 'Kurumsal', 'Corporate'),
 
 -- ── DASHBOARD ────────────────────────────────────────────────
 ('bnd-da001-000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'dashboard.good_day', 'Günaydın', 'Good Day'),

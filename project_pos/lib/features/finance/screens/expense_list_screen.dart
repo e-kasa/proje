@@ -5,8 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
-import 'package:project_pos/services/finance_service.dart';
-import 'package:project_pos/services/service_locator.dart';
+import 'package:project_pos/features/finance/di/finance_di.dart';
 
 class ExpenseListScreen extends ConsumerStatefulWidget {
   const ExpenseListScreen({super.key});
@@ -17,13 +16,17 @@ class ExpenseListScreen extends ConsumerStatefulWidget {
 
 class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
   String Function(String) get t => i18nOf(ref);
-  late FinanceService _financeService;
-  List<Map<String, dynamic>> _expenses = [];
-  List<Map<String, dynamic>> _categories = [];
-  bool _isLoading = false;
-  String? _selectedCategory;
-  String? _selectedStatus;
-  String _searchQuery = '';
+
+  List<Map<String, dynamic>> get _expenses =>
+      ref.watch(expenseListProvider).expenses;
+  List<Map<String, dynamic>> get _categories =>
+      ref.watch(expenseListProvider).categories;
+  bool get _isLoading => ref.watch(expenseListProvider).isLoading;
+  String? get _selectedCategory =>
+      ref.watch(expenseListProvider).selectedCategory;
+  String? get _selectedStatus =>
+      ref.watch(expenseListProvider).selectedStatus;
+  String get _searchQuery => ref.watch(expenseListProvider).searchQuery;
 
   List<Map<String, String?>> _getStatusOptions() {
     return [
@@ -34,45 +37,11 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
     ];
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _financeService = ref.read(financeServiceProvider);
-    _loadExpenses();
-    _loadCategories();
-  }
-
-  Future<void> _loadExpenses() async {
-    setState(() => _isLoading = true);
-    try {
-      final expenses = await _financeService.getExpenses(
-        category: _selectedCategory,
-        status: _selectedStatus,
-      );
-      setState(() {
-        _expenses = expenses;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      if (mounted) {
-        AppToast.error(context, i18nOf(ref)('common.error'));
-      }
-    }
-  }
-
-  Future<void> _loadCategories() async {
-    try {
-      final categories = await _financeService.getExpenseCategories();
-      setState(() => _categories = categories);
-    } catch (e) {
-      // Categories are optional
-    }
-  }
+  Future<void> _loadExpenses() =>
+      ref.read(expenseListProvider.notifier).load();
 
   Future<void> _deleteExpense(Map<String, dynamic> expense) async {
     final confirmed = await AppConfirmationDialog.showDelete(
-      
       context: context,
       title: i18nOf(ref)('finance.delete_expense'),
       message: i18nOf(ref)('common.are_you_sure'),
@@ -81,11 +50,13 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
 
     if (!confirmed) return;
 
-    try {
-      await _financeService.deleteExpense(expense['id']);
+    final ok = await ref
+        .read(expenseListProvider.notifier)
+        .deleteExpense(expense['id']);
+    if (!mounted) return;
+    if (ok) {
       AppToast.success(context, i18nOf(ref)('common.success'));
-      _loadExpenses();
-    } catch (e) {
+    } else {
       AppToast.error(context, i18nOf(ref)('common.error'));
     }
   }
@@ -246,7 +217,8 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
           const SizedBox(height: 12),
           // Search
           TextField(
-            onChanged: (value) => setState(() => _searchQuery = value),
+            onChanged: (value) =>
+                ref.read(expenseListProvider.notifier).setSearch(value),
             decoration: InputDecoration(
               hintText: t('common.search'),
               prefixIcon: const Icon(Icons.search),
@@ -283,10 +255,8 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                       );
                     }).toList(),
                   ],
-                  onChanged: (value) {
-                    setState(() => _selectedCategory = value);
-                    _loadExpenses();
-                  },
+                  onChanged: (value) =>
+                      ref.read(expenseListProvider.notifier).setCategory(value),
                 ),
               ),
               const SizedBox(width: 12),
@@ -308,10 +278,8 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                       child: Text(opt['label'] as String),
                     );
                   }).toList(),
-                  onChanged: (value) {
-                    setState(() => _selectedStatus = value);
-                    _loadExpenses();
-                  },
+                  onChanged: (value) =>
+                      ref.read(expenseListProvider.notifier).setStatus(value),
                 ),
               ),
             ],

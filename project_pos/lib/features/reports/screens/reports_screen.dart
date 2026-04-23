@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:project_pos/core/theme/app_colors.dart';
-import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
+import 'package:project_pos/features/reports/di/reports_di.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
@@ -21,116 +21,45 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   String Function(String) get t => i18nOf(ref);
 
   late TabController _tabController;
-  bool _isExporting = false;
 
-  bool _isLoading = true;
-  String? _error;
-  DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
-  DateTime _endDate = DateTime.now();
+  bool get _isExporting => ref.watch(reportsDashboardProvider).isExporting;
+  bool get _isLoading => ref.watch(reportsDashboardProvider).isLoading;
+  String? get _error => ref.watch(reportsDashboardProvider).error;
+  DateTime get _startDate => ref.watch(reportsDashboardProvider).startDate;
+  DateTime get _endDate => ref.watch(reportsDashboardProvider).endDate;
 
-  // Sales Data
-  List<Map<String, dynamic>> _sales = [];
-  double _totalSalesAmount = 0;
-  int _totalSalesCount = 0;
-  double _averageSaleAmount = 0;
+  List<Map<String, dynamic>> get _sales =>
+      ref.watch(reportsDashboardProvider).sales;
+  double get _totalSalesAmount =>
+      ref.watch(reportsDashboardProvider).totalSalesAmount;
+  int get _totalSalesCount =>
+      ref.watch(reportsDashboardProvider).totalSalesCount;
+  double get _averageSaleAmount =>
+      ref.watch(reportsDashboardProvider).averageSaleAmount;
 
-  // Customer Data
-  List<Map<String, dynamic>> _topCustomers = [];
-  int _totalCustomers = 0;
-  int _activeCustomers = 0;
+  List<Map<String, dynamic>> get _topCustomers =>
+      ref.watch(reportsDashboardProvider).topCustomers;
+  int get _totalCustomers =>
+      ref.watch(reportsDashboardProvider).totalCustomers;
+  int get _activeCustomers =>
+      ref.watch(reportsDashboardProvider).activeCustomers;
 
-  // Inventory Data
-  int _totalProducts = 0;
-  int _lowStockProducts = 0;
-  int _outOfStockProducts = 0;
-  double _totalInventoryValue = 0;
+  int get _totalProducts => ref.watch(reportsDashboardProvider).totalProducts;
+  int get _lowStockProducts =>
+      ref.watch(reportsDashboardProvider).lowStockProducts;
+  int get _outOfStockProducts =>
+      ref.watch(reportsDashboardProvider).outOfStockProducts;
+  double get _totalInventoryValue =>
+      ref.watch(reportsDashboardProvider).totalInventoryValue;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _loadReportData();
   }
 
-  Future<void> _loadReportData() async {
-    setState(() { _isLoading = true; _error = null; });
-    try {
-      await Future.wait([
-        _loadSalesReport(),
-        _loadCustomerReport(),
-        _loadInventoryReport(),
-      ]);
-    } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _loadSalesReport() async {
-    try {
-      final service = ref.read(reportServiceProvider);
-      final data = await service.getSalesReport(
-        startDate: _startDate,
-        endDate: _endDate,
-      );
-
-      final salesList = (data['sales'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-      double totalAmount = 0;
-      for (final sale in salesList) {
-        totalAmount += (sale['total'] as num?)?.toDouble() ?? 0;
-      }
-
-      if (mounted) {
-        setState(() {
-          _sales = salesList;
-          _totalSalesAmount = totalAmount;
-          _totalSalesCount = salesList.length;
-          _averageSaleAmount = salesList.isEmpty ? 0 : totalAmount / salesList.length;
-        });
-      }
-    } catch (e) {
-      debugPrint('Sales report error: $e');
-    }
-  }
-
-  Future<void> _loadCustomerReport() async {
-    try {
-      final service = ref.read(reportServiceProvider);
-      final data = await service.getCustomerReport(
-        startDate: _startDate,
-        endDate: _endDate,
-      );
-
-      if (mounted) {
-        setState(() {
-          _topCustomers = (data['topCustomers'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-          _totalCustomers = (data['totalCustomers'] as num?)?.toInt() ?? 0;
-          _activeCustomers = (data['activeCustomers'] as num?)?.toInt() ?? 0;
-        });
-      }
-    } catch (e) {
-      debugPrint('Customer report error: $e');
-    }
-  }
-
-  Future<void> _loadInventoryReport() async {
-    try {
-      final service = ref.read(reportServiceProvider);
-      final data = await service.getInventoryReport();
-
-      if (mounted) {
-        setState(() {
-          _totalProducts = (data['totalProducts'] as num?)?.toInt() ?? 0;
-          _lowStockProducts = (data['lowStockProducts'] as num?)?.toInt() ?? 0;
-          _outOfStockProducts = (data['outOfStockProducts'] as num?)?.toInt() ?? 0;
-          _totalInventoryValue = (data['totalInventoryValue'] as num?)?.toDouble() ?? 0;
-        });
-      }
-    } catch (e) {
-      debugPrint('Inventory report error: $e');
-    }
-  }
+  Future<void> _loadReportData() =>
+      ref.read(reportsDashboardProvider.notifier).load();
 
   Future<void> _selectDateRange() async {
     final picked = await showDateRangePicker(
@@ -141,11 +70,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     );
 
     if (picked != null) {
-      setState(() {
-        _startDate = picked.start;
-        _endDate = picked.end;
-      });
-      _loadReportData();
+      ref
+          .read(reportsDashboardProvider.notifier)
+          .setDateRange(picked.start, picked.end);
     }
   }
 
@@ -157,20 +84,20 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     final format = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(t('reports.export_title')), // TODO: i18n key: reports.export_title
+        title: Text(t('reports.export_title')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: const Icon(Icons.picture_as_pdf, color: AppColors.danger),
-              title: Text(t('reports.export_pdf')), // TODO: i18n key: reports.export_pdf
+              title: Text(t('reports.export_pdf')),
               shape: RoundedRectangleBorder(borderRadius: AppConstants.borderRadiusSmall),
               onTap: () => Navigator.of(ctx).pop('pdf'),
             ),
             const SizedBox(height: 8),
             ListTile(
               leading: const Icon(Icons.table_chart, color: AppColors.success),
-              title: Text(t('reports.export_excel')), // TODO: i18n key: reports.export_excel
+              title: Text(t('reports.export_excel')),
               shape: RoundedRectangleBorder(borderRadius: AppConstants.borderRadiusSmall),
               onTap: () => Navigator.of(ctx).pop('excel'),
             ),
@@ -187,22 +114,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
 
     if (format == null || !mounted) return;
 
-    setState(() => _isExporting = true);
     try {
-      final service = ref.read(reportServiceProvider);
-      await service.exportReport(
-        reportType: reportType,
-        format: format,
-        startDate: _startDate,
-        endDate: _endDate,
-      );
+      await ref
+          .read(reportsDashboardProvider.notifier)
+          .exportReport(reportType, format);
       if (!mounted) return;
-      AppToast.success(context, t('reports.export_success')); // TODO: i18n key: reports.export_success
+      AppToast.success(context, t('reports.export_success'));
     } catch (e) {
       if (!mounted) return;
-      AppToast.error(context, '${t('reports.export_error')}: $e'); // TODO: i18n key: reports.export_error
-    } finally {
-      if (mounted) setState(() => _isExporting = false);
+      AppToast.error(context, '${t('reports.export_error')}: $e');
     }
   }
 

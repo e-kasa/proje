@@ -1,25 +1,44 @@
 package com.sedcore.inventory.entity;
 
 import com.towpen.base.db.model.TOpenSimpleCompanyEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
 import lombok.*;
 import org.hibernate.annotations.Immutable;
+import org.hibernate.annotations.Subselect;
+import org.hibernate.annotations.Synchronize;
 
 /**
- * InventoryView — DB View (read-only).
+ * InventoryView — stock_movements'ten hesaplanan salt-okunur stok özeti.
  *
- * stock_movements tablosundan GROUP BY ile hesaplanan stok özeti.
- * Gerçek zamanlı bakiye için StockLevel tablosunu kullan.
- * Bu view raporlama ve hareket tarihçesi için kullanılır.
+ * @Subselect kullanılır (@Table değil) — Hibernate bu entity için DDL üretmez,
+ * sorguyu doğrudan aşağıdaki query'den alır. Aksi halde ddl-auto=create moduyla
+ * aynı isimde TABLE yaratılır ve data.sql'deki CREATE VIEW ile çakışır.
  *
- * View tanımı data.sql'de:
- *   SELECT company_code, variant_id, location_id, location_type,
- *          SUM(IN_hareketleri) - SUM(OUT_hareketleri) AS physical_quantity
- *   FROM stock_movements GROUP BY company_code, variant_id, location_id, location_type
+ * Gerçek zamanlı bakiye için StockLevel tablosunu kullan — bu view raporlama
+ * ve hareket tarihçesi içindir.
  */
 @Entity
-@Table(name = "inventory_view")
 @Immutable
+@Subselect("""
+        SELECT
+            gen_random_uuid()::text   AS id,
+            sm.company_code,
+            'SYSTEM'::varchar         AS create_user,
+            CURRENT_TIMESTAMP         AS create_time,
+            CURRENT_TIMESTAMP         AS last_modified_time,
+            NULL::varchar             AS update_user,
+            sm.variant_id,
+            sm.location_id,
+            sm.location_type,
+            SUM(CASE WHEN sm.movement_type IN ('PURCHASE_IN','SALE_RETURN_IN','SALE_CANCEL_IN','TRANSFER_IN','ADJUSTMENT_IN')
+                     THEN sm.quantity ELSE 0 END) -
+            SUM(CASE WHEN sm.movement_type IN ('SALE_OUT','PURCHASE_RETURN_OUT','TRANSFER_OUT','ADJUSTMENT_OUT')
+                     THEN sm.quantity ELSE 0 END) AS physical_quantity
+        FROM stock_movements sm
+        GROUP BY sm.company_code, sm.variant_id, sm.location_id, sm.location_type
+        """)
+@Synchronize({"stock_movements"})
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class InventoryView extends TOpenSimpleCompanyEntity {
 

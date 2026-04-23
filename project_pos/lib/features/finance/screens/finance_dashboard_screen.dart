@@ -6,8 +6,7 @@ import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
-import 'package:project_pos/services/finance_service.dart';
-import 'package:project_pos/services/service_locator.dart';
+import 'package:project_pos/features/finance/di/finance_di.dart';
 
 class FinanceDashboardScreen extends ConsumerStatefulWidget {
   const FinanceDashboardScreen({super.key});
@@ -17,33 +16,12 @@ class FinanceDashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen> {
-  late FinanceService _financeService;
-  Map<String, dynamic> _summary = {};
-  bool _isLoading = false;
+  Map<String, dynamic> get _summary =>
+      ref.watch(financeDashboardProvider).summary;
+  bool get _isLoading => ref.watch(financeDashboardProvider).isLoading;
 
-  @override
-  void initState() {
-    super.initState();
-    _financeService = ref.read(financeServiceProvider);
-    _loadSummary();
-  }
-
-  Future<void> _loadSummary() async {
-    setState(() => _isLoading = true);
-    try {
-      final summary = await _financeService.getSummary();
-      setState(() {
-        _summary = summary;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      if (mounted) {
-        final t = i18nOf(ref);
-        AppToast.error(context, t('finance.load_error'));
-      }
-    }
-  }
+  Future<void> _loadSummary() =>
+      ref.read(financeDashboardProvider.notifier).load();
 
   @override
   Widget build(BuildContext context) {

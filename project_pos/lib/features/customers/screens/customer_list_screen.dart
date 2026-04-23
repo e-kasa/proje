@@ -216,7 +216,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
         return [
           StatPill(
             value: '$total',
-            label: 'Toplam', // TODO: i18n
+            label: t('common.total'),
             icon: Icons.people_outline,
             color: AppColors.primary,
           ),
@@ -234,7 +234,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
           ),
           StatPill(
             value: '$corporate',
-            label: 'Kurumsal', // TODO: i18n
+            label: t('customers.corporate'),
             icon: Icons.business_outlined,
             color: AppColors.info,
           ),

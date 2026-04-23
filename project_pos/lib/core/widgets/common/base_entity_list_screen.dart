@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../theme/app_colors.dart';
 import '../../theme/app_constants.dart';
-import '../../theme/app_gradients.dart';
 import '../widgets.dart';
 
 // ---------------------------------------------------------------------------
@@ -284,8 +283,7 @@ class BaseEntityListScreenState<T>
   // =========================================================================
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgLight,
+    return AppScaffold(
       appBar: _buildAppBar(),
       body: Column(
         children: [
@@ -316,51 +314,35 @@ class BaseEntityListScreenState<T>
   }
 
   // -------------------------------------------------------------------------
-  AppBar _buildAppBar() {
-    return AppBar(
-      foregroundColor: Colors.white,
-      elevation: 0,
-      surfaceTintColor: Colors.transparent,
-      iconTheme: const IconThemeData(color: Colors.white),
-      actionsIconTheme: const IconThemeData(color: Colors.white),
-      systemOverlayStyle: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-      ),
-      flexibleSpace: Container(
-        decoration: const BoxDecoration(gradient: AppGradients.primaryGradient),
-      ),
-      title: _selectionMode
-          ? Text(
-              '${_selected.length} secili',
-              style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
-            )
-          : Text(
-              widget.title,
-              style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
-            ),
+  PreferredSizeWidget _buildAppBar() {
+    return AppAppBar.standard(
+      title: _selectionMode ? '${_selected.length} seçili' : widget.title,
       actions: [
         if (_selectionMode) ...[
           if (widget.onBulkAction != null)
             IconButton(
-              icon: Icon(widget.bulkActionIcon),
+              icon: Icon(widget.bulkActionIcon, color: AppColors.textPrimary),
               onPressed: _handleBulkAction,
               tooltip: widget.bulkActionTooltip,
             ),
           IconButton(
-            icon: const Icon(Icons.close),
+            icon: const Icon(Icons.close, color: AppColors.textPrimary),
             onPressed: _exitSelection,
           ),
         ] else ...[
-          if (widget.extraActions != null)
-            ...widget.extraActions!(load),
+          if (widget.extraActions != null) ...widget.extraActions!(load),
           IconButton(
-            icon: const Icon(Icons.refresh_outlined),
+            icon: const Icon(Icons.refresh_outlined,
+                color: AppColors.textPrimary),
             onPressed: load,
             tooltip: 'Yenile',
           ),
         ],
       ],
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(1),
+        child: Container(color: AppColors.border, height: 1),
+      ),
     );
   }
 

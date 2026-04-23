@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
+import 'package:project_pos/features/settings/di/settings_di.dart';
 import 'package:project_pos/services/service_locator.dart';
 
 /// Yönetici, Kasiyer, Depo Sorumlusu gibi kullanıcıları oluşturma/düzenleme ekranı.
@@ -22,11 +23,15 @@ class UserManagementScreen extends ConsumerStatefulWidget {
 class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
   final _searchController = TextEditingController();
 
-  List<Map<String, dynamic>> _users = [];
-  List<Map<String, dynamic>> _roles = [];
-  List<Map<String, dynamic>> _stores = [];
-  bool _isLoading = true;
-  String? _selectedRoleFilter;
+  List<Map<String, dynamic>> get _users =>
+      ref.watch(userManagementProvider).users;
+  List<Map<String, dynamic>> get _roles =>
+      ref.watch(userManagementProvider).roles;
+  List<Map<String, dynamic>> get _stores =>
+      ref.watch(userManagementProvider).stores;
+  bool get _isLoading => ref.watch(userManagementProvider).isLoading;
+  String? get _selectedRoleFilter =>
+      ref.watch(userManagementProvider).selectedRoleFilter;
 
   // Roller için ikon ve renk eşlemeleri (kod bazlı)
   static const Map<String, Color> _roleColors = {
@@ -51,54 +56,22 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
   static const _storeRequiredRoles = {'CASHIER', 'STORE_ADMIN'};
 
   @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-    try {
-      final userSvc  = ref.read(userServiceProvider);
-      final storeSvc = ref.read(storeServiceProvider);
-
-      final results = await Future.wait([
-        userSvc.getUsers(search: _searchController.text, role: _selectedRoleFilter),
-        userSvc.getRoles(),
-        storeSvc.getStores(isActive: true),
-      ]);
-
-      if (mounted) {
-        setState(() {
-          _users  = results[0];
-          _roles  = results[1];
-          _stores = results[2];
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        AppToast.error(context, 'Veriler yuklenemedi: $e');
-      }
-    }
-  }
+  Future<void> _loadData() =>
+      ref.read(userManagementProvider.notifier).load();
 
   Future<void> _toggleStatus(String userId) async {
-    try {
-      await ref.read(userServiceProvider).toggleUserStatus(userId);
-      if (!mounted) return;
+    final ok =
+        await ref.read(userManagementProvider.notifier).toggleStatus(userId);
+    if (!mounted) return;
+    if (ok) {
       AppToast.success(context, i18nOf(ref)('settings.status_updated'));
-      _loadData();
-    } catch (e) {
-      if (!mounted) return;
-      AppToast.error(context, 'Durum degistirilemedi: $e');
+    } else {
+      AppToast.error(context, 'Durum degistirilemedi');
     }
   }
 
@@ -520,12 +493,15 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                               icon: const Icon(Icons.clear),
                               onPressed: () {
                                 _searchController.clear();
-                                _loadData();
+                                ref
+                                    .read(userManagementProvider.notifier)
+                                    .setSearch('');
                               },
                             )
                           : null,
                     ),
-                    onSubmitted: (_) => _loadData(),
+                    onSubmitted: (value) =>
+                        ref.read(userManagementProvider.notifier).setSearch(value),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -549,10 +525,8 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                           : AppColors.textMuted,
                     ),
                   ),
-                  onSelected: (value) {
-                    setState(() => _selectedRoleFilter = value);
-                    _loadData();
-                  },
+                  onSelected: (value) =>
+                      ref.read(userManagementProvider.notifier).setRoleFilter(value),
                   itemBuilder: (context) => [
                     PopupMenuItem(
                       value: null,

@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
-import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
+import 'package:project_pos/features/finance/di/finance_di.dart';
 
 class CashFlowScreen extends ConsumerStatefulWidget {
   const CashFlowScreen({super.key});
@@ -16,60 +16,15 @@ class CashFlowScreen extends ConsumerStatefulWidget {
 class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
   String Function(String) get t => i18nOf(ref);
 
-  bool _isLoading = false;
-  String _selectedPeriod = 'monthly'; // daily, weekly, monthly
+  bool get _isLoading => ref.watch(cashFlowProvider).isLoading;
+  String get _selectedPeriod => ref.watch(cashFlowProvider).selectedPeriod;
+  double get _totalIncome => ref.watch(cashFlowProvider).totalIncome;
+  double get _totalExpense => ref.watch(cashFlowProvider).totalExpense;
+  double get _netFlow => ref.watch(cashFlowProvider).netFlow;
+  List<Map<String, dynamic>> get _periodData =>
+      ref.watch(cashFlowProvider).periodData;
 
-  // Summary
-  double _totalIncome = 0;
-  double _totalExpense = 0;
-  double _netFlow = 0;
-
-  // Period details
-  List<Map<String, dynamic>> _periodData = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCashFlow();
-  }
-
-  Future<void> _loadCashFlow() async {
-    setState(() => _isLoading = true);
-    try {
-      final service = ref.read(paymentServiceProvider);
-      final summary =
-          await service.getCashFlowSummary(period: _selectedPeriod);
-      if (summary.isNotEmpty) {
-        setState(() {
-          _totalIncome = (summary['totalIncome'] as num?)?.toDouble() ?? 0;
-          _totalExpense = (summary['totalExpense'] as num?)?.toDouble() ?? 0;
-          _netFlow = (summary['netFlow'] as num?)?.toDouble() ?? 0;
-          _periodData = List<Map<String, dynamic>>.from(
-              summary['periods'] ?? []);
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _periodData = [];
-          _totalIncome = 0;
-          _totalExpense = 0;
-          _netFlow = 0;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _periodData = [];
-        _totalIncome = 0;
-        _totalExpense = 0;
-        _netFlow = 0;
-        _isLoading = false;
-      });
-      if (mounted) {
-        AppToast.error(context, t('common.error'));
-      }
-    }
-  }
+  Future<void> _loadCashFlow() => ref.read(cashFlowProvider.notifier).load();
 
   @override
   Widget build(BuildContext context) {
@@ -106,10 +61,9 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                       ],
                       selected: {_selectedPeriod},
                       onSelectionChanged: (selection) {
-                        setState(() {
-                          _selectedPeriod = selection.first;
-                        });
-                        _loadCashFlow();
+                        ref
+                            .read(cashFlowProvider.notifier)
+                            .setPeriod(selection.first);
                       },
                     ),
                   ),

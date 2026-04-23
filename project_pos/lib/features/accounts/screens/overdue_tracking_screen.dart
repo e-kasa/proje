@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
-import 'package:project_pos/services/service_locator.dart';
+import 'package:project_pos/features/accounts/di/accounts_di.dart';
+import 'package:project_pos/features/accounts/models/statement_args.dart';
+import 'package:project_pos/core/utils/formatters.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 
 class OverdueTrackingScreen extends ConsumerStatefulWidget {
@@ -19,19 +21,19 @@ class _OverdueTrackingScreenState extends ConsumerState<OverdueTrackingScreen>
   String Function(String) get t => i18nOf(ref);
   late TabController _tabController;
 
-  List<Map<String, dynamic>> _customerOverdue = [];
-  List<Map<String, dynamic>> _supplierOverdue = [];
-  bool _loadingCustomer = true;
-  bool _loadingSupplier = true;
-  String? _errorCustomer;
-  String? _errorSupplier;
+  List<Map<String, dynamic>> get _customerOverdue =>
+      ref.watch(overdueTrackingProvider).customerOverdue;
+  List<Map<String, dynamic>> get _supplierOverdue =>
+      ref.watch(overdueTrackingProvider).supplierOverdue;
+  bool get _loadingCustomer => ref.watch(overdueTrackingProvider).loadingCustomer;
+  bool get _loadingSupplier => ref.watch(overdueTrackingProvider).loadingSupplier;
+  String? get _errorCustomer => ref.watch(overdueTrackingProvider).errorCustomer;
+  String? get _errorSupplier => ref.watch(overdueTrackingProvider).errorSupplier;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _loadCustomerOverdue();
-    _loadSupplierOverdue();
   }
 
   @override
@@ -40,57 +42,11 @@ class _OverdueTrackingScreenState extends ConsumerState<OverdueTrackingScreen>
     super.dispose();
   }
 
-  Future<void> _loadCustomerOverdue() async {
-    setState(() {
-      _loadingCustomer = true;
-      _errorCustomer = null;
-    });
-    try {
-      final accountService = ref.read(accountServiceProvider);
-      final data =
-          await accountService.getOverdueAccounts(accountType: 'CUSTOMER');
-      data.sort((a, b) {
-        final dateA = a['dueDate']?.toString() ?? '';
-        final dateB = b['dueDate']?.toString() ?? '';
-        return dateA.compareTo(dateB);
-      });
-      setState(() {
-        _customerOverdue = data;
-        _loadingCustomer = false;
-      });
-    } catch (e) {
-      setState(() {
-        _errorCustomer = e.toString();
-        _loadingCustomer = false;
-      });
-    }
-  }
+  Future<void> _loadCustomerOverdue() =>
+      ref.read(overdueTrackingProvider.notifier).loadCustomerOverdue();
 
-  Future<void> _loadSupplierOverdue() async {
-    setState(() {
-      _loadingSupplier = true;
-      _errorSupplier = null;
-    });
-    try {
-      final accountService = ref.read(accountServiceProvider);
-      final data =
-          await accountService.getOverdueAccounts(accountType: 'SUPPLIER');
-      data.sort((a, b) {
-        final dateA = a['dueDate']?.toString() ?? '';
-        final dateB = b['dueDate']?.toString() ?? '';
-        return dateA.compareTo(dateB);
-      });
-      setState(() {
-        _supplierOverdue = data;
-        _loadingSupplier = false;
-      });
-    } catch (e) {
-      setState(() {
-        _errorSupplier = e.toString();
-        _loadingSupplier = false;
-      });
-    }
-  }
+  Future<void> _loadSupplierOverdue() =>
+      ref.read(overdueTrackingProvider.notifier).loadSupplierOverdue();
 
   @override
   Widget build(BuildContext context) {
@@ -175,11 +131,14 @@ class _OverdueTrackingScreenState extends ConsumerState<OverdueTrackingScreen>
 
     return GestureDetector(
       onTap: () {
-        context.push('/accounts/statement', extra: {
-          'accountType': accountType,
-          'accountId': accountId,
-          'accountName': accountName,
-        });
+        context.push(
+          '/accounts/statement',
+          extra: StatementArgs(
+            accountType: accountType,
+            accountId: accountId,
+            accountName: accountName,
+          ),
+        );
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
@@ -228,9 +187,7 @@ class _OverdueTrackingScreenState extends ConsumerState<OverdueTrackingScreen>
                           size: 13, color: AppColors.danger),
                       const SizedBox(width: 4),
                       Text(
-                        dueDate.length >= 10
-                            ? dueDate.substring(0, 10)
-                            : dueDate,
+                        shortDateString(dueDate),
                         style: TextStyle(
                           fontSize: 12,
                           color: AppColors.danger,
@@ -262,7 +219,7 @@ class _OverdueTrackingScreenState extends ConsumerState<OverdueTrackingScreen>
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  _formatCurrency(debitAmount),
+                  appCurrencyFmt.format(debitAmount),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
@@ -278,13 +235,5 @@ class _OverdueTrackingScreenState extends ConsumerState<OverdueTrackingScreen>
         ),
       ),
     );
-  }
-
-  String _formatCurrency(double amount) {
-    final formatted = amount.toStringAsFixed(2).replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]}.',
-    );
-    return '$formatted TL';
   }
 }

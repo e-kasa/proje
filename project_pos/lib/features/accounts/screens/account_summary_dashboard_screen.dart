@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
+import 'package:project_pos/core/utils/formatters.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/features/accounts/di/accounts_di.dart';
+import 'package:project_pos/features/accounts/models/statement_args.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'payment_record_modal.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
@@ -20,41 +22,77 @@ class AccountSummaryDashboardScreen extends ConsumerStatefulWidget {
 class _AccountSummaryDashboardScreenState
     extends ConsumerState<AccountSummaryDashboardScreen> {
   String Function(String) get t => i18nOf(ref);
-  final _fmt = NumberFormat.currency(locale: 'tr_TR', symbol: '₺');
 
-  Map<String, dynamic>? _summary;
-  List<Map<String, dynamic>> _overdueList = [];
-  bool _loading = true;
-  String? _error;
+  // Arama state
+  final _searchCtrl = TextEditingController();
+  String _query = '';
+  List<Map<String, dynamic>> _customers = [];
+  List<Map<String, dynamic>> _suppliers = [];
+  bool _accountsLoaded = false;
+
+  Map<String, dynamic>? get _summary => ref.watch(accountSummaryProvider).summary;
+  List<Map<String, dynamic>> get _overdueList =>
+      ref.watch(accountSummaryProvider).overdueList;
+  bool get _loading => ref.watch(accountSummaryProvider).isLoading;
+  String? get _error => ref.watch(accountSummaryProvider).error;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadAccounts());
   }
 
-  Future<void> _loadData() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadData() =>
+      ref.read(accountSummaryProvider.notifier).load();
+
+  Future<void> _loadAccounts() async {
     try {
-      final accountService = ref.read(accountServiceProvider);
       final results = await Future.wait([
-        accountService.getAccountSummary(),
-        accountService.getOverdueAccounts(),
+        ref.read(customerServiceProvider).getCustomers(),
+        ref.read(supplierServiceProvider).getSuppliers(),
       ]);
+      if (!mounted) return;
       setState(() {
-        _summary = results[0] as Map<String, dynamic>?;
-        _overdueList = results[1] as List<Map<String, dynamic>>;
-        _loading = false;
+        _customers = results[0];
+        _suppliers = results[1];
+        _accountsLoaded = true;
       });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
+    } catch (_) {
+      // Sessiz başarısızlık — arama özelliği opsiyonel, ana akış engellenmesin
     }
+  }
+
+  List<_AccountHit> _searchResults() {
+    if (_query.length < 2) return const [];
+    final q = _query.toLowerCase();
+    final hits = <_AccountHit>[];
+    for (final c in _customers) {
+      final name = (c['name'] ?? '').toString();
+      if (name.toLowerCase().contains(q)) {
+        hits.add(_AccountHit(
+          id: c['id']?.toString() ?? '',
+          name: name,
+          type: 'CUSTOMER',
+        ));
+      }
+    }
+    for (final s in _suppliers) {
+      final name = (s['name'] ?? '').toString();
+      if (name.toLowerCase().contains(q)) {
+        hits.add(_AccountHit(
+          id: s['id']?.toString() ?? '',
+          name: name,
+          type: 'SUPPLIER',
+        ));
+      }
+    }
+    return hits.take(20).toList();
   }
 
   @override
@@ -95,25 +133,145 @@ class _AccountSummaryDashboardScreenState
   }
 
   Widget _buildContent() {
-    return ListView(
-      padding: AppConstants.pagePadding,
-      physics: const AlwaysScrollableScrollPhysics(),
+    final isSearching = _query.length >= 2;
+    return Column(
       children: [
-        _sectionHeader(t('accounts.summary_section'), Icons.dashboard_outlined),
-        const SizedBox(height: 12),
-        _buildStatGrid(),
-        const SizedBox(height: 24),
-        _sectionHeader(t('accounts.quick_actions'), Icons.bolt_outlined),
-        const SizedBox(height: 12),
-        _buildQuickActions(),
-        const SizedBox(height: 24),
-        _buildOverdueSection(),
-        const SizedBox(height: 16),
+        Container(
+          color: Colors.white,
+          padding: AppConstants.pagePadding,
+          child: AppSearchInput(
+            controller: _searchCtrl,
+            hint: t('accounts.search_account'),
+            onChanged: (v) => setState(() => _query = v),
+            onClear: () {
+              _searchCtrl.clear();
+              setState(() => _query = '');
+            },
+          ),
+        ),
+        Expanded(
+          child: ListView(
+            padding: AppConstants.pagePadding,
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: isSearching
+                ? _buildSearchView()
+                : _buildDashboardView(),
+          ),
+        ),
       ],
     );
   }
 
-  // ─── Section Header ─────────────────────────────────────────────
+  List<Widget> _buildDashboardView() {
+    return [
+      _sectionHeader(t('accounts.summary_section'), Icons.dashboard_outlined),
+      const SizedBox(height: 12),
+      _buildStatGrid(),
+      const SizedBox(height: 24),
+      _sectionHeader(t('accounts.quick_actions'), Icons.bolt_outlined),
+      const SizedBox(height: 12),
+      _buildQuickActions(),
+      const SizedBox(height: 24),
+      _buildOverdueSection(),
+      const SizedBox(height: 16),
+    ];
+  }
+
+  List<Widget> _buildSearchView() {
+    final hits = _searchResults();
+    if (!_accountsLoaded) {
+      return const [
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 24),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ];
+    }
+    if (hits.isEmpty) {
+      return [
+        const SizedBox(height: 32),
+        AppEmptyState.search(
+          title: t('accounts.no_search_results'),
+          description: '',
+        ),
+      ];
+    }
+    return [
+      _sectionHeader(
+        '${t('accounts.search_results')} (${hits.length})',
+        Icons.search,
+      ),
+      const SizedBox(height: 12),
+      ...hits.map(_searchResultCard),
+    ];
+  }
+
+  Widget _searchResultCard(_AccountHit hit) {
+    final isCustomer = hit.type == 'CUSTOMER';
+    final accent = isCustomer ? AppColors.info : AppColors.orange;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: AppCard(
+        padding: const EdgeInsets.all(12),
+        onTap: () => context.push(
+          '/accounts/statement',
+          extra: StatementArgs(
+            accountType: hit.type,
+            accountId: hit.id,
+            accountName: hit.name,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.1),
+                borderRadius: AppConstants.borderRadiusSmall,
+              ),
+              child: Icon(
+                isCustomer ? Icons.person_outline : Icons.business_outlined,
+                color: accent,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    hit.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: AppColors.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    isCustomer
+                        ? t('accounts.customer_label')
+                        : t('accounts.supplier_label'),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: accent,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right,
+                size: 18, color: AppColors.textMuted),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _sectionHeader(String title, IconData icon, {Widget? action}) {
     return Row(
@@ -134,8 +292,6 @@ class _AccountSummaryDashboardScreenState
     );
   }
 
-  // ─── Stat Grid (4 düz kart) ─────────────────────────────────────
-
   Widget _buildStatGrid() {
     final totalReceivable =
         (_summary?['totalCustomerReceivable'] ?? 0).toDouble();
@@ -146,19 +302,19 @@ class _AccountSummaryDashboardScreenState
     final cards = [
       _statCard(
         label: t('accounts.total_customer_receivable'),
-        value: _fmt.format(totalReceivable),
+        value: appCurrencyFmt.format(totalReceivable),
         icon: Icons.people_alt_outlined,
         color: AppColors.success,
       ),
       _statCard(
         label: t('accounts.total_supplier_payable'),
-        value: _fmt.format(totalPayable),
+        value: appCurrencyFmt.format(totalPayable),
         icon: Icons.business_outlined,
         color: AppColors.warning,
       ),
       _statCard(
         label: t('accounts.overdue'),
-        value: _fmt.format(overdueAmount),
+        value: appCurrencyFmt.format(overdueAmount),
         icon: Icons.warning_amber_rounded,
         color: AppColors.danger,
       ),
@@ -243,8 +399,6 @@ class _AccountSummaryDashboardScreenState
     );
   }
 
-  // ─── Quick Actions ──────────────────────────────────────────────
-
   Widget _buildQuickActions() {
     return Row(
       children: [
@@ -261,7 +415,10 @@ class _AccountSummaryDashboardScreenState
                     ref.read(supplierServiceProvider).getSuppliers(),
               );
               if (result != null && mounted) {
-                context.push('/accounts/statement', extra: result);
+                final args = StatementArgs.from(result);
+                if (args != null) {
+                  context.push('/accounts/statement', extra: args);
+                }
               }
             },
           ),
@@ -278,7 +435,6 @@ class _AccountSummaryDashboardScreenState
     );
   }
 
-  // ─── Vadesi Geçmiş Bölüm ────────────────────────────────────────
 
   Widget _buildOverdueSection() {
     final top5 = _overdueList.take(5).toList();
@@ -313,10 +469,7 @@ class _AccountSummaryDashboardScreenState
     final accountType = item['accountType']?.toString() ?? '';
     final isCustomer = accountType == 'CUSTOMER';
     final amount = (item['debitAmount'] ?? 0).toDouble();
-    final dueDateRaw = item['dueDate']?.toString() ?? '';
-    final dueDate = dueDateRaw.length >= 10
-        ? dueDateRaw.substring(0, 10)
-        : dueDateRaw;
+    final dueDate = shortDateString(item['dueDate']?.toString());
     final accentColor = isCustomer ? AppColors.info : AppColors.orange;
     final accountId = item['accountId']?.toString() ?? '';
 
@@ -328,11 +481,11 @@ class _AccountSummaryDashboardScreenState
             ? null
             : () => context.push(
                   '/accounts/statement',
-                  extra: {
-                    'id': accountId,
-                    'name': accountName,
-                    'type': accountType,
-                  },
+                  extra: StatementArgs(
+                    accountType: accountType,
+                    accountId: accountId,
+                    accountName: accountName,
+                  ),
                 ),
         child: Row(
           children: [
@@ -404,7 +557,7 @@ class _AccountSummaryDashboardScreenState
             ),
             const SizedBox(width: 8),
             Text(
-              _fmt.format(amount),
+              appCurrencyFmt.format(amount),
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
@@ -416,4 +569,11 @@ class _AccountSummaryDashboardScreenState
       ),
     );
   }
+}
+
+class _AccountHit {
+  final String id;
+  final String name;
+  final String type; // 'CUSTOMER' | 'SUPPLIER'
+  const _AccountHit({required this.id, required this.name, required this.type});
 }

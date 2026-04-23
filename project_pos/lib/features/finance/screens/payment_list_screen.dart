@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
-import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
+import 'package:project_pos/features/finance/di/finance_di.dart';
 
 class PaymentListScreen extends ConsumerStatefulWidget {
   const PaymentListScreen({super.key});
@@ -16,21 +16,15 @@ class PaymentListScreen extends ConsumerStatefulWidget {
 class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
   String Function(String) get t => i18nOf(ref);
 
-  List<Map<String, dynamic>> _payments = [];
-  bool _isLoading = false;
-  String _selectedType = 'all'; // all, income, expense
+  List<Map<String, dynamic>> get _payments =>
+      ref.watch(paymentListProvider).payments;
+  bool get _isLoading => ref.watch(paymentListProvider).isLoading;
+  String get _selectedType => ref.watch(paymentListProvider).selectedType;
+  String get _searchQuery => ref.watch(paymentListProvider).searchQuery;
+  double get _totalIncome => ref.watch(paymentListProvider).totalIncome;
+  double get _totalExpense => ref.watch(paymentListProvider).totalExpense;
+
   final _searchController = TextEditingController();
-  String _searchQuery = '';
-
-  // Summary values
-  double _totalIncome = 0;
-  double _totalExpense = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadPayments();
-  }
 
   @override
   void dispose() {
@@ -38,40 +32,8 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
     super.dispose();
   }
 
-  Future<void> _loadPayments() async {
-    setState(() => _isLoading = true);
-    try {
-      final service = ref.read(paymentServiceProvider);
-      final type = _selectedType == 'all' ? null : _selectedType;
-      final payments = await service.getPayments(type: type);
-      double income = 0;
-      double expense = 0;
-      for (final p in payments) {
-        final amount = (p['amount'] as num?)?.toDouble() ?? 0;
-        if (p['type'] == 'income') {
-          income += amount;
-        } else {
-          expense += amount;
-        }
-      }
-      setState(() {
-        _payments = payments;
-        _totalIncome = income;
-        _totalExpense = expense;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _payments = [];
-        _totalIncome = 0;
-        _totalExpense = 0;
-      });
-      if (mounted) {
-        AppToast.error(context, t('common.error'));
-      }
-    }
-  }
+  Future<void> _loadPayments() =>
+      ref.read(paymentListProvider.notifier).load();
 
   List<Map<String, dynamic>> get _filteredPayments {
     var list = _payments;
@@ -165,9 +127,9 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                           ],
                           selected: {_selectedType},
                           onSelectionChanged: (selection) {
-                            setState(() {
-                              _selectedType = selection.first;
-                            });
+                            ref
+                                .read(paymentListProvider.notifier)
+                                .setType(selection.first);
                           },
                           style: SegmentedButton.styleFrom(
                             textStyle: const TextStyle(fontSize: 12),
@@ -198,14 +160,15 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
                               icon: const Icon(Icons.clear),
                               onPressed: () {
                                 _searchController.clear();
-                                setState(() => _searchQuery = '');
+                                ref
+                                    .read(paymentListProvider.notifier)
+                                    .setSearch('');
                               },
                             )
                           : null,
                     ),
-                    onChanged: (value) {
-                      setState(() => _searchQuery = value);
-                    },
+                    onChanged: (value) =>
+                        ref.read(paymentListProvider.notifier).setSearch(value),
                   ),
                 ),
 

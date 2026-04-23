@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
-import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
+import 'package:project_pos/features/reports/di/reports_di.dart';
 
 class CustomerSalesAnalysisScreen extends ConsumerStatefulWidget {
   const CustomerSalesAnalysisScreen({super.key});
@@ -18,40 +18,15 @@ class _CustomerSalesAnalysisScreenState
     extends ConsumerState<CustomerSalesAnalysisScreen> {
   String Function(String) get t => i18nOf(ref);
 
-  DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
-  DateTime _endDate = DateTime.now();
-  bool _isLoading = false;
-  List<Map<String, dynamic>> _customers = [];
-  String? _error;
+  DateTime get _startDate => ref.watch(customerSalesAnalysisProvider).startDate;
+  DateTime get _endDate => ref.watch(customerSalesAnalysisProvider).endDate;
+  bool get _isLoading => ref.watch(customerSalesAnalysisProvider).isLoading;
+  List<Map<String, dynamic>> get _customers =>
+      ref.watch(customerSalesAnalysisProvider).items;
+  String? get _error => ref.watch(customerSalesAnalysisProvider).error;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-    try {
-      final service = ref.read(salesReportServiceProvider);
-      final result = await service.getCustomerSalesAnalysis(
-        startDate: _startDate.toIso8601String(),
-        endDate: _endDate.toIso8601String(),
-      );
-      setState(() {
-        _customers = result;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
-    }
-  }
+  Future<void> _loadData() =>
+      ref.read(customerSalesAnalysisProvider.notifier).load();
 
   Future<void> _pickDateRange() async {
     final picked = await showDateRangePicker(
@@ -61,11 +36,9 @@ class _CustomerSalesAnalysisScreenState
       initialDateRange: DateTimeRange(start: _startDate, end: _endDate),
     );
     if (picked != null) {
-      setState(() {
-        _startDate = picked.start;
-        _endDate = picked.end;
-      });
-      _loadData();
+      ref
+          .read(customerSalesAnalysisProvider.notifier)
+          .setDateRange(picked.start, picked.end);
     }
   }
 

@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
-import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
+import 'package:project_pos/features/reports/di/reports_di.dart';
 
 class SalesSummaryScreen extends ConsumerStatefulWidget {
   const SalesSummaryScreen({super.key});
@@ -16,49 +16,20 @@ class SalesSummaryScreen extends ConsumerStatefulWidget {
 class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
   String Function(String) get t => i18nOf(ref);
 
-  DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
-  DateTime _endDate = DateTime.now();
-  int _selectedPeriod = 0; // 0=Gunluk, 1=Haftalik, 2=Aylik
-  bool _isLoading = false;
-  Map<String, dynamic>? _data;
+  DateTime get _startDate => ref.watch(salesSummaryProvider).startDate;
+  DateTime get _endDate => ref.watch(salesSummaryProvider).endDate;
+  int get _selectedPeriod => ref.watch(salesSummaryProvider).selectedPeriod;
+  bool get _isLoading => ref.watch(salesSummaryProvider).isLoading;
+  Map<String, dynamic>? get _data => ref.watch(salesSummaryProvider).data;
 
   final _currencyFormat =
       NumberFormat.currency(locale: 'tr_TR', symbol: '\u20BA');
   final _dateFormat = DateFormat('dd.MM.yyyy');
 
-  List<String> get _periodLabels => [t('reports.daily'), t('reports.weekly'), t('reports.monthly')]; // TODO: i18n keys: reports.daily, reports.weekly, reports.monthly
-  static const _periodValues = ['day', 'week', 'month'];
+  List<String> get _periodLabels => [t('reports.daily'), t('reports.weekly'), t('reports.monthly')];
 
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-    try {
-      final service = ref.read(salesReportServiceProvider);
-      final result = await service.getSalesSummary(
-        startDate: _startDate.toIso8601String(),
-        endDate: _endDate.toIso8601String(),
-        groupBy: _periodValues[_selectedPeriod],
-      );
-      if (result == null) throw Exception(t('common.no_data'));
-      setState(() {
-        _data = result;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _data = null;
-        _isLoading = false;
-      });
-      if (mounted) {
-        AppToast.error(context, t('common.error'));
-      }
-    }
-  }
+  Future<void> _loadData() =>
+      ref.read(salesSummaryProvider.notifier).load();
 
   Future<void> _pickDateRange() async {
     final picked = await showDateRangePicker(
@@ -69,18 +40,14 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
       locale: const Locale('tr', 'TR'),
     );
     if (picked != null) {
-      setState(() {
-        _startDate = picked.start;
-        _endDate = picked.end;
-      });
-      _loadData();
+      ref
+          .read(salesSummaryProvider.notifier)
+          .setDateRange(picked.start, picked.end);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return AppScaffold(
       appBar: AppAppBar.standard(
         title: t('reports.sales_summary'),
@@ -157,8 +124,9 @@ class _SalesSummaryScreenState extends ConsumerState<SalesSummaryScreen> {
             ),
             selected: {_selectedPeriod},
             onSelectionChanged: (selected) {
-              setState(() => _selectedPeriod = selected.first);
-              _loadData();
+              ref
+                  .read(salesSummaryProvider.notifier)
+                  .setPeriod(selected.first);
             },
             style: ButtonStyle(
               backgroundColor: WidgetStateProperty.resolveWith((states) {

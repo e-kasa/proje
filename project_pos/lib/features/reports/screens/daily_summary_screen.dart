@@ -2,12 +2,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
-import 'package:project_pos/services/service_locator.dart';
-import 'package:project_pos/services/finance_service.dart';
-import 'package:project_pos/core/api/api_client.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
+import 'package:project_pos/features/reports/di/reports_di.dart';
 
 class DailySummaryScreen extends ConsumerStatefulWidget {
   const DailySummaryScreen({super.key});
@@ -19,55 +17,18 @@ class DailySummaryScreen extends ConsumerStatefulWidget {
 class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
   String Function(String) get t => i18nOf(ref);
 
-  DateTime _selectedDate = DateTime.now();
-  bool _isLoading = false;
-  Map<String, dynamic> _stats = {};
-  List<Map<String, dynamic>> _dailySales = [];
-  double _totalExpense = 0.0;
-  late final FinanceService _financeService;
+  DateTime get _selectedDate => ref.watch(dailySummaryProvider).selectedDate;
+  bool get _isLoading => ref.watch(dailySummaryProvider).isLoading;
+  Map<String, dynamic> get _stats => ref.watch(dailySummaryProvider).stats;
+  List<Map<String, dynamic>> get _dailySales =>
+      ref.watch(dailySummaryProvider).dailySales;
+  double get _totalExpense => ref.watch(dailySummaryProvider).totalExpense;
 
   final _currencyFormat =
       NumberFormat.currency(locale: 'tr_TR', symbol: '\u20BA');
 
-  @override
-  void initState() {
-    super.initState();
-    _financeService = FinanceService(ApiClient());
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-    try {
-      final salesSvc = ref.read(salesServiceProvider);
-      final startOfDay = DateTime(
-          _selectedDate.year, _selectedDate.month, _selectedDate.day);
-      final endOfDay = startOfDay
-          .add(const Duration(days: 1))
-          .subtract(const Duration(milliseconds: 1));
-
-      final results = await Future.wait([
-        salesSvc.getSalesStats(startDate: startOfDay, endDate: endOfDay),
-        salesSvc.getDailySalesReport(date: _selectedDate),
-        _financeService.getExpenses(startDate: startOfDay, endDate: endOfDay),
-      ]);
-
-      final expenses = results[2] as List<Map<String, dynamic>>;
-      final expenseTotal = expenses.fold<double>(
-        0.0,
-        (sum, e) => sum + ((e['amount'] as num?)?.toDouble() ?? 0.0),
-      );
-
-      setState(() {
-        _stats = results[0] as Map<String, dynamic>;
-        _dailySales = (results[1] as List<Map<String, dynamic>>?) ?? [];
-        _totalExpense = expenseTotal;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-    }
-  }
+  Future<void> _loadData() =>
+      ref.read(dailySummaryProvider.notifier).load();
 
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
@@ -78,8 +39,7 @@ class _DailySummaryScreenState extends ConsumerState<DailySummaryScreen> {
       locale: const Locale('tr', 'TR'),
     );
     if (picked != null) {
-      setState(() => _selectedDate = picked);
-      _loadData();
+      ref.read(dailySummaryProvider.notifier).setDate(picked);
     }
   }
 

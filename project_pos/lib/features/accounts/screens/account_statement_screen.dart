@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
+import 'package:project_pos/features/accounts/di/accounts_di.dart';
+import 'package:project_pos/features/accounts/services/statement_pdf_service.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'payment_record_modal.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
@@ -27,35 +29,33 @@ class AccountStatementScreen extends ConsumerStatefulWidget {
 class _AccountStatementScreenState
     extends ConsumerState<AccountStatementScreen> {
   String Function(String) get t => i18nOf(ref);
-  String? _accountType;
-  String? _accountId;
-  String? _accountName;
 
-  late DateTimeRange _dateRange;
-  Map<String, dynamic>? _statement;
-  bool _loading = false;
-  String? _error;
+  String? get _accountType => ref.watch(accountStatementProvider).accountType;
+  String? get _accountId => ref.watch(accountStatementProvider).accountId;
+  String? get _accountName => ref.watch(accountStatementProvider).accountName;
+  DateTimeRange get _dateRange => DateTimeRange(
+        start: ref.watch(accountStatementProvider).startDate,
+        end: ref.watch(accountStatementProvider).endDate,
+      );
+  Map<String, dynamic>? get _statement =>
+      ref.watch(accountStatementProvider).statement;
+  bool get _loading => ref.watch(accountStatementProvider).isLoading;
+  String? get _error => ref.watch(accountStatementProvider).error;
 
   @override
   void initState() {
     super.initState();
-    _accountType = widget.accountType;
-    _accountId = widget.accountId;
-    _accountName = widget.accountName;
-
-    final now = DateTime.now();
-    _dateRange = DateTimeRange(
-      start: now.subtract(const Duration(days: 30)),
-      end: now,
-    );
-
-    if (_accountId != null && _accountId!.isNotEmpty) {
-      _loadStatement();
-    } else {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.accountId != null && widget.accountId!.isNotEmpty) {
+        ref.read(accountStatementProvider.notifier).setAccount(
+              accountType: widget.accountType!,
+              accountId: widget.accountId!,
+              accountName: widget.accountName,
+            );
+      } else {
         _showAccountSelect();
-      });
-    }
+      }
+    });
   }
 
   Future<void> _showAccountSelect() async {
@@ -65,41 +65,16 @@ class _AccountStatementScreenState
       loadSuppliers: () => ref.read(supplierServiceProvider).getSuppliers(),
     );
     if (result != null && mounted) {
-      setState(() {
-        _accountType = result['accountType']?.toString();
-        _accountId = result['accountId']?.toString();
-        _accountName = result['accountName']?.toString();
-      });
-      _loadStatement();
+      ref.read(accountStatementProvider.notifier).setAccount(
+            accountType: result['accountType']!.toString(),
+            accountId: result['accountId']!.toString(),
+            accountName: result['accountName']?.toString(),
+          );
     }
   }
 
-  Future<void> _loadStatement() async {
-    if (_accountType == null || _accountId == null) return;
-
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final accountService = ref.read(accountServiceProvider);
-      final data = await accountService.getAccountStatement(
-        accountType: _accountType!,
-        accountId: _accountId!,
-        startDate: _formatDate(_dateRange.start),
-        endDate: _formatDate(_dateRange.end),
-      );
-      setState(() {
-        _statement = data;
-        _loading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
-    }
-  }
+  Future<void> _loadStatement() =>
+      ref.read(accountStatementProvider.notifier).load();
 
   Future<void> _pickDateRange() async {
     final picked = await showDateRangePicker(
@@ -120,8 +95,9 @@ class _AccountStatementScreenState
       },
     );
     if (picked != null) {
-      setState(() => _dateRange = picked);
-      _loadStatement();
+      ref
+          .read(accountStatementProvider.notifier)
+          .setDateRange(picked.start, picked.end);
     }
   }
 
@@ -130,19 +106,52 @@ class _AccountStatementScreenState
     final hasAccount = _accountId != null && _accountId!.isNotEmpty;
 
     return AppScaffold(
-      appBar: AppAppBar.gradient(
-        title: hasAccount ? '${t('accounts.title')} - ${_accountName ?? ''}' : t('accounts.title'),
+      appBar: AppAppBar.standard(
+        title: hasAccount
+            ? '${t('accounts.statement')} - ${_accountName ?? ''}'
+            : t('accounts.statement'),
         actions: [
+          if (hasAccount && _statement != null)
+            IconButton(
+              icon: const Icon(Icons.picture_as_pdf_outlined,
+                  color: AppColors.textPrimary),
+              tooltip: t('accounts.export_pdf'),
+              onPressed: _exportPdf,
+            ),
           if (hasAccount)
             IconButton(
-              icon: const Icon(Icons.swap_horiz),
-              tooltip: 'Hesap Değiştir', // TODO: i18n
+              icon: const Icon(Icons.swap_horiz, color: AppColors.textPrimary),
+              tooltip: t('accounts.change_account'),
               onPressed: _showAccountSelect,
             ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: AppColors.border, height: 1),
+        ),
       ),
       body: hasAccount ? _buildBody() : _buildEmptyState(),
     );
+  }
+
+  Future<void> _exportPdf() async {
+    final s = _statement;
+    if (s == null) return;
+    try {
+      await StatementPdfService.show(
+        accountName: _accountName ?? '-',
+        accountType: _accountType ?? 'CUSTOMER',
+        startDate: _dateRange.start,
+        endDate: _dateRange.end,
+        openingBalance: (s['openingBalance'] ?? 0).toDouble(),
+        closingBalance: (s['closingBalance'] ?? 0).toDouble(),
+        totalDebit: (s['totalDebit'] ?? 0).toDouble(),
+        totalCredit: (s['totalCredit'] ?? 0).toDouble(),
+        transactions: List<Map<String, dynamic>>.from(s['transactions'] ?? []),
+      );
+    } catch (e) {
+      if (mounted) AppToast.error(context, '${t('common.error')}: $e');
+    }
   }
 
   Widget _buildEmptyState() {

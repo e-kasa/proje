@@ -92,6 +92,12 @@
             <artifactId>pdfbox</artifactId>
             <version>3.0.3</version>
         </dependency>
+
+        <!-- Email — Statement PDF email sending (Sprint 5 mini, 2026-04-24) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

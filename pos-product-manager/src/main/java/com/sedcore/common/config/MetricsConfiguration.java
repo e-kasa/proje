@@ -61,6 +61,21 @@ public class MetricsConfiguration {
     public static final String PRODUCTS_TOTAL = "products.total";
     public static final String VARIANTS_TOTAL = "variants.total";
 
+    // ====================================================================
+    // RECONCILE METRICS (Sprint 3 — P1.4)
+    // ====================================================================
+
+    public static final String RECONCILE_RUNS = "reconcile.runs.total";
+    public static final String RECONCILE_DRIFT = "reconcile.drift.total";
+    public static final String RECONCILE_DURATION = "reconcile.duration.seconds";
+
+    public static final String TAG_ENTITY_TYPE = "entity_type";
+    public static final String TAG_STATUS = "status";
+    public static final String TAG_SCOPE = "scope";
+    public static final String STATUS_OK = "ok";
+    public static final String STATUS_DRIFT = "drift";
+    public static final String STATUS_ERROR = "error";
+
     /**
      * Register custom metrics with MeterRegistry
      */
@@ -109,5 +124,7 @@ public class MetricsConfiguration {
                 .register(meterRegistry);
 
         // Gauges and timers are registered via @Timed annotation
+        // Reconcile metrics: counter/timer'lar dinamik tag'li oluşturulduğundan
+        // burada pre-register edilmez — service'lerde meterRegistry.counter(...) çağrısıyla oluşur.
     }
 }

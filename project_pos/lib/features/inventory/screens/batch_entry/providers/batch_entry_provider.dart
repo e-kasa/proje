@@ -487,6 +487,8 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
     String? locationId,
     String? locationName,
     String? locationType,
+    String? categoryId,
+    String? categoryName,
     bool? headerCollapsed,
   }) {
     state = state.copyWith(
@@ -498,6 +500,8 @@ class BatchEntryNotifier extends StateNotifier<BatchEntryState> {
       locationId: locationId,
       locationName: locationName,
       locationType: locationType,
+      categoryId: categoryId,
+      categoryName: categoryName,
       headerCollapsed: headerCollapsed,
     );
   }

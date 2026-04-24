@@ -6,6 +6,7 @@ import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/providers/theme_provider.dart';
 import '../providers/pos_provider.dart';
+import 'cart_panel.dart' show showCustomerPickerSheet;
 import 'receipt_preview_dialog.dart';
 
 class PaymentPanel extends ConsumerStatefulWidget {
@@ -128,6 +129,8 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel>
 
   Widget _buildHeader(
       BuildContext context, PosState posState, LinearGradient gradient) {
+    final t = i18nOf(ref);
+    final notifier = ref.read(posProvider.notifier);
     return Container(
       decoration: BoxDecoration(
         gradient: gradient,
@@ -192,59 +195,84 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel>
                             letterSpacing: -0.3,
                           ),
                         ),
-                        if (posState.selectedCustomer != null)
-                          Row(
-                            children: [
-                              const Icon(Icons.person_outline,
-                                  color: Colors.white70, size: 13),
-                              const SizedBox(width: 4),
-                              Text(
-                                posState.selectedCustomer!['name']?.toString() ?? '',
-                                style: const TextStyle(
-                                    color: Colors.white70, fontSize: 12),
-                              ),
-                            ],
-                          )
-                        else
-                          const Text(
-                            'Müşteri seçilmedi',
-                            style: TextStyle(
-                                color: Colors.white54, fontSize: 12),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(6),
+                          onTap: () => showCustomerPickerSheet(
+                              context, notifier, posState.selectedCustomer),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.person_outline,
+                                    color: Colors.white, size: 13),
+                                const SizedBox(width: 4),
+                                Text(
+                                  posState.selectedCustomer != null
+                                      ? posState.selectedCustomer!['name']
+                                              ?.toString() ??
+                                          ''
+                                      : t('sl.pay_tap_to_select_customer'),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(width: 3),
+                                const Icon(Icons.arrow_forward_ios,
+                                    color: Colors.white70, size: 10),
+                              ],
+                            ),
                           ),
+                        ),
                       ],
                     ),
                   ),
                   // Grand total chip
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        const Text(
-                          'TOPLAM',
-                          style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.3)),
                         ),
-                        Text(
-                          _currency.format(posState.grandTotal),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            const Text(
+                              'TOPLAM',
+                              style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.8),
+                            ),
+                            Text(
+                              _currency.format(posState.grandTotal),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (posState.isCreditSale) ...[
+                        const SizedBox(height: 6),
+                        _CreditRemainingChip(
+                          amount: posState.remainingDebt,
+                          currency: _currency,
+                          label: t('sl.pay_remaining_debt_chip'),
                         ),
                       ],
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -327,19 +355,27 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel>
         );
 
       case PaymentMethod.creditCard:
-        return _CardMethodInfo(
+        return _CardMethodForm(
           icon: Icons.credit_card_rounded,
           title: t('pos.credit_card_payment_info'),
           subtitle: 'Kart okuyucuya kart takınız',
           color: AppColors.primary,
+          referenceLabel: t('sl.pay_card_reference'),
+          referenceHint: t('sl.pay_card_reference_hint'),
+          initialValue: posState.cardReference,
+          onReferenceChanged: notifier.setCardReference,
         );
 
       case PaymentMethod.bankTransfer:
-        return _CardMethodInfo(
+        return _CardMethodForm(
           icon: Icons.account_balance_rounded,
           title: t('pos.bank_transfer_payment_info'),
           subtitle: 'Transfer referans numarasını alın',
           color: const Color(0xFF7C3AED),
+          referenceLabel: t('sl.pay_card_reference'),
+          referenceHint: t('sl.pay_card_reference_hint'),
+          initialValue: posState.transferReference,
+          onReferenceChanged: notifier.setTransferReference,
         );
 
       case PaymentMethod.mixed:
@@ -349,12 +385,15 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel>
           transferCtrl: _transferController,
           posState: posState,
           currency: _currency,
+          referenceLabel: t('sl.pay_card_reference'),
           onCashChanged: (v) =>
               notifier.setCashReceived(double.tryParse(v) ?? 0),
           onCardChanged: (v) =>
               notifier.setCardAmount(double.tryParse(v) ?? 0),
           onTransferChanged: (v) =>
               notifier.setTransferAmount(double.tryParse(v) ?? 0),
+          onCardReferenceChanged: notifier.setCardReference,
+          onTransferReferenceChanged: notifier.setTransferReference,
         );
     }
   }
@@ -385,9 +424,25 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel>
 
   // ─── Pay Button ──────────────────────────────────────────────────────────────
 
+  String _resolveButtonLabel(PosState s, String Function(String) t) {
+    if (s.cartItems.isEmpty) return t('sl.pay_cart_empty');
+    if (s.selectedCustomer == null && !s.isPaymentSufficient) {
+      return t('sl.pay_select_customer_or_pay');
+    }
+    if (s.isCreditSale) {
+      return '${t('sl.pay_complete_credit')} · ${t('sl.pay_remaining')}: ${_currency.format(s.remainingDebt)}';
+    }
+    return '${t('sl.pay_complete_cash')} · ${_currency.format(s.grandTotal)}';
+  }
+
   Widget _buildPayButton(
       PosState posState, PosNotifier notifier, LinearGradient gradient) {
     final canPay = posState.canSubmit;
+    final t = i18nOf(ref);
+    final buttonLabel = _resolveButtonLabel(posState, t);
+    final buttonIcon = posState.isCreditSale
+        ? Icons.schedule_rounded
+        : Icons.check_circle_rounded;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       decoration: BoxDecoration(
@@ -410,13 +465,23 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel>
             duration: const Duration(milliseconds: 200),
             child: DecoratedBox(
               decoration: BoxDecoration(
-                gradient: canPay ? gradient : null,
+                gradient: canPay
+                    ? (posState.isCreditSale
+                        ? const LinearGradient(colors: [
+                            Color(0xFFEA580C),
+                            Color(0xFFF97316),
+                          ])
+                        : gradient)
+                    : null,
                 color: canPay ? null : AppColors.border,
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: canPay
                     ? [
                         BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.35),
+                          color: (posState.isCreditSale
+                                  ? const Color(0xFFEA580C)
+                                  : AppColors.primary)
+                              .withValues(alpha: 0.35),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
@@ -465,21 +530,23 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel>
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                Icons.check_circle_rounded,
+                                buttonIcon,
                                 color: canPay ? Colors.white : AppColors.textMuted,
                                 size: 22,
                               ),
                               const SizedBox(width: 10),
-                              Text(
-                                canPay
-                                    ? 'Satışı Tamamla  ·  ${_currency.format(posState.grandTotal)}'
-                                    : 'Ödeme Bilgilerini Giriniz',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  color: canPay
-                                      ? Colors.white
-                                      : AppColors.textMuted,
+                              Flexible(
+                                child: Text(
+                                  buttonLabel,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: canPay
+                                        ? Colors.white
+                                        : AppColors.textMuted,
+                                  ),
                                 ),
                               ),
                             ],
@@ -530,6 +597,53 @@ class _SectionLabel extends StatelessWidget {
         fontWeight: FontWeight.w700,
         color: AppColors.textSecondary,
         letterSpacing: 0.3,
+      ),
+    );
+  }
+}
+
+// ── Credit Remaining Chip (Header vadeli uyarısı) ────────────────────────────
+
+class _CreditRemainingChip extends StatelessWidget {
+  final double amount;
+  final NumberFormat currency;
+  final String label;
+
+  const _CreditRemainingChip({
+    required this.amount,
+    required this.currency,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEA580C).withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFEA580C).withValues(alpha: 0.35),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.schedule_rounded, color: Colors.white, size: 13),
+          const SizedBox(width: 5),
+          Text(
+            '$label: ${currency.format(amount)}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -962,62 +1076,126 @@ class _QuickAmountChip extends StatelessWidget {
   }
 }
 
-// ── Card / Transfer Method Info ───────────────────────────────────────────────
+// ── Card / Transfer Method Form (info + referans no input) ───────────────────
 
-class _CardMethodInfo extends StatelessWidget {
+class _CardMethodForm extends StatefulWidget {
   final IconData icon;
   final String title;
   final String subtitle;
   final Color color;
+  final String referenceLabel;
+  final String referenceHint;
+  final String? initialValue;
+  final ValueChanged<String?> onReferenceChanged;
 
-  const _CardMethodInfo({
+  const _CardMethodForm({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.color,
+    required this.referenceLabel,
+    required this.referenceHint,
+    required this.initialValue,
+    required this.onReferenceChanged,
   });
 
   @override
+  State<_CardMethodForm> createState() => _CardMethodFormState();
+}
+
+class _CardMethodFormState extends State<_CardMethodForm> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.initialValue ?? '');
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final c = widget.color;
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.06),
+        color: c.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        border: Border.all(color: c.withValues(alpha: 0.2)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 28, color: color),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: color),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: c.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                      fontSize: 12, color: AppColors.textSecondary),
+                child: Icon(widget.icon, size: 24, color: c),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.title,
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: c),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.subtitle,
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.textSecondary),
+                    ),
+                  ],
                 ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _ctrl,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(16),
+            ],
+            onChanged: widget.onReferenceChanged,
+            decoration: InputDecoration(
+              labelText: widget.referenceLabel,
+              hintText: widget.referenceHint,
+              hintStyle: const TextStyle(fontSize: 11),
+              prefixIcon: Icon(Icons.confirmation_number_outlined,
+                  size: 18, color: c),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: c, width: 2),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              isDense: true,
             ),
           ),
-          Icon(Icons.arrow_forward_rounded, color: color, size: 18),
         ],
       ),
     );
@@ -1035,6 +1213,9 @@ class _MixedPaymentSection extends StatelessWidget {
   final ValueChanged<String> onCashChanged;
   final ValueChanged<String> onCardChanged;
   final ValueChanged<String> onTransferChanged;
+  final ValueChanged<String?> onCardReferenceChanged;
+  final ValueChanged<String?> onTransferReferenceChanged;
+  final String referenceLabel;
 
   const _MixedPaymentSection({
     required this.cashCtrl,
@@ -1045,6 +1226,9 @@ class _MixedPaymentSection extends StatelessWidget {
     required this.onCashChanged,
     required this.onCardChanged,
     required this.onTransferChanged,
+    required this.onCardReferenceChanged,
+    required this.onTransferReferenceChanged,
+    required this.referenceLabel,
   });
 
   @override
@@ -1122,6 +1306,15 @@ class _MixedPaymentSection extends StatelessWidget {
           color: AppColors.primary,
           onChanged: onCardChanged,
         ),
+        if (posState.cardAmount > 0) ...[
+          const SizedBox(height: 6),
+          _MixedReferenceField(
+            initialValue: posState.cardReference,
+            label: '$referenceLabel — Kart',
+            color: AppColors.primary,
+            onChanged: onCardReferenceChanged,
+          ),
+        ],
         const SizedBox(height: 8),
         _MixedInputField(
           controller: transferCtrl,
@@ -1130,7 +1323,82 @@ class _MixedPaymentSection extends StatelessWidget {
           color: const Color(0xFF7C3AED),
           onChanged: onTransferChanged,
         ),
+        if (posState.transferAmount > 0) ...[
+          const SizedBox(height: 6),
+          _MixedReferenceField(
+            initialValue: posState.transferReference,
+            label: '$referenceLabel — Havale',
+            color: const Color(0xFF7C3AED),
+            onChanged: onTransferReferenceChanged,
+          ),
+        ],
       ],
+    );
+  }
+}
+
+class _MixedReferenceField extends StatefulWidget {
+  final String? initialValue;
+  final String label;
+  final Color color;
+  final ValueChanged<String?> onChanged;
+
+  const _MixedReferenceField({
+    required this.initialValue,
+    required this.label,
+    required this.color,
+    required this.onChanged,
+  });
+
+  @override
+  State<_MixedReferenceField> createState() => _MixedReferenceFieldState();
+}
+
+class _MixedReferenceFieldState extends State<_MixedReferenceField> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.initialValue ?? '');
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: _ctrl,
+      keyboardType: TextInputType.number,
+      inputFormatters: [
+        FilteringTextInputFormatter.digitsOnly,
+        LengthLimitingTextInputFormatter(16),
+      ],
+      onChanged: widget.onChanged,
+      decoration: InputDecoration(
+        labelText: widget.label,
+        prefixIcon: Icon(Icons.confirmation_number_outlined,
+            size: 16, color: widget.color),
+        border:
+            OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: widget.color, width: 1.5),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        isDense: true,
+      ),
     );
   }
 }
@@ -1315,6 +1583,8 @@ class _SuccessSheetState extends ConsumerState<_SuccessSheet>
 
     final saleNumber = s?['saleNumber']?.toString() ?? '-';
     final grandTotal = (s?['grandTotal'] as num?)?.toDouble() ?? 0.0;
+    final paidAmount = (s?['paidAmount'] as num?)?.toDouble() ?? grandTotal;
+    final remainingDebt = (s?['remainingDebt'] as num?)?.toDouble() ?? 0.0;
     final customerName = s?['customerName']?.toString();
     final paymentMethod = s?['paymentMethod']?.toString() ?? '';
     final changeAmount = (s?['changeAmount'] as num?)?.toDouble() ?? 0.0;
@@ -1453,7 +1723,7 @@ class _SuccessSheetState extends ConsumerState<_SuccessSheet>
                                 letterSpacing: 0.5),
                           ),
                           Text(
-                            c.format(grandTotal),
+                            c.format(paidAmount),
                             style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w900,
@@ -1462,6 +1732,30 @@ class _SuccessSheetState extends ConsumerState<_SuccessSheet>
                           ),
                         ],
                       ),
+                      if (remainingDebt > 0) ...[
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'KALAN BORÇ (CARİ)',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFFEA580C),
+                                  letterSpacing: 0.5),
+                            ),
+                            Text(
+                              c.format(remainingDebt),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFFEA580C),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),

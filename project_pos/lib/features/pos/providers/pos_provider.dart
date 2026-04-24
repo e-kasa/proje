@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/app_logger.dart';
 import 'package:project_pos/providers/auth_provider.dart';
+import 'package:project_pos/features/accounts/di/accounts_di.dart';
+import 'package:project_pos/features/accounts/providers/accounts_list_provider.dart';
 
 // ─── Parked Order Model ────────────────────────────────────────────
 class ParkedOrder {
@@ -113,6 +115,10 @@ class PosState {
   final String? error;
   final String? successMessage;
 
+  /// Kart / Havale ödeme referans numarası (opsiyonel, notes'a eklenir).
+  final String? cardReference;
+  final String? transferReference;
+
   final List<Map<String, dynamic>> products;
   final List<Map<String, dynamic>> categories;
   final String? selectedCategoryId;
@@ -155,6 +161,8 @@ class PosState {
     this.isSubmitting = false,
     this.error,
     this.successMessage,
+    this.cardReference,
+    this.transferReference,
     this.products = const [],
     this.categories = const [],
     this.selectedCategoryId,
@@ -188,16 +196,62 @@ class PosState {
     return 0;
   }
 
+  /// Kullanıcının seçilen ödeme yöntemine göre girdiği toplam tutar.
+  double get _enteredPayment => switch (paymentMethod) {
+        PaymentMethod.cash => cashReceived,
+        PaymentMethod.creditCard => cardAmount,
+        PaymentMethod.bankTransfer => transferAmount,
+        PaymentMethod.mixed => cashReceived + cardAmount + transferAmount,
+      };
+
+  /// Misafir (müşterisiz) satışta ödeme yeterliliği.
+  /// Kart/Havale'de kullanıcının input'u olmadığı için true (POS integrasyonu).
   bool get isPaymentSufficient {
     switch (paymentMethod) {
-      case PaymentMethod.cash: return cashReceived >= grandTotal;
+      case PaymentMethod.cash:
+        return cashReceived >= grandTotal;
       case PaymentMethod.creditCard:
-      case PaymentMethod.bankTransfer: return true;
-      case PaymentMethod.mixed: return (cashReceived + cardAmount + transferAmount) >= grandTotal;
+      case PaymentMethod.bankTransfer:
+        return true;
+      case PaymentMethod.mixed:
+        return (cashReceived + cardAmount + transferAmount) >= grandTotal;
     }
   }
 
-  bool get canSubmit => cartItems.isNotEmpty && isPaymentSufficient && !isSubmitting;
+  /// Otomatik vadeli kuralı: müşteri seçili + girilen ödeme < toplam (0 dahil).
+  /// Kart/Havale'de gerçek input yok (POS integrasyonu) → peşin kabul edilir.
+  bool get isCreditSale {
+    if (selectedCustomer == null) return false;
+    switch (paymentMethod) {
+      case PaymentMethod.creditCard:
+      case PaymentMethod.bankTransfer:
+        return false;
+      case PaymentMethod.cash:
+      case PaymentMethod.mixed:
+        return _enteredPayment < grandTotal;
+    }
+  }
+
+  /// Backend'e gönderilecek paidAmount.
+  /// - Müşterisiz: grandTotal (peşin)
+  /// - Kart/Havale (müşterili): grandTotal (POS integrasyonu varsayılır)
+  /// - Nakit/Karma (müşterili, eksik giriş): entered tutar (vadeli)
+  /// - Nakit/Karma (müşterili, yeterli giriş): grandTotal
+  double get effectivePaidAmount {
+    if (!isCreditSale) return grandTotal;
+    return _enteredPayment.clamp(0, grandTotal).toDouble();
+  }
+
+  /// Müşteri carisine işlenecek kalan borç.
+  double get remainingDebt => (grandTotal - effectivePaidAmount).clamp(0, double.infinity);
+
+  bool get canSubmit {
+    if (cartItems.isEmpty || isSubmitting) return false;
+    // Misafir (müşterisiz) satışta tam ödeme zorunlu.
+    if (selectedCustomer == null) return isPaymentSufficient;
+    // Müşteri varsa: tam ödeme peşin, eksik ödeme otomatik vadeli — her durumda submit OK.
+    return true;
+  }
 
   List<Map<String, dynamic>> get filteredProducts {
     var filtered = List<Map<String, dynamic>>.from(products);
@@ -230,6 +284,10 @@ class PosState {
     bool clearError = false,
     String? successMessage,
     bool clearSuccess = false,
+    String? cardReference,
+    bool clearCardReference = false,
+    String? transferReference,
+    bool clearTransferReference = false,
     List<Map<String, dynamic>>? products,
     List<Map<String, dynamic>>? categories,
     String? selectedCategoryId,
@@ -260,6 +318,8 @@ class PosState {
       isSubmitting: isSubmitting ?? this.isSubmitting,
       error: clearError ? null : (error ?? this.error),
       successMessage: clearSuccess ? null : (successMessage ?? this.successMessage),
+      cardReference: clearCardReference ? null : (cardReference ?? this.cardReference),
+      transferReference: clearTransferReference ? null : (transferReference ?? this.transferReference),
       products: products ?? this.products,
       categories: categories ?? this.categories,
       selectedCategoryId: clearCategory ? null : (selectedCategoryId ?? this.selectedCategoryId),
@@ -590,7 +650,18 @@ class PosNotifier extends StateNotifier<PosState> {
   }
 
   void clearCart() {
-    state = state.copyWith(cartItems: [], clearCustomer: true, cashReceived: 0, cardAmount: 0, transferAmount: 0, clearNote: true, paymentMethod: PaymentMethod.cash, recommendations: []);
+    state = state.copyWith(
+      cartItems: [],
+      clearCustomer: true,
+      cashReceived: 0,
+      cardAmount: 0,
+      transferAmount: 0,
+      clearNote: true,
+      paymentMethod: PaymentMethod.cash,
+      clearCardReference: true,
+      clearTransferReference: true,
+      recommendations: [],
+    );
   }
 
   void selectCustomer(Map<String, dynamic>? customer) {
@@ -609,6 +680,14 @@ class PosNotifier extends StateNotifier<PosState> {
   void setCardAmount(double amount) => state = state.copyWith(cardAmount: amount);
   void setTransferAmount(double amount) => state = state.copyWith(transferAmount: amount);
   void setNote(String? note) => state = note == null || note.isEmpty ? state.copyWith(clearNote: true) : state.copyWith(note: note);
+
+  void setCardReference(String? v) => state = (v == null || v.isEmpty)
+      ? state.copyWith(clearCardReference: true)
+      : state.copyWith(cardReference: v);
+
+  void setTransferReference(String? v) => state = (v == null || v.isEmpty)
+      ? state.copyWith(clearTransferReference: true)
+      : state.copyWith(transferReference: v);
 
   Future<bool> submitSale() async {
     if (!state.canSubmit) return false;
@@ -640,11 +719,27 @@ class PosNotifier extends StateNotifier<PosState> {
         'saleDate': DateTime.now().toIso8601String(),
       };
 
+      final effectivePaid = state.effectivePaidAmount;
+      final remainingDebt = state.remainingDebt;
+
+      // Kart / Havale referans numaralarını kullanıcı notu ile birleştir.
+      final refLines = <String>[];
+      if (state.cardReference != null && state.cardReference!.isNotEmpty) {
+        refLines.add('Kart No: ${state.cardReference}');
+      }
+      if (state.transferReference != null && state.transferReference!.isNotEmpty) {
+        refLines.add('Havale No: ${state.transferReference}');
+      }
+      final mergedNotes = [
+        if (state.note != null && state.note!.isNotEmpty) state.note!,
+        ...refLines,
+      ].join('\n');
+
       final saleData = {
-        'paidAmount': state.grandTotal,
+        'paidAmount': effectivePaid,
         'customerId': state.selectedCustomer?['id']?.toString(),
         'paymentMethod': state.paymentMethod.apiValue,
-        'notes': state.note,
+        'notes': mergedNotes.isEmpty ? null : mergedNotes,
         if (state.activeLocationId != null && state.activeLocationId!.isNotEmpty)
           'locationId': state.activeLocationId,
         if (state.activeLocationId != null && state.activeLocationId!.isNotEmpty)
@@ -654,6 +749,7 @@ class PosNotifier extends StateNotifier<PosState> {
           'quantity': item.quantity,
           'unitPrice': item.unitPrice,
           'discountRate': item.discount,
+          'taxRate': item.taxRate,
         }).toList(),
       };
       final result = await _ref.read(salesServiceProvider).createSale(saleData);
@@ -661,13 +757,28 @@ class PosNotifier extends StateNotifier<PosState> {
 
       saleSummary['saleId'] = saleId;
       saleSummary['saleNumber'] = result['saleNumber']?.toString() ?? saleId;
+      saleSummary['paidAmount'] = effectivePaid;
+      saleSummary['remainingDebt'] = remainingDebt;
+
+      final customerName = state.selectedCustomer?['name']?.toString();
+      final successMsg = remainingDebt > 0
+          ? 'Satış tamamlandı — Kalan borç: ₺${remainingDebt.toStringAsFixed(2)}'
+              '${customerName != null ? ' ($customerName carisine işlendi)' : ''}'
+          : 'Satış tamamlandı!';
 
       state = state.copyWith(
         isSubmitting: false,
-        successMessage: 'Satış tamamlandı!',
+        successMessage: successMsg,
         lastSaleId: saleId,
         lastSaleData: saleSummary,
       );
+      // Müşteri seçiliydiyse cari provider'larını yenile — hub/detay ekranları
+      // bu sırada açıksa otomatik güncel veri gelsin.
+      if (state.selectedCustomer != null) {
+        _ref.invalidate(accountSummaryProvider);
+        _ref.invalidate(accountsListProvider);
+        _ref.invalidate(accountStatementProvider);
+      }
       clearCart();
       _loadInitialData();
       return true;

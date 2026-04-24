@@ -3,6 +3,7 @@ package com.sedcore.sales.service.impl;
 import com.sedcore.common.context.CompanyContext;
 import com.sedcore.product.entity.ProductVariant;
 import com.sedcore.sales.entity.Sale;
+import com.sedcore.sales.entity.SaleItem;
 import com.sedcore.sales.entity.SaleReturn;
 import com.sedcore.sales.entity.SaleReturnItem;
 import com.sedcore.customer.entity.Customer;
@@ -17,6 +18,7 @@ import com.sedcore.sales.model.SaleRequest;
 import com.sedcore.sales.model.SaleReturnItemRequest;
 import com.sedcore.sales.model.SaleReturnRequest;
 import com.sedcore.sales.model.SaleReturnResponse;
+import com.sedcore.sales.repository.SaleItemRepository;
 import com.sedcore.sales.repository.SaleRepository;
 import com.sedcore.sales.repository.SaleReturnRepository;
 import com.sedcore.sales.repository.SaleReturnItemRepository;
@@ -37,6 +39,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -54,6 +57,7 @@ public class SaleServiceIntegrated
     @Autowired private AccountTransactionRepository accountTransactionRepository;
     @Autowired private ProductVariantRepository    variantRepository;
     @Autowired private StockLevelService           stockLevelService;
+    @Autowired private SaleItemRepository          saleItemRepository;
     @Autowired private SaleReturnRepository        saleReturnRepository;
     @Autowired private SaleReturnItemRepository    saleReturnItemRepository;
     @Autowired private ISessionInstanceService     sessionInstanceService;
@@ -76,23 +80,73 @@ public class SaleServiceIntegrated
         log.info("Satış başlatılıyor - Müşteri: {}, No: {}, Lokasyon: {}",
                 request.getCustomerId(), request.getSaleNumber(), request.getLocationId());
 
-        BigDecimal totalAmount = calculateTotalAmount(request.getItems());
+        // 1. KALEMLERİ HESAPLA (mem'de; henüz save edilmez)
+        List<SaleItem> items = new ArrayList<>();
+        BigDecimal subtotal = BigDecimal.ZERO;
+        BigDecimal totalDiscount = BigDecimal.ZERO;
+        BigDecimal totalTax = BigDecimal.ZERO;
+        BigDecimal grandTotal = BigDecimal.ZERO;
 
-        // 1. MÜŞTERİ KONTROL
+        for (SaleItemRequest req : request.getItems()) {
+            ProductVariant variant = variantRepository.findById(req.getVariantId())
+                    .orElseThrow(() -> new RuntimeException("Varyant bulunamadı: " + req.getVariantId()));
+
+            BigDecimal qty = BigDecimal.valueOf(req.getQuantity());
+            BigDecimal gross = req.getUnitPrice().multiply(qty);
+            BigDecimal discRate = req.getDiscountRate() != null ? req.getDiscountRate() : BigDecimal.ZERO;
+            BigDecimal discAmt = gross.multiply(discRate)
+                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            BigDecimal net = gross.subtract(discAmt);
+            BigDecimal taxRate = req.getTaxRate() != null ? req.getTaxRate() : BigDecimal.ZERO;
+            BigDecimal taxAmt = net.multiply(taxRate)
+                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            BigDecimal lineTotal = net.add(taxAmt);
+
+            SaleItem item = SaleItem.builder()
+                    .variant(variant)
+                    .quantity(req.getQuantity())
+                    .unitPrice(req.getUnitPrice())
+                    .discountRate(discRate)
+                    .discountAmount(discAmt)
+                    .taxRate(taxRate)
+                    .taxAmount(taxAmt)
+                    .lineTotal(lineTotal)
+                    .returnedQuantity(0)
+                    .notes(req.getNotes())
+                    .build();
+            items.add(item);
+
+            subtotal = subtotal.add(gross);
+            totalDiscount = totalDiscount.add(discAmt);
+            totalTax = totalTax.add(taxAmt);
+            grandTotal = grandTotal.add(lineTotal);
+        }
+
+        // 2. Defansif guard: vadeli satışta müşteri zorunlu.
+        BigDecimal paid = request.getPaidAmount() != null
+                ? request.getPaidAmount() : BigDecimal.ZERO;
+        if (request.getCustomerId() == null && paid.compareTo(grandTotal) < 0) {
+            throw new RuntimeException("Vadeli satış için müşteri zorunludur");
+        }
+
+        // 3. MÜŞTERİ KONTROL
         Customer customer = null;
         if (request.getCustomerId() != null) {
             customer = customerRepository.findById(request.getCustomerId())
                     .orElseThrow(() -> new RuntimeException("Müşteri bulunamadı: " + request.getCustomerId()));
-            checkCreditLimit(customer, totalAmount);
+            checkCreditLimit(customer, grandTotal);
         }
 
-        // 2. SALE OLUŞTUR
+        // 4. SALE OLUŞTUR
         Sale sale = Sale.builder()
                 .customer(customer)
                 .saleNumber(request.getSaleNumber())
                 .saleDate(LocalDateTime.now())
-                .totalAmount(totalAmount)
-                .paidAmount(request.getPaidAmount() != null ? request.getPaidAmount() : BigDecimal.ZERO)
+                .subtotalAmount(subtotal)
+                .totalDiscount(totalDiscount)
+                .totalTax(totalTax)
+                .totalAmount(grandTotal)
+                .paidAmount(paid)
                 .locationId(request.getLocationId())
                 .locationType(request.getLocationType() != null ? request.getLocationType() : "STORE")
                 .isCancelled(false)
@@ -104,23 +158,26 @@ public class SaleServiceIntegrated
         sale = save(sale);
         log.info("Sale kaydedildi: ID={}, Tutar={}", sale.getId(), sale.getTotalAmount());
 
-        // 3. STOK HAREKETLERİ + StockLevel atomic decrement
+        // 5. SALE ITEM'LARI SAVE
+        List<SaleItem> savedItems = new ArrayList<>();
+        for (SaleItem item : items) {
+            item.setSale(sale);
+            savedItems.add(prepareAndSave(saleItemRepository, item));
+        }
+        sale.setItems(savedItems);
+
+        // 6. STOK HAREKETLERİ + StockLevel atomic decrement
         String effectiveLocationId = request.getLocationId();
         String effectiveLocationType = request.getLocationType() != null ? request.getLocationType() : "STORE";
 
         List<StockMovement> movements = new ArrayList<>();
-        for (SaleItemRequest item : request.getItems()) {
-            ProductVariant variant = variantRepository.findById(item.getVariantId())
-                    .orElseThrow(() -> new RuntimeException("Varyant bulunamadı: " + item.getVariantId()));
-
-            // StockLevel atomic deduct — pessimistic lock ile race condition önlenir
+        for (SaleItem item : savedItems) {
             if (effectiveLocationId != null && !effectiveLocationId.isBlank()) {
-                stockLevelService.deductStock(variant.getId(), effectiveLocationId, item.getQuantity());
+                stockLevelService.deductStock(item.getVariant().getId(), effectiveLocationId, item.getQuantity());
             }
 
-            // Audit kaydı
             StockMovement movement = StockMovement.builder()
-                    .variant(variant)
+                    .variant(item.getVariant())
                     .locationId(effectiveLocationId)
                     .locationType(effectiveLocationType)
                     .movementType(StockMovementType.SALE_OUT)
@@ -129,14 +186,10 @@ public class SaleServiceIntegrated
                     .sale(sale)
                     .build();
             movements.add(prepareAndSave(stockMovementRepository, movement));
-
-            log.info("Stok hareketi: Variant={}, Miktar={}, Lokasyon={}",
-                    variant.getSku(), item.getQuantity(), effectiveLocationId);
         }
-
         sale.setMovements(movements);
 
-        // 4. VERESİYE: cari hesap + hareket
+        // 7. VERESİYE: cari hesap + hareket
         if (sale.isOnCredit()) {
             CustomerAccount account = updateCustomerAccount(customer, sale);
             createCustomerTransaction(customer, sale, account);
@@ -232,23 +285,17 @@ public class SaleServiceIntegrated
             throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
 
-        List<StockMovement> allMovements = stockMovementRepository.findBySaleId(saleId, CompanyContext.get());
-
-        Map<String, Integer> soldQty = new HashMap<>();
-        Map<String, StockMovement> saleOutByVariant = new HashMap<>();
-        for (StockMovement mv : allMovements) {
-            if (mv.getMovementType() == StockMovementType.SALE_OUT && mv.getVariant() != null) {
-                soldQty.merge(mv.getVariant().getId(), mv.getQuantity() != null ? mv.getQuantity() : 0, Integer::sum);
-                saleOutByVariant.put(mv.getVariant().getId(), mv);
-            }
+        // SaleItem bazlı: returnableQty = quantity - returnedQuantity
+        // Tutar hesabı SaleItem.lineTotal üzerinden prorata (indirim + KDV dahil)
+        List<SaleItem> saleItems = saleItemRepository.findBySaleId(saleId);
+        Map<String, SaleItem> itemByVariant = new HashMap<>();
+        for (SaleItem si : saleItems) {
+            if (si.getVariant() != null) itemByVariant.put(si.getVariant().getId(), si);
         }
 
-        Map<String, Integer> alreadyReturnedQty = new HashMap<>();
-        for (StockMovement mv : allMovements) {
-            if (mv.getMovementType() == StockMovementType.SALE_RETURN_IN && mv.getVariant() != null) {
-                alreadyReturnedQty.merge(mv.getVariant().getId(), mv.getQuantity() != null ? mv.getQuantity() : 0, Integer::sum);
-            }
-        }
+        // Lokasyon: satışın kendi lokasyonu
+        String returnLocationId = sale.getLocationId();
+        String returnLocationType = sale.getLocationType() != null ? sale.getLocationType() : "STORE";
 
         BigDecimal totalReturnAmount = BigDecimal.ZERO;
         List<SaleReturnResponse.ReturnItemResponse> responseItems = new ArrayList<>();
@@ -256,27 +303,32 @@ public class SaleServiceIntegrated
 
         for (SaleReturnItemRequest item : request.getItems()) {
             String variantId = item.getProductId();
-            ProductVariant variant = variantRepository.findById(variantId)
-                    .orElseThrow(() -> new RuntimeException("Varyant bulunamadı: " + variantId));
+            SaleItem saleItem = itemByVariant.get(variantId);
+            if (saleItem == null) {
+                ProductVariant v = variantRepository.findById(variantId).orElse(null);
+                throw new RuntimeException("Bu ürün bu satışta bulunmuyor: "
+                        + (v != null ? v.getSku() : variantId));
+            }
+            ProductVariant variant = saleItem.getVariant();
 
-            BigDecimal unitPrice = item.getUnitPrice() != null ? item.getUnitPrice() : BigDecimal.ZERO;
             int qty = item.getQuantity() != null ? item.getQuantity() : 0;
-
-            int originalSold = soldQty.getOrDefault(variantId, 0);
-            if (originalSold == 0) throw new RuntimeException("Bu ürün bu satışta bulunmuyor: " + variant.getSku());
-            int alreadyReturned = alreadyReturnedQty.getOrDefault(variantId, 0);
+            int originalSold = saleItem.getQuantity() != null ? saleItem.getQuantity() : 0;
+            int alreadyReturned = saleItem.getReturnedQuantity() != null ? saleItem.getReturnedQuantity() : 0;
             int returnableQty = originalSold - alreadyReturned;
             if (qty > returnableQty) {
-                throw new RuntimeException(String.format("İade miktarı fazla! Ürün: %s, İade edilebilir: %d, İstenen: %d",
+                throw new RuntimeException(String.format(
+                        "İade miktarı fazla! Ürün: %s, İade edilebilir: %d, İstenen: %d",
                         variant.getSku(), returnableQty, qty));
             }
 
-            // Orijinal satışın lokasyonunu kullan
-            StockMovement originalOut = saleOutByVariant.get(variantId);
-            String returnLocationId  = originalOut != null ? originalOut.getLocationId()  : null;
-            String returnLocationType = originalOut != null ? originalOut.getLocationType() : "STORE";
+            // Prorata lineTotal üzerinden gerçek iade tutarı (indirim+KDV dahil)
+            BigDecimal perUnit = saleItem.getLineTotal()
+                    .divide(BigDecimal.valueOf(originalSold), 2, RoundingMode.HALF_UP);
+            BigDecimal lineTotal = perUnit.multiply(BigDecimal.valueOf(qty));
 
-            // StockLevel geri ekle
+            // unitPrice audit için — SaleItem'ın brüt birim fiyatı
+            BigDecimal unitPrice = saleItem.getUnitPrice();
+
             if (returnLocationId != null && !returnLocationId.isBlank()) {
                 stockLevelService.addStock(variant.getId(), returnLocationId, returnLocationType, qty);
             }
@@ -289,7 +341,10 @@ public class SaleServiceIntegrated
                     .quantity(qty).unitPrice(unitPrice).sale(sale).build();
             prepareAndSave(stockMovementRepository, movement);
 
-            BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(qty));
+            // SaleItem.returnedQuantity güncelle
+            saleItem.setReturnedQuantity(alreadyReturned + qty);
+            prepareAndSave(saleItemRepository, saleItem);
+
             totalReturnAmount = totalReturnAmount.add(lineTotal);
 
             responseItems.add(SaleReturnResponse.ReturnItemResponse.builder()
@@ -401,12 +456,6 @@ public class SaleServiceIntegrated
                 .dueDate(calculateDueDate(sale.getSaleDate().toLocalDate(), customer.getPaymentTermDays()))
                 .isOverdue(false).isCancelled(false).build();
         prepareAndSave(accountTransactionRepository, tx);
-    }
-
-    private BigDecimal calculateTotalAmount(List<SaleItemRequest> items) {
-        return items.stream()
-                .map(i -> i.getUnitPrice().multiply(BigDecimal.valueOf(i.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private LocalDate calculateDueDate(LocalDate saleDate, Integer paymentTermDays) {

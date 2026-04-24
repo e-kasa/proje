@@ -28,5 +28,7 @@ public class SaleItemRequest {
 
     private BigDecimal discountRate;
 
+    private BigDecimal taxRate;
+
     private String notes;
 }

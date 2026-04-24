@@ -56,6 +56,11 @@ public class AccountTransactionServiceImpl
         return dto;
     }
 
+    @Override
+    public Object[] ledgerTotalsForSupplier(String supplierId) {
+        return dao.ledgerTotalsForSupplier(supplierId);
+    }
+
     // =========================================================================
     // OKUMA İŞLEMLERİ
     // =========================================================================

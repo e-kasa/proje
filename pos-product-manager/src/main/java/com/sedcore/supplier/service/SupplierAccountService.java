@@ -29,4 +29,14 @@ public interface SupplierAccountService extends BaseDbService<SupplierAccount> {
 
     /** Kredi limiti değişince hesaplanan alanları yenile */
     SupplierAccountResponse recalculate(String supplierId);
+
+    /**
+     * Drift düzeltme — ledger (AccountTransaction) gerçeğinden currentBalance,
+     * totalDebt, totalCredit değerlerini yeniden hesaplayıp denormalize alanları
+     * senkronize eder. İade değeri: önceki → yeni bakiye farkı (drift miktarı).
+     */
+    BigDecimal reconcile(String supplierId);
+
+    /** Tüm tedarikçi hesapları için reconcile — toplam düzeltme sayısını döner. */
+    int reconcileAll();
 }

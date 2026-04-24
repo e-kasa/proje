@@ -35,4 +35,14 @@ public interface CustomerAccountService extends BaseDbService<CustomerAccount> {
 
     /** Kredi limiti değişince hesaplanan alanları güncelle */
     CustomerAccountResponse recalculate(String customerId);
+
+    /**
+     * Drift düzeltme — ledger (AccountTransaction) gerçeğinden currentBalance,
+     * totalDebt, totalCredit değerlerini yeniden hesaplayıp denormalize alanları
+     * senkronize eder. İade değeri: önceki → yeni bakiye farkı (drift miktarı).
+     */
+    BigDecimal reconcile(String customerId);
+
+    /** Tüm müşteri hesapları için reconcile — toplam düzeltme sayısını döner. */
+    int reconcileAll();
 }

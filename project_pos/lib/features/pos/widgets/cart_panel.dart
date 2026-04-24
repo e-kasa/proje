@@ -192,43 +192,53 @@ class CartPanel extends ConsumerWidget {
   }
 
   void _showCustomerPicker(BuildContext context, PosNotifier notifier, Map<String, dynamic>? selectedCustomer) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _CustomerPickerSheet(
-        selected: selectedCustomer,
-        onSelect: (c) {
-          notifier.selectCustomer(c);
-          Navigator.pop(context);
-        },
-        onClear: () {
-          notifier.selectCustomer(null);
-          Navigator.pop(context);
-        },
-      ),
-    );
+    showCustomerPickerSheet(context, notifier, selectedCustomer);
   }
 }
 
+/// Ortak müşteri seçici bottom sheet — cart_panel ve payment_panel kullanır.
+void showCustomerPickerSheet(
+  BuildContext context,
+  PosNotifier notifier,
+  Map<String, dynamic>? selectedCustomer,
+) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => CustomerPickerSheet(
+      selected: selectedCustomer,
+      onSelect: (c) {
+        notifier.selectCustomer(c);
+        Navigator.pop(context);
+      },
+      onClear: () {
+        notifier.selectCustomer(null);
+        Navigator.pop(context);
+      },
+    ),
+  );
+}
+
 // ─── Müşteri Seçici Bottom Sheet ────────────────────────────────────────────
-class _CustomerPickerSheet extends ConsumerStatefulWidget {
+class CustomerPickerSheet extends ConsumerStatefulWidget {
   final Map<String, dynamic>? selected;
   final ValueChanged<Map<String, dynamic>> onSelect;
   final VoidCallback onClear;
 
-  const _CustomerPickerSheet({
+  const CustomerPickerSheet({
+    super.key,
     required this.selected,
     required this.onSelect,
     required this.onClear,
   });
 
   @override
-  ConsumerState<_CustomerPickerSheet> createState() =>
+  ConsumerState<CustomerPickerSheet> createState() =>
       _CustomerPickerSheetState();
 }
 
-class _CustomerPickerSheetState extends ConsumerState<_CustomerPickerSheet> {
+class _CustomerPickerSheetState extends ConsumerState<CustomerPickerSheet> {
   final _searchCtrl = TextEditingController();
   List<Map<String, dynamic>> _customers = [];
   List<Map<String, dynamic>> _filtered = [];

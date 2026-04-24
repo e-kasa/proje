@@ -17,6 +17,7 @@ class BatchHeaderForm extends ConsumerStatefulWidget {
 class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
   List<Map<String, dynamic>> _suppliers = [];
   List<Map<String, dynamic>> _locations = []; // stores + warehouses combined
+  List<Map<String, dynamic>> _categories = []; // SPRINT 1: Category list
   bool _loading = true;
 
   final _invoiceCtrl = TextEditingController();
@@ -40,6 +41,7 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
     List<Map<String, dynamic>> suppliers = [];
     List<Map<String, dynamic>> warehouses = [];
     List<Map<String, dynamic>> stores = [];
+    List<Map<String, dynamic>> categories = []; // SPRINT 1: Load categories
 
     await Future.wait([
       ref.read(supplierServiceProvider).getSuppliers(status: 'ACTIVE').then(
@@ -54,11 +56,17 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
         (v) => stores = v,
         onError: (e) => debugPrint('Mağazalar yüklenemedi: $e'),
       ),
+      // SPRINT 1: Fetch categories
+      ref.read(categoryServiceProvider).getCategories().then(
+        (v) => categories = v,
+        onError: (e) => debugPrint('Kategoriler yüklenemedi: $e'),
+      ),
     ]);
 
     if (!mounted) return;
     setState(() {
       _suppliers = suppliers;
+      _categories = categories; // SPRINT 1: Store categories
       _locations = [
         ...stores.map((s) => {
           'code': s['code']?.toString() ?? s['id']?.toString() ?? '',
@@ -385,6 +393,32 @@ class _BatchHeaderFormState extends ConsumerState<BatchHeaderForm> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 10),
+
+          // SPRINT 1: Category field (required for new products)
+          _DropdownField<String>(
+            label: '${t('batch.select_category')} *',
+            icon: Icons.category_outlined,
+            value: state.categoryId,
+            items: _categories.map((c) {
+              return DropdownMenuItem<String>(
+                value: c['id']?.toString(),
+                child: Text(c['name']?.toString() ?? '',
+                    overflow: TextOverflow.ellipsis),
+              );
+            }).toList(),
+            onChanged: (val) {
+              if (val == null) return;
+              final category = _categories.firstWhere(
+                (c) => c['id']?.toString() == val,
+                orElse: () => {},
+              );
+              ref.read(batchEntryProvider.notifier).updateHeader(
+                    categoryId: val,
+                    categoryName: category['name']?.toString(),
+                  );
+            },
           ),
         ],
       ),

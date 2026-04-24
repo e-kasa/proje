@@ -26,4 +26,6 @@ public interface AccountTransactionService extends BaseDbService<AccountTransact
 
     /** Entity → Response dönüşümü — cross-domain kullanım için */
     AccountTransactionResponse toResponse(AccountTransaction tx);
+
+    Object[] ledgerTotalsForSupplier(String supplierId);
 }

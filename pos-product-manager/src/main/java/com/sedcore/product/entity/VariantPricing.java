@@ -11,6 +11,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -54,5 +55,8 @@ public class VariantPricing extends TOpenSimpleCompanyEntity {
     /** Vergiden muaf mı? */
     @Column(name = "tax_exempt", nullable = false, columnDefinition = "boolean DEFAULT false")
     private Boolean taxExempt = false;
+
+    @Version
+    private Long version;
 
 }

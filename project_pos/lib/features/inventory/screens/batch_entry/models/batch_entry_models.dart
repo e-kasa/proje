@@ -479,6 +479,8 @@ class BatchEntryState {
   final String? locationId;
   final String? locationName;
   final String? locationType;
+  final String? categoryId;
+  final String? categoryName;
   final List<BatchEntryRow> rows;
   final bool isSubmitting;
   final bool headerCollapsed;
@@ -492,6 +494,8 @@ class BatchEntryState {
     this.locationId,
     this.locationName,
     this.locationType,
+    this.categoryId,
+    this.categoryName,
     this.rows = const [],
     this.isSubmitting = false,
     this.headerCollapsed = false,
@@ -523,6 +527,8 @@ class BatchEntryState {
     String? locationId,
     String? locationName,
     String? locationType,
+    String? categoryId,
+    String? categoryName,
     List<BatchEntryRow>? rows,
     bool? isSubmitting,
     bool? headerCollapsed,
@@ -536,6 +542,8 @@ class BatchEntryState {
       locationId: locationId ?? this.locationId,
       locationName: locationName ?? this.locationName,
       locationType: locationType ?? this.locationType,
+      categoryId: categoryId ?? this.categoryId,
+      categoryName: categoryName ?? this.categoryName,
       rows: rows ?? this.rows,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       headerCollapsed: headerCollapsed ?? this.headerCollapsed,

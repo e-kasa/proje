@@ -38,8 +38,11 @@ public class SupplierResponse extends DtoBaseModel {
     private Boolean isActive;
     private Boolean isDeleted;
 
-    // Cari hesap özeti
-    private BigDecimal balance;        // Bakiye (SupplierAccount'tan)
+    // Cari hesap özeti (SupplierAccount'tan denormalize)
+    private BigDecimal currentBalance;
+    private BigDecimal overdueAmount;
+    private BigDecimal availableCreditLimit;
+    private Boolean isCreditLimitExceeded;
     private BigDecimal totalDebt;
     private BigDecimal totalPaid;
 }

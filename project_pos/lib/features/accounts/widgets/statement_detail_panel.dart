@@ -8,8 +8,14 @@ import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/features/accounts/di/accounts_di.dart';
 import 'package:project_pos/features/accounts/models/statement_args.dart';
+import 'package:project_pos/features/accounts/providers/accounts_list_provider.dart';
+import 'package:project_pos/features/accounts/providers/accounts_notifiers.dart';
 import 'package:project_pos/features/accounts/providers/selected_account_provider.dart';
+import 'package:project_pos/features/accounts/screens/payment_record_modal.dart';
 import 'package:project_pos/features/accounts/services/statement_pdf_service.dart';
+import 'package:project_pos/features/accounts/widgets/account_edit_form.dart';
+import 'package:project_pos/features/finance/di/finance_di.dart';
+import 'package:project_pos/services/service_locator.dart';
 
 /// Hub'ın sağ paneli — seçili cariye ait ekstre.
 /// Boş durumda placeholder gösterir.
@@ -53,66 +59,102 @@ class StatementDetailPanel extends ConsumerWidget {
     final closing = (s['closingBalance'] ?? 0).toDouble();
     final debit = (s['totalDebit'] ?? 0).toDouble();
     final credit = (s['totalCredit'] ?? 0).toDouble();
-    final transactions =
+    final allTransactions =
         List<Map<String, dynamic>>.from(s['transactions'] ?? []);
+    final visible = st.visibleTransactions;
+    final groups = _groupTransactions(visible, t);
     final dateRange = DateTimeRange(start: st.startDate, end: st.endDate);
+    final padding = AppConstants.pagePadding;
 
     return RefreshIndicator(
       onRefresh: () => ref.read(accountStatementProvider.notifier).load(),
-      child: ListView(
-        padding: AppConstants.pagePadding,
-        children: [
-          _Header(
-            account: selected,
-            dateRange: dateRange,
-            showBackButton: showBackButton,
-            onBack: () {
-              ref.read(selectedAccountProvider.notifier).state = null;
-              if (showBackButton) Navigator.pop(context);
-            },
-            onPickRange: () => _pickDateRange(context, ref, dateRange),
-            onPdf: () => StatementPdfService.show(
-              accountName: selected.accountName,
-              accountType: selected.accountType,
-              startDate: dateRange.start,
-              endDate: dateRange.end,
-              openingBalance: opening,
-              closingBalance: closing,
-              totalDebit: debit,
-              totalCredit: credit,
-              transactions: transactions,
+      child: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(
+                padding.left, padding.top, padding.right, 0),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate.fixed([
+                _Header(
+                  account: selected,
+                  dateRange: dateRange,
+                  showBackButton: showBackButton,
+                  onBack: () {
+                    ref.read(selectedAccountProvider.notifier).state = null;
+                    if (showBackButton) Navigator.pop(context);
+                  },
+                  onPickRange: () => _pickDateRange(context, ref, dateRange),
+                  onEdit: () => _handleEdit(context, ref, selected),
+                  onPayment: () => _handlePayment(context, ref, selected),
+                  onPdf: () => StatementPdfService.show(
+                    accountName: selected.accountName,
+                    accountType: selected.accountType,
+                    startDate: dateRange.start,
+                    endDate: dateRange.end,
+                    openingBalance: opening,
+                    closingBalance: closing,
+                    totalDebit: debit,
+                    totalCredit: credit,
+                    transactions: allTransactions,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _SummaryGrid(
+                  opening: opening,
+                  debit: debit,
+                  credit: credit,
+                  closing: closing,
+                ),
+                const SizedBox(height: 12),
+                _TxFilterBar(
+                  current: st.filter,
+                  onSelect: (f) =>
+                      ref.read(accountStatementProvider.notifier).setFilter(f),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.receipt_long,
+                        size: 18, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Text(t('accounts.transactions'),
+                        style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary)),
+                    const Spacer(),
+                    Text('${visible.length}',
+                        style: const TextStyle(
+                            fontSize: 12, color: AppColors.textSecondary)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if (visible.isEmpty)
+                  AppEmptyState.noData(
+                      title: t('common.no_records'), description: ''),
+              ]),
             ),
           ),
-          const SizedBox(height: 12),
-          _SummaryGrid(
-            opening: opening,
-            debit: debit,
-            credit: credit,
-            closing: closing,
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              const Icon(Icons.receipt_long,
-                  size: 18, color: AppColors.primary),
-              const SizedBox(width: 8),
-              Text(t('accounts.transactions'),
-                  style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary)),
-              const Spacer(),
-              Text('${transactions.length}',
-                  style: const TextStyle(
-                      fontSize: 12, color: AppColors.textSecondary)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (transactions.isEmpty)
-            AppEmptyState.noData(
-                title: t('common.no_records'), description: '')
-          else
-            ...transactions.map((tx) => _TxRow(tx: tx)),
+          for (final group in groups) ...[
+            SliverPadding(
+              padding:
+                  EdgeInsets.symmetric(horizontal: padding.left),
+              sliver: SliverToBoxAdapter(
+                child: _TxGroupHeader(
+                  label: group.label,
+                  count: group.rows.length,
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.symmetric(horizontal: padding.left),
+              sliver: SliverList.builder(
+                itemCount: group.rows.length,
+                itemBuilder: (_, i) => _TxRow(tx: group.rows[i]),
+              ),
+            ),
+          ],
+          SliverPadding(padding: EdgeInsets.only(bottom: padding.bottom)),
         ],
       ),
     );
@@ -132,6 +174,96 @@ class StatementDetailPanel extends ConsumerWidget {
           .setDateRange(picked.start, picked.end);
     }
   }
+
+  Future<void> _handlePayment(
+      BuildContext context, WidgetRef ref, StatementArgs account) async {
+    final isCustomer = account.accountType == 'CUSTOMER';
+    final result = await PaymentRecordModal.show(
+      context,
+      isCustomer: isCustomer,
+      accountName: account.accountName,
+    );
+    if (result == null || !context.mounted) return;
+
+    final payload = <String, dynamic>{
+      'amount': result['amount'],
+      'paymentType': result['paymentType'],
+      if (isCustomer)
+        'customerId': account.accountId
+      else
+        'supplierId': account.accountId,
+      if (result['bankName'] != null) 'bankName': result['bankName'],
+      if (result['referenceNo'] != null)
+        'referenceNumber': result['referenceNo'],
+      if (result['description'] != null) 'description': result['description'],
+    };
+
+    try {
+      await ref.read(paymentServiceProvider).createPayment(payload);
+      if (!context.mounted) return;
+      AppToast.success(context, i18nOf(ref)('ac.payment_saved'));
+      await Future.wait([
+        ref.read(accountStatementProvider.notifier).load(),
+        ref.read(accountSummaryProvider.notifier).load(),
+        ref.read(accountsListProvider.notifier).load(),
+        ref.read(paymentListProvider.notifier).load(),
+      ]);
+    } catch (e) {
+      if (!context.mounted) return;
+      AppToast.error(context, '${i18nOf(ref)('common.error')}: $e');
+    }
+  }
+
+  Future<void> _handleEdit(
+      BuildContext context, WidgetRef ref, StatementArgs account) async {
+    // Mevcut cari bilgilerini servisten çek — initialData dolu form için.
+    Map<String, dynamic>? data;
+    try {
+      if (account.accountType == 'CUSTOMER') {
+        data = await ref
+            .read(customerServiceProvider)
+            .getCustomerById(account.accountId);
+      } else {
+        data = await ref
+            .read(supplierServiceProvider)
+            .getSupplierById(account.accountId);
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      AppToast.error(context, 'Bilgiler alınamadı: $e');
+      return;
+    }
+    if (data == null || !context.mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(sheetCtx).viewInsets.bottom,
+        ),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          padding: const EdgeInsets.all(14),
+          child: SingleChildScrollView(
+            child: AccountEditForm(
+              initialType: account.accountType,
+              editingId: account.accountId,
+              initialData: data,
+              onSuccess: () {
+                Navigator.pop(sheetCtx);
+              },
+              onCancel: () => Navigator.pop(sheetCtx),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _Header extends ConsumerWidget {
@@ -141,6 +273,8 @@ class _Header extends ConsumerWidget {
   final VoidCallback onBack;
   final VoidCallback onPickRange;
   final VoidCallback onPdf;
+  final VoidCallback onEdit;
+  final VoidCallback onPayment;
 
   const _Header({
     required this.account,
@@ -149,6 +283,8 @@ class _Header extends ConsumerWidget {
     required this.onBack,
     required this.onPickRange,
     required this.onPdf,
+    required this.onEdit,
+    required this.onPayment,
   });
 
   @override
@@ -212,6 +348,24 @@ class _Header extends ConsumerWidget {
                     ),
                   ],
                 ),
+              ),
+              IconButton(
+                icon: Icon(
+                  isCustomer
+                      ? Icons.payments_outlined
+                      : Icons.outgoing_mail,
+                  color: AppColors.success,
+                ),
+                tooltip: isCustomer
+                    ? t('accounts.collect_payment')
+                    : t('accounts.record_payment'),
+                onPressed: onPayment,
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined,
+                    color: AppColors.textPrimary),
+                tooltip: t('accounts.edit_info'),
+                onPressed: onEdit,
               ),
               IconButton(
                 icon: const Icon(Icons.picture_as_pdf_outlined,
@@ -366,33 +520,94 @@ class _StatTile extends StatelessWidget {
   }
 }
 
-class _TxRow extends StatelessWidget {
+class _TxTypeMeta {
+  final IconData icon;
+  final Color color;
+  final String i18nKey;
+  const _TxTypeMeta(this.icon, this.color, this.i18nKey);
+}
+
+_TxTypeMeta _txTypeMeta(String? type) {
+  switch (type) {
+    case 'SALE':
+      return const _TxTypeMeta(
+          Icons.point_of_sale, AppColors.primary, 'ac.tx_type_sale');
+    case 'PURCHASE':
+      return const _TxTypeMeta(
+          Icons.inventory_2_outlined, AppColors.orange, 'ac.tx_type_purchase');
+    case 'PAYMENT':
+      return const _TxTypeMeta(
+          Icons.payments_outlined, AppColors.success, 'ac.tx_type_payment');
+    case 'SUPPLIER_PAYMENT':
+      return const _TxTypeMeta(Icons.outgoing_mail, AppColors.success,
+          'ac.tx_type_supplier_payment');
+    case 'COLLECTION':
+      return const _TxTypeMeta(
+          Icons.payments_outlined, AppColors.success, 'ac.tx_type_collection');
+    case 'RETURN':
+      return const _TxTypeMeta(
+          Icons.undo, AppColors.warning, 'ac.tx_type_return');
+    case 'SUPPLIER_RETURN':
+      return const _TxTypeMeta(
+          Icons.undo, AppColors.warning, 'ac.tx_type_supplier_return');
+    case 'CANCEL':
+      return const _TxTypeMeta(
+          Icons.cancel_outlined, AppColors.danger, 'ac.tx_type_cancel');
+    case 'DISCOUNT':
+      return const _TxTypeMeta(
+          Icons.discount_outlined, AppColors.info, 'ac.tx_type_discount');
+    case 'LATE_FEE':
+      return const _TxTypeMeta(Icons.warning_amber_rounded, AppColors.danger,
+          'ac.tx_type_late_fee');
+    case 'ADJUSTMENT_DEBIT':
+      return const _TxTypeMeta(
+          Icons.tune, AppColors.danger, 'ac.tx_type_adjustment_debit');
+    case 'ADJUSTMENT_CREDIT':
+      return const _TxTypeMeta(
+          Icons.tune, AppColors.success, 'ac.tx_type_adjustment_credit');
+    case 'REFUND':
+      return const _TxTypeMeta(
+          Icons.keyboard_return, AppColors.warning, 'ac.tx_type_refund');
+    default:
+      return const _TxTypeMeta(
+          Icons.receipt_long, AppColors.textMuted, 'accounts.transactions');
+  }
+}
+
+class _TxRow extends ConsumerWidget {
   final Map<String, dynamic> tx;
   const _TxRow({required this.tx});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
     final date = shortDateString(tx['transactionDate']?.toString());
     final desc = tx['description']?.toString() ?? '-';
+    final typeStr = tx['transactionType']?.toString();
+    final refNo = tx['referenceNumber']?.toString();
     final debit = (tx['debitAmount'] ?? 0).toDouble();
     final credit = (tx['creditAmount'] ?? 0).toDouble();
     final balance = (tx['runningBalance'] ?? 0).toDouble();
     final isDebit = debit > 0;
-    final color = isDebit ? AppColors.danger : AppColors.success;
+    final amountColor = isDebit ? AppColors.danger : AppColors.success;
+    final meta = _txTypeMeta(typeStr);
+    final hasRef = refNo != null && refNo.isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: AppCard(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
-              width: 4,
+              width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(2),
+                color: meta.color.withValues(alpha: 0.1),
+                borderRadius: AppConstants.borderRadiusSmall,
               ),
+              child: Icon(meta.icon, color: meta.color, size: 18),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -404,13 +619,38 @@ class _TxRow extends StatelessWidget {
                           fontSize: 13, fontWeight: FontWeight.w600),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 2),
-                  Text(date,
-                      style: const TextStyle(
-                          fontSize: 11, color: AppColors.textMuted)),
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 2,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: meta.color.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(t(meta.i18nKey),
+                            style: TextStyle(
+                                fontSize: 10,
+                                color: meta.color,
+                                fontWeight: FontWeight.w600)),
+                      ),
+                      Text(date,
+                          style: const TextStyle(
+                              fontSize: 11, color: AppColors.textMuted)),
+                      if (hasRef)
+                        Text('• ${t('ac.tx_ref')}: $refNo',
+                            style: const TextStyle(
+                                fontSize: 11, color: AppColors.textMuted)),
+                    ],
+                  ),
                 ],
               ),
             ),
+            const SizedBox(width: 8),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -419,7 +659,9 @@ class _TxRow extends StatelessWidget {
                       ? '-${appCurrencyFmt.format(debit)}'
                       : '+${appCurrencyFmt.format(credit)}',
                   style: TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.bold, color: color),
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: amountColor),
                 ),
                 Text(appCurrencyFmt.format(balance),
                     style: const TextStyle(
@@ -430,6 +672,140 @@ class _TxRow extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─── P1: Filter Bar ─────────────────────────────────────────────────────────
+
+class _TxFilterBar extends ConsumerWidget {
+  final TxFilter current;
+  final ValueChanged<TxFilter> onSelect;
+  const _TxFilterBar({required this.current, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
+    return SizedBox(
+      height: 36,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: TxFilter.values.map((f) {
+          final selected = f == current;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Text(
+                t('ac.tx_filter_${f.name}'),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: selected ? Colors.white : AppColors.textPrimary,
+                ),
+              ),
+              selected: selected,
+              backgroundColor: Colors.white,
+              selectedColor: AppColors.primary,
+              side: BorderSide(
+                color: selected ? AppColors.primary : AppColors.border,
+              ),
+              showCheckmark: false,
+              onSelected: (_) => onSelect(f),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+// ─── P1: Tarih Grupları ─────────────────────────────────────────────────────
+
+class _TxGroup {
+  final String label;
+  final List<Map<String, dynamic>> rows;
+  _TxGroup(this.label, this.rows);
+}
+
+List<_TxGroup> _groupTransactions(
+    List<Map<String, dynamic>> txs, String Function(String) t) {
+  if (txs.isEmpty) return const [];
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final yesterday = today.subtract(const Duration(days: 1));
+  final weekStart = today.subtract(const Duration(days: 6));
+  final monthFmt = DateFormat('MMMM yyyy', 'tr_TR');
+  final groups = <String, List<Map<String, dynamic>>>{};
+  final order = <String>[];
+
+  for (final tx in txs) {
+    final raw = tx['transactionDate']?.toString();
+    DateTime? dt;
+    if (raw != null && raw.isNotEmpty) {
+      dt = DateTime.tryParse(raw);
+    }
+    final String label;
+    if (dt == null) {
+      label = '—';
+    } else {
+      final d = DateTime(dt.year, dt.month, dt.day);
+      if (d == today) {
+        label = t('ac.tx_group_today');
+      } else if (d == yesterday) {
+        label = t('ac.tx_group_yesterday');
+      } else if (d.isAfter(weekStart) || d == weekStart) {
+        label = t('ac.tx_group_this_week');
+      } else {
+        label = monthFmt.format(dt);
+      }
+    }
+    if (!groups.containsKey(label)) {
+      order.add(label);
+      groups[label] = [];
+    }
+    groups[label]!.add(tx);
+  }
+  return order.map((k) => _TxGroup(k, groups[k]!)).toList();
+}
+
+class _TxGroupHeader extends StatelessWidget {
+  final String label;
+  final int count;
+  const _TxGroupHeader({required this.label, required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(2, 12, 2, 6),
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textSecondary,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            decoration: BoxDecoration(
+              color: AppColors.bgLight,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Text(
+              '$count',
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMuted,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

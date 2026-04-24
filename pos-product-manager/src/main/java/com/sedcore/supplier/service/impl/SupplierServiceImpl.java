@@ -74,10 +74,21 @@ public class SupplierServiceImpl
     public SupplierResponse mapToResponse(Supplier supplier) {
         SupplierResponse dto = toDTO(supplier);
         // Account-derived fields — doğrudan entity alanı değil, ilişkiden gelir
-        if (supplier.getAccount() != null) {
-            dto.setBalance(supplier.getAccount().getCurrentBalance());
-            dto.setTotalDebt(supplier.getAccount().getTotalDebt());
-            dto.setTotalPaid(supplier.getAccount().getTotalCredit());
+        SupplierAccount acct = supplier.getAccount();
+        if (acct != null) {
+            dto.setCurrentBalance(acct.getCurrentBalance());
+            dto.setOverdueAmount(acct.getOverdueAmount());
+            dto.setAvailableCreditLimit(acct.getAvailableCreditLimit());
+            dto.setIsCreditLimitExceeded(acct.getIsCreditLimitExceeded());
+            dto.setTotalDebt(acct.getTotalDebt());
+            dto.setTotalPaid(acct.getTotalCredit());
+        } else {
+            dto.setCurrentBalance(BigDecimal.ZERO);
+            dto.setOverdueAmount(BigDecimal.ZERO);
+            dto.setAvailableCreditLimit(BigDecimal.ZERO);
+            dto.setIsCreditLimitExceeded(Boolean.FALSE);
+            dto.setTotalDebt(BigDecimal.ZERO);
+            dto.setTotalPaid(BigDecimal.ZERO);
         }
         return dto;
     }

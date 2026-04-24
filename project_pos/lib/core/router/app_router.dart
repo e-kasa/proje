@@ -34,18 +34,11 @@ import 'package:project_pos/features/purchases/screens/purchase_list_screen.dart
 import 'package:project_pos/features/purchases/screens/add_purchase_screen.dart';
 import 'package:project_pos/features/purchases/screens/purchase_detail_screen.dart';
 import 'package:project_pos/features/purchases/screens/purchase_return_screen.dart';
-// Suppliers
-import 'package:project_pos/features/suppliers/screens/supplier_list_screen.dart';
-import 'package:project_pos/features/suppliers/screens/add_supplier_screen.dart';
-import 'package:project_pos/features/suppliers/screens/supplier_account_detail_screen.dart';
+// Suppliers (bulk upload wizard hala kullanılıyor)
 import 'package:project_pos/features/suppliers/screens/upload/supplier_upload_wizard_screen.dart';
 // Supplier Claims
 import 'package:project_pos/features/supplier_claims/screens/supplier_claims_list_screen.dart';
 import 'package:project_pos/features/supplier_claims/screens/supplier_claim_detail_screen.dart';
-// Customers
-import 'package:project_pos/features/customers/screens/customer_list_screen.dart';
-import 'package:project_pos/features/customers/screens/add_customer_screen.dart';
-import 'package:project_pos/features/customers/screens/customer_account_detail_screen.dart';
 // Accounts
 import 'package:project_pos/features/accounts/screens/accounts_hub_screen.dart';
 // Stock
@@ -189,14 +182,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const ProfileScreen(),
           ),
           GoRoute(
-            path: '/customers',
-            builder: (context, state) => const CustomerListScreen(),
-          ),
-          GoRoute(
-            path: '/suppliers',
-            builder: (context, state) => const SupplierListScreen(),
-          ),
-          GoRoute(
             path: '/stock',
             builder: (context, state) => const EnhancedStockScreen(),
           ),
@@ -309,17 +294,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             },
           ),
           GoRoute(
-            path: '/customers/add',
-            builder: (context, state) => const AddCustomerScreen(),
-          ),
-          GoRoute(
-            path: '/customers/edit/:id',
-            builder: (context, state) {
-              final id = state.pathParameters['id'];
-              return AddCustomerScreen(customerId: id);
-            },
-          ),
-          GoRoute(
             path: '/purchases',
             builder: (context, state) => const PurchaseListScreen(),
           ),
@@ -342,21 +316,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             },
           ),
           GoRoute(
-            path: '/suppliers/add',
-            builder: (context, state) => const AddSupplierScreen(),
-          ),
-          GoRoute(
-            path: '/suppliers/edit/:id',
-            builder: (context, state) {
-              final id = state.pathParameters['id'];
-              return AddSupplierScreen(supplierId: id);
-            },
-          ),
-          GoRoute(
             path: '/suppliers/account/:id',
+            redirect: (_, __) => '/accounts',
             builder: (context, state) {
-              final id = state.pathParameters['id']!;
-              return SupplierAccountDetailScreen(supplierId: id);
+              return const SizedBox.shrink();
             },
           ),
           GoRoute(
@@ -485,9 +448,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/customers/account/:id',
+            redirect: (_, __) => '/accounts',
             builder: (context, state) {
-              final id = state.pathParameters['id']!;
-              return CustomerAccountDetailScreen(customerId: id);
+              return const SizedBox.shrink();
             },
           ),
           GoRoute(

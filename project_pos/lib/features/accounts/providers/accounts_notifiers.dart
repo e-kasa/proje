@@ -148,6 +148,22 @@ class OverdueTrackingNotifier extends StateNotifier<OverdueTrackingState> {
 
 // ─── Account Statement ──────────────────────────────────────────────────────
 
+enum TxFilter { all, sales, payments, returns, adjustments }
+
+const Map<TxFilter, Set<String>> _kTxFilterTypes = {
+  TxFilter.all: {},
+  TxFilter.sales: {'SALE', 'PURCHASE'},
+  TxFilter.payments: {'PAYMENT', 'COLLECTION', 'SUPPLIER_PAYMENT'},
+  TxFilter.returns: {'RETURN', 'SUPPLIER_RETURN', 'REFUND'},
+  TxFilter.adjustments: {
+    'ADJUSTMENT_DEBIT',
+    'ADJUSTMENT_CREDIT',
+    'DISCOUNT',
+    'CANCEL',
+    'LATE_FEE',
+  },
+};
+
 class AccountStatementState {
   final String? accountType;
   final String? accountId;
@@ -157,6 +173,7 @@ class AccountStatementState {
   final Map<String, dynamic>? statement;
   final bool isLoading;
   final String? error;
+  final TxFilter filter;
 
   const AccountStatementState({
     this.accountType,
@@ -167,9 +184,21 @@ class AccountStatementState {
     this.statement,
     this.isLoading = false,
     this.error,
+    this.filter = TxFilter.all,
   });
 
   bool get hasAccount => accountId != null && accountId!.isNotEmpty;
+
+  List<Map<String, dynamic>> get visibleTransactions {
+    final raw = statement?['transactions'];
+    if (raw is! List) return const [];
+    final all = List<Map<String, dynamic>>.from(raw);
+    if (filter == TxFilter.all) return all;
+    final allowed = _kTxFilterTypes[filter] ?? const <String>{};
+    return all
+        .where((tx) => allowed.contains(tx['transactionType']?.toString()))
+        .toList();
+  }
 
   AccountStatementState copyWith({
     Object? accountType = _sentinel,
@@ -180,6 +209,7 @@ class AccountStatementState {
     Object? statement = _sentinel,
     bool? isLoading,
     Object? error = _sentinel,
+    TxFilter? filter,
   }) {
     return AccountStatementState(
       accountType: accountType == _sentinel
@@ -197,6 +227,7 @@ class AccountStatementState {
           : statement as Map<String, dynamic>?,
       isLoading: isLoading ?? this.isLoading,
       error: error == _sentinel ? this.error : error as String?,
+      filter: filter ?? this.filter,
     );
   }
 }
@@ -256,6 +287,11 @@ class AccountStatementNotifier extends StateNotifier<AccountStatementState> {
   void setDateRange(DateTime start, DateTime end) {
     state = state.copyWith(startDate: start, endDate: end);
     load();
+  }
+
+  void setFilter(TxFilter f) {
+    if (state.filter == f) return;
+    state = state.copyWith(filter: f);
   }
 }
 

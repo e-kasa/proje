@@ -62,6 +62,7 @@ public class CustomerControllerImpl {
     }
 
     // GET /product/api/v1/customers/{id}
+    @Transactional(readOnly = true)
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getById(@PathVariable String id) {
         try {
@@ -276,6 +277,13 @@ public class CustomerControllerImpl {
         m.put("taxOffice", c.getTaxOffice()); m.put("creditLimit", c.getCreditLimit());
         m.put("paymentTermDays", c.getPaymentTermDays()); m.put("riskStatus", c.getRiskStatus());
         m.put("isActive", c.getIsActive()); m.put("companyCode", c.getCompanyCode());
+
+        // CustomerAccount denormalize alanlar — AccountsHub liste satırı bakiyesi için
+        var acct = c.getAccount();
+        m.put("currentBalance", acct != null ? acct.getCurrentBalance() : BigDecimal.ZERO);
+        m.put("overdueAmount", acct != null ? acct.getOverdueAmount() : BigDecimal.ZERO);
+        m.put("availableCreditLimit", acct != null ? acct.getAvailableCreditLimit() : BigDecimal.ZERO);
+        m.put("isCreditLimitExceeded", acct != null ? acct.getIsCreditLimitExceeded() : Boolean.FALSE);
         return m;
     }
 }

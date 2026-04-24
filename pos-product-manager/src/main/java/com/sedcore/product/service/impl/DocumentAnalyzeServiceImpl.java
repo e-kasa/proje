@@ -1169,4 +1169,126 @@ public class DocumentAnalyzeServiceImpl implements DocumentAnalyzeService {
         }
         return sb.length() >= 3 ? sb.toString() : name;
     }
+
+    // ────────────────────────────────────────────────────────────────────
+    // Sprint 1: PDF Extract — VAT, Unit, Invoice Header
+    // ────────────────────────────────────────────────────────────────────
+
+    /**
+     * Fatura satırından KDV oranını çıkar.
+     * Pattern: "KDV %18", "%18", "KDV %8", vb.
+     *
+     * @param line Fatura satırı metni
+     * @return KDV oranı (18.0, 8.0, 0.0 vb.), bulunamazsa 18.0 (default)
+     */
+    private Double extractVatRate(String line) {
+        if (line == null || line.isEmpty()) {
+            return 18.0; // Default: %18 KDV
+        }
+
+        // VAT_PATTERN: (?:%\s*(0|1|8|10|18|20)\b|(0|1|8|10|18|20)\s*%)
+        Matcher m = VAT_PATTERN.matcher(line);
+        if (m.find()) {
+            String vatStr = m.group(1) != null ? m.group(1) : m.group(2);
+            try {
+                return Double.parseDouble(vatStr);
+            } catch (NumberFormatException e) {
+                log.debug("VAT parse hatası: '{}' → default 18.0", vatStr);
+                return 18.0;
+            }
+        }
+
+        // Eğer "KDV muaf" veya "vergisiz" yazıyorsa → 0%
+        if (line.toLowerCase().matches(".*(kdv\\s*muaf|vergisiz|exempt|tax\\s*free).*")) {
+            return 0.0;
+        }
+
+        return 18.0; // Default
+    }
+
+    /**
+     * Fatura satırından birim (unit) çıkar.
+     * Pattern: ADET, AD, KG, LT, MT, PAKET, PCS, GR, vb.
+     *
+     * @param line Fatura satırı metni
+     * @return Birim kodu (ADET, KG, MT, vb.), bulunamazsa "ADET" (default)
+     */
+    private String extractUnit(String line) {
+        if (line == null || line.isEmpty()) {
+            return "ADET"; // Default unit
+        }
+
+        // UNIT_PATTERN: \b(ADET|ADT|AD|KG|KGR|LT|LTR|MT|MTR|M2|PAKET|PKT|KUTU|KTU|PCS|GR|GRAM)\b
+        Matcher m = UNIT_PATTERN.matcher(line);
+        if (m.find()) {
+            String unitRaw = m.group(1).toUpperCase();
+            // Normalize abbreviations → standard codes
+            return normalizeUnit(unitRaw);
+        }
+
+        return "ADET"; // Default
+    }
+
+    /**
+     * Birim kodu normalizasyonu: kısaltmalar → standard form.
+     * AD, ADT → ADET
+     * KGR → KG
+     * LTR, LT → LT
+     * vb.
+     */
+    private String normalizeUnit(String raw) {
+        if (raw == null) return "ADET";
+        String upper = raw.toUpperCase().trim();
+
+        return switch (upper) {
+            case "AD", "ADT" -> "ADET";
+            case "KGR" -> "KG";
+            case "LTR" -> "LT";
+            case "MTR", "M" -> "MT";
+            case "PKT" -> "PAKET";
+            case "KTU" -> "KUTU";
+            case "GR" -> "GRAM";
+            case "ADET", "KG", "LT", "MT", "M2", "PAKET", "KUTU", "PCS", "GRAM" -> upper;
+            default -> "ADET"; // Unknown unit → default ADET
+        };
+    }
+
+    /**
+     * Fatura başlığından fatura numarası ve tarihi çıkar.
+     * Regex: "Fatura No: INV-2026-001" → "INV-2026-001"
+     *        "Tarih: 23.04.2026" → "23.04.2026"
+     *
+     * @param pdfText Tüm PDF metni
+     * @return Pair: (invoiceNo, invoiceDate) — bulunamazsa (null, null)
+     */
+    private record InvoiceHeader(String invoiceNo, String invoiceDate) {}
+
+    private InvoiceHeader extractInvoiceHeader(String pdfText) {
+        if (pdfText == null || pdfText.isEmpty()) {
+            return new InvoiceHeader(null, null);
+        }
+
+        String invoiceNo = null;
+        String invoiceDate = null;
+
+        // Fatura No pattern: "Fatura No", "Invoice No", "Fatura #" vb.
+        Pattern invoiceNoPattern = Pattern.compile(
+                "(?:fatura\\s*no|invoice\\s*no|fatura\\s*numarası|belge\\s*no)[:\\s]+([A-Z0-9\\-/]+)",
+                Pattern.CASE_INSENSITIVE);
+        Matcher m1 = invoiceNoPattern.matcher(pdfText);
+        if (m1.find()) {
+            invoiceNo = m1.group(1).trim();
+        }
+
+        // Tarih pattern: "23.04.2026", "04/23/2026", "2026-04-23" vb.
+        Pattern datePattern = Pattern.compile(
+                "(\\d{1,2}[./\\-]\\d{1,2}[./\\-]\\d{4}|\\d{4}[./\\-]\\d{1,2}[./\\-]\\d{1,2})");
+        Matcher m2 = datePattern.matcher(pdfText);
+        if (m2.find()) {
+            invoiceDate = m2.group(1).trim();
+        }
+
+        log.debug("extractInvoiceHeader: invoiceNo='{}', date='{}'", invoiceNo, invoiceDate);
+        return new InvoiceHeader(invoiceNo, invoiceDate);
+    }
 }

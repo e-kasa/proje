@@ -81,8 +81,9 @@ class AccountsSummaryBar extends ConsumerWidget {
         '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
     return payments
         .where((p) =>
-            p['type'] == 'income' &&
-            (p['date']?.toString() ?? '').startsWith(todayKey))
+            p['customerId'] != null &&
+            (p['paymentDate']?.toString() ?? '').startsWith(todayKey) &&
+            p['isCancelled'] != true)
         .fold<double>(
             0, (sum, p) => sum + ((p['amount'] as num?)?.toDouble() ?? 0));
   }

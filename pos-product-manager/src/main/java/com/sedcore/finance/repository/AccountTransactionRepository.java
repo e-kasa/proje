@@ -106,4 +106,34 @@ public interface AccountTransactionRepository extends BaseDaoRepository<AccountT
     BigDecimal supplierOpeningBalance(
         @Param("id") String id,
         @Param("before") LocalDateTime before);
+
+    // ─── Drift reconciliation ──────────────────────────────────────────────
+
+    /**
+     * Müşteri için ledger'dan hesaplanan totaller.
+     * Tuple sırası:
+     *  [0] currentBalance    (SUM debit-credit)
+     *  [1] totalDebt         (SUM debit)
+     *  [2] totalCredit       (SUM credit)
+     *  [3] transactionCount  (COUNT)
+     *  [4] overdueAmount     (vadesi geçmiş hareketlerin net tutarı — fetchSummaryAggregates ile tutarlı)
+     */
+    @Query("SELECT COALESCE(SUM(t.debitAmount - t.creditAmount), 0), " +
+        "COALESCE(SUM(t.debitAmount), 0), " +
+        "COALESCE(SUM(t.creditAmount), 0), " +
+        "COUNT(t), " +
+        "COALESCE(SUM(CASE WHEN (t.isOverdue = true OR (t.dueDate IS NOT NULL AND t.dueDate < CURRENT_DATE AND t.debitAmount > 0)) " +
+        "                   THEN t.debitAmount - t.creditAmount ELSE 0 END), 0) " +
+        "FROM AccountTransaction t WHERE t.isCancelled = false AND t.customer.id = :id")
+    Object[] ledgerTotalsForCustomer(@Param("id") String customerId);
+
+    /** Tedarikçi için ledger'dan hesaplanan totaller. Tuple: bkz. ledgerTotalsForCustomer. */
+    @Query("SELECT COALESCE(SUM(t.debitAmount - t.creditAmount), 0), " +
+        "COALESCE(SUM(t.debitAmount), 0), " +
+        "COALESCE(SUM(t.creditAmount), 0), " +
+        "COUNT(t), " +
+        "COALESCE(SUM(CASE WHEN (t.isOverdue = true OR (t.dueDate IS NOT NULL AND t.dueDate < CURRENT_DATE AND t.debitAmount > 0)) " +
+        "                   THEN t.debitAmount - t.creditAmount ELSE 0 END), 0) " +
+        "FROM AccountTransaction t WHERE t.isCancelled = false AND t.supplier.id = :id")
+    Object[] ledgerTotalsForSupplier(@Param("id") String supplierId);
 }

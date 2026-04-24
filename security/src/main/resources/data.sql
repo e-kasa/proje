@@ -29,7 +29,7 @@ VALUES
     ('role-s1-cas-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'CASHIER',     'Kasiyer',           'POS satış ve müşteri işlemleri',    true, false),
     ('role-s1-wrh-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'WAREHOUSE',   'Depo Sorumlusu',    'Stok ve depo yönetimi',             true, false),
     ('role-s1-sad-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'STORE_ADMIN', 'Mağaza Yöneticisi', 'Mağaza yönetimi ve raporlar',       true, true)
-ON CONFLICT (id) DO NOTHING;
+    ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
 -- USER_DEF
@@ -45,15 +45,15 @@ VALUES
     ('udef-mgzad-s1-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'magaza_admin',  'Mağaza Yöneticisi',      true, 'TR', 'USER', 'magaza_admin',  'AGENCY_ID'),
     ('udef-gkasy-s1-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'giyim_kasiyer', 'Giyim Kasiyer',          true, 'TR', 'USER', 'giyim_kasiyer', 'AGENCY_ID'),
     ('udef-gdep0-s1-0000-000000000007', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'giyim_depo',    'Giyim Depo Sorumlusu',   true, 'TR', 'USER', 'giyim_depo',    'AGENCY_ID')
-ON CONFLICT (id) DO NOTHING;
+    ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
 -- USER_DEF_ACCESS (PBKDF2WithHmacSHA1 — DevHashGenerator ile üretildi)
 -- ============================================================
 INSERT INTO user_def_access (id, create_time, create_user, last_modified_time, update_user,
-                              company_code, access_type, can_login, has_ip_restriction,
-                              ip_restriction, is_force_password_change, last_change_time,
-                              password_hash, salt_key, user_def_id)
+                             company_code, access_type, can_login, has_ip_restriction,
+                             ip_restriction, is_force_password_change, last_change_time,
+                             password_hash, salt_key, user_def_id)
 VALUES
     ('uacc-admin-sed-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE',  'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP, 'M9bMoLOaKkoV+rp+VRb+oOFpZXMJPCdJU5WssGDFOsY=', 'QUJDREVGR0hJSktMTU5P', 'udef-admin-sed-0000-000000000001'),
     ('uacc-kasiy-sed-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE',  'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP, 'czisdagSOPocciEq+inqDviycyvhty2j1EYzpfDmvc0=',  'UFJPU1RVVldYWVoxMjM0', 'udef-kasiy-sed-0000-000000000002'),
@@ -62,7 +62,7 @@ VALUES
     ('uacc-mgzad-s1-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP, 'sqmT9AAcnoV/mUy+wMOWDKAnADIXPXQgBDcKvsitLHI=',  'WFlaQUJDREVGR0hJSktM', 'udef-mgzad-s1-0000-000000000005'),
     ('uacc-gkasy-s1-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP, 'NsE3IhDlQym0z0QuzDXM/mViOJTcMURQWZdoLQmCmug=',  'TU5PUFFSU1RVVldYWVow', 'udef-gkasy-s1-0000-000000000006'),
     ('uacc-gdep0-s1-0000-000000000007', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'INTERNAL', true, false, '', false, CURRENT_TIMESTAMP, 'PMsOAWxzVIuMDhIsGQKH8mKf1pLiZd6d1Fgd0KpH8Wo=',  'QUJDREVGR0hJSktMTU5Q', 'udef-gdep0-s1-0000-000000000007')
-ON CONFLICT (id) DO NOTHING;
+    ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
 -- USER_ROLE
@@ -77,7 +77,7 @@ VALUES
     ('urol-mgzad-s1-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'role-s1-sad-0000-0000-000000000004', 'udef-mgzad-s1-0000-000000000005'),
     ('urol-gkasy-s1-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'role-s1-cas-0000-0000-000000000002', 'udef-gkasy-s1-0000-000000000006'),
     ('urol-gdep0-s1-0000-000000000007', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'SEDCORE1', 'role-s1-wrh-0000-0000-000000000003', 'udef-gdep0-s1-0000-000000000007')
-ON CONFLICT (id) DO NOTHING;
+    ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
 -- MESAJ SİSTEMİ (ext_messages) — Hata kodları TR/EN
@@ -129,7 +129,7 @@ VALUES
      '1032', '{0} en az {1} karakter olmalıdır', '{0} must be at least {1} characters'),
     ('msg-0022-0000-0000-0000-000000000022', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      '1033', '{0} en fazla {1} karakter olabilir', '{0} must be at most {1} characters')
-ON CONFLICT DO NOTHING;
+    ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- BUNDLE SİSTEMİ (ext_bundles) — Enum etiketleri TR/EN
@@ -203,10 +203,6 @@ VALUES
      'menu.warehouses', 'Depolar', 'Warehouses'),
     ('bnd-0209-0000-0000-0000-000000000209', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'menu.purchases', 'Satın Alma', 'Purchases'),
-    ('bnd-0210-0000-0000-0000-000000000210', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'menu.suppliers', 'Tedarikçiler', 'Suppliers'),
-    ('bnd-0211-0000-0000-0000-000000000211', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'menu.customers', 'Müşteriler', 'Customers'),
     ('bnd-0212-0000-0000-0000-000000000212', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'menu.accounts', 'Cari Hesaplar', 'Accounts'),
     ('bnd-0213-0000-0000-0000-000000000213', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
@@ -275,7 +271,7 @@ VALUES
      'menu.sector_settings', 'Sektör Ayarları', 'Sector Settings'),
     ('bnd-0329-0000-0000-0000-000000000329', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'menu.employees', 'Çalışanlar', 'Employees')
-ON CONFLICT DO NOTHING;
+    ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- EKRAN METİNLERİ — Ortak (common), Form, Validation, Ekran bazlı
@@ -794,7 +790,7 @@ VALUES
      'month.november', 'Kasım', 'November'),
     ('bnd-m012-0000-0000-0000-000000000012', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'month.december', 'Aralık', 'December')
-ON CONFLICT DO NOTHING;
+    ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- ROL TANIMLARI (role_def) — SEDCORE + SEDCORE1
@@ -825,7 +821,7 @@ VALUES
      'SEDCORE1', 'WAREHOUSE', 'Stok ve depo yönetimi', true, false, 'Depo Sorumlusu'),
     ('role-s1-sad-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'SEDCORE1', 'STORE_ADMIN', 'Mağaza yönetimi ve raporlar', true, true, 'Mağaza Yöneticisi')
-ON CONFLICT DO NOTHING;
+    ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- MENÜ KATEGORİLERİ (menu_categories) — label = bundle kodu
@@ -849,7 +845,7 @@ VALUES
      'cat.finance', true, false, NULL),
     ('cat-yonet-0000-0000-0000-000000000008', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'cat.management', true, false, NULL)
-ON CONFLICT DO NOTHING;
+    ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- MENÜLER (menus) — label = bundle kodu
@@ -878,9 +874,9 @@ VALUES
     ('menu-purch-0000-0000-0000-000000000010', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'menu.purchases', 'shopping_cart_outlined', false, false, 'cat-tedar-0000-0000-0000-000000000005'),
     ('menu-suppl-0000-0000-0000-000000000011', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'menu.suppliers', 'business_outlined', false, false, 'cat-tedar-0000-0000-0000-000000000005'),
+     'menu.suppliers', 'local_shipping_outlined', false, false, 'cat-tedar-0000-0000-0000-000000000005'),
     ('menu-custo-0000-0000-0000-000000000012', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'menu.customers', 'people_outlined', false, false, 'cat-carih-0000-0000-0000-000000000006'),
+     'menu.customers', 'people_outline', false, false, 'cat-carih-0000-0000-0000-000000000006'),
     ('menu-accnt-0000-0000-0000-000000000013', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'menu.accounts', 'account_balance_wallet_outlined', false, false, 'cat-carih-0000-0000-0000-000000000006'),
     ('menu-finan-0000-0000-0000-000000000014', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
@@ -893,7 +889,7 @@ VALUES
      'menu.stores', 'storefront_outlined', false, false, 'cat-yonet-0000-0000-0000-000000000008'),
     ('menu-users-0000-0000-0000-000000000018', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'menu.user_management', 'manage_accounts_outlined', false, false, 'cat-yonet-0000-0000-0000-000000000008')
-ON CONFLICT DO NOTHING;
+    ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- MENÜ ÖĞELERİ (menu_items) — label = bundle kodu
@@ -953,10 +949,6 @@ VALUES
      'menu.purchases', '/purchases', 'menu-purch-0000-0000-0000-000000000010'),
     ('mi-prccr-0000-0000-0000-000000000026', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'menu.new_purchase', '/purchases/create', 'menu-purch-0000-0000-0000-000000000010'),
-    ('mi-suppl-0000-0000-0000-000000000027', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'menu.suppliers', '/suppliers', 'menu-suppl-0000-0000-0000-000000000011'),
-    ('mi-custo-0000-0000-0000-000000000028', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'menu.customers', '/customers', 'menu-custo-0000-0000-0000-000000000012'),
     ('mi-accnt-0000-0000-0000-000000000029', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'accounts.hub_title', '/accounts', 'menu-accnt-0000-0000-0000-000000000013'),
     ('mi-finan-0000-0000-0000-000000000032', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
@@ -993,7 +985,7 @@ VALUES
      'menu.employees', '/hrm/employees', 'menu-users-0000-0000-0000-000000000018'),
     ('mi-supct-0000-0000-0000-000000000049', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'nav.supplier_claims', '/supplier-claims', 'menu-suppl-0000-0000-0000-000000000011')
-ON CONFLICT DO NOTHING;
+    ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- ROL-MENÜ EŞLEMELERİ (role_menu)
@@ -1020,7 +1012,7 @@ VALUES
     ('rm-adm16-0000-0000-0000-000000000016', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-adm-0000-0000-000000000001', 'menu-settn-0000-0000-0000-000000000016'),
     ('rm-adm17-0000-0000-0000-000000000017', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-adm-0000-0000-000000000001', 'menu-store-0000-0000-0000-000000000017'),
     ('rm-adm18-0000-0000-0000-000000000018', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-adm-0000-0000-000000000001', 'menu-users-0000-0000-0000-000000000018')
-ON CONFLICT DO NOTHING;
+    ON CONFLICT DO NOTHING;
 
 -- SEDCORE STORE_ADMIN → 11 menü
 INSERT INTO role_menu (id, create_time, create_user, last_modified_time, update_user, role_id, menu_id)
@@ -1042,7 +1034,7 @@ VALUES
     ('rm-mgz13-0000-0000-0000-000000000031', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-sad-0000-0000-000000000004', 'menu-suppl-0000-0000-0000-000000000011'),
     -- Hesaplar / Cari: tedarikçi ve müşteri bakiye/hareket takibi için gerekli
     ('rm-mgz14-0000-0000-0000-000000000032', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-sad-0000-0000-000000000004', 'menu-accnt-0000-0000-0000-000000000013')
-ON CONFLICT DO NOTHING;
+    ON CONFLICT DO NOTHING;
 
 -- SEDCORE CASHIER → 5 menü
 INSERT INTO role_menu (id, create_time, create_user, last_modified_time, update_user, role_id, menu_id)
@@ -1052,7 +1044,7 @@ VALUES
     ('rm-kas03-0000-0000-0000-000000000032', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-cas-0000-0000-000000000002', 'menu-possv-0000-0000-0000-000000000004'),
     ('rm-kas04-0000-0000-0000-000000000033', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-cas-0000-0000-000000000002', 'menu-saleh-0000-0000-0000-000000000005'),
     ('rm-kas05-0000-0000-0000-000000000034', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-cas-0000-0000-000000000002', 'menu-stock-0000-0000-0000-000000000008')
-ON CONFLICT DO NOTHING;
+    ON CONFLICT DO NOTHING;
 
 -- SEDCORE WAREHOUSE → 6 menü
 INSERT INTO role_menu (id, create_time, create_user, last_modified_time, update_user, role_id, menu_id)
@@ -1063,7 +1055,7 @@ VALUES
     ('rm-dep04-0000-0000-0000-000000000038', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-wrh-0000-0000-000000000003', 'menu-stock-0000-0000-0000-000000000008'),
     ('rm-dep05-0000-0000-0000-000000000039', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-wrh-0000-0000-000000000003', 'menu-wareh-0000-0000-0000-000000000009'),
     ('rm-dep06-0000-0000-0000-000000000040', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-sc-wrh-0000-0000-000000000003', 'menu-reprt-0000-0000-0000-000000000015')
-ON CONFLICT DO NOTHING;
+    ON CONFLICT DO NOTHING;
 
 -- SEDCORE1 ADMIN → TÜM MENÜLER (18)
 INSERT INTO role_menu (id, create_time, create_user, last_modified_time, update_user, role_id, menu_id)
@@ -1086,7 +1078,7 @@ VALUES
     ('rm-s1admg-0000-0000-0000-000000000016', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-adm-0000-0000-000000000001', 'menu-settn-0000-0000-0000-000000000016'),
     ('rm-s1admh-0000-0000-0000-000000000017', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-adm-0000-0000-000000000001', 'menu-store-0000-0000-0000-000000000017'),
     ('rm-s1admi-0000-0000-0000-000000000018', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-adm-0000-0000-000000000001', 'menu-users-0000-0000-0000-000000000018')
-ON CONFLICT DO NOTHING;
+    ON CONFLICT DO NOTHING;
 
 -- SEDCORE1 STORE_ADMIN → 11 menü
 INSERT INTO role_menu (id, create_time, create_user, last_modified_time, update_user, role_id, menu_id)
@@ -1105,7 +1097,7 @@ VALUES
     ('rm-s1sadc-0000-0000-0000-000000000030', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-sad-0000-0000-000000000004', 'menu-purch-0000-0000-0000-000000000010'),
     ('rm-s1sadd-0000-0000-0000-000000000031', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-sad-0000-0000-000000000004', 'menu-suppl-0000-0000-0000-000000000011'),
     ('rm-s1sade-0000-0000-0000-000000000032', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-sad-0000-0000-000000000004', 'menu-accnt-0000-0000-0000-000000000013')
-ON CONFLICT DO NOTHING;
+    ON CONFLICT DO NOTHING;
 
 -- SEDCORE1 CASHIER → 5 menü
 INSERT INTO role_menu (id, create_time, create_user, last_modified_time, update_user, role_id, menu_id)
@@ -1115,7 +1107,7 @@ VALUES
     ('rm-s1cas3-0000-0000-0000-000000000032', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-cas-0000-0000-000000000002', 'menu-possv-0000-0000-0000-000000000004'),
     ('rm-s1cas4-0000-0000-0000-000000000033', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-cas-0000-0000-000000000002', 'menu-saleh-0000-0000-0000-000000000005'),
     ('rm-s1cas5-0000-0000-0000-000000000034', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-cas-0000-0000-000000000002', 'menu-stock-0000-0000-0000-000000000008')
-ON CONFLICT DO NOTHING;
+    ON CONFLICT DO NOTHING;
 
 -- SEDCORE1 WAREHOUSE → 6 menü
 INSERT INTO role_menu (id, create_time, create_user, last_modified_time, update_user, role_id, menu_id)
@@ -1126,7 +1118,7 @@ VALUES
     ('rm-s1wrh4-0000-0000-0000-000000000038', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-wrh-0000-0000-000000000003', 'menu-stock-0000-0000-0000-000000000008'),
     ('rm-s1wrh5-0000-0000-0000-000000000039', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-wrh-0000-0000-000000000003', 'menu-wareh-0000-0000-0000-000000000009'),
     ('rm-s1wrh6-0000-0000-0000-000000000040', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'role-s1-wrh-0000-0000-000000000003', 'menu-reprt-0000-0000-0000-000000000015')
-ON CONFLICT DO NOTHING;
+    ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- EKSİK BUNDLE KAYITLARI — Ekran i18n dönüşümünden gelen key'ler
@@ -1962,7 +1954,7 @@ VALUES
     ('bnd-pd192-0000-0000-000000000192', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.add_oem',        'OEM Ekle',    'Add OEM'),
     ('bnd-pd193-0000-0000-000000000193', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.add_cross_ref',  'Çapraz Ref Ekle', 'Add Cross Ref'),
     ('bnd-sm025-0000-0000-000000000025', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'stock.movement_type',    'Hareket Türü', 'Movement Type')
-ON CONFLICT DO NOTHING;
+    ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- EKSİK BUNDLE KAYITLARI — Flutter ekran i18n dönüşümü
@@ -2598,7 +2590,7 @@ VALUES
 ('bnd-wh050-000-0000-0000-000000000050', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'warehouses.utilization_suffix', 'doluluk', 'utilization'),
 ('bnd-wh051-000-0000-0000-000000000051', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'warehouses.warehouse_suffix', 'depo', 'warehouses'),
 ('bnd-wh052-000-0000-0000-000000000052', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'warehouses.warehouse_type', 'Depo Tipi', 'Warehouse Type')
-ON CONFLICT DO NOTHING;
+    ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- SUPPLIER CLAIMS (Tedarikçi Alacak Talepleri) — i18n
@@ -2607,62 +2599,110 @@ ON CONFLICT DO NOTHING;
 INSERT INTO ext_bundles (id, create_time, create_user, last_modified_time, update_user,
                          bundle_code, bundle_message_tr, bundle_message_en)
 VALUES
-('bnd-suc01-000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_title', 'Tedarikçi Talepleri', 'Supplier Claims'),
-('bnd-suc02-000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_list_empty', 'Açık talep yok', 'No open claims'),
-('bnd-suc03-000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_filter_all', 'Tümü', 'All'),
-('bnd-suc04-000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_filter_open', 'Açık', 'Open'),
-('bnd-suc05-000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_filter_resolved', 'Çözülmüş', 'Resolved'),
-('bnd-suc06-000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_filter_cancelled', 'İptal', 'Cancelled'),
-('bnd-suc07-000-0000-0000-000000000007', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_status_open', 'Açık', 'Open'),
-('bnd-suc08-000-0000-0000-000000000008', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_status_resolved_delivery', 'Teslimatla Kapandı', 'Resolved by Delivery'),
-('bnd-suc09-000-0000-0000-000000000009', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_status_resolved_discount', 'İskontoyla Kapandı', 'Resolved by Discount'),
-('bnd-suc10-000-0000-0000-000000000010', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_status_resolved_return', 'İadeyle Kapandı', 'Resolved by Refund'),
-('bnd-suc11-000-0000-0000-000000000011', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_status_cancelled', 'İptal Edildi', 'Cancelled'),
-('bnd-suc12-000-0000-0000-000000000012', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_reason_shortage', 'Eksik Teslimat', 'Shortage'),
-('bnd-suc13-000-0000-0000-000000000013', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_reason_damage', 'Hasarlı Mal', 'Damage'),
-('bnd-suc14-000-0000-0000-000000000014', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_col_supplier', 'Tedarikçi', 'Supplier'),
-('bnd-suc15-000-0000-0000-000000000015', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_col_invoice', 'Fatura', 'Invoice'),
-('bnd-suc16-000-0000-0000-000000000016', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_col_amount', 'Tutar', 'Amount'),
-('bnd-suc17-000-0000-0000-000000000017', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_col_status', 'Durum', 'Status'),
-('bnd-suc18-000-0000-0000-000000000018', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_col_reason', 'Sebep', 'Reason'),
-('bnd-suc19-000-0000-0000-000000000019', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_col_date', 'Tarih', 'Date'),
-('bnd-suc20-000-0000-0000-000000000020', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_detail_title', 'Talep Detayı', 'Claim Detail'),
-('bnd-suc21-000-0000-0000-000000000021', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_detail_lines', 'Eksik Kalemler', 'Missing Items'),
-('bnd-suc22-000-0000-0000-000000000022', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_line_expected', 'Fatura Adet', 'Invoice Qty'),
-('bnd-suc23-000-0000-0000-000000000023', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_line_received', 'Gelen Adet', 'Received'),
-('bnd-suc24-000-0000-0000-000000000024', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_line_shortage', 'Eksik', 'Shortage'),
-('bnd-suc25-000-0000-0000-000000000025', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_line_unit_price', 'Birim Fiyat', 'Unit Price'),
-('bnd-suc26-000-0000-0000-000000000026', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_line_amount', 'Satır Tutarı', 'Line Amount'),
-('bnd-suc27-000-0000-0000-000000000027', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_resolve', 'Çöz', 'Resolve'),
-('bnd-suc28-000-0000-0000-000000000028', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_cancel', 'Talebi İptal Et', 'Cancel Claim'),
-('bnd-suc29-000-0000-0000-000000000029', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_resolve_by_discount', 'İskonto / Kredi Notu', 'Discount / Credit Note'),
-('bnd-suc30-000-0000-0000-000000000030', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_resolve_by_delivery', 'Yeni Teslimatla', 'By New Delivery'),
-('bnd-suc31-000-0000-0000-000000000031', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_resolve_by_refund', 'Nakit İade', 'Cash Refund'),
-('bnd-suc32-000-0000-0000-000000000032', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_credit_note_number', 'Kredi Notu No', 'Credit Note Number'),
-('bnd-suc33-000-0000-0000-000000000033', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_resolved_amount', 'Kapanış Tutarı', 'Resolved Amount'),
-('bnd-suc34-000-0000-0000-000000000034', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_cancel_reason', 'İptal Sebebi', 'Cancel Reason'),
-('bnd-suc35-000-0000-0000-000000000035', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_notes', 'Notlar', 'Notes'),
-('bnd-suc36-000-0000-0000-000000000036', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_view_action', 'Talebi Görüntüle', 'View Claim'),
-('bnd-suc37-000-0000-0000-000000000037', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_toast_opened', 'Talep açıldı', 'Claim opened'),
-('bnd-suc38-000-0000-0000-000000000038', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_toast_resolved', 'Talep kapatıldı', 'Claim resolved'),
-('bnd-suc39-000-0000-0000-000000000039', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_toast_cancelled', 'Talep iptal edildi', 'Claim cancelled'),
-('bnd-suc40-000-0000-0000-000000000040', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_confirm', 'Onayla', 'Confirm'),
-('bnd-suc41-000-0000-0000-000000000041', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_close', 'Kapat', 'Close'),
-('bnd-suc42-000-0000-0000-000000000042', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_source_purchase', 'Kaynak Satın Alma', 'Source Purchase'),
-('bnd-suc43-000-0000-0000-000000000043', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_fully_resolved', 'Tam Kapanış', 'Fully Resolved'),
-('bnd-suc44-000-0000-0000-000000000044', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_partial_resolved', 'Kısmi Kapanış', 'Partially Resolved'),
-('bnd-suc45-000-0000-0000-000000000045', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_reason_wrong_item', 'Yanlış Ürün', 'Wrong Item'),
-('bnd-suc46-000-0000-0000-000000000046', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_status_partially_resolved', 'Kısmi Kapandı', 'Partially Resolved'),
-('bnd-suc47-000-0000-0000-000000000047', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_batch_toast', 'Fatura eksik geldi — talep açıldı', 'Invoice shortage — claim opened'),
-('bnd-suc48-000-0000-0000-000000000048', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_filter_partial', 'Kısmi Kapandı', 'Partially Resolved'),
-('bnd-suc49-000-0000-0000-000000000049', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.resolve_tab_discount', 'İskonto', 'Discount'),
-('bnd-suc50-000-0000-0000-000000000050', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.resolve_tab_delivery', 'Teslimat', 'Delivery'),
-('bnd-suc51-000-0000-0000-000000000051', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.resolve_tab_refund', 'İade', 'Refund'),
-('bnd-suc52-000-0000-0000-000000000052', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_delivery_note_number', 'İrsaliye No', 'Delivery Note Number'),
-('bnd-cmc50-000-0000-0000-000000000050', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'common.remaining', 'Kalan', 'Remaining'),
-('bnd-cmc51-000-0000-0000-000000000051', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'common.exceeds_remaining', 'Kalan tutarı aşıyor', 'Exceeds remaining amount'),
-('bnd-cmc52-000-0000-0000-000000000052', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'nav.supplier_claims', 'Tedarikçi Talepleri', 'Supplier Claims')
-ON CONFLICT DO NOTHING;
+    ('bnd-suc01-000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_title', 'Tedarikçi Talepleri', 'Supplier Claims'),
+    ('bnd-suc02-000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_list_empty', 'Açık talep yok', 'No open claims'),
+    ('bnd-suc03-000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_filter_all', 'Tümü', 'All'),
+    ('bnd-suc04-000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_filter_open', 'Açık', 'Open'),
+    ('bnd-suc05-000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_filter_resolved', 'Çözülmüş', 'Resolved'),
+    ('bnd-suc06-000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_filter_cancelled', 'İptal', 'Cancelled'),
+    ('bnd-suc07-000-0000-0000-000000000007', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_status_open', 'Açık', 'Open'),
+    ('bnd-suc08-000-0000-0000-000000000008', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_status_resolved_delivery', 'Teslimatla Kapandı', 'Resolved by Delivery'),
+    ('bnd-suc09-000-0000-0000-000000000009', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_status_resolved_discount', 'İskontoyla Kapandı', 'Resolved by Discount'),
+    ('bnd-suc10-000-0000-0000-000000000010', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_status_resolved_return', 'İadeyle Kapandı', 'Resolved by Refund'),
+    ('bnd-suc11-000-0000-0000-000000000011', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_status_cancelled', 'İptal Edildi', 'Cancelled'),
+    ('bnd-suc12-000-0000-0000-000000000012', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_reason_shortage', 'Eksik Teslimat', 'Shortage'),
+    ('bnd-suc13-000-0000-0000-000000000013', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_reason_damage', 'Hasarlı Mal', 'Damage'),
+    ('bnd-suc14-000-0000-0000-000000000014', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_col_supplier', 'Tedarikçi', 'Supplier'),
+    ('bnd-suc15-000-0000-0000-000000000015', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_col_invoice', 'Fatura', 'Invoice'),
+    ('bnd-suc16-000-0000-0000-000000000016', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_col_amount', 'Tutar', 'Amount'),
+    ('bnd-suc17-000-0000-0000-000000000017', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_col_status', 'Durum', 'Status'),
+    ('bnd-suc18-000-0000-0000-000000000018', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_col_reason', 'Sebep', 'Reason'),
+    ('bnd-suc19-000-0000-0000-000000000019', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_col_date', 'Tarih', 'Date'),
+    ('bnd-suc20-000-0000-0000-000000000020', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_detail_title', 'Talep Detayı', 'Claim Detail'),
+    ('bnd-suc21-000-0000-0000-000000000021', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_detail_lines', 'Eksik Kalemler', 'Missing Items'),
+    ('bnd-suc22-000-0000-0000-000000000022', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_line_expected', 'Fatura Adet', 'Invoice Qty'),
+    ('bnd-suc23-000-0000-0000-000000000023', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_line_received', 'Gelen Adet', 'Received'),
+    ('bnd-suc24-000-0000-0000-000000000024', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_line_shortage', 'Eksik', 'Shortage'),
+    ('bnd-suc25-000-0000-0000-000000000025', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_line_unit_price', 'Birim Fiyat', 'Unit Price'),
+    ('bnd-suc26-000-0000-0000-000000000026', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_line_amount', 'Satır Tutarı', 'Line Amount'),
+    ('bnd-suc27-000-0000-0000-000000000027', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_resolve', 'Çöz', 'Resolve'),
+    ('bnd-suc28-000-0000-0000-000000000028', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_cancel', 'Talebi İptal Et', 'Cancel Claim'),
+    ('bnd-suc29-000-0000-0000-000000000029', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_resolve_by_discount', 'İskonto / Kredi Notu', 'Discount / Credit Note'),
+    ('bnd-suc30-000-0000-0000-000000000030', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_resolve_by_delivery', 'Yeni Teslimatla', 'By New Delivery'),
+    ('bnd-suc31-000-0000-0000-000000000031', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_resolve_by_refund', 'Nakit İade', 'Cash Refund'),
+    ('bnd-suc32-000-0000-0000-000000000032', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_credit_note_number', 'Kredi Notu No', 'Credit Note Number'),
+    ('bnd-suc33-000-0000-0000-000000000033', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_resolved_amount', 'Kapanış Tutarı', 'Resolved Amount'),
+    ('bnd-suc34-000-0000-0000-000000000034', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_cancel_reason', 'İptal Sebebi', 'Cancel Reason'),
+    ('bnd-suc35-000-0000-0000-000000000035', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_notes', 'Notlar', 'Notes'),
+    ('bnd-suc36-000-0000-0000-000000000036', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_view_action', 'Talebi Görüntüle', 'View Claim'),
+    ('bnd-suc37-000-0000-0000-000000000037', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_toast_opened', 'Talep açıldı', 'Claim opened'),
+    ('bnd-suc38-000-0000-0000-000000000038', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_toast_resolved', 'Talep kapatıldı', 'Claim resolved'),
+    ('bnd-suc39-000-0000-0000-000000000039', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_toast_cancelled', 'Talep iptal edildi', 'Claim cancelled'),
+    ('bnd-suc40-000-0000-0000-000000000040', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_confirm', 'Onayla', 'Confirm'),
+    ('bnd-suc41-000-0000-0000-000000000041', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_close', 'Kapat', 'Close'),
+    ('bnd-suc42-000-0000-0000-000000000042', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_source_purchase', 'Kaynak Satın Alma', 'Source Purchase'),
+    ('bnd-suc43-000-0000-0000-000000000043', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_fully_resolved', 'Tam Kapanış', 'Fully Resolved'),
+    ('bnd-suc44-000-0000-0000-000000000044', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_partial_resolved', 'Kısmi Kapanış', 'Partially Resolved'),
+    ('bnd-suc45-000-0000-0000-000000000045', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_reason_wrong_item', 'Yanlış Ürün', 'Wrong Item'),
+    ('bnd-suc46-000-0000-0000-000000000046', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_status_partially_resolved', 'Kısmi Kapandı', 'Partially Resolved'),
+    ('bnd-suc47-000-0000-0000-000000000047', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_batch_toast', 'Fatura eksik geldi — talep açıldı', 'Invoice shortage — claim opened'),
+    ('bnd-suc48-000-0000-0000-000000000048', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_filter_partial', 'Kısmi Kapandı', 'Partially Resolved'),
+    ('bnd-suc49-000-0000-0000-000000000049', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.resolve_tab_discount', 'İskonto', 'Discount'),
+    ('bnd-suc50-000-0000-0000-000000000050', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.resolve_tab_delivery', 'Teslimat', 'Delivery'),
+    ('bnd-suc51-000-0000-0000-000000000051', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.resolve_tab_refund', 'İade', 'Refund'),
+    ('bnd-suc52-000-0000-0000-000000000052', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'su.claim_delivery_note_number', 'İrsaliye No', 'Delivery Note Number'),
+    ('bnd-cmc50-000-0000-0000-000000000050', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'common.remaining', 'Kalan', 'Remaining'),
+    ('bnd-cmc51-000-0000-0000-000000000051', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'common.exceeds_remaining', 'Kalan tutarı aşıyor', 'Exceeds remaining amount'),
+    ('bnd-cmc52-000-0000-0000-000000000052', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'nav.supplier_claims', 'Tedarikçi Talepleri', 'Supplier Claims'),
+    ('bnd-slpay01-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'sl.pay_cart_empty', 'Sepet boş', 'Cart is empty'),
+    ('bnd-slpay02-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'sl.pay_select_customer_or_pay', 'Müşteri seç ya da tam öde', 'Select customer or pay full'),
+    ('bnd-slpay03-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'sl.pay_complete_cash', 'Peşin Tamamla', 'Complete Cash'),
+    ('bnd-slpay04-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'sl.pay_complete_credit', 'Vadeli Tamamla', 'Complete Credit'),
+    ('bnd-slpay05-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'sl.pay_remaining', 'Kalan', 'Remaining'),
+    ('bnd-slpay06-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'sl.pay_remaining_debt_chip', 'Kalan Borç', 'Remaining Debt'),
+    ('bnd-slpay07-0000-0000-000000000007', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'sl.pay_tap_to_select_customer', 'Müşteri Seç', 'Select Customer'),
+    ('bnd-slpay08-0000-0000-000000000008', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'sl.pay_card_reference', 'Onay / Referans No', 'Auth / Reference No'),
+    ('bnd-slpay09-0000-0000-000000000009', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'sl.pay_card_reference_hint', 'İsteğe bağlı — POS çıktısından girebilirsiniz', 'Optional — enter from POS slip'),
+    ('bnd-slpay10-0000-0000-000000000010', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'sl.pay_credit_sale_info', 'Kalan borç müşteri carisine işlenecek', 'Remaining debt will be recorded to customer account'),
+    ('bnd-acfrm01-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.new_title', 'Yeni Cari Ekle', 'Add New Account'),
+    ('bnd-acfrm02-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.edit_title', 'Cari Bilgilerini Düzenle', 'Edit Account Info'),
+    ('bnd-acfrm03-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.edit_info', 'Bilgileri Düzenle', 'Edit Info'),
+    ('bnd-acfrm04-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.create_action', 'Oluştur', 'Create'),
+    ('bnd-acfrm05-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.field_name', 'Ad / Unvan', 'Name / Title'),
+    ('bnd-acfrm06-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.field_contact_name', 'İletişim Kişisi', 'Contact Person'),
+    ('bnd-acfrm07-0000-0000-000000000007', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.field_phone', 'Telefon', 'Phone'),
+    ('bnd-acfrm08-0000-0000-000000000008', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.field_email', 'E-posta', 'Email'),
+    ('bnd-acfrm09-0000-0000-000000000009', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.field_address', 'Adres', 'Address'),
+    ('bnd-acfrm10-0000-0000-000000000010', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.field_tax_number', 'Vergi No', 'Tax Number'),
+    ('bnd-acfrm11-0000-0000-000000000011', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.field_tax_office', 'Vergi Dairesi', 'Tax Office'),
+    ('bnd-acfrm12-0000-0000-000000000012', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.field_website', 'Website', 'Website'),
+    ('bnd-acfrm13-0000-0000-000000000013', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.field_credit_limit', 'Kredi Limiti', 'Credit Limit'),
+    ('bnd-acfrm14-0000-0000-000000000014', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.field_payment_term', 'Vade (gün)', 'Payment Term (days)'),
+    ('bnd-acfrm15-0000-0000-000000000015', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.field_notes', 'Notlar', 'Notes'),
+    ('bnd-actx01-0000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.tx_type_sale', 'Satış', 'Sale'),
+    ('bnd-actx02-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.tx_type_purchase', 'Alım', 'Purchase'),
+    ('bnd-actx03-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.tx_type_payment', 'Tahsilat', 'Payment'),
+    ('bnd-actx04-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.tx_type_supplier_payment', 'Ödeme', 'Payment'),
+    ('bnd-actx05-0000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.tx_type_return', 'İade', 'Return'),
+    ('bnd-actx06-0000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.tx_type_supplier_return', 'Ted. İade', 'Supp. Return'),
+    ('bnd-actx07-0000-0000-0000-000000000007', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.tx_type_cancel', 'İptal', 'Cancel'),
+    ('bnd-actx08-0000-0000-0000-000000000008', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.tx_type_discount', 'İndirim', 'Discount'),
+    ('bnd-actx09-0000-0000-0000-000000000009', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.tx_type_late_fee', 'Gecikme', 'Late Fee'),
+    ('bnd-actx10-0000-0000-0000-000000000010', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.tx_type_adjustment_debit', 'Düzeltme(B)', 'Adj. Debit'),
+    ('bnd-actx11-0000-0000-0000-000000000011', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.tx_type_adjustment_credit', 'Düzeltme(A)', 'Adj. Credit'),
+    ('bnd-actx12-0000-0000-0000-000000000012', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.tx_type_refund', 'Geri Ödeme', 'Refund'),
+    ('bnd-actx13-0000-0000-0000-000000000013', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.tx_type_collection', 'Tahsilat', 'Collection'),
+    ('bnd-actx14-0000-0000-0000-000000000014', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.tx_ref', 'Ref', 'Ref'),
+    ('bnd-actx15-0000-0000-0000-000000000015', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.payment_saved', 'Kayıt başarılı', 'Saved successfully'),
+    ('bnd-actxf01-0000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.tx_filter_all', 'Tümü', 'All'),
+    ('bnd-actxf02-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.tx_filter_sales', 'Satışlar', 'Sales'),
+    ('bnd-actxf03-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.tx_filter_payments', 'Ödemeler', 'Payments'),
+    ('bnd-actxf04-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.tx_filter_returns', 'İadeler', 'Returns'),
+    ('bnd-actxf05-0000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.tx_filter_adjustments', 'Düzeltmeler', 'Adjustments'),
+    ('bnd-actxg01-0000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.tx_group_today', 'Bugün', 'Today'),
+    ('bnd-actxg02-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.tx_group_yesterday', 'Dün', 'Yesterday'),
+    ('bnd-actxg03-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'ac.tx_group_this_week', 'Bu Hafta', 'This Week')
+    ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- MİGRASYON: STORE_MANAGER → STORE_ADMIN (rol kodu düzeltmesi)
@@ -2675,22 +2715,22 @@ SET role_def_id = (
     WHERE rd.company_code = ur.company_code
       AND rd.code = 'STORE_ADMIN'
     LIMIT 1
-)
+    )
 WHERE EXISTS (
     SELECT 1 FROM role_def rd2
     WHERE rd2.id = ur.role_def_id
-      AND rd2.code = 'STORE_MANAGER'
-)
-AND EXISTS (
+  AND rd2.code = 'STORE_MANAGER'
+    )
+  AND EXISTS (
     SELECT 1 FROM role_def rd3
     WHERE rd3.company_code = ur.company_code
-      AND rd3.code = 'STORE_ADMIN'
-)
-AND NOT EXISTS (
+  AND rd3.code = 'STORE_ADMIN'
+    )
+  AND NOT EXISTS (
     SELECT 1 FROM user_role ur2
     JOIN role_def rd4 ON ur2.role_def_id = rd4.id
     WHERE ur2.user_def_id = ur.user_def_id
-      AND rd4.code = 'STORE_ADMIN'
-      AND rd4.company_code = ur.company_code
-);
+  AND rd4.code = 'STORE_ADMIN'
+  AND rd4.company_code = ur.company_code
+    );
 

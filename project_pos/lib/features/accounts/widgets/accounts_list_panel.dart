@@ -7,6 +7,7 @@ import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/features/accounts/models/statement_args.dart';
 import 'package:project_pos/features/accounts/providers/accounts_list_provider.dart';
+import 'package:project_pos/features/accounts/widgets/account_edit_form.dart';
 
 /// Cari listesi paneli — search + filter chips + scrollable liste.
 /// `onSelect` ile bir cari seçilince üst (hub) tarafından detail tarafı yüklenir.
@@ -33,6 +34,27 @@ class _AccountsListPanelState extends ConsumerState<AccountsListPanel> {
     super.dispose();
   }
 
+  Future<void> _openCreateModal(BuildContext context) async {
+    final initialType =
+        _defaultTypeForFilter(ref.read(accountsListProvider).filter);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: AccountEditForm(
+          initialType: initialType,
+          onSuccess: () => Navigator.of(ctx).pop(),
+          onCancel: () => Navigator.of(ctx).pop(),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = i18nOf(ref);
@@ -45,14 +67,22 @@ class _AccountsListPanelState extends ConsumerState<AccountsListPanel> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-            child: AppSearchInput(
-              controller: _searchCtrl,
-              hint: t('accounts.search_account'),
-              onChanged: notifier.setQuery,
-              onClear: () {
-                _searchCtrl.clear();
-                notifier.setQuery('');
-              },
+            child: Row(
+              children: [
+                Expanded(
+                  child: AppSearchInput(
+                    controller: _searchCtrl,
+                    hint: t('accounts.search_account'),
+                    onChanged: notifier.setQuery,
+                    onClear: () {
+                      _searchCtrl.clear();
+                      notifier.setQuery('');
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _NewAccountButton(onTap: () => _openCreateModal(context)),
+              ],
             ),
           ),
           SizedBox(
@@ -78,6 +108,19 @@ class _AccountsListPanelState extends ConsumerState<AccountsListPanel> {
         ],
       ),
     );
+  }
+
+  /// Aktif filtreye göre yeni eklenen cari varsayılan tipi — ör. "Müşteri" filtresindeyken
+  /// form CUSTOMER ile açılsın.
+  String _defaultTypeForFilter(AccountsFilter f) {
+    switch (f) {
+      case AccountsFilter.supplier:
+        return 'SUPPLIER';
+      case AccountsFilter.customer:
+      case AccountsFilter.all:
+      case AccountsFilter.overdue:
+        return 'CUSTOMER';
+    }
   }
 
   Widget _chip(String label, AccountsFilter value, AccountsFilter current,
@@ -135,6 +178,33 @@ class _AccountsListPanelState extends ConsumerState<AccountsListPanel> {
           )),
         );
       },
+    );
+  }
+}
+
+class _NewAccountButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _NewAccountButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.primary,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: const SizedBox(
+          width: 40,
+          height: 40,
+          child: Icon(
+            Icons.person_add_alt_1_outlined,
+            color: Colors.white,
+            size: 20,
+          ),
+        ),
+      ),
     );
   }
 }

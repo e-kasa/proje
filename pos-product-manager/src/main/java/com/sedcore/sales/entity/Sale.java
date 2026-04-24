@@ -44,12 +44,29 @@ public class Sale extends TOpenSimpleCompanyEntity {
 
     // ===== TUTAR BİLGİLERİ =====
 
+    @Column(name = "subtotal_amount", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal subtotalAmount = BigDecimal.ZERO; // İndirim öncesi brüt
+
+    @Column(name = "total_discount", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal totalDiscount = BigDecimal.ZERO;
+
+    @Column(name = "total_tax", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal totalTax = BigDecimal.ZERO;
+
     @Column(name = "total_amount", precision = 15, scale = 2, nullable = false)
-    private BigDecimal totalAmount; // Toplam tutar
+    private BigDecimal totalAmount; // Nihai ödenecek tutar (subtotal - discount + tax)
 
     @Column(name = "paid_amount", precision = 15, scale = 2)
     @Builder.Default
     private BigDecimal paidAmount = BigDecimal.ZERO; // Ödenen tutar
+
+    // ===== SATIŞ KALEMLERİ =====
+
+    @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SaleItem> items;
 
     // ===== STOK HAREKETLERİ =====
 

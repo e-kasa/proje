@@ -1,0 +1,37 @@
+# OpenAPI Generator — Dart Dio Client Config (Sprint 4, 2026-04-24)
+#
+# Kullanım: scripts/generate-api.sh çağırır, openapi-generator-cli ile çalışır.
+#
+# Giriş:  ../pos-product-manager/target/openapi.json (önce export-openapi.sh çalışmış olmalı)
+# Çıkış:  lib/api/generated/
+#
+# Generator: dart-dio → Dio HTTP client + json_serializable + built_value pattern.
+# Tercih nedeni: mevcut pubspec'te Dio zaten kurulu (API & Network dependency).
+
+generatorName: dart-dio
+inputSpec: ../pos-product-manager/target/openapi.json
+outputDir: lib/api/generated
+skipOperationExample: true
+
+additionalProperties:
+  # Generated package adı — hem pubspec hem lib/api altında klasör ismi
+  pubName: sedcore_api
+  pubAuthor: SEDCORE
+  pubDescription: "Auto-generated Dart client for SEDCORE POS backend (pos-product-manager). DO NOT EDIT."
+  pubVersion: "0.1.0"
+  # Dio serializer — JsonSerializable, mevcut ekosistemle uyumlu
+  serializationLibrary: "built_value"
+  # Kullanım tarzı — tek ana API class yerine tag-bazlı split
+  nullableFields: true
+  finalClass: true
+  useEnumExtension: true
+
+globalProperties:
+  # Sadece API + model generate et; docs/tests skip (size azaltma)
+  models: ""
+  apis: ""
+  supportingFiles: ""
+  modelDocs: "false"
+  apiDocs: "false"
+  modelTests: "false"
+  apiTests: "false"

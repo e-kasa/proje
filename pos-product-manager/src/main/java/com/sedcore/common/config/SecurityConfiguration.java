@@ -37,6 +37,14 @@ public class SecurityConfiguration {
                                 "/actuator/**",
                                 "/h2-console/**"
                         ).permitAll()
+                        // OpenAPI / Swagger UI — dev'de codegen için açık (Sprint 4, 2026-04-24).
+                        // Prod: IP whitelist veya admin-only yap (bkz. wiki/patterns/openapi-codegen-flutter).
+                        .requestMatchers(
+                                "/v3/api-docs",
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**"
+                        ).permitAll()
                         // Herkese açık e-ticaret endpoint'leri
                         // JWT gerekmez; sadece X-Company-Code header'ı zorunludur
                         .requestMatchers("/api/v1/public/**").permitAll()

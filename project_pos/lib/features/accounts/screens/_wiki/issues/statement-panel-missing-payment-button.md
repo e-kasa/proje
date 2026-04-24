@@ -1,14 +1,37 @@
 ---
 title: StatementDetailPanel — Ödeme Al/Yap Butonu Yok
-tags: [issue, open, ux-gap, feature-request]
+tags: [issue, resolved, ux-gap]
 date: 2026-04-24
-status: open
+status: resolved
+resolved-date: 2026-04-24
+resolved-by: "transactions-card P0 (commit history: payment button bind) — Sprint 6a kapsamında sayılır"
 priority: medium
 ---
 
-# StatementDetailPanel'da Ödeme Butonu Yok
+# StatementDetailPanel'da Ödeme Butonu Yok — RESOLVED 2026-04-24
 
-## Belirti
+**Çözüm**: `statement_detail_panel.dart:_handlePayment` implement edildi (transactions card P0.3 scope'unda). Akış:
+
+```dart
+// statement_detail_panel.dart:178-215
+PaymentRecordModal.show(context, isCustomer, accountName)
+  → payload oluştur (customerId | supplierId + amount + paymentType + bankName + ref + desc)
+  → paymentServiceProvider.createPayment(payload)
+  → AppToast.success('ac.payment_saved')
+  → Future.wait([
+      accountStatementProvider.load(),
+      accountSummaryProvider.load(),
+      accountsListProvider.load(),
+      paymentListProvider.load()
+    ])
+  → try/catch → AppToast.error('common.error: ...')
+```
+
+4 provider refresh → hub + list + detay + payment sayfaları senkron.
+
+Akış: [[flows/payment-recording-from-statement]]
+
+## (Orijinal Analiz) Belirti
 Kullanıcı seçili bir cari hesabın ekstresini açıp doğrudan ödeme alamıyor / yapamıyor. Statement panel header'ında sadece **edit** + **PDF** butonları var. Tahsilat/ödeme için ayrı bir ekran/akış gerek.
 
 ## Mevcut

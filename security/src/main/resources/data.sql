@@ -1980,6 +1980,8 @@ VALUES
 ('bnd-ac015-000-0000-0000-000000000015', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.receipt_no_hint', 'Dekont no...', 'Receipt no...'),
 ('bnd-ac016-000-0000-0000-000000000016', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.reference_hint', 'Referans no...', 'Reference no...'),
 ('bnd-ac017-000-0000-0000-000000000017', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.description_label', 'Açıklama (opsiyonel)', 'Description (optional)'),
+('bnd-acvp1-000-0000-0000-000000000801', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.vehicle_plate_label', 'Plaka (opsiyonel)', 'Vehicle Plate (optional)'),
+('bnd-acvp2-000-0000-0000-000000000802', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.vehicle_plate_hint', '34 ABC 123', '34 ABC 123'),
 ('bnd-ac018-000-0000-0000-000000000018', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.amount_required', 'Tutar gerekli', 'Amount required'),
 ('bnd-ac019-000-0000-0000-000000000019', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.select_account', 'Hesap Seç', 'Select Account'),
 ('bnd-ac020-000-0000-0000-000000000020', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'accounts.total_customer_receivable', 'Müşteri Alacağı', 'Customer Receivable'),

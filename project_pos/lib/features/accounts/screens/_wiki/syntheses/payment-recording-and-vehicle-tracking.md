@@ -1,17 +1,32 @@
 ---
 title: Ödeme Kayıt + Plaka Bazlı Takip — Senaryo Analizi
-tags: [synthesis, payment, vehicle, gap-analysis]
+tags: [synthesis, payment, vehicle, resolved]
 date: 2026-04-24
-status: draft
+status: verified
+resolved-date: 2026-04-24
 covers:
   - "[[entities/statement-detail-panel]]"
   - "[[entities/accounts-hub-screen]]"
   - "[[entities/accounts-notifiers]]"
+  - "[[flows/payment-recording-from-statement]]"
 related:
   - "[[issues/statement-panel-missing-payment-button]]"
 ---
 
-# Ödeme Kayıt + Plaka Bazlı Takip
+# Ödeme Kayıt + Plaka Bazlı Takip — RESOLVED
+
+## Çözüm Özeti (Sprint 6a + Sprint 6b-A, 2026-04-24)
+
+| Bölüm | Karar | Dosya |
+|---|---|---|
+| Ödeme alma (S6.1) | ✅ `_handlePayment` bağlandı — 4 provider refresh | `statement_detail_panel.dart:178` |
+| Plaka takibi (S6.2) | ✅ Seçenek **A** (pragmatik) — modal'a opsiyonel plaka alanı + description prepend | `payment_record_modal.dart:_submit` |
+
+ADR: `C:\Users\Win11\.claude\plans\agile-noodling-crown-s6b-adr.md`.
+
+Plan'ın orijinal C seçeneği (Sale→SaleItem→Vehicle zinciri) W2 Sales ingest'te çürüdü — FK yok, Vehicle kataloğunda plate yok. B/C için yeni schema gerekir, şimdilik A yeterli.
+
+**Kısıtlar (A kabul edildi)**: plaka arama/filter yok, rapor yok. Veri birikince B/C değerlendirilir.
 
 ## Senaryo
 Yedek parça POS'unda:

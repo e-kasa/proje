@@ -43,6 +43,7 @@ class _PaymentRecordContentState extends ConsumerState<_PaymentRecordContent> {
   final _descCtrl = TextEditingController();
   final _refCtrl = TextEditingController();
   final _bankCtrl = TextEditingController();
+  final _plateCtrl = TextEditingController();
   String _paymentType = 'CASH';
 
   @override
@@ -51,7 +52,18 @@ class _PaymentRecordContentState extends ConsumerState<_PaymentRecordContent> {
     _descCtrl.dispose();
     _refCtrl.dispose();
     _bankCtrl.dispose();
+    _plateCtrl.dispose();
     super.dispose();
+  }
+
+  /// Sprint 6b A — plaka normalizasyonu: boşluk/kısa çizgi temizle, uppercase.
+  /// "34 abc-123" → "34ABC123". Yedek parça sektörü arama tutarlılığı için
+  /// en azından description içinde stabil string üretelim.
+  String _normalizePlate(String raw) {
+    return raw
+        .replaceAll(RegExp(r'[\s\-]+'), '')
+        .toUpperCase()
+        .trim();
   }
 
   void _submit() {
@@ -59,12 +71,23 @@ class _PaymentRecordContentState extends ConsumerState<_PaymentRecordContent> {
       AppToast.warning(context, t('accounts.amount_required'));
       return;
     }
+
+    // Plaka varsa description başına "Plaka: XX" prepend — Sprint 6b seçenek A.
+    // Backend Payment.description alanı zaten var; ekstrede _TxRow `description`
+    // alanını render ediyor, plaka otomatik görünür.
+    String? desc = _descCtrl.text.isNotEmpty ? _descCtrl.text : null;
+    final plateRaw = _plateCtrl.text.trim();
+    if (plateRaw.isNotEmpty) {
+      final plate = _normalizePlate(plateRaw);
+      desc = desc == null ? 'Plaka: $plate' : 'Plaka: $plate | $desc';
+    }
+
     Navigator.pop(context, {
       'amount': double.parse(_amountCtrl.text),
       'paymentType': _paymentType,
       'bankName': _bankCtrl.text.isNotEmpty ? _bankCtrl.text : null,
       'referenceNo': _refCtrl.text.isNotEmpty ? _refCtrl.text : null,
-      'description': _descCtrl.text.isNotEmpty ? _descCtrl.text : null,
+      'description': desc,
     });
   }
 
@@ -194,6 +217,19 @@ class _PaymentRecordContentState extends ConsumerState<_PaymentRecordContent> {
                 hintText: refHint,
                 prefixIcon:
                     const Icon(Icons.tag, color: AppColors.info),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _plateCtrl,
+              textCapitalization: TextCapitalization.characters,
+              decoration: InputDecoration(
+                labelText: t('accounts.vehicle_plate_label'),
+                hintText: t('accounts.vehicle_plate_hint'),
+                prefixIcon: const Icon(Icons.directions_car,
+                    color: AppColors.textMuted),
                 border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10)),
               ),

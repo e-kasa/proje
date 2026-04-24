@@ -38,4 +38,14 @@ public class SaleRequest {
     private BigDecimal paidAmount;
 
     private String notes;
+
+    /**
+     * Kredi limiti aşım durumunda override onayı.
+     * Sadece ADMIN veya STORE_ADMIN rollerine sahip kullanıcılar set edebilir.
+     * false/null → limit aşımında satış reddedilir (BUSINESS exception).
+     * true + yetkili rol → satış geçer, audit log'a yazılır.
+     * true + yetkisiz rol → 403/BUSINESS reddi (client defansif; UI butonu zaten göstermez).
+     */
+    @Builder.Default
+    private Boolean overrideCreditLimit = false;
 }

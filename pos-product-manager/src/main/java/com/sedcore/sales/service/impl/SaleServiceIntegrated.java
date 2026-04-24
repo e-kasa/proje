@@ -35,6 +35,9 @@ import com.towpen.base.security.BaseDbServiceImp;
 import com.towpen.base.security.ISessionInstanceService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -134,7 +137,8 @@ public class SaleServiceIntegrated
         if (request.getCustomerId() != null) {
             customer = customerRepository.findById(request.getCustomerId())
                     .orElseThrow(() -> new RuntimeException("Müşteri bulunamadı: " + request.getCustomerId()));
-            checkCreditLimit(customer, grandTotal);
+            checkCreditLimit(customer, grandTotal,
+                    Boolean.TRUE.equals(request.getOverrideCreditLimit()));
         }
 
         // 4. SALE OLUŞTUR
@@ -414,16 +418,66 @@ public class SaleServiceIntegrated
 
     // ─── YARDIMCI METODLAR ────────────────────────────────────────────────────
 
-    private void checkCreditLimit(Customer customer, BigDecimal saleAmount) {
+    /**
+     * Kredi limiti kontrolü. Sprint 5 (P2.5) — override mekanizması eklendi.
+     *
+     * Mantık:
+     *   1. Limit 0 veya null → check devre dışı (unlimited).
+     *   2. Projected balance (currentBalance + saleAmount) > creditLimit:
+     *      a) override=false → BUSINESS exception, satış reddedilir.
+     *      b) override=true  + kullanıcı ADMIN|STORE_ADMIN → audit log + pass.
+     *      c) override=true  + yetkisiz rol → BUSINESS exception (UI zaten göstermemeli; defansif).
+     *
+     * Not: Authority-based granülarite (CREDIT_LIMIT_OVERRIDE) gelecekteki improvement; şu an
+     * JWT filter'ı authority yüklemiyor, role-based çözüm pragmatik.
+     */
+    private void checkCreditLimit(Customer customer, BigDecimal saleAmount, boolean overrideRequested) {
         if (customer.getCreditLimit() == null || customer.getCreditLimit().compareTo(BigDecimal.ZERO) == 0) return;
         CustomerAccount account = customerAccountRepository.findByCustomer(customer).orElse(null);
         BigDecimal currentBalance = account != null ? account.getCurrentBalance() : BigDecimal.ZERO;
         BigDecimal wouldBe = currentBalance.add(saleAmount);
-        if (wouldBe.compareTo(customer.getCreditLimit()) > 0) {
-            BigDecimal available = customer.getCreditLimit().subtract(currentBalance);
-            throw new RuntimeException(String.format(
-                    "Kredi limiti yetersiz! Kullanılabilir: %s TL, İstenen: %s TL", available, saleAmount));
+
+        if (wouldBe.compareTo(customer.getCreditLimit()) <= 0) {
+            return; // limit içinde
         }
+
+        BigDecimal available = customer.getCreditLimit().subtract(currentBalance);
+        String limitMsg = String.format(
+                "Kredi limiti yetersiz! Kullanılabilir: %s TL, İstenen: %s TL",
+                available, saleAmount);
+
+        if (!overrideRequested) {
+            throw new RuntimeException(limitMsg + " (ADMIN/STORE_ADMIN override gerekli)");
+        }
+
+        if (!currentUserHasCreditLimitOverride()) {
+            throw new RuntimeException(limitMsg + " — override yetkisi yok");
+        }
+
+        log.warn("Kredi limiti OVERRIDE: customerId={}, kullanici={}, limit={}, projected={}, aşım={}",
+                customer.getId(),
+                currentUsernameOrSystem(),
+                customer.getCreditLimit(),
+                wouldBe,
+                wouldBe.subtract(customer.getCreditLimit()));
+    }
+
+    private boolean currentUserHasCreditLimitOverride() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getAuthorities() == null) return false;
+        for (GrantedAuthority a : auth.getAuthorities()) {
+            String role = a.getAuthority();
+            if ("ROLE_ADMIN".equals(role) || "ROLE_STORE_ADMIN".equals(role)
+                    || "CREDIT_LIMIT_OVERRIDE".equals(role)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String currentUsernameOrSystem() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return (auth != null && auth.getName() != null) ? auth.getName() : "SYSTEM";
     }
 
     private CustomerAccount updateCustomerAccount(Customer customer, Sale sale) {

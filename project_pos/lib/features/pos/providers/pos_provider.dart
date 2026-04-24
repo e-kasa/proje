@@ -689,7 +689,10 @@ class PosNotifier extends StateNotifier<PosState> {
       ? state.copyWith(clearTransferReference: true)
       : state.copyWith(transferReference: v);
 
-  Future<bool> submitSale() async {
+  /// [overrideCreditLimit] true ise backend'e kredi limiti override onayı gönderir.
+  /// Backend yetki kontrolü yapar (ADMIN/STORE_ADMIN); yetkisiz kullanıcı için
+  /// client butonu zaten göstermez, ama defansif reddetme sunucuda çalışır.
+  Future<bool> submitSale({bool overrideCreditLimit = false}) async {
     if (!state.canSubmit) return false;
     state = state.copyWith(isSubmitting: true, clearError: true);
     try {
@@ -744,6 +747,7 @@ class PosNotifier extends StateNotifier<PosState> {
           'locationId': state.activeLocationId,
         if (state.activeLocationId != null && state.activeLocationId!.isNotEmpty)
           'locationType': state.activeLocationType,
+        if (overrideCreditLimit) 'overrideCreditLimit': true,
         'items': state.cartItems.map((item) => {
           'variantId': item.variantId,
           'quantity': item.quantity,

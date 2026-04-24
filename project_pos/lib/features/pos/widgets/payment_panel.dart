@@ -496,7 +496,8 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel>
                   onTap: canPay
                       ? () async {
                           HapticFeedback.mediumImpact();
-                          final success = await notifier.submitSale();
+                          final success = await _submitWithCreditLimitFallback(
+                              notifier);
                           if (success && mounted) {
                             Navigator.pop(context);
                             _showSuccessSheet(context);
@@ -562,6 +563,43 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel>
   }
 
   // ─── Success Bottom Sheet ────────────────────────────────────────────────────
+
+  /// Sprint 5 (P2.5) — kredi limiti override flow.
+  ///
+  /// İlk submit backend'den "Kredi limiti yetersiz... override gerekli" mesajıyla
+  /// başarısız olursa: kullanıcıya confirm dialog göster, onaylarsa
+  /// overrideCreditLimit=true ile tekrar çağır. Backend rol check yapar;
+  /// yetkisiz kullanıcı 2. çağrıda da reddedilir (defansif).
+  Future<bool> _submitWithCreditLimitFallback(PosNotifier notifier) async {
+    final success = await notifier.submitSale();
+    if (success) return true;
+
+    final err = ref.read(posProvider).error ?? '';
+    final isLimitError = err.toLowerCase().contains('kredi limiti') ||
+        err.toLowerCase().contains('credit limit');
+    if (!isLimitError || !mounted) return false;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Kredi Limiti Aşılıyor'),
+        content: Text(
+          '$err\n\nADMIN veya Mağaza Yöneticisi yetkisiyle bu satışı onaylamak istiyor musunuz?',
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('İptal')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Override ile devam')),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return false;
+    return await notifier.submitSale(overrideCreditLimit: true);
+  }
 
   void _showSuccessSheet(BuildContext context) {
     final posState = ref.read(posProvider);

@@ -1421,6 +1421,8 @@ VALUES
     ('bnd-s108-0000-0000-0000-000000000108', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'stock.warehouse', 'Depo', 'Warehouse'),
     ('bnd-s109-0000-0000-0000-000000000109', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'stock.warehouse_breakdown', 'Depo Dağılımı', 'Warehouse Breakdown'),
     ('bnd-s110-0000-0000-0000-000000000110', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'stock.warehouse_stock', 'Depo Stoğu', 'Warehouse Stock'),
+    ('bnd-s111-0000-0000-0000-000000000111', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'stock.in_transit', 'Transferde', 'In Transit'),
+    ('bnd-s112-0000-0000-0000-000000000112', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'stock.depleted', 'Tükendi', 'Sold Out'),
 
     -- ── PRODUCT (eksik — wizard, add_product vb.) ─────────────────
     ('bnd-pd001-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.add_first_image', 'İlk görseli ekleyin', 'Add first image'),

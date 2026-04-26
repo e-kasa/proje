@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/utils/i18n_helper.dart';
 
 /// Urun grid karti — POS ekraninda urunleri kompakt kart olarak gosterir.
 ///
 /// Icerik: isim, fiyat (TL), stok badge, kategori bilgisi, SKU.
 /// Tiklandiginda [onTap] callback cagirilir (sepete ekleme veya varyant secimi).
-class ProductGridItem extends StatelessWidget {
+///
+/// Sprint 12 W1.3: hardcoded "Tükendi"/"Transferde" → i18n key'leri.
+/// Sprint 12 W2+: bu widget [ProductCard] (mode: posSale) ile değiştirilecek.
+class ProductGridItem extends ConsumerWidget {
   final Map<String, dynamic> product;
   final NumberFormat currencyFormat;
   final VoidCallback onTap;
@@ -19,7 +24,8 @@ class ProductGridItem extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
     final name = product['name']?.toString() ?? '';
     final price = (product['sellingPrice'] as num?)?.toDouble() ??
         (product['basePrice'] as num?)?.toDouble() ??
@@ -108,7 +114,7 @@ class ProductGridItem extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   // Stok badge
-                  _buildStockBadge(myStoreStock, isOutOfStock, isTransferOnly),
+                  _buildStockBadge(t, myStoreStock, isOutOfStock, isTransferOnly),
                 ],
               ),
 
@@ -170,7 +176,8 @@ class ProductGridItem extends StatelessWidget {
     );
   }
 
-  Widget _buildStockBadge(int stock, bool isOutOfStock, bool isTransferOnly) {
+  Widget _buildStockBadge(
+      String Function(String) t, int stock, bool isOutOfStock, bool isTransferOnly) {
     Color bgColor;
     Color textColor;
     String label;
@@ -178,11 +185,11 @@ class ProductGridItem extends StatelessWidget {
     if (isOutOfStock) {
       bgColor = AppColors.bgDanger;
       textColor = AppColors.danger;
-      label = 'Tükendi';
+      label = t('stock.depleted');
     } else if (isTransferOnly) {
       bgColor = AppColors.bgWarning;
       textColor = AppColors.warning;
-      label = 'Transferde';
+      label = t('stock.in_transit');
     } else if (stock <= 5) {
       bgColor = AppColors.bgWarning;
       textColor = AppColors.warning;

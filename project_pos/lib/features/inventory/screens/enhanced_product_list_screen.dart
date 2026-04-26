@@ -13,6 +13,9 @@ import 'package:project_pos/core/utils/app_logger.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/widgets/quick_add_product_modal.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+// Sprint 12: ortak kart component (W2'de _buildListCard tam migration)
+// ignore: unused_import
+import 'package:project_pos/core/widgets/product_card.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 
 // ── Sıralama seçenekleri ──────────────────────────────────────────────────────

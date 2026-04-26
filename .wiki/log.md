@@ -11,6 +11,51 @@ Append-only olay kaydı. **En yeni üste**.
 
 ## Olaylar
 
+## [2026-04-27] query | ürün menüsü kartları + ürün detay ekranları revize plan
+
+Kullanıcı talebi: "Ürün menüsü ekranındaki kartlar ve ürün detayındaki bütün ekranlarda kullanım, görünüm ve doğru akışlarla revize edilecek planı çıkaralım."
+
+**Yöntem:** 3 paralel Explore agent (wiki sweep + POS scan + detail screens scan) + AskUserQuestion ile 4 scope kararı netleştirildi (POS+Inventory paralel + 4 detay revize alanı + büyük sprint 3-4 hafta + audit & synthesis ikili dosyalama).
+
+**Bulgular özeti:**
+- 2 menü ekranı (POS `pos_screen.dart` + `product_grid_item.dart`; Inventory `enhanced_product_list_screen.dart` 1,774 LOC)
+- 6+ farklı ürün detay yolu (Wizard 4,758 LOC, Detail 2,872 LOC, Batch 6,891 LOC, Quick Add, Bulk Import, Edit Modal)
+- 10 UX/UI sorun: Edit flow KIRIK (kod yok), 4+ ekleme yolu disambiguation YOK, kart duplikasyonu, hardcoded TR/threshold, reference data drift, sektör tutarsızlığı, pagination yok
+
+**Geri-dosyalama (3 wiki sayfası):**
+- `.wiki/sources/code-refs/2026-04-27-product-screens-audit.md` (yeni — mevcut durum + 10 sorun)
+- `.wiki/syntheses/product-screens-revision-plan.md` (yeni — 4 hafta breakdown, 8 hedef sonuç)
+- `.wiki/index.md` 2 yeni link (Sources/Sprint öncesi audit'ler + Syntheses/Sprint Plans)
+
+**Sprint plan dosyası:** `.claude/plans/polymorphic-gathering-flute.md` (Sprint 12 detay implementation)
+
+**Onay:** ExitPlanMode user approved (mega scope tüm 4 detay alanı + büyük sprint).
+
+## [2026-04-27] sprint-11d | Plaka picker autocomplete (POS + Payment modal) ✅
+
+POS satış sepeti ve Payment modal SPECIFIC modu plaka seçimleri **inline TextField + autocomplete** stiline geçti. Dropdown'lar kaldırıldı; çok plakalı müşterilerde (filo/taksi/transport) prefix-search ile hızlı seçim.
+
+**Motivasyon:** Sprint 10/11c dropdown'ları 1-3 plakalı müşteri için yeterliydi; 10+ plakalı kayıtlarda scroll yorucu. Backend'de zaten `customerVehicleSearchProvider` (JPQL prefix `LIKE 'X%'`) hazırdı, UI bağlantısı eksikti.
+
+**Yeni dosya (1):**
+- `customers/widgets/vehicle_search_field.dart` — ortak `VehicleSearchField` widget. TextField + 300 ms debounce + inline suggestion overlay. Boş query'de tüm plakalar (`customerVehiclesProvider`), dolu query'de prefix search (`customerVehicleSearchProvider`). `allowClear`, `dense`, `trailing` slot, `selectedVehicle`/`onSelected` API.
+
+**Değişen dosyalar (2):**
+- `pos/widgets/customer_vehicle_picker.dart` — Dropdown + InputDecorator yapısı silindi, doğrudan `VehicleSearchField` döner; "+ yeni plaka" `trailing` slot'unda durur (44x44 primary card)
+- `accounts/screens/payment_record_modal.dart` — `_buildVehicleFilter()` Container+DropdownButton yerine `VehicleSearchField(dense: true, allowClear: true)` döner; state `_selectedVehicleId` + `_selectedVehiclePlate` çiftinden `Map<String,dynamic>? _selectedVehicle` tek field'a indirgendi; `_buildOpenSalesPicker` ve `_submit` payload'ı bu Map'ten id/plateNormalized derive eder; `customer_vehicles_provider` import kaldırıldı (artık widget içinde)
+
+**Backend dokunulmadı.** Sprint 9'dan beri `GET /customers/{id}/vehicles/search?q=` zaten vardı.
+
+**UX detayları:**
+- Focus → tüm plakalar suggestion açılır (boş query)
+- Yazma → 300 ms debounce → server-side LIKE 'X%' (i18n key `vehicle.search_placeholder` placeholder)
+- Suggestion item: plaka (bold) + altında `make model` (varsa, küçük gri)
+- Boş sonuç → `common.no_records` mesajı
+- Seçim → input metni `plateDisplay`, suggestion kapanır, focus düşer
+- × ikonu (suffix) `allowClear: true` ise seçim varken belirir → `onSelected(null)` reset
+
+**Verification:** `flutter analyze` 0 error (pre-existing 18 deprecation/style info kalır).
+
 ## [2026-04-27] sprint-11c | Plaka filtresi modal içine taşındı (UX refactor) ✅
 
 Sprint 11'de eklenen `VehiclePlateSearchBar` (statement panel header dropdown) + `selectedVehicleProvider` kaldırıldı. Plaka picker artık `PaymentRecordModal` içinde **SPECIFIC** radyosu seçilince (parçacı sektörde) açık satışlar listesinin üstünde görünür.

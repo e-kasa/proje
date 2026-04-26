@@ -52,6 +52,9 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 - [[sources/code-refs/2026-04-25-openapi-codegen-pattern]] — typed client codegen
 - [[sources/code-refs/2026-04-25-ledger-version-adr]] — concurrency ADR
 
+### Code-refs — Sprint öncesi audit'ler
+- [[sources/code-refs/2026-04-27-product-screens-audit]] — ürün menüsü kartları + ürün detay ekranları envanter (Sprint 12 öncesi)
+
 ### Code-refs — migration (eski tarihli code snapshots)
 - [[sources/code-refs/2026-04-17-units-employee-modern]]
 - [[sources/code-refs/2026-04-21-accounts-hub-screens]]
@@ -147,6 +150,7 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 - [[entities/customer-vehicle]] — yeni entity (Sprint 9)
 - Sprint 11 frontend entegrasyon: `customerOpenSalesProvider` tuple key (`CustomerOpenSalesKey(customerId, vehiclePlate)`) + `PaymentRecordModal` `customerVehicleId` payload
 - Sprint 11c (2026-04-27): plaka filtresi `StatementDetailPanel` header'dan `PaymentRecordModal` SPECIFIC modu içine taşındı; `selectedVehicleProvider` + `VehiclePlateSearchBar` silindi (header sade, plaka yalnız belirli alışveriş seçilince picker üstünde)
+- Sprint 11d (2026-04-27): POS picker + Payment modal plaka seçimleri dropdown'dan **autocomplete TextField + debounced server-side prefix search**'e geçti; ortak `VehicleSearchField` widget (`customers/widgets/`)
 
 ### Sprint 7
 - [[decisions/payment-allocation-from-day-1]] — Sale-Payment many-to-many baştan (B1↔B3 mimari karar)
@@ -191,6 +195,9 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 > **Not (overlap):** `-from-claude-wiki` suffix'li dosyalar `.claude/wiki/` migration'ından geldi ve mevcut sayfa ile içerik farklılığı tespit edildi (MERGE_NEEDED). Manuel inceleme + birleştirme gelecek bir bakım iterasyonunda yapılacak.
 
 ## Syntheses (Üst Düzey Genel Bakış)
+
+### Sprint Plans
+- [[syntheses/product-screens-revision-plan]] — Sprint 12: ürün menüsü kartları + ürün detay ekranları tam refactor (3-4 hafta, 4 hedef alan)
 
 ### Modül & Mimari Özet
 - [[syntheses/codebase-snapshot-2026-04-25]] — kod ↔ wiki uyum + drift özeti (2026-04-25)

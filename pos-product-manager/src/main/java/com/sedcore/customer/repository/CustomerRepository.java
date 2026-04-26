@@ -32,9 +32,10 @@ public interface CustomerRepository extends BaseDaoRepository<Customer> {
         "     OR LOWER(c.name) LIKE LOWER(CONCAT('%', :q, '%')) " +
         "     OR (c.phone IS NOT NULL AND c.phone LIKE CONCAT('%', :q, '%')) " +
         "     OR (c.email IS NOT NULL AND LOWER(c.email) LIKE LOWER(CONCAT('%', :q, '%'))))")
-    List<Customer> search(@Param("q") String q, @Param("active") Boolean active);
+    List<Customer> findBysearch(@Param("q") String q, @Param("active") Boolean active);
 
     long countByIsActive(Boolean isActive);
 
     long countByCustomerType(CustomerType type);
+
 }

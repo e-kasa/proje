@@ -8,6 +8,8 @@ import com.sedcore.sales.entity.SaleReturn;
 import com.sedcore.sales.entity.SaleReturnItem;
 import com.sedcore.customer.entity.Customer;
 import com.sedcore.customer.entity.CustomerAccount;
+import com.sedcore.customer.entity.CustomerVehicle;
+import com.sedcore.customer.service.CustomerVehicleService;
 import com.sedcore.inventory.entity.StockMovement;
 import com.sedcore.finance.entity.AccountTransaction;
 import com.sedcore.common.enums.StockMovementType;
@@ -64,6 +66,7 @@ public class SaleServiceIntegrated
     @Autowired private SaleReturnRepository        saleReturnRepository;
     @Autowired private SaleReturnItemRepository    saleReturnItemRepository;
     @Autowired private ISessionInstanceService     sessionInstanceService;
+    @Autowired private CustomerVehicleService      customerVehicleService;
 
     @Override
     public Class<?> getDTOClassForService() {
@@ -141,9 +144,24 @@ public class SaleServiceIntegrated
                     Boolean.TRUE.equals(request.getOverrideCreditLimit()));
         }
 
+        // 3b. PLAKA (Sprint 9 — parçacı sektör opsiyonel)
+        CustomerVehicle customerVehicle = null;
+        String vehiclePlateSnapshot = null;
+        if (request.getCustomerVehicleId() != null && !request.getCustomerVehicleId().isBlank()) {
+            customerVehicle = customerVehicleService.getEntity(request.getCustomerVehicleId());
+            // Tutarlılık: plaka müşteriye mi ait?
+            if (customer == null || customerVehicle.getCustomer() == null
+                    || !customer.getId().equals(customerVehicle.getCustomer().getId())) {
+                throw new RuntimeException("Seçilen plaka bu müşteriye ait değil");
+            }
+            vehiclePlateSnapshot = customerVehicle.getPlateNormalized();
+        }
+
         // 4. SALE OLUŞTUR
         Sale sale = Sale.builder()
                 .customer(customer)
+                .customerVehicle(customerVehicle)
+                .vehiclePlateSnapshot(vehiclePlateSnapshot)
                 .saleNumber(request.getSaleNumber())
                 .saleDate(LocalDateTime.now())
                 .subtotalAmount(subtotal)

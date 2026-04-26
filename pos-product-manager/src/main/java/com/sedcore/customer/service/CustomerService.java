@@ -1,5 +1,6 @@
 package com.sedcore.customer.service;
 
+import com.sedcore.common.enums.CustomerType;
 import com.sedcore.customer.entity.Customer;
 import com.sedcore.finance.model.AccountTransactionResponse;
 import com.sedcore.customer.model.CustomerAccountResponse;
@@ -22,4 +23,10 @@ public interface CustomerService extends BaseDbService<Customer> {
     CustomerAccountResponse recordPayment(String customerId, CustomerPaymentDto dto);
 
     CustomerAccountResponse updateCreditLimit(String customerId, BigDecimal newLimit);
+
+    List<Customer> search(String search, Boolean isActive);
+
+    long countByIsActive(Boolean aTrue);
+
+    long countByCustomerType(CustomerType customerType);
 }

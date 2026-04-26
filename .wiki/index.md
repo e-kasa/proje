@@ -113,6 +113,8 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 
 ### Tanı / Troubleshooting
 - [[concepts/troubleshooting-customer-missing-in-accounts-hub]] — POS'ta görünüp AccountsHub'da görünmeyen müşteri (5 olası neden)
+- ⚠️ [[concepts/multi-company-per-user-architecture]] — DOĞRU yorum: sistem multi-firma per-user, "firma bazlı arama" UI filter ile
+- ❌ [[syntheses/tenant-leak-controller-direct-repository-2026-04-26]] — DEPRECATED (yanlış tenant-leak yorumu, hot-fix v3 revert edildi)
 
 ### Cari Hesap & Ledger
 - [[concepts/drift]] · [[concepts/ledger-vs-denormalize]] · [[concepts/write-through-cache]] · [[concepts/denormalization-with-reconcile]] · [[concepts/append-only]] · [[concepts/payment-allocation-pattern]] (Sprint 7)
@@ -137,7 +139,10 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 - [[decisions/2026-04-13-ddl-create-strategy]] · [[decisions/2026-04-13-store-admin-rename]] · [[decisions/2026-04-13-location-id-unification]]
 
 ### Sprint 6b
-- [[decisions/2026-04-24-vehicle-plate-tracking-option-a]] — plaka takibi pragmatik karar (description prepend)
+- [[decisions/2026-04-24-vehicle-plate-tracking-option-a]] — plaka takibi pragmatik karar (description prepend) **[superseded by vehicle-plate-end-to-end-design]**
+
+### Sprint 9-11 — Plaka Takibi Bütünsel
+- [[syntheses/vehicle-plate-end-to-end-design-2026-04-26]] — Opsiyon C: CustomerVehicle entity + sektör-aware POS+Accounts entegrasyonu (3 sprint)
 
 ### Sprint 7
 - [[decisions/payment-allocation-from-day-1]] — Sale-Payment many-to-many baştan (B1↔B3 mimari karar)

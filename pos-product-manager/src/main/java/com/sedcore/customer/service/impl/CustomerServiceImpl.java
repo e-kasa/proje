@@ -1,5 +1,6 @@
 package com.sedcore.customer.service.impl;
 
+import com.sedcore.common.enums.CustomerType;
 import com.sedcore.finance.entity.AccountTransaction;
 import com.sedcore.customer.entity.Customer;
 import com.sedcore.customer.entity.CustomerAccount;
@@ -152,5 +153,20 @@ public class CustomerServiceImpl
         save(customer);
 
         return customerAccountService.recalculate(customerId);
+    }
+
+    @Override
+    public List<Customer> search(String search, Boolean isActive) {
+        return dao.findBysearch(search, isActive);
+    }
+
+    @Override
+    public long countByIsActive(Boolean aTrue) {
+        return dao.countByIsActive(aTrue);
+    }
+
+    @Override
+    public long countByCustomerType(CustomerType customerType) {
+        return dao.countByCustomerType(customerType);
     }
 }

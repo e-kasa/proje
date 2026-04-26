@@ -11,6 +11,104 @@ Append-only olay kaydı. **En yeni üste**.
 
 ## Olaylar
 
+## [2026-04-26] design | plaka bazlı satış-tahsilat bütünsel — Opsiyon C tasarımı
+
+Kullanıcı senaryosu: parçacı sektörde satış sırasında plaka kayıt + müşteri görünümünde plaka arama + tahsilatta plaka bazlı geçmiş seçimi. Geri-dosyalama: [[syntheses/vehicle-plate-end-to-end-design-2026-04-26]].
+
+**Tetikleyici:** [[decisions/2026-04-24-vehicle-plate-tracking-option-a]] "Yeniden Değerlendirme Kriterleri" sağlandı — kullanıcı multi-plaka senaryosunu kanıtladı. Opsiyon A (description prepend) yetersiz, **Opsiyon C** (CustomerVehicle entity) gerekli.
+
+**Tasarım özeti:**
+- Backend: `CustomerVehicle` entity (`customer_id` + `plate_normalized` UNIQUE) + `Sale.customerVehicleId` FK + `Sale.vehiclePlateSnapshot` denormalize cache
+- Endpoint: `/customers/{id}/vehicles` CRUD + search; `/sales?vehiclePlate=Y` filter
+- Frontend: Sektör-aware widget'lar (`CustomerVehiclePicker`, `VehiclePlateSearchBar`, `AddCustomerVehicleModal`); sektör=autoParts kontrolü ile koşullu render
+- Migration: mevcut `Payment.description` "Plaka: XX" prepend'lerini CustomerVehicle'a upsert (idempotent, dry-run desteği)
+- Reconcile: yeni invariant `Sale.vehiclePlateSnapshot == customerVehicle.plateNormalized`
+
+**Sprint roadmap (~7-10 gün):**
+- Sprint 9: Backend foundation (entity + repo + service + endpoint + Sale FK)
+- Sprint 10: Frontend POS (CustomerVehiclePicker + cart_panel + AddVehicleModal)
+- Sprint 11: Accounts tahsilat (VehiclePlateSearchBar + statement_detail_panel + migration)
+
+**Yeni backend servisler:** 8 yeni Java class + 5 değişen + 2 migration script + 1 reconcile invariant.
+**Yeni frontend Dart dosyalar:** 5 yeni + 5 değişen.
+
+Done kriteri 7 senaryo: butik sektörde plaka widget'ları görünmez (sektör isolation).
+
+## [2026-04-26] correction | hot-fix-v3 YANLIŞ YORUM — REVERTED
+
+Kullanıcı düzeltti: "yanlış geliştirme yapıldı. sistemimizde firma bazlı arama yapılır." Önceki tenant-leak yorumu HATALI — sistem multi-firma per-user mimarisi:
+
+- Bir kullanıcı birden fazla firmaya sahip olabilir (SEDCORE otomotiv + SEDCORE1 butik)
+- Backend endpoint'leri default tüm firmalardan döner
+- "Firma bazlı arama" = frontend UI'dan companyCode filter
+
+**Revert (git checkout HEAD --):**
+- `CustomerService.search()` interface method (eklenmişti — geri alındı)
+- `CustomerServiceImpl.search()` impl (geri alındı)
+- `CustomerControllerImpl.list` service yönlendirme (geri alındı, repository direkt kalmaya devam ediyor — DOĞRU)
+
+Backend Maven compile (revert sonrası): **exit 0** ✅
+
+**Wiki düzeltme:**
+- Yeni: [[concepts/multi-company-per-user-architecture]] — DOĞRU mimari açıklaması
+- Deprecated: [[syntheses/tenant-leak-controller-direct-repository-2026-04-26]] — yanlış yorum, header DEPRECATED + supersedes link
+- Index: tenant-leak link'i deprecated, multi-company-per-user-architecture eklendi
+
+**Açık soru (kullanıcıdan netleştirme bekleniyor):**
+AccountsListService'in `selectedCompanyCode` filter aktif tutması doğru mu? (önceki response'ta sadece SEDCORE 4 kayıt döndü.) Eğer "tüm firmalar" doğru ise oradaki filter da kaldırılmalı. Şu an dokunulmadı.
+
+## [2026-04-26] 🚨 hot-fix-v3 | KRİTİK: multi-tenant leak — CustomerController repository bypass
+
+> ⚠️ Bu girdideki "tenant leak" yorumu YANLIŞ olduğu sonradan tespit edildi (bkz. üstteki correction). Hot-fix v3 revert edildi. Detay: [[concepts/multi-company-per-user-architecture]]
+
+Kullanıcı `/customers?isActive=true` response'u paylaştı: **2 farklı tenant'tan kayıt** (SEDCORE Usta+Adem, SEDCORE1 Moda Butik+**Zeynep**) → tenant izolasyon kırığı kanıtlandı.
+
+Geri-dosyalama: [[syntheses/tenant-leak-controller-direct-repository-2026-04-26]] (KRİTİK).
+
+**Kök neden:** [[concepts/hibernate-filter-runtime]] §Critical Bulgular #4 gerçekleşti. `CompanyHibernateFilterActivator` AOP pointcut `com.sedcore..service..*` — sadece service layer'da advice tetiklenir. CustomerControllerImpl direkt `customerRepository.search()` çağırdığı için (service bypass) Hibernate `@Filter("filterByCompanyCode")` aktif edilmedi → tüm tenant'lar geliyordu.
+
+**Karşıt kanıt:** AccountsListService aynı oturumda sadece SEDCORE 4 kayıt döndürdü (önceki response 16:19) çünkü `@Service` annotated → AOP advice tetikleniyor.
+
+**Uygulanan Düzeltme (Hot-Fix v3):**
+- F1: `CustomerService.search(String, Boolean)` interface method eklendi
+- F2: `CustomerServiceImpl.search` → `dao.search(q, isActive)` (service-layer çağrı)
+- F3: `CustomerControllerImpl.list` → `customerService.search(...)` (repository direct yerine)
+- Backend Maven compile: **exit 0** ✅
+
+**Beklenen davranış (restart sonrası):**
+- SEDCORE oturumu → sadece SEDCORE müşterileri
+- SEDCORE1 oturumu → sadece SEDCORE1 (Zeynep + Moda Butik)
+- Zeynep'in POS'ta SEDCORE oturumunda görünmesi tenant leak idi; artık görünmemeli (doğru davranış)
+
+**Kalan Risk (Sprint 9 acil audit):**
+- 7+ dosya / 13+ callsite hâlâ `customerRepository.findById/count`, `accountTransactionRepository.findCustomerStatement` direkt çağırıyor → cross-tenant ID erişimi açık
+- Sistemik çözüm: AOP pointcut'ı controller'a yay (Seçenek A) + service üzerinden zorla (Seçenek B)
+
+## [2026-04-26] query | zeynep DB'de yok kanıtlandı — backend response 4 kayıt
+
+Kullanıcı backend response paylaştı: `hasMore=false`, 4 kayıt (oto1 tenant), Zeynep YOK. Geri-dosyalama: [[syntheses/zeynep-customer-not-in-db-2026-04-26]].
+
+**Önceki hipotezler çürütüldü:**
+- ❌ Pagination (hasMore=false zaten tüm kayıtları döndürdü)
+- ❌ Filter (4 kayıttan 2 customer var, filter doğru)
+- ❌ Endpoint tutarsızlığı (POS Cart Panel ve AccountsListService AYNI `customerRepository.search(null, true)` kullanıyor)
+
+**4 yeni senaryo:**
+- A: POS yeni müşteri eklerken backend POST başarısız oldu → frontend in-memory cache, DB'ye gitmedi
+- B: Zeynep farklı tenant'ta (SEDCORE1 vs SEDCORE)
+- C: `is_active=false` veya `is_deleted=true`
+- D: Kullanıcı yanılgısı (POS'ta başka müşteri ile karıştırıyor)
+
+**3-adım tanı:**
+1. SQL: `SELECT * FROM customers WHERE LOWER(name) LIKE '%zeynep%'`
+2. POS Cart Panel kapat-aç (state cache vs DB)
+3. JWT decode → `selectedCompanyCode` ile `customer.company_code` karşılaştır
+
+**Sistemik kalıcı çözüm (Sprint 9):**
+- E1: AccountEditForm save sonrası `ref.invalidate(accountsListProvider)` audit
+- E2: Backend POST hata durumunda Flutter explicit AppToast.error
+- E3: Cart Panel _CustomerPickerSheet ile AccountsListProvider sync
+
 ## [2026-04-26] hot-fix-v2 | zeynep sorunu sistemik çözüm — pageLimit + auto-prefetch ✅
 
 Kullanıcı talebi: "müşteriyi cari accountunda görmem lazım, sistem stabil çalışmalı". Pagination paradigmasından vazgeçmeden 3 değişiklik:

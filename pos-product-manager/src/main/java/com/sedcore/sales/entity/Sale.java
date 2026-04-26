@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.towpen.base.db.model.TOpenSimpleCompanyEntity;
 import com.sedcore.customer.entity.Customer;
+import com.sedcore.customer.entity.CustomerVehicle;
 import com.sedcore.inventory.entity.StockMovement;
 
 import jakarta.persistence.*;
@@ -110,6 +111,25 @@ public class Sale extends TOpenSimpleCompanyEntity {
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    // ===== PLAKA TAKİBİ (Sprint 9 — Opsiyon C) =====
+
+    /**
+     * Sprint 9 — parçacı sektör senaryosu için müşteri-plaka FK.
+     * Nullable: peşin satış / butik sektör / plaka seçilmediği durumda null.
+     * UI: companySettingProvider.sectorType == 'autoParts' + customer != null → picker görünür.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_vehicle_id")
+    private CustomerVehicle customerVehicle;
+
+    /**
+     * Denormalize cache: müşteri-plakadan plate_normalized snapshot.
+     * Search performansı + tarihsel kayıt (CustomerVehicle silinse bile bu değer kalır).
+     * Reconcile invariant: customerVehicle != null → vehiclePlateSnapshot = customerVehicle.plateNormalized.
+     */
+    @Column(name = "vehicle_plate_snapshot", length = 20)
+    private String vehiclePlateSnapshot;
 
     // ===== HELPER METHODS =====
 

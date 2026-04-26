@@ -6,7 +6,6 @@ import com.sedcore.finance.model.AccountTransactionResponse;
 import com.sedcore.customer.model.CustomerAccountResponse;
 import com.sedcore.customer.model.CustomerDto;
 import com.sedcore.customer.model.CustomerPaymentDto;
-import com.sedcore.customer.repository.CustomerRepository;
 import org.springframework.transaction.annotation.Transactional;
 import com.towpen.base.exceptions.ApiResponse;
 import com.sedcore.customer.service.CustomerService;
@@ -33,7 +32,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CustomerControllerImpl {
 
-    private final CustomerRepository customerRepository;
     private final CustomerService customerService;
     private final EntityAuditHelper entityAuditHelper;
 
@@ -46,7 +44,7 @@ public class CustomerControllerImpl {
             @RequestParam(required = false) Boolean isActive
     ) {
         try {
-            List<Customer> rows = customerRepository.search(search, isActive);
+            List<Customer> rows = customerService.search(search, isActive);
             List<Map<String, Object>> filtered = rows.stream()
                     .map(this::toMap)
                     .collect(Collectors.toList());
@@ -66,7 +64,7 @@ public class CustomerControllerImpl {
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getById(@PathVariable String id) {
         try {
-            var customer = customerRepository.findById(id)
+            var customer = customerService.findById(id)
                 .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
             return ResponseEntity.ok(ApiResponse.success(toMap(customer)));
         } catch (TOpenException e) {
@@ -92,7 +90,7 @@ public class CustomerControllerImpl {
                 .isActive(dto.getIsActive() != null ? dto.getIsActive() : true)
                 .build();
             entityAuditHelper.prepare(customer);
-            customer = customerRepository.save(customer);
+            customer = customerService.save(customer);
             log.info("Müşteri oluşturuldu: {}", customer.getName());
             return ResponseEntity.ok(ApiResponse.success(toMap(customer)));
         } catch (TOpenException e) {
@@ -109,7 +107,7 @@ public class CustomerControllerImpl {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<Map<String, Object>>> update(@PathVariable String id, @RequestBody CustomerDto dto) {
         try {
-            Customer customer = customerRepository.findById(id)
+            Customer customer = customerService.findById(id)
                 .orElseThrow(() -> new RuntimeException("Müşteri bulunamadı: " + id));
             if (dto.getName() != null) customer.setName(dto.getName());
             if (dto.getPhone() != null) customer.setPhone(dto.getPhone());
@@ -124,7 +122,7 @@ public class CustomerControllerImpl {
             if (dto.getRiskStatus() != null) customer.setRiskStatus(dto.getRiskStatus());
             if (dto.getIsActive() != null) customer.setIsActive(dto.getIsActive());
             entityAuditHelper.prepare(customer);
-            customer = customerRepository.save(customer);
+            customer = customerService.save(customer);
             return ResponseEntity.ok(ApiResponse.success(toMap(customer)));
         } catch (TOpenException e) {
 
@@ -140,11 +138,11 @@ public class CustomerControllerImpl {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable String id) {
         try {
-            Customer customer = customerRepository.findById(id)
+            Customer customer = customerService.findById(id)
                 .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
             customer.setIsActive(false); // soft delete
             entityAuditHelper.prepare(customer);
-            customerRepository.save(customer);
+            customerService.save(customer);
             return ResponseEntity.ok(ApiResponse.success(null));
         } catch (TOpenException e) {
 
@@ -160,11 +158,11 @@ public class CustomerControllerImpl {
     @PatchMapping("/{id}/toggle-status")
     public ResponseEntity<ApiResponse<Map<String, Object>>> toggleStatus(@PathVariable String id) {
         try {
-            Customer customer = customerRepository.findById(id)
+            Customer customer = customerService.findById(id)
                 .orElseThrow(() -> new TOpenException(new TOpenMessage(TMessageType.NOT_EXISTS_IN_THE_RECORDS_1006)));
             customer.setIsActive(customer.getIsActive() == null || !customer.getIsActive());
             entityAuditHelper.prepare(customer);
-            customer = customerRepository.save(customer);
+            customer = customerService.save(customer);
             return ResponseEntity.ok(ApiResponse.success(toMap(customer)));
         } catch (TOpenException e) {
 
@@ -182,9 +180,9 @@ public class CustomerControllerImpl {
     @GetMapping("/stats")
     public ResponseEntity<ApiResponse<Map<String, Object>>> stats() {
         try {
-            long active = customerRepository.countByIsActive(Boolean.TRUE);
-            long inactive = customerRepository.countByIsActive(Boolean.FALSE);
-            long corporate = customerRepository.countByCustomerType(CustomerType.CORPORATE);
+            long active = customerService.countByIsActive(Boolean.TRUE);
+            long inactive = customerService.countByIsActive(Boolean.FALSE);
+            long corporate = customerService.countByCustomerType(CustomerType.CORPORATE);
             Map<String, Object> stats = new HashMap<>();
             stats.put("totalCustomers", active + inactive);
             stats.put("activeCustomers", active);

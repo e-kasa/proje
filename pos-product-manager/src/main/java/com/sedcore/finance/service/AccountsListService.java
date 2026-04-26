@@ -3,6 +3,7 @@ package com.sedcore.finance.service;
 import com.sedcore.customer.entity.Customer;
 import com.sedcore.customer.entity.CustomerAccount;
 import com.sedcore.customer.repository.CustomerRepository;
+import com.sedcore.customer.service.CustomerService;
 import com.sedcore.finance.model.AccountsListCursor;
 import com.sedcore.finance.model.PaginatedAccountsResponse;
 import com.sedcore.supplier.model.SupplierResponse;
@@ -34,7 +35,7 @@ import java.util.Map;
 @Slf4j
 public class AccountsListService {
 
-    private final CustomerRepository customerRepository;
+    private final CustomerService  customerService;
     private final SupplierService supplierService;
 
     /**
@@ -61,7 +62,7 @@ public class AccountsListService {
         if (includeCustomers) {
             // CustomerRepository.search: q+isActive filter'ı backend'de uygular (isim+telefon+email)
             // EntityGraph(account) ile N+1 önlenmiş.
-            List<Customer> customers = customerRepository.search(query, true);
+            List<Customer> customers = customerService.search(query, true);
             for (Customer c : customers) {
                 all.add(mapCustomer(c));
             }

@@ -40,6 +40,13 @@ public class SaleRequest {
     private String notes;
 
     /**
+     * Sprint 9 — parçacı sektör plaka takibi (Opsiyon C).
+     * Nullable. Müşteri seçili + parçacı sektör + plaka picker'dan seçildiyse FK ID set edilir.
+     * Backend createSale(): CustomerVehicle yüklenir, Sale.customerVehicle FK + Sale.vehiclePlateSnapshot doldurulur.
+     */
+    private String customerVehicleId;
+
+    /**
      * Kredi limiti aşım durumunda override onayı.
      * Sadece ADMIN veya STORE_ADMIN rollerine sahip kullanıcılar set edebilir.
      * false/null → limit aşımında satış reddedilir (BUSINESS exception).

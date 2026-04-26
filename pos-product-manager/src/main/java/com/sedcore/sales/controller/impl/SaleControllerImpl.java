@@ -56,7 +56,9 @@ public class SaleControllerImpl {
             @Parameter(description = "Customer ID filter")
             @RequestParam(required = false) String customerId,
             @Parameter(description = "Filter by cancelled status")
-            @RequestParam(required = false) Boolean isCancelled
+            @RequestParam(required = false) Boolean isCancelled,
+            @Parameter(description = "Sprint 9 — plaka filter (normalize edilir, case-insensitive contains)")
+            @RequestParam(required = false) String vehiclePlate
     ) {
         try {
             List<Sale> sales;
@@ -65,8 +67,15 @@ public class SaleControllerImpl {
             } else {
                 sales = (List<Sale>) saleService.findAll();
             }
+            // Sprint 9 — plaka normalize edilip snapshot ile karşılaştırılır
+            final String plateNormalized = (vehiclePlate != null && !vehiclePlate.isBlank())
+                    ? com.sedcore.customer.entity.CustomerVehicle.normalize(vehiclePlate)
+                    : null;
             var filtered = sales.stream()
                 .filter(s -> isCancelled == null || isCancelled.equals(s.getIsCancelled()))
+                .filter(s -> plateNormalized == null
+                        || (s.getVehiclePlateSnapshot() != null
+                            && s.getVehiclePlateSnapshot().contains(plateNormalized)))
                 .map(this::toMap)
                 .collect(Collectors.toList());
             return ResponseEntity.ok(ApiResponse.success(filtered));

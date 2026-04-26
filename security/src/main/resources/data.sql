@@ -2707,6 +2707,35 @@ VALUES
     ON CONFLICT DO NOTHING;
 
 -- ============================================================
+-- Sprint 10 — Plaka Takibi (CustomerVehicle picker — parçacı sektör)
+-- ============================================================
+INSERT INTO ext_bundles (id, create_time, create_user, last_modified_time, update_user,
+                         bundle_code, bundle_message_tr, bundle_message_en) VALUES
+    ('bnd-vh01-0000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'vehicle.plate',           'Plaka',                                  'Plate'),
+    ('bnd-vh02-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'vehicle.add_new',         'Yeni Plaka Ekle',                        'Add New Vehicle'),
+    ('bnd-vh03-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'vehicle.make',            'Marka',                                  'Make'),
+    ('bnd-vh04-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'vehicle.model',           'Model',                                  'Model'),
+    ('bnd-vh05-0000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'vehicle.year',            'Model Yılı',                             'Year'),
+    ('bnd-vh06-0000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'vehicle.no_vehicles',     'Kayıtlı plaka yok',                      'No vehicles'),
+    ('bnd-vh07-0000-0000-0000-000000000007', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'vehicle.select',          'Plaka seçin',                            'Select plate'),
+    ('bnd-vh08-0000-0000-0000-000000000008', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'vehicle.none',             'Plaka yok',                              'No plate'),
+    ('bnd-vh09-0000-0000-0000-000000000009', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'vehicle.plate_required',  'Plaka zorunludur',                       'Plate is required'),
+    ('bnd-vh10-0000-0000-0000-000000000010', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'vehicle.search_placeholder','Plaka ara (örn: 34A)',                  'Search plate (e.g. 34A)'),
+    ('bnd-vh11-0000-0000-0000-000000000011', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'vehicle.all_vehicles',     'Tüm plakalar',                            'All vehicles')
+    ON CONFLICT DO NOTHING;
+
+-- ============================================================
 -- Sprint 7 — Alışveriş Bazlı Ödeme (PaymentRecordModal sale picker)
 -- ============================================================
 INSERT INTO ext_bundles (id, create_time, create_user, last_modified_time, update_user,

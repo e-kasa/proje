@@ -185,6 +185,8 @@ class StatementDetailPanel extends ConsumerWidget {
   Future<void> _handlePayment(
       BuildContext context, WidgetRef ref, StatementArgs account) async {
     final isCustomer = account.accountType == 'CUSTOMER';
+    // Sprint 11c — plaka filtresi modal içinde SPECIFIC modunda seçilir;
+    // header artık plaka taşımaz.
     final result = await PaymentRecordModal.show(
       context,
       isCustomer: isCustomer,

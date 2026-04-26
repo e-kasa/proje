@@ -143,6 +143,10 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 
 ### Sprint 9-11 — Plaka Takibi Bütünsel
 - [[syntheses/vehicle-plate-end-to-end-design-2026-04-26]] — Opsiyon C: CustomerVehicle entity + sektör-aware POS+Accounts entegrasyonu (3 sprint)
+- [[decisions/2026-04-26-vehicle-plate-option-c]] — ADR (Sprint 9 backend ✅ + Sprint 10 POS ✅ + Sprint 11 Accounts ✅ — 2026-04-27)
+- [[entities/customer-vehicle]] — yeni entity (Sprint 9)
+- Sprint 11 frontend entegrasyon: `customerOpenSalesProvider` tuple key (`CustomerOpenSalesKey(customerId, vehiclePlate)`) + `PaymentRecordModal` `customerVehicleId` payload
+- Sprint 11c (2026-04-27): plaka filtresi `StatementDetailPanel` header'dan `PaymentRecordModal` SPECIFIC modu içine taşındı; `selectedVehicleProvider` + `VehiclePlateSearchBar` silindi (header sade, plaka yalnız belirli alışveriş seçilince picker üstünde)
 
 ### Sprint 7
 - [[decisions/payment-allocation-from-day-1]] — Sale-Payment many-to-many baştan (B1↔B3 mimari karar)

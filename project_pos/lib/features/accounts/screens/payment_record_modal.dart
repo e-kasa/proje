@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:project_pos/core/config/sector_config.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
-import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
+import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/features/accounts/providers/customer_open_sales_provider.dart';
+import 'package:project_pos/features/customers/providers/customer_vehicles_provider.dart';
+import 'package:project_pos/shared/providers/sector_provider.dart';
 
 /// Yeniden kullanilabilir odeme/tahsilat kayit dialog'u.
 /// Hem musteri tahsilati hem tedarikci odemesi icin kullanilir.
@@ -12,6 +15,10 @@ import 'package:project_pos/features/accounts/providers/customer_open_sales_prov
 /// satislari listeler, kullanici belirli bir satisa odeme yapabilir.
 /// Tedarikci tarafinda (`!isCustomer`) picker gosterilmez (B3 sonrasi
 /// PurchaseAllocation icin acilabilir).
+///
+/// Sprint 11c: plaka filtresi modal içine taşındı. SPECIFIC modu seçildiğinde
+/// (parçacı sektör + müşteri) picker'ın üstünde plaka dropdown belirir;
+/// seçim açık satışları daraltır ve payload'a `customerVehicleId` iliştirir.
 class PaymentRecordModal {
   static Future<Map<String, dynamic>?> show(
     BuildContext context, {
@@ -53,12 +60,15 @@ class _PaymentRecordContentState extends ConsumerState<_PaymentRecordContent> {
   final _descCtrl = TextEditingController();
   final _refCtrl = TextEditingController();
   final _bankCtrl = TextEditingController();
-  final _plateCtrl = TextEditingController();
   String _paymentType = 'CASH';
 
   // Sprint 7 — Sale-Payment allocation
   String _allocationMode = 'GENERAL'; // 'GENERAL' | 'SPECIFIC'
   String? _selectedSaleId;
+
+  // Sprint 11c — modal içinde plaka filtresi (SPECIFIC modunda görünür)
+  String? _selectedVehicleId;     // null = "Tüm plakalar"
+  String? _selectedVehiclePlate;  // payload + provider key için normalized
 
   @override
   void dispose() {
@@ -66,15 +76,103 @@ class _PaymentRecordContentState extends ConsumerState<_PaymentRecordContent> {
     _descCtrl.dispose();
     _refCtrl.dispose();
     _bankCtrl.dispose();
-    _plateCtrl.dispose();
     super.dispose();
+  }
+
+  /// Sprint 11c — Parçacı sektörde SPECIFIC modunda picker üstünde plaka dropdown.
+  /// Seçim `_selectedVehicleId` + `_selectedVehiclePlate`'ı set eder; picker
+  /// CustomerOpenSalesKey üzerinden filtreli açık satışları getirir.
+  Widget _buildVehicleFilter() {
+    final vehiclesAsync =
+        ref.watch(customerVehiclesProvider(widget.customerId!));
+    return vehiclesAsync.when(
+      data: (vehicles) {
+        if (vehicles.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.bgLight,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.border, width: 1),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.directions_car,
+                    size: 16, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String?>(
+                      value: _selectedVehicleId,
+                      isExpanded: true,
+                      isDense: true,
+                      hint: Text(t('vehicle.search_placeholder'),
+                          style: const TextStyle(
+                              fontSize: 12, color: AppColors.textMuted)),
+                      items: [
+                        DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text(t('vehicle.all_vehicles'),
+                              style: const TextStyle(fontSize: 12)),
+                        ),
+                        ...vehicles.map((v) {
+                          final id = v['id']?.toString() ?? '';
+                          final display = v['plateDisplay']?.toString() ??
+                              v['plateNormalized']?.toString() ??
+                              '';
+                          return DropdownMenuItem<String?>(
+                            value: id,
+                            child: Text(display,
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500),
+                                overflow: TextOverflow.ellipsis),
+                          );
+                        }),
+                      ],
+                      onChanged: (id) {
+                        setState(() {
+                          if (id == null) {
+                            _selectedVehicleId = null;
+                            _selectedVehiclePlate = null;
+                          } else {
+                            final v = vehicles.firstWhere(
+                                (x) => x['id']?.toString() == id,
+                                orElse: () => <String, dynamic>{});
+                            _selectedVehicleId = id;
+                            _selectedVehiclePlate =
+                                v['plateNormalized']?.toString();
+                          }
+                          // Plaka değişince sale seçimi + tutar reset
+                          _selectedSaleId = null;
+                          _amountCtrl.clear();
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
   }
 
   /// Sprint 7 — Açık satışlar listesi (SPECIFIC modunda gösterilir).
   /// Kullanıcı bir satış seçince tutar otomatik dolar (kalan bakiye).
+  /// Sprint 11c — modal içi `_selectedVehiclePlate` ile filtre.
   Widget _buildOpenSalesPicker() {
-    final salesAsync =
-        ref.watch(customerOpenSalesProvider(widget.customerId!));
+    final salesAsync = ref.watch(customerOpenSalesProvider(
+      CustomerOpenSalesKey(
+        widget.customerId!,
+        vehiclePlate: _selectedVehiclePlate,
+      ),
+    ));
     return salesAsync.when(
       data: (sales) {
         if (sales.isEmpty) {
@@ -143,16 +241,6 @@ class _PaymentRecordContentState extends ConsumerState<_PaymentRecordContent> {
     );
   }
 
-  /// Sprint 6b A — plaka normalizasyonu: boşluk/kısa çizgi temizle, uppercase.
-  /// "34 abc-123" → "34ABC123". Yedek parça sektörü arama tutarlılığı için
-  /// en azından description içinde stabil string üretelim.
-  String _normalizePlate(String raw) {
-    return raw
-        .replaceAll(RegExp(r'[\s\-]+'), '')
-        .toUpperCase()
-        .trim();
-  }
-
   void _submit() {
     if (_amountCtrl.text.isEmpty) {
       AppToast.warning(context, t('accounts.amount_required'));
@@ -171,15 +259,7 @@ class _PaymentRecordContentState extends ConsumerState<_PaymentRecordContent> {
       return;
     }
 
-    // Plaka varsa description başına "Plaka: XX" prepend — Sprint 6b seçenek A.
-    // Backend Payment.description alanı zaten var; ekstrede _TxRow `description`
-    // alanını render ediyor, plaka otomatik görünür.
-    String? desc = _descCtrl.text.isNotEmpty ? _descCtrl.text : null;
-    final plateRaw = _plateCtrl.text.trim();
-    if (plateRaw.isNotEmpty) {
-      final plate = _normalizePlate(plateRaw);
-      desc = desc == null ? 'Plaka: $plate' : 'Plaka: $plate | $desc';
-    }
+    final desc = _descCtrl.text.isNotEmpty ? _descCtrl.text : null;
 
     // Sprint 7 — allocations: tek-allocation (Sale ↔ Payment many-to-many baştan).
     // SPECIFIC + saleId → tek allocation (saleId, amount)
@@ -199,6 +279,10 @@ class _PaymentRecordContentState extends ConsumerState<_PaymentRecordContent> {
       'allocations': allocations,
       // Geriye uyum: backend deprecated saleId field'ı hâlâ kabul ediyor
       'saleId': effectiveSaleId,
+      // Sprint 11c — modal local state plaka SPECIFIC + seçili ise iliştirilir.
+      // GENERAL modunda plaka iliştirilmez (genel ödemeyi belirli araca atmak yanlış).
+      if (_allocationMode == 'SPECIFIC' && _selectedVehicleId != null)
+        'customerVehicleId': _selectedVehicleId,
     });
   }
 
@@ -332,19 +416,6 @@ class _PaymentRecordContentState extends ConsumerState<_PaymentRecordContent> {
                     borderRadius: BorderRadius.circular(10)),
               ),
             ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: _plateCtrl,
-              textCapitalization: TextCapitalization.characters,
-              decoration: InputDecoration(
-                labelText: t('accounts.vehicle_plate_label'),
-                hintText: t('accounts.vehicle_plate_hint'),
-                prefixIcon: const Icon(Icons.directions_car,
-                    color: AppColors.textMuted),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
             // Sprint 7 — Alışveriş bazlı ödeme picker (sadece müşteri + customerId varsa)
             if (widget.isCustomer && widget.customerId != null) ...[
               const SizedBox(height: 14),
@@ -379,7 +450,14 @@ class _PaymentRecordContentState extends ConsumerState<_PaymentRecordContent> {
                     style: const TextStyle(fontSize: 13)),
                 onChanged: (v) => setState(() => _allocationMode = v ?? 'GENERAL'),
               ),
-              if (_allocationMode == 'SPECIFIC') _buildOpenSalesPicker(),
+              if (_allocationMode == 'SPECIFIC') ...[
+                // Sprint 11c — sadece parçacı sektörde plaka filtresi göster
+                if (ref.watch(sectorTypeProvider) == SectorType.autoParts) ...[
+                  const SizedBox(height: 8),
+                  _buildVehicleFilter(),
+                ],
+                _buildOpenSalesPicker(),
+              ],
             ],
             const SizedBox(height: 14),
             TextField(

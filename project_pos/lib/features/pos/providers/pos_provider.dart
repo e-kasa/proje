@@ -106,6 +106,12 @@ extension PaymentMethodExt on PaymentMethod {
 class PosState {
   final List<CartItem> cartItems;
   final Map<String, dynamic>? selectedCustomer;
+
+  /// Sprint 10 — parçacı sektör plaka takibi (Opsiyon C).
+  /// Müşteri seçildiğinde ve sektör autoParts ise UI'da plate picker görünür.
+  /// null = plaka yok / butik sektör / peşin satış.
+  /// Müşteri değişince otomatik reset (selectCustomer içinde).
+  final Map<String, dynamic>? selectedVehicle;
   final PaymentMethod paymentMethod;
   final double cashReceived;
   final double cardAmount;
@@ -153,6 +159,7 @@ class PosState {
   const PosState({
     this.cartItems = const [],
     this.selectedCustomer,
+    this.selectedVehicle,
     this.paymentMethod = PaymentMethod.cash,
     this.cashReceived = 0,
     this.cardAmount = 0,
@@ -273,6 +280,8 @@ class PosState {
     List<CartItem>? cartItems,
     Map<String, dynamic>? selectedCustomer,
     bool clearCustomer = false,
+    Map<String, dynamic>? selectedVehicle,
+    bool clearVehicle = false,
     PaymentMethod? paymentMethod,
     double? cashReceived,
     double? cardAmount,
@@ -310,6 +319,7 @@ class PosState {
     return PosState(
       cartItems: cartItems ?? this.cartItems,
       selectedCustomer: clearCustomer ? null : (selectedCustomer ?? this.selectedCustomer),
+      selectedVehicle: clearVehicle ? null : (selectedVehicle ?? this.selectedVehicle),
       paymentMethod: paymentMethod ?? this.paymentMethod,
       cashReceived: cashReceived ?? this.cashReceived,
       cardAmount: cardAmount ?? this.cardAmount,
@@ -665,10 +675,26 @@ class PosNotifier extends StateNotifier<PosState> {
   }
 
   void selectCustomer(Map<String, dynamic>? customer) {
+    // Sprint 10 — müşteri değişince plaka da reset (yanlış plakaya satış engeli)
     if (customer == null) {
-      state = state.copyWith(clearCustomer: true);
+      state = state.copyWith(clearCustomer: true, clearVehicle: true);
     } else {
-      state = state.copyWith(selectedCustomer: customer);
+      // Aynı müşteri tekrar seçildiyse plakayı koru; farklı müşteri → reset
+      final isSameCustomer = state.selectedCustomer != null &&
+          state.selectedCustomer!['id'] == customer['id'];
+      state = state.copyWith(
+        selectedCustomer: customer,
+        clearVehicle: !isSameCustomer,
+      );
+    }
+  }
+
+  /// Sprint 10 — parçacı sektör plaka picker callback'i.
+  void selectVehicle(Map<String, dynamic>? vehicle) {
+    if (vehicle == null) {
+      state = state.copyWith(clearVehicle: true);
+    } else {
+      state = state.copyWith(selectedVehicle: vehicle);
     }
   }
 
@@ -748,6 +774,9 @@ class PosNotifier extends StateNotifier<PosState> {
         if (state.activeLocationId != null && state.activeLocationId!.isNotEmpty)
           'locationType': state.activeLocationType,
         if (overrideCreditLimit) 'overrideCreditLimit': true,
+        // Sprint 10 — parçacı sektör plaka takibi
+        if (state.selectedVehicle != null && state.selectedVehicle!['id'] != null)
+          'customerVehicleId': state.selectedVehicle!['id'].toString(),
         'items': state.cartItems.map((item) => {
           'variantId': item.variantId,
           'quantity': item.quantity,

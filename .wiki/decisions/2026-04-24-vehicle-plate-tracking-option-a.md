@@ -10,9 +10,12 @@ ingested: 2026-04-25
 last-verified: 2026-04-25
 ---
 
-# ADR — Plaka Takibi: Opsiyon A (Pragmatik)
+# ADR — Plaka Takibi: Opsiyon A (Pragmatik) [SUPERSEDED]
 
-**Tarih:** 2026-04-24 · Sprint 6b · **Durum:** Kabul edildi (verified)
+> ⚠️ **SUPERSEDED 2026-04-26** — Sprint 9 Opsiyon C kabul edildi. Detay: [[decisions/2026-04-26-vehicle-plate-option-c]] + [[syntheses/vehicle-plate-end-to-end-design-2026-04-26]].
+> Sprint 11'de PaymentRecordModal `_plateCtrl` (description prepend) kaldırılacak; read-only history korunur.
+
+**Tarih:** 2026-04-24 · Sprint 6b · **Durum:** ~~Kabul edildi (verified)~~ Superseded
 
 ## Karar
 

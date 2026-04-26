@@ -4,9 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/config/sector_config.dart';
+import 'package:project_pos/shared/providers/sector_provider.dart';
 import 'package:project_pos/services/service_locator.dart';
 import '../providers/pos_provider.dart';
 import 'cart_item_row.dart';
+import 'customer_vehicle_picker.dart';
 
 class CartPanel extends ConsumerWidget {
   final VoidCallback onPaymentPressed;
@@ -38,6 +41,8 @@ class CartPanel extends ConsumerWidget {
         children: [
           _buildHeader(context, notifier, posState),
           _buildCustomerSection(context, notifier, posState),
+          // Sprint 10 — parçacı sektör + müşteri seçili → plaka picker
+          _buildVehicleSection(ref, notifier, posState),
           Expanded(child: _buildItemList(posState, notifier)),
           _buildSummary(posState),
           _buildActionButtons(posState),
@@ -63,6 +68,29 @@ class CartPanel extends ConsumerWidget {
               size: ButtonSize.small,
             ),
         ],
+      ),
+    );
+  }
+
+  /// Sprint 10 — parçacı sektör plaka picker bölümü.
+  /// Görünürlük koşulu: sektör autoParts + müşteri seçili.
+  /// Müşteri yokken / butik sektörde tamamen gizli (SizedBox.shrink).
+  Widget _buildVehicleSection(WidgetRef ref, PosNotifier notifier, PosState state) {
+    final sector = ref.watch(sectorTypeProvider);
+    if (sector != SectorType.autoParts) return const SizedBox.shrink();
+    final customerId = state.selectedCustomer?['id']?.toString();
+    if (customerId == null || customerId.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      decoration: BoxDecoration(
+        border: Border(
+            bottom: BorderSide(color: AppColors.border.withValues(alpha: 0.5))),
+      ),
+      child: CustomerVehiclePicker(
+        customerId: customerId,
+        selectedVehicle: state.selectedVehicle,
+        onChanged: notifier.selectVehicle,
       ),
     );
   }

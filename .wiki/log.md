@@ -11,6 +11,180 @@ Append-only olay kaydı. **En yeni üste**.
 
 ## Olaylar
 
+## [2026-04-27] sprint-11c | Plaka filtresi modal içine taşındı (UX refactor) ✅
+
+Sprint 11'de eklenen `VehiclePlateSearchBar` (statement panel header dropdown) + `selectedVehicleProvider` kaldırıldı. Plaka picker artık `PaymentRecordModal` içinde **SPECIFIC** radyosu seçilince (parçacı sektörde) açık satışlar listesinin üstünde görünür.
+
+**Motivasyon:** Plaka filtresi yalnız belirli açık satışa ödeme atfederken anlamlı. Header'da sürekli durması ekstre ekranını gereksiz kalabalıklaştırıyordu.
+
+**Silinen dosyalar (2):**
+- `accounts/providers/selected_vehicle_provider.dart`
+- `accounts/widgets/vehicle_plate_search_bar.dart`
+
+**Değişen dosyalar (2):**
+- `accounts/widgets/statement_detail_panel.dart` — bar render bloğu (satır 119-124) + 4 import (`sector_config`, `sector_provider`, `selected_vehicle_provider`, `vehicle_plate_search_bar`) + `_handlePayment` modal çağrısında 2 parametre kaldırıldı
+- `accounts/screens/payment_record_modal.dart` — `customerVehicleId` + `vehiclePlateNormalized` public parametreleri kaldırıldı; yerine local `_selectedVehicleId` + `_selectedVehiclePlate` state; yeni `_buildVehicleFilter()` widget; SPECIFIC + autoParts koşullu render; eski "filter active" info banner kaldırıldı; payload `customerVehicleId` SPECIFIC + seçili plaka şartına bağlandı (GENERAL'de iliştirilmez); 3 yeni import (`sector_config`, `customer_vehicles_provider`, `sector_provider`)
+
+**Akış (yeni):**
+1. AccountsHub → müşteri seç → ekstre paneli sade (plaka bar yok)
+2. Tahsilat → modal açılır → "Belirli alışveriş" radyosu
+3. (Parçacı sektörde) plaka dropdown belirir → "Tüm plakalar" veya bir plaka
+4. `_selectedVehiclePlate` → `customerOpenSalesProvider(CustomerOpenSalesKey(...))` filtreli açık satışlar
+5. Satış seç → tutar oto-dolar
+6. Submit → payload `customerVehicleId` (sadece SPECIFIC + seçili plaka varsa)
+
+**Backend:** Dokunulmadı.
+
+**Verification:** `flutter analyze` 0 error (pre-existing 17 deprecation/style info kalır). Grep doğrulandı: `selectedVehicleProvider` ve `VehiclePlateSearchBar` projede 0 occurrence.
+
+**i18n cleanup:** `vehicle.filter_active` (`bnd-vh12`) artık kullanılmıyor — `data.sql:2734-2735` blokundan silindi (Sprint 11'de eklenmişti, picker üstündeki dropdown banner'a ihtiyacı kaldırdı).
+
+## [2026-04-27] sprint-11 | Accounts plaka filtresi + payment allocation ✅
+
+Sprint 11 — AccountsHub'da plaka bazlı tahsilat akışı end-to-end. Statement panel header'ında dropdown'dan plaka seçilince tahsilat modal o plakaya ait açık satışları listeler ve `customerVehicleId` payment allocation'a iliştirilir.
+
+**Değişen / yeni Flutter dosyaları (5):**
+
+- `sales/services/sales_service.dart` — `getCustomerOpenSales(customerId, {vehiclePlate})` opsiyonel filtre param
+- `accounts/providers/customer_open_sales_provider.dart` — `family<List, String>` → `family<List, CustomerOpenSalesKey>` tuple key (BREAKING; tek call site `payment_record_modal._buildOpenSalesPicker` güncellendi)
+- `accounts/providers/selected_vehicle_provider.dart` ⭐ NEW — `StateProvider.autoDispose<Map<String,dynamic>?>` AccountsHub plaka seçimi state'i
+- `accounts/widgets/vehicle_plate_search_bar.dart` ⭐ NEW — kompakt dropdown bar (Tüm plakalar + kayıtlı plakalar + × clear), `customerVehiclesProvider` watch
+- `accounts/widgets/statement_detail_panel.dart` — VehiclePlateSearchBar SummaryGrid ile TxFilterBar arasına yerleştirildi (sektör=autoParts + customer check); `_handlePayment` `selectedVehicleProvider` okur, `customerVehicleId` + `vehiclePlateNormalized` modal'a geçer; `import sector_provider` eklendi
+- `accounts/screens/payment_record_modal.dart` — `customerVehicleId` + `vehiclePlateNormalized` parametre çifti eklendi; `_buildOpenSalesPicker` `CustomerOpenSalesKey` tuple kullanır; Sprint 6b deprecated `_plateCtrl` TextField + `_normalizePlate()` + description prepend kaldırıldı; aktif filtre info banner gösterir; payload'a `customerVehicleId` iliştirir
+
+**Backend dokunulmadı** — Sprint 9'dan beri `getCustomerOpenSales(customerId, vehiclePlate)` ve `Sale.vehiclePlateSnapshot` zaten hazırdı. Maven `mvn compile` exit 0.
+
+**i18n ek:** `bnd-vh12` → `vehicle.filter_active` (TR "Plaka filtresi aktif" / EN "Vehicle filter active") `data.sql:2735` altına eklendi.
+
+**Akış (parçacı sektör tahsilat):**
+
+1. AccountsHub → müşteri seçimi → Statement panel açılır
+2. Sektör autoParts ise SummaryGrid ALTINDA `VehiclePlateSearchBar` görünür
+3. Dropdown'dan plaka seç → `selectedVehicleProvider` set olur
+4. Tahsilat butonu → `_handlePayment` `selectedVehicle` okur → modal'a `customerVehicleId` + `vehiclePlateNormalized` geçer
+5. Modal `_buildOpenSalesPicker` `CustomerOpenSalesKey(customerId, vehiclePlate: ...)` ile `customerOpenSalesProvider` çağırır → backend `?vehiclePlate=Y` filtreli açık satışlar
+6. Kullanıcı satış seçer → tutar otomatik dolar
+7. Submit → payload `customerVehicleId` + `allocations[{saleId, amount}]` ile backend'e gider
+8. Backend Payment + PaymentAllocation kaydeder; `Sale.remainingAmount` güncellenir
+9. AccountsHub liste + statement bakiye anında refresh (`ref.invalidate(accountsListProvider)` Sprint 8 hot-fix D1 sayesinde)
+
+**Verification:**
+- `flutter analyze` 4 modül üzerinde 0 error (8 pre-existing deprecation/style info)
+- `mvn -DskipTests compile` exit 0
+- Manuel test bekliyor: 1) sektör=butik panel'de SearchBar gizli mi 2) müşteri değişince plaka filtresi reset mi 3) plaka filtreliyken tahsilat sonrası bakiye anında düşüyor mu
+
+**Sprint 11b deferred (kullanıcı kararına bırakıldı):**
+- Migration script — eski `Payment.description "Plaka:"` prefix'lerini parse edip `CustomerVehicle` upsert (idempotent + `--dry-run`)
+- `ReconcileScheduledJob` yeni invariant — `Sale.vehiclePlateSnapshot == sale.customerVehicle.plateNormalized`
+- Drift bulunursa Slack notify + `.wiki/issues/` entry
+
+## [2026-04-27] sprint-10b | POS Cart Panel + PosState plaka entegrasyonu ✅
+
+Sprint 10b — cart_panel.dart + pos_provider.dart entegrasyonu tamamlandı (Sprint 10 kor frontend dosyaların ardından PosState refactor + sale request payload).
+
+**Değişen Flutter dosyaları (2):**
+
+`pos/providers/pos_provider.dart`:
+- `PosState.selectedVehicle: Map<String,dynamic>?` field eklendi
+- `copyWith` `clearVehicle: bool` flag pattern (mevcut `clearCustomer` ile tutarlı)
+- `selectCustomer(...)` müşteri değişince plaka reset (aynı müşteri tekrar seçilince koru — `isSameCustomer` check)
+- Yeni `selectVehicle(Map<String,dynamic>?)` method
+- `saleData` payload: `if (selectedVehicle != null) 'customerVehicleId': selectedVehicle.id`
+
+`pos/widgets/cart_panel.dart`:
+- Yeni `_buildVehicleSection(ref, notifier, state)` private method — sektör=autoParts + customerId varsa CustomerVehiclePicker render; aksi halde SizedBox.shrink (butik sektör + peşin satış'ta tamamen gizli)
+- Build column'a customerSection altına yerleştirildi
+- `import 'package:project_pos/core/config/sector_config.dart'` (sectorTypeProvider erişimi)
+- `import 'customer_vehicle_picker.dart'` (relative)
+
+**Akış (parçacı sektör senaryosu):**
+1. Kullanıcı POS'ta müşteri seçer → cart_panel customerSection değişir
+2. Sektör autoParts ise customerSection ALTINDA `CustomerVehiclePicker` görünür
+3. Kullanıcı dropdown'dan plaka seçer veya "+" ile yeni ekler (idempotent backend)
+4. selectVehicle → state.selectedVehicle güncellenir
+5. Submit → saleData.customerVehicleId backend'e gider
+6. Backend SaleServiceIntegrated.createSale() → Sale.customerVehicle FK + vehiclePlateSnapshot doldurulur
+
+**Müşteri Reset:** Müşteri değişince selectedVehicle reset; aynı müşteri tekrar seçildiyse plaka korunur.
+
+**Bekleyen:**
+- Frontend `flutter analyze` koşulmadı (kullanıcı runtime)
+- Sprint 11: VehiclePlateSearchBar + PaymentRecordModal `_plateCtrl` deprecated kaldırma + migration script + reconcile invariant
+
+## [2026-04-26] sprint-10 | Plaka takibi frontend kor — picker + service + provider ✅
+
+Sprint 10 frontend kor implementasyonu (cart_panel + pos_provider entegrasyonu Sprint 10b'ye, çünkü PosState değişikliği büyük scope).
+
+**Yeni Flutter dosyaları (4):**
+- `customers/services/customer_vehicle_service.dart` — HTTP servisi (list, search, create idempotent, update, deactivate)
+- `customers/providers/customer_vehicles_provider.dart` — Riverpod (FutureProvider.family `customerVehiclesProvider` + autocomplete `customerVehicleSearchProvider` + `CustomerVehicleSearchKey` tuple)
+- `customers/widgets/add_customer_vehicle_modal.dart` — inline yeni plaka modal (idempotent backend POST → mevcutsa zaten döner)
+- `pos/widgets/customer_vehicle_picker.dart` — plaka dropdown + "+" buton (yeni ekleme); dropdown empty/loading/error states
+
+**i18n keys (10):** `vehicle.plate`, `add_new`, `make`, `model`, `year`, `no_vehicles`, `select`, `none`, `plate_required`, `search_placeholder` (TR + EN). ID: `bnd-vh01-10`.
+
+**Sprint 10b (sonraki tur, 1-2 saat) — kalan iş:**
+- `PosState`'e `selectedVehicle: Map<String,dynamic>?` field ekleme
+- `PosNotifier.setSelectedVehicle(...)` method
+- `cart_panel.dart` sektör check (`sectorTypeProvider == SectorType.autoParts && customerId != null`) + CustomerVehiclePicker entegre
+- POS `saleData` payload'a `customerVehicleId` ekleme (`pos_provider.dart:741`)
+- Müşteri değişince `selectedVehicle` reset
+
+**Sprint 11 — accounts plaka tahsilat:**
+- `VehiclePlateSearchBar` widget (statement_detail_panel)
+- PaymentRecordModal `_plateCtrl` deprecated kaldırma
+- Migration script: `Payment.description` "Plaka:" prepend → CustomerVehicle upsert
+- ReconcileScheduledJob invariant
+
+**Verification:** Frontend `flutter analyze` koşulmadı (kullanıcı runtime'da). Backend Maven exit 0 hâlâ geçerli (Sprint 9'dan).
+
+## [2026-04-26] sprint-9 | Plaka takibi backend foundation ✅ (Opsiyon C, Maven exit 0)
+
+Sprint 9 backend implementasyonu tamamlandı. Sentez planı [[syntheses/vehicle-plate-end-to-end-design-2026-04-26]] uygulandı.
+
+**Yeni Java sınıfları (8):**
+- `customer/entity/CustomerVehicle.java` — entity (`@Table customer_vehicles`, indexes, UNIQUE `(customer_id, plate_normalized, company_code)`, @Version)
+- `customer/repository/CustomerVehicleRepository.java` — `findByCustomerIdAndIsActiveOrderByPlateDisplay`, `searchByCustomer`, `findByCustomerIdAndPlateNormalized`
+- `customer/service/CustomerVehicleService.java` (interface) + `CustomerVehicleServiceImpl.java` — idempotent create, AOP filter aktif (@Service)
+- `customer/controller/impl/CustomerVehicleControllerImpl.java` — REST CRUD + search endpoint'leri
+- `customer/model/CustomerVehicleDto.java` (request) + `CustomerVehicleResponse.java`
+
+**Değişen Java sınıfları (4):**
+- `sales/entity/Sale.java` — `customerVehicle` ManyToOne FK + `vehiclePlateSnapshot` String denormalize cache
+- `sales/model/SaleRequest.java` — `customerVehicleId` parametresi
+- `sales/service/impl/SaleServiceIntegrated.java` — `createSale()` plaka FK + snapshot logic + müşteri-plaka tutarlılık kontrolü
+- `sales/controller/impl/SaleControllerImpl.java` — `?vehiclePlate=Y` filter parametresi (normalize + Sale.vehiclePlateSnapshot LIKE contains)
+
+**Endpoint Kataloğu (yeni 6):**
+- `GET /api/v1/customers/{id}/vehicles` — aktif plakalar
+- `GET /api/v1/customers/{id}/vehicles/search?q=34A` — autocomplete
+- `GET /api/v1/customers/{id}/vehicles/{vid}` — tek kayıt
+- `POST /api/v1/customers/{id}/vehicles` — idempotent create
+- `PUT /api/v1/customers/{id}/vehicles/{vid}` — güncelleme
+- `DELETE /api/v1/customers/{id}/vehicles/{vid}` — soft-delete
+- + `GET /api/v1/sales?vehiclePlate=Y` filter parametresi
+
+**Wiki dosyaları:**
+- Yeni: [[entities/customer-vehicle]] — entity dokümantasyonu
+- Yeni: [[decisions/2026-04-26-vehicle-plate-option-c]] — ADR
+- Update: [[decisions/2026-04-24-vehicle-plate-tracking-option-a]] — SUPERSEDED işaretlendi
+- Update: [[index]] — Sprint 9-11 alt-bölümü güncellendi
+
+**Verification:** Backend Maven compile **exit 0** ✅. Frontend (Sprint 10) ve migration (Sprint 11) ayrı oturumlarda yapılacak.
+
+**Bekleyen (Sprint 10 kapsamı):**
+- `customer_vehicle_service.dart` Flutter service
+- `customerVehiclesProvider` Riverpod (FutureProvider.family)
+- `CustomerVehiclePicker` widget
+- `cart_panel.dart` sektör-aware entegrasyon
+- `AddCustomerVehicleModal` inline yeni plaka
+
+**Bekleyen (Sprint 11 kapsamı):**
+- `VehiclePlateSearchBar` (statement_detail_panel)
+- PaymentRecordModal `_plateCtrl` deprecated kaldırma
+- Migration script: mevcut `Payment.description` "Plaka:" prepend → CustomerVehicle upsert
+- ReconcileScheduledJob yeni invariant
+
 ## [2026-04-26] design | plaka bazlı satış-tahsilat bütünsel — Opsiyon C tasarımı
 
 Kullanıcı senaryosu: parçacı sektörde satış sırasında plaka kayıt + müşteri görünümünde plaka arama + tahsilatta plaka bazlı geçmiş seçimi. Geri-dosyalama: [[syntheses/vehicle-plate-end-to-end-design-2026-04-26]].

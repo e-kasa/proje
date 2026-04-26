@@ -47,13 +47,24 @@ class SalesService {
   /// Backend [GET /api/v1/sales?customerId=X] sonucunu `status=pending` ile filtreler;
   /// veriler `saleDate` desc sirali doner (yeniden eskiye).
   ///
+  /// Sprint 11: opsiyonel [vehiclePlate] parametresi backend `?vehiclePlate=` filter'ina
+  /// gider — sadece o plakaya ait satislari doner (parcaci sektor plate-based tahsilat).
+  /// null/bos plate → tum acik satislar (Sprint 7 davranisi korunur).
+  ///
   /// Mevcut [getSales] `int? customerId` signature ile uyumsuz oldugu icin ayri metod.
-  Future<List<Map<String, dynamic>>> getCustomerOpenSales(String customerId) async {
+  Future<List<Map<String, dynamic>>> getCustomerOpenSales(
+    String customerId, {
+    String? vehiclePlate,
+  }) async {
     try {
-      final response = await _apiClient.get(_base, queryParameters: {
+      final params = <String, dynamic>{
         'customerId': customerId,
         'isCancelled': false,
-      });
+      };
+      if (vehiclePlate != null && vehiclePlate.isNotEmpty) {
+        params['vehiclePlate'] = vehiclePlate;
+      }
+      final response = await _apiClient.get(_base, queryParameters: params);
       final all = List<Map<String, dynamic>>.from(response.data['data'] ?? []);
       // status=pending — backend SaleControllerImpl.toMap() hesaplar (remainingAmount > 0)
       final open = all.where((s) => s['status'] == 'pending').toList();

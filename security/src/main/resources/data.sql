@@ -2707,6 +2707,27 @@ VALUES
     ON CONFLICT DO NOTHING;
 
 -- ============================================================
+-- Sprint 7 — Alışveriş Bazlı Ödeme (PaymentRecordModal sale picker)
+-- ============================================================
+INSERT INTO ext_bundles (id, create_time, create_user, last_modified_time, update_user,
+                         bundle_code, bundle_message_tr, bundle_message_en) VALUES
+    ('bnd-acpa01-0000-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'accounts.payment_target',         'Hangi Alışverişe?',                                      'Payment Target'),
+    ('bnd-acpa02-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'accounts.general_payment',        'Genel ödeme (cari bakiyeye)',                           'General payment (account balance)'),
+    ('bnd-acpa03-0000-0000-0000-000000000003', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'accounts.specific_sale_payment',  'Belirli alışverişe',                                    'Specific sale'),
+    ('bnd-acpa04-0000-0000-0000-000000000004', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'accounts.no_open_sales',          'Açık alışveriş yok',                                    'No open sales'),
+    ('bnd-acpa05-0000-0000-0000-000000000005', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'accounts.sale_remaining',         'kalan',                                                 'remaining'),
+    ('bnd-acpa06-0000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'accounts.add_another_sale',       'Başka satış ekle (yakında)',                            'Add another sale (coming soon)'),
+    ('bnd-acpa07-0000-0000-0000-000000000007', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'accounts.allocation_sum_mismatch','Toplam tutarlar eşleşmiyor',                            'Allocation totals don''t match')
+    ON CONFLICT DO NOTHING;
+
+-- ============================================================
 -- MİGRASYON: STORE_MANAGER → STORE_ADMIN (rol kodu düzeltmesi)
 -- Hardcoded ID yerine subquery ile gerçek STORE_ADMIN ID'sini bulur.
 -- Bu şekilde farklı UUID ile oluşturulmuş rollerde de güvenle çalışır.

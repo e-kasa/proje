@@ -42,6 +42,34 @@ class SalesService {
     }
   }
 
+  /// Bir musterinin acik bakiyeli satislarini getirir (Sprint 7 — alisveris bazli odeme).
+  ///
+  /// Backend [GET /api/v1/sales?customerId=X] sonucunu `status=pending` ile filtreler;
+  /// veriler `saleDate` desc sirali doner (yeniden eskiye).
+  ///
+  /// Mevcut [getSales] `int? customerId` signature ile uyumsuz oldugu icin ayri metod.
+  Future<List<Map<String, dynamic>>> getCustomerOpenSales(String customerId) async {
+    try {
+      final response = await _apiClient.get(_base, queryParameters: {
+        'customerId': customerId,
+        'isCancelled': false,
+      });
+      final all = List<Map<String, dynamic>>.from(response.data['data'] ?? []);
+      // status=pending — backend SaleControllerImpl.toMap() hesaplar (remainingAmount > 0)
+      final open = all.where((s) => s['status'] == 'pending').toList();
+      // En yeni once
+      open.sort((a, b) {
+        final da = DateTime.tryParse(a['saleDate']?.toString() ?? '') ?? DateTime(0);
+        final db = DateTime.tryParse(b['saleDate']?.toString() ?? '') ?? DateTime(0);
+        return db.compareTo(da);
+      });
+      return open;
+    } catch (e) {
+      debugPrint('getCustomerOpenSales hata: $e');
+      rethrow;
+    }
+  }
+
   /// Tek bir satisi ID ile getirir.
   Future<Map<String, dynamic>> getSaleById(String id) async {
     try {

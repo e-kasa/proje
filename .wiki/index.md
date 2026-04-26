@@ -88,7 +88,7 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 - Stok: [[entities/stock-level]] · [[entities/stock-movement]] · [[entities/stock-transfer]] · [[entities/store]] · [[entities/warehouse]]
 - Ledger: [[entities/account-transaction]] · [[entities/reconcile-audit-log]]
 - Firma: [[entities/company-setting]] — sektör + profil
-- Diğer: [[entities/payment]] · [[entities/vehicle]]
+- Diğer: [[entities/payment]] · [[entities/payment-allocation]] · [[entities/vehicle]]
 
 ### Flutter Screens & Models
 - [[entities/accounts-hub-screen]] — cari hesap master/detail hub
@@ -112,7 +112,7 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 - [[concepts/batch-row-status]] — satır durum makinesi
 
 ### Cari Hesap & Ledger
-- [[concepts/drift]] · [[concepts/ledger-vs-denormalize]] · [[concepts/write-through-cache]] · [[concepts/denormalization-with-reconcile]] · [[concepts/append-only]]
+- [[concepts/drift]] · [[concepts/ledger-vs-denormalize]] · [[concepts/write-through-cache]] · [[concepts/denormalization-with-reconcile]] · [[concepts/append-only]] · [[concepts/payment-allocation-pattern]] (Sprint 7)
 
 ### Concurrency
 - [[concepts/optimistic-lock-version]] · [[concepts/defense-in-depth]]
@@ -135,6 +135,9 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 
 ### Sprint 6b
 - [[decisions/2026-04-24-vehicle-plate-tracking-option-a]] — plaka takibi pragmatik karar (description prepend)
+
+### Sprint 7
+- [[decisions/payment-allocation-from-day-1]] — Sale-Payment many-to-many baştan (B1↔B3 mimari karar)
 
 ### Concurrency
 - [[decisions/ledger-concurrency-defense-in-depth]] · [[decisions/stock-level-pessimistic-lock]] · [[decisions/trust-reconcile-no-ledger-version]]
@@ -184,6 +187,9 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 - [[syntheses/sector-agnostic-architecture]] — çoklu sektör mimarisi
 - [[syntheses/accounts-module-overview]] — cari hesap modülü
 - [[syntheses/integration-catalog]] — entegrasyon kataloğu
+- [[syntheses/sprint-7-implementation-plan-2026-04-25]] — Sprint 7 adım adım uygulama planı (B1+T1-T4+I2, 6 WP)
+- [[syntheses/accounts-development-analysis-2026-04-25-v2]] — geliştirme analizi v2 (review-revize: test+mimari+efor+sprint düzeltmeleri)
+- [[syntheses/accounts-development-analysis-2026-04-25]] — v1 (superseded by v2)
 - [[syntheses/accounts-overview]] · [[syntheses/accounts-hub-production-readiness]] · [[syntheses/account-edit-form-ux]] · [[syntheses/transactions-card-improvements]]
 - [[syntheses/denormalization-strategy]]
 - [[syntheses/error-handling-guide]] — hata yönetim rehberi (pos-product-manager)

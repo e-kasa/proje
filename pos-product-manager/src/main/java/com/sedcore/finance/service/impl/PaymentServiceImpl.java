@@ -1,6 +1,7 @@
 package com.sedcore.finance.service.impl;
 
 import com.sedcore.finance.entity.Payment;
+import com.sedcore.finance.entity.PaymentAllocation;
 import com.sedcore.purchase.entity.Purchase;
 import com.sedcore.sales.entity.Sale;
 import com.sedcore.customer.entity.Customer;
@@ -9,8 +10,10 @@ import com.sedcore.supplier.entity.Supplier;
 import com.sedcore.supplier.entity.SupplierAccount;
 import com.sedcore.finance.entity.AccountTransaction;
 import com.sedcore.common.enums.TransactionType;
+import com.sedcore.finance.model.AllocationRequest;
 import com.sedcore.finance.model.PaymentRequest;
 import com.sedcore.finance.model.PaymentResponse;
+import com.sedcore.finance.repository.PaymentAllocationRepository;
 import com.sedcore.finance.repository.PaymentRepository;
 import com.sedcore.finance.service.PaymentService;
 import com.sedcore.finance.service.AccountTransactionService;
@@ -72,6 +75,9 @@ public class PaymentServiceImpl
     @Autowired
     private AccountTransactionService accountTransactionService;
 
+    @Autowired
+    private PaymentAllocationRepository paymentAllocationRepository;
+
     @Override
     public Class<?> getDTOClassForService() {
         return PaymentResponse.class;
@@ -107,6 +113,7 @@ public class PaymentServiceImpl
     // =========================================================================
 
     @Override
+    @SuppressWarnings("deprecation")  // PaymentRequest.saleId tek-FK geriye uyum (Sprint 9'da kaldırılacak)
     public PaymentResponse createPayment(PaymentRequest request) {
         validate(request);
 
@@ -159,7 +166,11 @@ public class PaymentServiceImpl
                         : "Musteri tahsilati - " + request.getPaymentType().getDescription());
 
         payment.setAccountTransactionId(accountTransactionService.save(tx).getId());
-        return save(payment);
+        Payment saved = save(payment);
+
+        // Sprint 7: Sale-Payment many-to-many allocation kayıtları (sale-bazlı raporlama için)
+        createAllocations(saved, request);
+        return saved;
     }
 
     /** Tedarikçiye ödeme: SupplierAccountService üzerinden bakiye güncelle */
@@ -181,7 +192,71 @@ public class PaymentServiceImpl
                         : "Tedarikci odemesi - " + request.getPaymentType().getDescription());
 
         payment.setAccountTransactionId(accountTransactionService.save(tx).getId());
-        return save(payment);
+        Payment saved = save(payment);
+
+        // Tedarikçi tarafında allocation şu an tek-FK (Payment.purchase) yeterli;
+        // ileride PurchaseAllocation için aynı pattern eklenebilir. Şimdilik no-op.
+        return saved;
+    }
+
+    // =========================================================================
+    // PAYMENT ALLOCATION (Sprint 7 — Sale-Payment many-to-many)
+    // =========================================================================
+
+    /**
+     * Payment'i bir veya daha fazla satışa dağıtır.
+     *
+     * Davranış:
+     *   - request.allocations boş + request.saleId boş → 1 "genel ödeme" allocation (sale=null)
+     *   - request.allocations boş + request.saleId dolu → 1 allocation (sale=saleId, amount=payment.amount)
+     *     (geriye uyum, deprecated)
+     *   - request.allocations dolu → SUM kontrolü, her bir allocation insert
+     *
+     * Hata: SUM(allocations.amount) != payment.amount → exception
+     */
+    @SuppressWarnings("deprecation")  // PaymentRequest.saleId tek-FK geriye uyum (Sprint 9'da kaldırılacak)
+    private void createAllocations(Payment payment, PaymentRequest request) {
+        List<AllocationRequest> reqAllocations = request.getAllocations();
+
+        // Etkin allocation listesini hesapla
+        List<AllocationRequest> effective;
+        if (reqAllocations != null && !reqAllocations.isEmpty()) {
+            // Çoklu allocation: SUM kontrolü
+            BigDecimal sum = reqAllocations.stream()
+                    .map(AllocationRequest::getAmount)
+                    .filter(a -> a != null)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            if (sum.compareTo(payment.getAmount()) != 0) {
+                throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
+            }
+            effective = reqAllocations;
+        } else {
+            // Tek allocation oluştur (saleId varsa o satışa, yoksa genel)
+            effective = List.of(new AllocationRequest(request.getSaleId(), payment.getAmount()));
+        }
+
+        for (AllocationRequest a : effective) {
+            Sale sale = (a.getSaleId() != null && !a.getSaleId().isBlank())
+                    ? saleService.getEntity(a.getSaleId())
+                    : null;
+
+            PaymentAllocation pa = PaymentAllocation.builder()
+                    .payment(payment)
+                    .sale(sale)
+                    .amount(a.getAmount())
+                    .allocatedAt(LocalDateTime.now())
+                    .build();
+
+            // Multi-tenant: TOpenSimpleCompanyEntity zorunlu companyCode + audit alanları
+            pa.setCompanyCode(payment.getCompanyCode());
+            pa.setCreateUser(payment.getCreateUser() != null ? payment.getCreateUser() : "SYSTEM");
+            pa.setCreateTime(java.util.Calendar.getInstance().getTime());
+
+            paymentAllocationRepository.save(pa);
+        }
+
+        log.info("PaymentAllocation oluşturuldu: paymentId={}, allocationCount={}",
+                payment.getId(), effective.size());
     }
 
     // =========================================================================

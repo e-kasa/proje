@@ -1,8 +1,12 @@
 package com.sedcore.finance.controller.impl;
 
+import com.sedcore.customer.service.CustomerAccountService;
+import com.sedcore.customer.service.CustomerService;
 import com.sedcore.finance.entity.AccountTransaction;
 import com.sedcore.finance.model.AccountStatementEntry;
 import com.sedcore.finance.repository.AccountTransactionRepository;
+import com.sedcore.supplier.service.SupplierAccountService;
+import com.sedcore.supplier.service.SupplierService;
 import com.towpen.base.exceptions.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +30,10 @@ import java.util.*;
 public class AccountStatementControllerImpl {
 
     private final AccountTransactionRepository accountTransactionRepository;
+    private final CustomerService customerService;
+    private final CustomerAccountService customerAccountService;
+    private final SupplierService supplierService;
+    private final SupplierAccountService supplierAccountService;
 
     // GET /product/api/v1/account-statements
     // DB-side filter + sort (idx_customer_cancel_date / idx_supplier_date);
@@ -74,9 +82,35 @@ public class AccountStatementControllerImpl {
                         .build());
             }
 
+            // Sprint 8 hot-fix (Bug B): denormalize currentBalance ekle.
+            // Frontend bu değeri primer bakiye olarak gösterir; closingBalance
+            // transaction toplamı, currentBalance ise CustomerAccount/SupplierAccount
+            // denormalize değeri (write-through cache). İkisi farklıysa drift uyarısı.
+            BigDecimal currentBalance = BigDecimal.ZERO;
+            try {
+                if (isCustomer) {
+                    var acct = customerAccountService.getOrCreate(customerService.getEntity(accountId));
+                    if (acct != null && acct.getCurrentBalance() != null) {
+                        currentBalance = acct.getCurrentBalance();
+                    }
+                } else {
+                    var supplier = supplierService.findById(accountId).orElse(null);
+                    if (supplier != null) {
+                        var acct = supplierAccountService.getOrCreate(supplier);
+                        if (acct != null && acct.getCurrentBalance() != null) {
+                            currentBalance = acct.getCurrentBalance();
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                log.warn("currentBalance fetch failed for {}/{}: {}", accountType, accountId, ex.getMessage());
+                currentBalance = runningBalance; // fallback: closingBalance
+            }
+
             AccountStatementEntry entry = AccountStatementEntry.builder()
                     .openingBalance(openingBalance)
                     .closingBalance(runningBalance)
+                    .currentBalance(currentBalance)
                     .totalDebit(totalDebit)
                     .totalCredit(totalCredit)
                     .transactions(lines)

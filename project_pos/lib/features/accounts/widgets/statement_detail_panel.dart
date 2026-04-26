@@ -14,6 +14,7 @@ import 'package:project_pos/features/accounts/providers/selected_account_provide
 import 'package:project_pos/features/accounts/screens/payment_record_modal.dart';
 import 'package:project_pos/features/accounts/services/statement_pdf_service.dart';
 import 'package:project_pos/features/accounts/widgets/account_edit_form.dart';
+import 'package:project_pos/features/accounts/widgets/accounts_error_view.dart';
 import 'package:project_pos/features/finance/di/finance_di.dart';
 import 'package:project_pos/services/service_locator.dart';
 
@@ -43,12 +44,12 @@ class StatementDetailPanel extends ConsumerWidget {
     }
 
     if (st.isLoading) return const Center(child: CircularProgressIndicator());
+    // Sprint 8 hot-fix WP2 — ErrorView (I2 düzeltmesi)
     if (st.error != null) {
-      return AppEmptyState.error(
-        title: t('common.error'),
-        description: st.error ?? '',
-        actionText: t('common.refresh'),
-        onAction: () => ref.read(accountStatementProvider.notifier).load(),
+      return AccountsErrorView(
+        error: st.error!,
+        message: t('common.error'),
+        onRetry: () => ref.read(accountStatementProvider.notifier).load(),
       );
     }
 
@@ -59,6 +60,10 @@ class StatementDetailPanel extends ConsumerWidget {
     final closing = (s['closingBalance'] ?? 0).toDouble();
     final debit = (s['totalDebit'] ?? 0).toDouble();
     final credit = (s['totalCredit'] ?? 0).toDouble();
+    // Sprint 8 hot-fix D3 — denormalize currentBalance (CustomerAccount.currentBalance)
+    // Backend yoksa fallback: closingBalance. closing != currentBalance ise drift sinyali.
+    final currentBalance = (s['currentBalance'] ?? closing).toDouble();
+    final hasDrift = (currentBalance - closing).abs() > 0.01;
     final allTransactions =
         List<Map<String, dynamic>>.from(s['transactions'] ?? []);
     final visible = st.visibleTransactions;
@@ -104,6 +109,8 @@ class StatementDetailPanel extends ConsumerWidget {
                   debit: debit,
                   credit: credit,
                   closing: closing,
+                  currentBalance: currentBalance,
+                  hasDrift: hasDrift,
                 ),
                 const SizedBox(height: 12),
                 _TxFilterBar(
@@ -208,10 +215,14 @@ class StatementDetailPanel extends ConsumerWidget {
       await ref.read(paymentServiceProvider).createPayment(payload);
       if (!context.mounted) return;
       AppToast.success(context, i18nOf(ref)('ac.payment_saved'));
+      // Sprint 8 hot-fix (Bug B): autoDispose accountsListProvider için race
+      // condition'ı önlemek üzere explicit invalidate. notifier.load() yerine
+      // ref.invalidate() — provider yeniden subscribe olduğunda fresh state
+      // ile loadFirst() çalışır.
+      ref.invalidate(accountsListProvider);
       await Future.wait([
         ref.read(accountStatementProvider.notifier).load(),
         ref.read(accountSummaryProvider.notifier).load(),
-        ref.read(accountsListProvider.notifier).load(),
         ref.read(paymentListProvider.notifier).load(),
       ]);
     } catch (e) {
@@ -417,11 +428,17 @@ class _Header extends ConsumerWidget {
 
 class _SummaryGrid extends ConsumerWidget {
   final double opening, debit, credit, closing;
+  // Sprint 8 hot-fix D3 — denormalize CustomerAccount.currentBalance.
+  // hasDrift true ise closing != currentBalance → reconcile bekleniyor.
+  final double currentBalance;
+  final bool hasDrift;
   const _SummaryGrid({
     required this.opening,
     required this.debit,
     required this.credit,
     required this.closing,
+    required this.currentBalance,
+    required this.hasDrift,
   });
 
   @override
@@ -446,11 +463,16 @@ class _SummaryGrid extends ConsumerWidget {
         icon: Icons.arrow_downward,
         color: AppColors.success,
       ),
+      // Sprint 8 hot-fix D3 — primer bakiye olarak currentBalance gösterilir
+      // (denormalize gerçek değer); closing tx toplamı bilgi amaçlı altında.
       _StatTile(
         label: t('accounts.closing_balance'),
-        value: appCurrencyFmt.format(closing),
-        icon: Icons.assessment_outlined,
-        color: AppColors.primary,
+        value: appCurrencyFmt.format(currentBalance),
+        secondaryValue: hasDrift
+            ? '⚠ ${t('accounts.statement_calc')}: ${appCurrencyFmt.format(closing)}'
+            : null,
+        icon: hasDrift ? Icons.warning_amber_rounded : Icons.assessment_outlined,
+        color: hasDrift ? AppColors.warning : AppColors.primary,
       ),
     ];
     return LayoutBuilder(
@@ -463,7 +485,7 @@ class _SummaryGrid extends ConsumerWidget {
           spacing: sp,
           runSpacing: sp,
           children: tiles
-              .map((t) => SizedBox(width: w, height: 92, child: t))
+              .map((t) => SizedBox(width: w, height: hasDrift ? 110 : 92, child: t))
               .toList(),
         );
       },
@@ -473,11 +495,13 @@ class _SummaryGrid extends ConsumerWidget {
 
 class _StatTile extends StatelessWidget {
   final String label, value;
+  final String? secondaryValue;  // Sprint 8 D3 — drift göstergesi (closing tx toplamı)
   final IconData icon;
   final Color color;
   const _StatTile({
     required this.label,
     required this.value,
+    this.secondaryValue,
     required this.icon,
     required this.color,
   });
@@ -518,6 +542,16 @@ class _StatTile extends StatelessWidget {
                       fontWeight: FontWeight.w500),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis),
+              if (secondaryValue != null) ...[
+                const SizedBox(height: 2),
+                Text(secondaryValue!,
+                    style: const TextStyle(
+                        fontSize: 9,
+                        color: AppColors.warning,
+                        fontWeight: FontWeight.w500),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+              ],
             ],
           ),
         ],

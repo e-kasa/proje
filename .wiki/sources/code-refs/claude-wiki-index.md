@@ -11,12 +11,12 @@ migrated-from: .claude/wiki/
 
 Kümülatif bilgi arşivi giriş noktası. Yeni sayfa eklendikçe burası güncellenir.
 
-> **Önce oku**: [[CLAUDE]] — proje context / [[README]] — ajan protokolü
+> **Önce oku**: [[CLAUDE]] — proje context / [[index]] — ajan protokolü
 
 ## Genel
 
 - [[glossary]] — terim sözlüğü
-- [[contradictions]] — çelişen bilgi kayıtları
+- [[sources/code-refs/claude-wiki-contradictions]] — çelişen bilgi kayıtları
 - [[log]] — append-only event log
 - [[lint-report]] — sağlık taraması (2026-04-24)
 
@@ -63,30 +63,30 @@ Kümülatif bilgi arşivi giriş noktası. Yeni sayfa eklendikçe burası günce
 
 ## Flows (Uçtan Uca Akışlar)
 
-- [[flows/drift-reconciliation]] — denormalize ↔ ledger senkron
-- [[flows/accounts-hub-load]] — AccountsHub açılış zinciri
-- [[flows/today-collection-calc]] — bugünkü tahsilat filter
-- [[flows/batch-entry]] — toplu ürün girişi (UI → purchase-checkout)
-- [[flows/sale-checkout]] — satış oluşturma (ledger input #1, W2 Sales)
-- [[flows/stock-transfer]] — lokasyonlar arası stok transferi (W2 Inventory)
-- [[flows/purchase-checkout]] — satın alma akışı (ledger input #2, W2 Purchase)
-- [[flows/pdf-statement-export]] — server-side PDF ekstre (Sprint 5, P2.3)
+- [[syntheses/flow-drift-reconciliation]] — denormalize ↔ ledger senkron
+- [[syntheses/flow-accounts-hub-load]] — AccountsHub açılış zinciri
+- [[syntheses/flow-today-collection-calc]] — bugünkü tahsilat filter
+- [[syntheses/flow-batch-entry]] — toplu ürün girişi (UI → purchase-checkout)
+- [[syntheses/flow-sale-checkout]] — satış oluşturma (ledger input #1, W2 Sales)
+- [[syntheses/flow-stock-transfer]] — lokasyonlar arası stok transferi (W2 Inventory)
+- [[syntheses/flow-purchase-checkout]] — satın alma akışı (ledger input #2, W2 Purchase)
+- [[syntheses/flow-pdf-statement-export]] — server-side PDF ekstre (Sprint 5, P2.3)
 
 ## Patterns (Mimari Desenler)
 
-- [[patterns/denormalization-with-reconcile]] — cache + periyodik audit
-- [[patterns/entity-graph-n-plus-one]] — LAZY fetch optimizasyonu
-- [[patterns/dto-tomap-pattern]] — controller inline Map çıktısı (deprecated-candidate, Sprint 4)
-- [[patterns/scoped-feature-wiki]] — iki-katmanlı wiki hiyerarşisi (meta)
-- [[patterns/optimistic-lock-version]] — @Version concurrency
-- [[patterns/base-entity-list-screen]] — Flutter list ekranı
-- [[patterns/openapi-codegen-flutter]] — typed client codegen (Sprint 4)
+- [[concepts/pattern-denormalization-with-reconcile]] — cache + periyodik audit
+- [[concepts/pattern-entity-graph-n-plus-one]] — LAZY fetch optimizasyonu
+- [[concepts/pattern-dto-tomap-pattern]] — controller inline Map çıktısı (deprecated-candidate, Sprint 4)
+- [[concepts/pattern-scoped-feature-wiki]] — iki-katmanlı wiki hiyerarşisi (meta)
+- [[concepts/optimistic-lock-version]] — @Version concurrency
+- [[concepts/pattern-base-entity-list-screen]] — Flutter list ekranı
+- [[concepts/pattern-openapi-codegen-flutter]] — typed client codegen (Sprint 4)
 - Açılacak: `multi-tenant-filter`, `soft-delete-with-unique`
 
 ## Integrations (Dış Servisler)
 
-- [[integrations/prometheus-micrometer]] — metrics export (Sprint 3)
-- [[integrations/slack-webhook]] — alert notification (Sprint 3)
+- [[syntheses/integration-prometheus-micrometer]] — metrics export (Sprint 3)
+- [[syntheses/integration-slack-webhook]] — alert notification (Sprint 3)
 - Açılacak: `postgresql-multitenant`, `hibernate-filter`, `pdfbox`, `tesseract-ocr`
 
 ## Decisions (Taktik Kararlar — Wiki Seviyesi)

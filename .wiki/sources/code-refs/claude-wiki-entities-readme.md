@@ -39,7 +39,7 @@ sources:
 related:
   - "[[entities/customer]]"
   - "[[entities/account-transaction]]"
-  - "[[flows/drift-reconciliation]]"
+  - "[[syntheses/flow-drift-reconciliation]]"
 ---
 
 # CustomerAccount
@@ -65,7 +65,7 @@ Müşteri cari bakiyesinin **denormalize özeti**. Ledger (AccountTransaction) s
 
 ## İlgili
 - [[entities/account-transaction]]
-- [[flows/drift-reconciliation]]
+- [[syntheses/flow-drift-reconciliation]]
 ```
 
 ## Aday Sayfalar

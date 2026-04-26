@@ -29,7 +29,7 @@ migrated-from: .claude/wiki/
 
 ## Kararlar
 
-- [[decisions/base-entity-list-screen-adoption]] — Tüm CRUD ekranları ortak abstract widget'a migrate
+- [[concepts/pattern-base-entity-list-screen]] — Tüm CRUD ekranları ortak abstract widget'a migrate
 
 ## İlgili
 

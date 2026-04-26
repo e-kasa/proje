@@ -15,7 +15,7 @@ Bu dosya, wiki'nin **Map of Content (MOC)** giriş noktasıdır. Yeni sayfa ekle
 
 - [[log]] — append-only olay kaydı
 - [[lint-report]] — son sağlık taraması (2026-04-25)
-- [[archive/README]] — eskimiş sayfaların taşıma yeri
+- [[archive/README]] — eskimiş sayfaların taşıma yeri (placeholder, MERGE_NEEDED 18 dosya hedefi) — eskimiş sayfaların taşıma yeri
 
 ## Operasyonlar (Workflow)
 
@@ -111,6 +111,9 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 - [[concepts/batch-entry-state]] — toplu giriş Riverpod state
 - [[concepts/batch-row-status]] — satır durum makinesi
 
+### Tanı / Troubleshooting
+- [[concepts/troubleshooting-customer-missing-in-accounts-hub]] — POS'ta görünüp AccountsHub'da görünmeyen müşteri (5 olası neden)
+
 ### Cari Hesap & Ledger
 - [[concepts/drift]] · [[concepts/ledger-vs-denormalize]] · [[concepts/write-through-cache]] · [[concepts/denormalization-with-reconcile]] · [[concepts/append-only]] · [[concepts/payment-allocation-pattern]] (Sprint 7)
 
@@ -187,6 +190,9 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 - [[syntheses/sector-agnostic-architecture]] — çoklu sektör mimarisi
 - [[syntheses/accounts-module-overview]] — cari hesap modülü
 - [[syntheses/integration-catalog]] — entegrasyon kataloğu
+- [[syntheses/pending-work-status-2026-04-26]] — Açık iş kalemleri konsolide listesi (P0-P3 önceliklendirme)
+- [[syntheses/accounts-bugfix-investigation-2026-04-26]] — Hot-fix: POS müşteri listesi + bakiye refresh (3 düzeltme uygulandı)
+- [[syntheses/sprint-8-implementation-plan-2026-04-26]] — Sprint 8 plan (B0 pagination + ErrorBoundary + T2-T4 testler)
 - [[syntheses/sprint-7-implementation-plan-2026-04-25]] — Sprint 7 adım adım uygulama planı (B1+T1-T4+I2, 6 WP)
 - [[syntheses/accounts-development-analysis-2026-04-25-v2]] — geliştirme analizi v2 (review-revize: test+mimari+efor+sprint düzeltmeleri)
 - [[syntheses/accounts-development-analysis-2026-04-25]] — v1 (superseded by v2)

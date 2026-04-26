@@ -29,7 +29,7 @@ ADR iki iterasyon geçirdi:
 ## Alınan Kararlar
 
 - [[decisions/ledger-concurrency-defense-in-depth]] — A+D birleşik (tek sayfa olarak belgelendi)
-- [[decisions/append-only-semantics]] — logical append-only (soft cancel UPDATE'leri @Version'ın hedefi)
+- [[concepts/append-only]] — logical append-only (soft cancel UPDATE'leri @Version'ın hedefi)
 
 ## Karşılaşılan Sorunlar
 

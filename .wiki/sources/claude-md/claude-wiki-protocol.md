@@ -61,7 +61,7 @@ Slash command'lar ile: `.claude/commands/`
 
 - **Ana wiki** = `.claude/wiki/` (bu dizin) — proje-genel bilgi
 - **Scoped wiki** = `<feature>/<subpath>/_wiki/` — feature-spesifik derinlik
-- Scoped açma kriterleri, cross-link stili, path konvansiyonu: bkz. [`README.md`](README.md) "İki Katmanlı Wiki Hiyerarşisi" + [[patterns/scoped-feature-wiki]]
+- Scoped açma kriterleri, cross-link stili, path konvansiyonu: bkz. [`README.md`](README.md) "İki Katmanlı Wiki Hiyerarşisi" + [[concepts/pattern-scoped-feature-wiki]]
 - Bilgi akışı: yukarı tek yönlü (scoped `.claude/wiki/<path>` referans verir; ana MOC scoped'u bilmez)
 - İki wiki arası çelişki → ana wiki `contradictions.md`
 

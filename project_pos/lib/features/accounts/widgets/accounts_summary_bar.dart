@@ -5,6 +5,7 @@ import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/utils/formatters.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/features/accounts/di/accounts_di.dart';
+import 'package:project_pos/features/accounts/widgets/accounts_error_view.dart';
 import 'package:project_pos/features/finance/di/finance_di.dart';
 
 /// Üstte kompakt 4 metric bar — geniş ekranda tek sıra, dar ekranda horizontal scroll.
@@ -14,8 +15,23 @@ class AccountsSummaryBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = i18nOf(ref);
-    final summary = ref.watch(accountSummaryProvider).summary;
+    final summaryState = ref.watch(accountSummaryProvider);
+    final summary = summaryState.summary;
     final payments = ref.watch(paymentListProvider).payments;
+
+    // Sprint 8 hot-fix WP2 — ErrorView (I2 düzeltmesi). Compact mode (yer kazanmak için).
+    if (summaryState.error != null) {
+      return Container(
+        color: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: AccountsErrorView(
+          error: summaryState.error!,
+          message: t('common.error'),
+          compact: true,
+          onRetry: () => ref.read(accountSummaryProvider.notifier).load(),
+        ),
+      );
+    }
 
     final receivable = (summary?['totalCustomerReceivable'] ?? 0).toDouble();
     final payable = (summary?['totalSupplierPayable'] ?? 0).toDouble();

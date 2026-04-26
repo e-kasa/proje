@@ -8,6 +8,7 @@ import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/features/accounts/models/statement_args.dart';
 import 'package:project_pos/features/accounts/providers/accounts_list_provider.dart';
 import 'package:project_pos/features/accounts/widgets/account_edit_form.dart';
+import 'package:project_pos/features/accounts/widgets/accounts_error_view.dart';
 
 /// Cari listesi paneli — search + filter chips + scrollable liste.
 /// `onSelect` ile bir cari seçilince üst (hub) tarafından detail tarafı yüklenir.
@@ -27,11 +28,29 @@ class AccountsListPanel extends ConsumerStatefulWidget {
 
 class _AccountsListPanelState extends ConsumerState<AccountsListPanel> {
   final _searchCtrl = TextEditingController();
+  final _scrollCtrl = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Sprint 8 B0 — bottom 200px → loadMore (infinite scroll)
+    _scrollCtrl.addListener(_onScroll);
+  }
 
   @override
   void dispose() {
+    _scrollCtrl.removeListener(_onScroll);
+    _scrollCtrl.dispose();
     _searchCtrl.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollCtrl.hasClients) return;
+    final pos = _scrollCtrl.position;
+    if (pos.pixels >= pos.maxScrollExtent - 200) {
+      ref.read(accountsListProvider.notifier).loadMore();
+    }
   }
 
   Future<void> _openCreateModal(BuildContext context) async {
@@ -147,15 +166,17 @@ class _AccountsListPanelState extends ConsumerState<AccountsListPanel> {
 
   Widget _buildList(AccountsListState st) {
     final t = i18nOf(ref);
+    final notifier = ref.read(accountsListProvider.notifier);
+
     if (st.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
+    // Sprint 8 WP2 — ErrorView entegrasyonu (I2 düzeltmesi)
     if (st.error != null) {
-      return AppEmptyState.error(
-        title: t('common.error'),
-        description: st.error ?? '',
-        actionText: t('common.refresh'),
-        onAction: () => ref.read(accountsListProvider.notifier).load(),
+      return AccountsErrorView(
+        error: st.error!,
+        message: t('common.error'),
+        onRetry: () => notifier.refresh(),
       );
     }
     final items = st.visible;
@@ -163,21 +184,41 @@ class _AccountsListPanelState extends ConsumerState<AccountsListPanel> {
       return AppEmptyState.noData(
           title: t('accounts.no_search_results'), description: '');
     }
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
-      itemCount: items.length,
-      itemBuilder: (_, i) {
-        final item = items[i];
-        return _AccountRow(
-          item: item,
-          isSelected: item.id == widget.selectedId,
-          onTap: () => widget.onSelect(StatementArgs(
-            accountType: item.type,
-            accountId: item.id,
-            accountName: item.name,
-          )),
-        );
-      },
+    // Sprint 8 B0 — pull-to-refresh + infinite scroll loading footer
+    return RefreshIndicator(
+      onRefresh: () => notifier.refresh(),
+      child: ListView.builder(
+        controller: _scrollCtrl,
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
+        itemCount: items.length + (st.hasReachedEnd ? 0 : 1),
+        itemBuilder: (_, i) {
+          if (i >= items.length) {
+            // Loading footer — infinite scroll için
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: st.isLoadingMore
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            );
+          }
+          final item = items[i];
+          return _AccountRow(
+            item: item,
+            isSelected: item.id == widget.selectedId,
+            onTap: () => widget.onSelect(StatementArgs(
+              accountType: item.type,
+              accountId: item.id,
+              accountName: item.name,
+            )),
+          );
+        },
+      ),
     );
   }
 }

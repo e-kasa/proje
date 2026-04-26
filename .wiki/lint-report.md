@@ -218,7 +218,7 @@ Frontmatter `source:` ve body'deki `## Sources` bölümü taranarak 0 veya 1 kay
 
 **Gerçek kırık (acil):**
 - 16 ad değişimi (flows/ → syntheses/flow-, integrations/ → syntheses/integration-, patterns/ → concepts/pattern-)
-- 6 gerçek eksik hedef: `[[contradictions]]`, `[[decisions/append-only-semantics]]`, `[[decisions/base-entity-list-screen-adoption]]`, `[[decisions/defensive-credit-sale-customer-required]]`, `[[README]]`, `[[archive/README]]`
+- 6 gerçek eksik hedef: `[[sources/code-refs/claude-wiki-contradictions]]`, `[[concepts/append-only]]`, `[[concepts/pattern-base-entity-list-screen]]`, `[[decisions/credit-limit-override-role-based]]`, `[[index]]`, `[[archive/README]]`
 - 7 raw/code-refs/* link (raw/ scope dışı tarandığı için kırık görünüyor; gerçekten dosya var, raporda false-positive sayılır)
 
 **False-positive (kozmetik):** `X`, `X-from-claude-wiki`, `concepts/...`, `entities/other`, `flows/x`, `klasör/sayfa-adi`, `yeni/sayfa`, vb.

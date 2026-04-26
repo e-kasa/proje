@@ -17,6 +17,13 @@ import java.util.List;
 public class AccountStatementEntry {
     private BigDecimal openingBalance;
     private BigDecimal closingBalance;
+    /**
+     * Sprint 8 hot-fix (Bug B): Denormalize {@code CustomerAccount.currentBalance}
+     * (veya {@code SupplierAccount.currentBalance}). closingBalance transaction'lardan
+     * hesaplanır; currentBalance write-through cache değer. Drift varsa farklı olabilir
+     * → frontend bu değeri primer bakiye olarak gösterir.
+     */
+    private BigDecimal currentBalance;
     private BigDecimal totalDebit;
     private BigDecimal totalCredit;
     private List<TransactionLine> transactions;

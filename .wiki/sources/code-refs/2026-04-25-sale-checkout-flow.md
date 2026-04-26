@@ -27,7 +27,7 @@ POS kasasında müşteriye satış yaparken stok düşüşü, cari hesap güncel
 
 - [[decisions/credit-limit-override-role-based]] — ADMIN/STORE_ADMIN override, role-based (authority-based değil, pragmatik)
 - [[decisions/stock-level-pessimistic-lock]] — deductStock PESSIMISTIC_WRITE lock (not @Version retry)
-- [[decisions/defensive-credit-sale-customer-required]] — vadeli satış müşteri zorunlu
+- [[decisions/credit-limit-override-role-based]] — vadeli satış müşteri zorunlu
 
 ## Karşılaşılan Sorunlar
 

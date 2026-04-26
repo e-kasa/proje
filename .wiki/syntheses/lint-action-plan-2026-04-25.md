@@ -60,11 +60,11 @@ sed -i 's|\[\[patterns/scoped-feature-wiki\]\]|[[concepts/pattern-scoped-feature
 
 | Eksik wikilink | Önerilen aksiyon | Karar |
 |---|---|---|
-| `[[contradictions]]` | `[[sources/code-refs/claude-wiki-contradictions]]`'e replace (taşınan dosya var) | sed batch |
-| `[[decisions/append-only-semantics]]` | İçerik [[concepts/append-only]]'da var → silinen 2 referansı `[[concepts/append-only]]`'e yönlendir | sed |
-| `[[decisions/base-entity-list-screen-adoption]]` | `[[concepts/pattern-base-entity-list-screen]]`'e yönlendir | sed |
-| `[[decisions/defensive-credit-sale-customer-required]]` | İçerik [[decisions/credit-limit-override-role-based]]'in alt başlığı; yönlendir veya yeni 5-satır sayfa | yönlendir |
-| `[[README]]` | `[[index]]`'e yönlendir (vault root MOC) | sed |
+| `[[sources/code-refs/claude-wiki-contradictions]]` | `[[sources/code-refs/claude-wiki-contradictions]]`'e replace (taşınan dosya var) | sed batch |
+| `[[concepts/append-only]]` | İçerik [[concepts/append-only]]'da var → silinen 2 referansı `[[concepts/append-only]]`'e yönlendir | sed |
+| `[[concepts/pattern-base-entity-list-screen]]` | `[[concepts/pattern-base-entity-list-screen]]`'e yönlendir | sed |
+| `[[decisions/credit-limit-override-role-based]]` | İçerik [[decisions/credit-limit-override-role-based]]'in alt başlığı; yönlendir veya yeni 5-satır sayfa | yönlendir |
+| `[[index]]` | `[[index]]`'e yönlendir (vault root MOC) | sed |
 | `[[archive/README]]` | `archive/` boş — referansı sil veya `archive/README.md` placeholder yarat | placeholder yarat |
 
 **Kabul kriteri:** Lint Pass 3'te 6 eksik hedef → 0.

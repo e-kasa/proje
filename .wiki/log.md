@@ -11,6 +11,69 @@ Append-only olay kaydı. **En yeni üste**.
 
 ## Olaylar
 
+## [2026-04-25] query | tüm kod dosyalarından wiki güncelleme (faz 1 — pragmatic)
+
+Kullanıcı talebi: "proje altındaki bütün kod dosyalarını oku, wiki belleğini bu mevcut kod üzerinden güncelle." Pragmatic kapsam (1362 kod dosyası tek turda imkansız): **lint-report'taki 13 eksik kavram için kod kanıtı + son 15 commit deltası**.
+
+### Yeni dosyalar (15)
+
+**Decisions (1):**
+- `decisions/2026-04-24-vehicle-plate-tracking-option-a.md` — Sprint 6b ADR (description prepend, schema değişikliği yok). Scoped wiki'deki sentezi ana wiki'ye yansıt.
+
+**Syntheses (1):**
+- `syntheses/codebase-snapshot-2026-04-25.md` — kod ↔ wiki uyum analizi, son 15 commit drift, 1362 dosya envanter, faz planı.
+
+**Entities (7) — eksik kavramlar için kod-bazlı stub:**
+- `entities/user-def.md` (core/.../security/UserDef.java)
+- `entities/user-def-access.md` (core/.../security/UserDefAccess.java)
+- `entities/product-variant.md` (pos-product-manager/.../product/entity/ProductVariant.java)
+- `entities/accounts-hub-screen.md` (project_pos/.../accounts/screens/accounts_hub_screen.dart)
+- `entities/document-item-result.md` (pos-product-manager/.../product/model/DocumentItemResult.java)
+- `entities/batch-entry-row.md` (project_pos/.../batch_entry/models/batch_entry_models.dart:251)
+- `entities/company-setting.md` (pos-product-manager/.../company/entity/CompanySetting.java)
+
+**Concepts (6) — eksik kavramlar için kod-bazlı stub:**
+- `concepts/company-context.md` (pos-product-manager/.../common/context/CompanyContext.java)
+- `concepts/pre-authorize-guard.md` (Spring Security pattern, 1 kullanım)
+- `concepts/batch-entry-state.md` (project_pos/.../batch_entry/models/batch_entry_models.dart:473)
+- `concepts/batch-row-status.md` (batch_entry_models.dart:1 enum)
+- `concepts/app-colors-palette.md` (project_pos/lib/core/theme/app_colors.dart)
+- `concepts/state-notifier-vs-async.md` (Riverpod migration özeti, henüz başlamadı)
+
+### Index güncellendi (5 alt-bölüm)
+
+- Decisions → Sprint 6b alt-bölümü
+- Syntheses → Modül & Mimari Özet altına codebase-snapshot
+- Entities → Security Domain (yeni alt-bölüm), Ürün satırı, Firma satırı, Flutter Screens & Models (yeni alt-bölüm)
+- Concepts → Mimari satırına 2 yeni link, Flutter / Frontend (yeni alt-bölüm) — 4 yeni link
+
+### Faz Dışı (sonraki turlara)
+
+- React (template/) modülü — 525 dosya, sadece CLAUDE.md kopyası kapsamlı değil
+- pos-product-manager controller-bazlı endpoint kataloğu — ~50 dosya
+- core kütüphane derinleşme (TOpenSimpleCompanyEntity, BaseDbServiceImp, @FilterDef)
+- 18 MERGE_NEEDED dosya manuel diff (lint borçları)
+
+**Kaynak:** kullanıcı talebi (auto + plan mode geçişleri)
+
+## [2026-04-25] lint | 134 bulgu (Y:23 O:130 D:~76) — tam pass 2
+
+`raw/` hariç **188 dosya** üzerinde 6 kategorili tam sağlık kontrolü. Mekanik (Bash) + sample diff (manuel). Otomatik düzeltme yapılmadı; rapor: [[lint-report]].
+
+**Sayım:**
+- 🔴 Çelişki (gerçek): **0** (3 sample diff yapıldı — hepsi DUPLICATE/zenginleştirme)
+- 🟠 Çelişki adayı (MERGE_NEEDED): 21 (18 `-from-claude-wiki` + 3 ADR↔sentez)
+- ✅ Eskimiş: 0 (tümü ≤12 gün)
+- 🟠 Yetim: 18 (hepsi `-from-claude-wiki` — MERGE_NEEDED ile örtüşür)
+- 🔴 Kırık wikilink (gerçek): 22 (16 ad değişimi + 6 eksik hedef)
+- 🟠 Eksik kavram (≥10 bahis, sayfa yok, generic terim filtreli): 13 (`UserDef`, `UserDefAccess`, `ProductVariant`, `CompanyContext`, `AccountsHub`, `BatchEntryRow`, vb.)
+- 🟡 Tek-yönlü xref: 773 ham → ~50 öncelikli (concept↔entity karşılıklı eksiklik)
+- 🟠 Zayıf kaynak (≤1 source): 81 (parser sınırlı; manuel doğrulama önerildi)
+
+**En kritik 3:** (1) 16 ad-değişen kırık wikilink — sed ile 10 dk; (2) 18 MERGE_NEEDED yetim — manuel diff 2-3 saat; (3) 13 eksik domain kavram — UserDef/ProductVariant gibi core entity sayfaları yok.
+
+**Kaynak:** kullanıcı /lint-pass talebi.
+
 ## [2026-04-25] migration | Proje geneli .md konsolidasyonu → .wiki/
 
 Kullanıcı talebi: "proje altındaki tüm `.md` dosyalarını `.wiki/`'ye entegre et + orijinallerini sil/stub bırak". Plan: `C:\Users\Win11\.claude\plans\polymorphic-gathering-flute.md`. AskUserQuestion ile 4 karar netleştirildi (CLAUDE.md hard-delete vs stub çelişkisinde safety nedeniyle B yorumu / stub uygulandı).

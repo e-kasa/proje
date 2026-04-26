@@ -76,14 +76,24 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 ### Servisler
 - [[entities/api-manager]] · [[entities/security]] · [[entities/pos-product-manager]] · [[entities/core]] · [[entities/project-pos]] · [[entities/template]]
 
+### Security Domain
+- [[entities/user-def]] · [[entities/user-def-access]] — sistem kullanıcısı + erişim kaydı
+
 ### Domain
 - Satış: [[entities/sale]] · [[entities/sale-item]]
+- Ürün: [[entities/product-variant]] — SKU bazlı satış birimi
 - Müşteri: [[entities/customer]] · [[entities/customer-account]]
 - Tedarikçi: [[entities/supplier]] · [[entities/supplier-account]] · [[entities/supplier-claim]]
 - Satın alma: [[entities/purchase]]
 - Stok: [[entities/stock-level]] · [[entities/stock-movement]] · [[entities/stock-transfer]] · [[entities/store]] · [[entities/warehouse]]
 - Ledger: [[entities/account-transaction]] · [[entities/reconcile-audit-log]]
+- Firma: [[entities/company-setting]] — sektör + profil
 - Diğer: [[entities/payment]] · [[entities/vehicle]]
+
+### Flutter Screens & Models
+- [[entities/accounts-hub-screen]] — cari hesap master/detail hub
+- [[entities/batch-entry-row]] — toplu giriş satır modeli
+- [[entities/document-item-result]] — PDF analiz kalem DTO
 
 ### Servis-Impl & Job
 - [[entities/sale-service-integrated]] · [[entities/purchase-service-impl]]
@@ -92,8 +102,14 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 ## Concepts (Soyut Kavramlar)
 
 ### Mimari
-- [[concepts/multi-tenant]] · [[concepts/multi-tenant-routing]] · [[concepts/sector-agnostic]] · [[concepts/jwt-auth]] · [[concepts/jwt-payload]] · [[concepts/i18n]] · [[concepts/prod-ready-guards]]
+- [[concepts/multi-tenant]] · [[concepts/multi-tenant-routing]] · [[concepts/company-context]] — ThreadLocal taşıyıcı · [[concepts/sector-agnostic]] · [[concepts/jwt-auth]] · [[concepts/jwt-payload]] · [[concepts/pre-authorize-guard]] — Spring Security guard · [[concepts/i18n]] · [[concepts/prod-ready-guards]]
 - [[concepts/url-routing]] — URL prefix sözleşmesi · [[concepts/api-response]] — yanıt zarfı · [[concepts/sector-strings]] — sektör string sabitleri
+
+### Flutter / Frontend
+- [[concepts/app-colors-palette]] — tasarım sistem rengi
+- [[concepts/state-notifier-vs-async]] — Riverpod migration notu
+- [[concepts/batch-entry-state]] — toplu giriş Riverpod state
+- [[concepts/batch-row-status]] — satır durum makinesi
 
 ### Cari Hesap & Ledger
 - [[concepts/drift]] · [[concepts/ledger-vs-denormalize]] · [[concepts/write-through-cache]] · [[concepts/denormalization-with-reconcile]] · [[concepts/append-only]]
@@ -116,6 +132,9 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 
 ### Mimari (taşınan ADR'ler — `.claude/decisions/`)
 - [[decisions/2026-04-13-ddl-create-strategy]] · [[decisions/2026-04-13-store-admin-rename]] · [[decisions/2026-04-13-location-id-unification]]
+
+### Sprint 6b
+- [[decisions/2026-04-24-vehicle-plate-tracking-option-a]] — plaka takibi pragmatik karar (description prepend)
 
 ### Concurrency
 - [[decisions/ledger-concurrency-defense-in-depth]] · [[decisions/stock-level-pessimistic-lock]] · [[decisions/trust-reconcile-no-ledger-version]]
@@ -159,6 +178,8 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 ## Syntheses (Üst Düzey Genel Bakış)
 
 ### Modül & Mimari Özet
+- [[syntheses/codebase-snapshot-2026-04-25]] — kod ↔ wiki uyum + drift özeti (2026-04-25)
+- [[syntheses/lint-action-plan-2026-04-25]] — 134 lint bulgusu için P1-P4 aksiyon planı
 - [[syntheses/pos-module-map]] — modül haritası
 - [[syntheses/sector-agnostic-architecture]] — çoklu sektör mimarisi
 - [[syntheses/accounts-module-overview]] — cari hesap modülü

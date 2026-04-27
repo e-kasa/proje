@@ -3,7 +3,23 @@ title: Ürün Ekran Audit (2026-04-27)
 tags: [audit, ui, product, inventory, pos, ux]
 source: 3 paralel Explore agent çıktısı (wiki sweep + POS scan + detail screens scan)
 date: 2026-04-27
-status: verified
+status: verified-with-corrections
+---
+
+## ⚠️ DÜZELTMELER (2026-04-27 implementasyon turu)
+
+W2 başlarken kod doğrulanınca audit'in 3 önemli iddiası **yanlış** çıktı:
+
+1. **"Edit Flow KIRIK (kod yok)"** — YANLIŞ. [`product_detail_screen.dart:1609-1860`](project_pos/lib/features/inventory/screens/product_detail_screen.dart#L1609-L1860) `_showProductEditSheet()` 251 satır production-quality modal: sektör-aware (cfg.fields.showBrand/showShelf), KDV chips, status chips, kategori dropdown, save+toast+refresh.
+
+2. **"Vehicle Compat → OEM merge edilebilir"** — Tab yapısı zaten **sektör-aware koşullu**: `cfg.fields.showVehicleCompat/showCrossRef` true ise tab eklenir. Vehicle Compat yalnız autoParts'ta görünür. Merge cosmetic.
+
+3. **"Sektör tutarsızlığı: Variants/Stock/Batch step'lerde sector check yok"** — YANLIŞ. `variants_step.dart:23-148` SectorType switch (autoParts/footwear/technology/general) + i18n key'leri sektör başına; `variants_stock_step.dart:26-148` aynı pattern; `batch_product_screen.dart` 37 ayrı `sectorConfig`/`cfg.fields` kullanımı.
+
+4. **"Add Product Wizard 4,758 LOC tek dosya — kritik refactor"** — YANLIŞ. `add_product_wizard_screen.dart` **524 LOC** (sadece coordinator). 6 step ayrı dosyada: basic_info (962), images (536), preview (1045), stock_barcode (701), variants (794), variants_stock (1179). Sadece preview ve variants_stock 1000+ LOC — ileri refactor opsiyonel.
+
+**Sonuç**: W2 + W3 scope'unun **neredeyse tamamı zaten yapılmış**. Audit pre-Sprint state'i değil, daha eski commit'lerin durumunu yansıttı. Sprint 12 gerçek kalan iş yalnızca **W4** (unified entry sheet, pagination kontrolü, image cached_network, batch mobile UX kontrolü).
+
 ---
 
 # Ürün Ekran Audit (2026-04-27)

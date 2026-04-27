@@ -167,6 +167,71 @@ class ProductService {
     }
   }
 
+  /// Sprint 13 W4.2 — paginated liste, backend metadata (totalPages, hasMore)
+  /// ile birlikte. UI infinite-scroll için kullanılır.
+  ///
+  /// `getProducts()` legacy: yalnız content[] döner. Yeni provider'lar bu
+  /// metodu tercih etmeli.
+  Future<ProductListPage> getProductsPage({
+    int page = 0,
+    int size = 50,
+    String? search,
+    bool? isActive,
+  }) async {
+    try {
+      late final Map<String, dynamic> pageData;
+      if (search != null && search.isNotEmpty) {
+        final response = await _apiClient.get(
+          'product/api/v1/products/search',
+          queryParameters: {
+            'keyword': search,
+            'page': page,
+            'size': size,
+          },
+        );
+        pageData = (response.data as Map<String, dynamic>)['data']
+            as Map<String, dynamic>;
+      } else {
+        final qp = <String, dynamic>{
+          'page': page,
+          'size': size,
+          'sortBy': 'createTime',
+          'sortDir': 'DESC',
+        };
+        if (isActive != null) {
+          qp['status'] = isActive ? 'ACTIVE' : 'PASSIVE';
+        }
+        final response = await _apiClient.get(
+          'product/api/v1/products',
+          queryParameters: qp,
+        );
+        pageData = (response.data as Map<String, dynamic>)['data']
+            as Map<String, dynamic>;
+      }
+      final content = (pageData['content'] as List?) ?? [];
+      final items = content
+          .cast<Map<String, dynamic>>()
+          .map(_mapProduct)
+          .toList();
+      // Spring Page response: number=current page, totalPages, last=true son sayfa
+      final number = (pageData['number'] as num?)?.toInt() ?? page;
+      final totalPages = (pageData['totalPages'] as num?)?.toInt() ?? 1;
+      final totalElements =
+          (pageData['totalElements'] as num?)?.toInt() ?? items.length;
+      final isLast = pageData['last'] == true || number >= totalPages - 1;
+      return ProductListPage(
+        items: items,
+        currentPage: number,
+        totalPages: totalPages,
+        totalElements: totalElements,
+        hasMore: !isLast,
+      );
+    } catch (e) {
+      debugPrint('getProductsPage hata: $e');
+      rethrow;
+    }
+  }
+
   /// Tek bir urunu ID ile getirir.
   ///
   /// Backend: `GET /product/api/v1/products/{id}`
@@ -284,4 +349,21 @@ class ProductService {
           products.where((p) => (p['stock'] as int? ?? 0) <= 0).length,
     };
   }
-} 
+}
+
+/// Sprint 13 W4.2 — paginated product list response wrapper.
+class ProductListPage {
+  final List<Map<String, dynamic>> items;
+  final int currentPage;
+  final int totalPages;
+  final int totalElements;
+  final bool hasMore;
+
+  const ProductListPage({
+    required this.items,
+    required this.currentPage,
+    required this.totalPages,
+    required this.totalElements,
+    required this.hasMore,
+  });
+}

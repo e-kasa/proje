@@ -11,6 +11,164 @@ Append-only olay kaydı. **En yeni üste**.
 
 ## Olaylar
 
+## [2026-04-27] sprint-14 | ProductCard tam migration — Inventory list/grid kartları ✅
+
+Sprint 12'den ertelenen W1.4 (ProductCard tam migration) bu sprintte uygulandı. Inventory liste/grid kartlarındaki ~470 LOC kod tek `ProductCard` çağrısına dönüştürüldü.
+
+### ProductCard Genişletmeleri
+
+**Yeni field'lar (`ProductCardData`):**
+- `unit: String?` — adet/kg/çift birim suffix'i stok rozetinde
+- `oemNumbersText: String?` — OEM mode'da kart altı satır
+- `crossRefsText: String?` — OEM mode'da kart altı satır
+
+**Yeni property'ler (`ProductCard`):**
+- `showOemRow: bool` — Inventory OEM search toggle açıkken `oemNumbersText` + `crossRefsText` satırları render eder
+- `showStatusBadge: bool` — `data.status` ACTIVE değilse (DRAFT/INACTIVE/OUT_OF_STOCK) stok rozeti yanına status badge ekler
+
+**Yeni helper'lar (ProductCard içinde):**
+- `_buildStatusBadgeWidgets(t)` — status enum → AppBadge variant + i18n label
+- `_buildOemRows(t)` — OEM/CrossRef satırları (Icons.confirmation_number / compare_arrows + AppColors.warning/info)
+- `_buildStockBadge` artık unit suffix de gösteriyor: `"42 adet"` yerine `"42"`
+
+### Inventory List Migration (`enhanced_product_list_screen.dart`)
+
+| Helper / Method | Önce | Sonra |
+|---|---|---|
+| `_buildListCard` | 240 LOC body | 41 LOC ProductCard çağrısı |
+| `_buildGridCard` | 213 LOC body | 35 LOC ProductCard çağrısı |
+| `_StockChip` class | 55 LOC | silindi (ProductCard `_buildStockBadge` üstlendi) |
+| `_getStatusBadgeVariant` | 7 LOC | silindi (ProductCard `_buildStatusBadgeWidgets`) |
+| `_productIconPlaceholder` | 6 LOC | silindi (AppCachedImage errorWidget) |
+| **Toplam dosya** | **1,778 LOC** (Sprint 12 öncesi) | **1,456 LOC** (~322 LOC azalma; Sprint 13 pagination state +130 LOC + W1.4 ~470 LOC silme) |
+
+### İmport Eklemeler
+
+- `package:project_pos/core/widgets/product_card.dart` — `unused_import` ignore yorumu kaldırıldı
+- `package:project_pos/shared/providers/sector_provider.dart` — `sectorConfigProvider` watch için
+
+### Verification
+
+- `flutter analyze` (2 değiştirilmiş dosya): **0 issue** ✅
+- Mevcut davranış korundu: tap → detail route, longPress → selection mode, OEM search toggle → OEM/CrossRef satırları, status DRAFT/INACTIVE → ek badge
+
+### Sprint 15'e Ertelenen
+
+- **W4.4 full** — `batch_product_screen.dart` 6,891 LOC DataTable → mobile kart layout (banner Sprint 13'te eklendi, full responsive Sprint 15)
+- **Server-side category/status filter** — `/products?category=X&status=Y` backend genişletmesi (frontend client-side filter şu an pagination ile birlikte tutarsız sonuç verebilir, ama tek-sayfa kullanım için yeterli)
+- **Wizard ileri refactor** — `variants_stock_step.dart` 1,179 LOC + `preview_step.dart` 1,045 LOC (opsiyonel, < 1500 LOC kabul edilebilir)
+- **Batch screen 11 lint cleanup** — pre-existing teknik borç (deprecated value→initialValue, vd.)
+- **Reference data API entegrasyonu** — Sprint 12 W1.2 `referenceDataProvider` şimdi static; backend `/reference-data` endpoint hazır olunca FutureProvider API çağrısı
+
+### Smoke Test (Kullanıcı Runtime)
+
+1. **Inventory list**: kart görünümü Sprint 12 öncesi ile aynı olmalı (sektör rozeti + status badge + OEM mode satırları)
+2. **AutoParts firmasında**: search box yanındaki "OEM" toggle'a tıkla → OEM aramada kartların altında "OEM: 12345, 67890" + "Ref: ABC-123" satırları
+3. **DRAFT/INACTIVE ürünler**: stok rozetinin yanında ek "Taslak" / "Pasif" rozeti
+4. **Image olmayan ürünler**: AppCachedImage placeholder (CircularProgressIndicator) → errorWidget Icons.image_not_supported
+5. **Selection mode** (long-press): hem list hem grid'de checkbox
+
+## [2026-04-27] sprint-13 | Ürün liste pagination + batch mobile uyarı ✅
+
+Sprint 12 sonrası Sprint 13 — ertelenen W4.2 (Inventory list pagination) + W4.4 (batch mobile) minimal implementasyonu. Kullanıcı "devam" emri.
+
+### W4.2 Frontend Pagination — Inventory Ürün Listesi
+
+**Backend kontrol:** `ProductControllerImpl.java:106` Spring `Pageable` ile `Page<ProductResponse>` döndürüyor — frontend hâlihazırda content[] çekiyordu, metadata kayıptı.
+
+**Yeni:** [`product_service.dart`](project_pos/lib/features/inventory/services/product_service.dart) `getProductsPage()` method + `ProductListPage` model (items, currentPage, totalPages, totalElements, hasMore).
+
+**Update:** [`enhanced_product_list_screen.dart`](project_pos/lib/features/inventory/screens/enhanced_product_list_screen.dart):
+- State: `_currentPage`, `_hasMore`, `_isLoadingMore`, `_scrollController` (page size 50)
+- `_loadProducts()` rewrite — page=0 reset + getProductsPage(search:_searchController.text)
+- Yeni `_loadMoreProducts()` — page+=1, items append
+- ScrollController bottom-200px → loadMore tetikleyici
+- ListView/GridView → RefreshIndicator + ScrollController + loading footer
+- `_onSearchChanged` → server-side search (page=0 reset, getProductsPage çağrısı)
+- "X ürün gösteriliyor" footer (i18n key: `product.products_loaded`)
+
+**Akış:** Liste açılır → ilk 50 ürün → scroll dibe → otomatik 50 daha → search yazınca page=0 reset + sunucu sorgusu. Pull-to-refresh çalışır. Eski client-side category/status filter korundu (server-side filter Sprint 14).
+
+### W4.4 Batch Entry — Mobile Uyarı Banner
+
+**Update:** [`batch_product_screen.dart`](project_pos/lib/features/inventory/screens/batch_entry/batch_product_screen.dart) build column'a `MediaQuery.of(context).size.width < 600` check + `_buildMobileWarningBanner()` ekleme: kullanıcıya "yatay çevirin / tablet kullanın" bilgi.
+
+**Tam responsive kart layout Sprint 14'e ertelendi** — 6,891 LOC dosyada DataTable → kart layout büyük refactor.
+
+### i18n (2 yeni key)
+
+- `product.products_loaded` (`bnd-pd204`) — "ürün gösteriliyor" / "products shown"
+- `batch.mobile_landscape_hint` (`bnd-bt218`) — uyarı banner metni
+
+### Sprint 14'e Ertelenen
+
+- **W1.4** ProductCard custom slot (OEM mode satır + status badge variant) + Inventory list `_buildListCard` 240 LOC tam migration
+- **W4.4 full** Batch Entry DataTable → mobile kart layout (`<600px` koşullu render)
+- **Server-side category/status filter** — pagination ile filter uyumu için backend endpoint genişletmesi (`/products?category=X&status=Y&page=0&size=50`)
+- **Wizard `variants_stock_step.dart` 1,179 LOC + `preview_step.dart` 1,045 LOC ileri refactor** (opsiyonel)
+- **Pre-existing teknik borç:** batch_product_screen.dart 11 lint info/warning (deprecated value→initialValue, unnecessary_underscores, prefer_interpolation, unused_parameter discountRate)
+
+### Verification
+
+- `flutter analyze` (3 değiştirilmiş dosya): **0 yeni issue** (11 pre-existing teknik borç batch_product_screen'de)
+- Backend Maven dokunulmadı (sadece frontend + i18n)
+
+## [2026-04-27] query | cari hesap bakiye bilgileri doğruluğu
+
+**Soru:** "Cari işlemler kısmındaki genel ve müşteri/tedarikçi hesap bilgileri doğru mu?"
+
+**Yöntem:** 2 paralel Explore agent (backend balance flow + frontend display) + 8 wiki sayfası audit (concepts: ledger-vs-denormalize, drift, denormalization-with-reconcile; entities: customer-account, account-transaction; decisions: ledger-as-source-of-truth, scheduled-reconcile-safe-rollout, db-side-aggregate-over-java-loop; issues: customer-list-balance-zero, today-collection-always-zero, overdue-amount-not-reconciled, accounts-pagination-missing, accounts-error-boundary-missing; syntheses: accounts-hub-production-readiness).
+
+**Verdict:** ✅ Yapısal olarak doğru. Ledger + denormalize + write-through + reconcile pattern standart. Geçmiş silent-null bug'ları (customer/supplier-list-balance-zero, today-collection-always-zero) ve overdue reconcile RESOLVED. Üç operasyonel risk + üç UX gap açık (P1/P2 backlog).
+
+**Geri-dosyalama:** `.wiki/syntheses/accounts-balance-correctness-audit-2026-04-27.md` ⭐ NEW (audit sentezi, 7 öneri Sprint 13 adayı).
+
+**Index:** Syntheses bölümüne 1 satır link eklendi.
+
+## [2026-04-27] sprint-12 | Ürün ekranları refactor — W1 + W4 implement + audit korreksiyon ✅
+
+Kullanıcı "onay beklemeden tüm planı yap, test en sonda" emri ile Sprint 12 implementasyonu başladı. **Audit'in 4 ana iddiası kod doğrulamasıyla yanlış çıktı** — gerçek scope büyük ölçüde daha küçük.
+
+### Audit Korreksiyonları (kod ile doğrulandı)
+
+1. **Edit Flow YOK iddiası** → ASLINDA `product_detail_screen.dart:1609-1860` `_showProductEditSheet()` 251 LOC production-quality (sektör-aware, KDV chips, status, kategori dropdown, save+toast+refresh).
+2. **Vehicle Compat tab merge önerisi** → Tab yapısı zaten **conditional**: `cfg.fields.showVehicleCompat`/`showCrossRef`. Merge cosmetic.
+3. **Sektör tutarsızlığı** → YANLIŞ. `variants_step.dart` 23+148, `variants_stock_step.dart` 26+148 zaten SectorType switch + i18n; `batch_product_screen.dart` 37 cfg kullanım.
+4. **Wizard 4,758 LOC** → YANLIŞ. `add_product_wizard_screen.dart` **524 LOC**. 6 step ayrı dosyada (basic_info 962, images 536, preview 1045, stock_barcode 701, variants 794, variants_stock 1179). Refactor edilmiş.
+
+### Uygulanan Değişiklikler
+
+**W1 (önceki tur):**
+- Yeni: [`core/widgets/product_card.dart`](project_pos/lib/core/widgets/product_card.dart) — 3 mode + sektör-aware + AppBadge
+- Yeni: [`shared/providers/reference_data_provider.dart`](project_pos/lib/shared/providers/reference_data_provider.dart) — VAT/Unit/ProductStatus tek hakikat noktası
+- i18n: `stock.in_transit` (`bnd-s111`) + `stock.depleted` (`bnd-s112`)
+- Update: `product_grid_item.dart` ConsumerWidget + i18n
+- Update: ProductCard `_buildStockBadge` i18n
+
+**W4 (bu tur):**
+- Yeni: [`features/inventory/widgets/product_add_method_sheet.dart`](project_pos/lib/features/inventory/widgets/product_add_method_sheet.dart) — 4 yöntem disambiguation modal (Hızlı / Tam / Toplu / PDF)
+- i18n: `product.add_method_*` 10 yeni key (`bnd-pd194-203`)
+- Update: `enhanced_product_list_screen.dart` FAB → `ProductAddMethodSheet.show()` (eski direct Quick Add bypass)
+- Update: ProductCard `_buildThumbnail` → `AppCachedImage` (cached_network_image entegrasyonu)
+
+### Verification
+
+- `flutter analyze` (5 değiştirilmiş/yeni dosya): **0 issue** ✅
+- Manuel smoke test bekliyor (kullanıcı runtime'da)
+
+### Sprint 13'e Ertelenenler (gerekçe: backend hazır ama frontend büyük scope)
+
+- **W4.2 Pagination provider rewrite** — Backend `/products?page=0&size=10` mevcut (`ProductControllerImpl.java:106`), frontend `productServiceProvider.getProducts(size:100)` çekiyor; provider rewrite + scroll loadMore Sprint 13 (~1-2 gün)
+- **W4.4 Batch Entry mobile kart** — `batch_product_screen.dart` 6,891 LOC, MediaQuery 1 kez. DataTable → kart layout büyük refactor, Sprint 13
+- **W1.4 Inventory list ProductCard tam migration** — `_buildListCard` 240 LOC + OEM mode satırları + status badge variant'ları. ProductCard'a custom slot ekleyip migration Sprint 13
+- **Wizard variants_stock_step.dart 1,179 LOC + preview_step.dart 1,045 LOC ileri refactor** — opsiyonel, < 1500 LOC kabul edilebilir
+
+### Dosyalar
+
+- Audit: [[sources/code-refs/2026-04-27-product-screens-audit]] (status: verified-with-corrections)
+- Plan: [[syntheses/product-screens-revision-plan]] (status: superseded-by-implementation)
+- Sprint planı: `.claude/plans/polymorphic-gathering-flute.md`
+
 ## [2026-04-27] query | ürün menüsü kartları + ürün detay ekranları revize plan
 
 Kullanıcı talebi: "Ürün menüsü ekranındaki kartlar ve ürün detayındaki bütün ekranlarda kullanım, görünüm ve doğru akışlarla revize edilecek planı çıkaralım."

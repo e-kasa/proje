@@ -1873,6 +1873,7 @@ VALUES
     ('bnd-bt215-0000-0000-000000000215', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.multi_match_hint',        'Eşleşecek ürünü seçin',                                        'Pick matching product'),
     ('bnd-bt216-0000-0000-000000000216', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.error_rows_title',        'Hatalı satırlar',                                              'Error rows'),
     ('bnd-bt217-0000-0000-000000000217', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.go_to_row',               'Satıra Git',                                                   'Go to row'),
+    ('bnd-bt218-0000-0000-000000000218', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'batch.mobile_landscape_hint',   'Toplu giriş geniş ekran içindir. Yatay çevirin veya tablet/masaüstü kullanın.', 'Bulk entry is for wide screens. Rotate landscape or use tablet/desktop.'),
 
     -- ── WIZARD (Ürün ekleme adımları) ─────────────────────────────
     ('bnd-wz001-0000-0000-000000000001', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'wizard.changes_will_be_lost', 'Değişiklikler kaybolacak', 'Changes will be lost'),
@@ -1955,6 +1956,17 @@ VALUES
     ('bnd-pd191-0000-0000-000000000191', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.relationships',  'İlişkiler',   'Relationships'),
     ('bnd-pd192-0000-0000-000000000192', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.add_oem',        'OEM Ekle',    'Add OEM'),
     ('bnd-pd193-0000-0000-000000000193', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.add_cross_ref',  'Çapraz Ref Ekle', 'Add Cross Ref'),
+    ('bnd-pd194-0000-0000-000000000194', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.add_method_title',  'Ürün Ekleme Yöntemi', 'Add Product — Method'),
+    ('bnd-pd195-0000-0000-000000000195', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.add_method_subtitle',  'Hangi yöntemle eklemek istersiniz?', 'How would you like to add?'),
+    ('bnd-pd196-0000-0000-000000000196', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.add_quick',  'Hızlı Ekle', 'Quick Add'),
+    ('bnd-pd197-0000-0000-000000000197', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.add_quick_desc',  'Sadece zorunlu alanlar (~1 dk)', 'Required fields only (~1 min)'),
+    ('bnd-pd198-0000-0000-000000000198', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.add_full',  'Tam Ekle (Sihirbaz)', 'Full Add (Wizard)'),
+    ('bnd-pd199-0000-0000-000000000199', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.add_full_desc',  'Tüm alanlar + varyant + fiyat (~5-10 dk)', 'All fields + variants + pricing (~5-10 min)'),
+    ('bnd-pd200-0000-0000-000000000200', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.add_batch',  'Toplu Tablo', 'Bulk Table'),
+    ('bnd-pd201-0000-0000-000000000201', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.add_batch_desc',  'Excel benzeri satır satır giriş', 'Excel-style row entry'),
+    ('bnd-pd202-0000-0000-000000000202', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.add_pdf',  'PDF / Görsel ile Otomatik', 'Auto from PDF / Image'),
+    ('bnd-pd203-0000-0000-000000000203', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.add_pdf_desc',  'Tedarikçi faturasından AI ile çıkar', 'Extract from supplier invoice via AI'),
+    ('bnd-pd204-0000-0000-000000000204', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'product.products_loaded',  'ürün gösteriliyor', 'products shown'),
     ('bnd-sm025-0000-0000-000000000025', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL, 'stock.movement_type',    'Hareket Türü', 'Movement Type')
     ON CONFLICT DO NOTHING;
 

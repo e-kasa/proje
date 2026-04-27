@@ -13,9 +13,9 @@ import 'package:project_pos/core/utils/app_logger.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/widgets/quick_add_product_modal.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
-// Sprint 12: ortak kart component (W2'de _buildListCard tam migration)
-// ignore: unused_import
 import 'package:project_pos/core/widgets/product_card.dart';
+import 'package:project_pos/features/inventory/widgets/product_add_method_sheet.dart';
+import 'package:project_pos/shared/providers/sector_provider.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 
 // ── Sıralama seçenekleri ──────────────────────────────────────────────────────
@@ -54,6 +54,13 @@ class _EnhancedProductListScreenState
   bool _isSelectionMode = false;
   bool _isOemSearching = false;
 
+  // Sprint 13 W4.2 — pagination state
+  static const int _pageSize = 50;
+  int _currentPage = 0;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
+  final ScrollController _scrollController = ScrollController();
+
   int get _activeFilterCount =>
       (_selectedCategory != null ? 1 : 0) + (_selectedStatus != null ? 1 : 0);
 
@@ -82,6 +89,7 @@ class _EnhancedProductListScreenState
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _loadProducts();
   }
 
@@ -89,17 +97,41 @@ class _EnhancedProductListScreenState
   void dispose() {
     _searchController.dispose();
     _debounceTimer?.cancel();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  // Sprint 13 W4.2 — bottom-200px tetikleyici
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final pos = _scrollController.position;
+    if (pos.pixels >= pos.maxScrollExtent - 200 &&
+        !_isLoadingMore &&
+        _hasMore &&
+        !_isLoading) {
+      _loadMoreProducts();
+    }
   }
 
   // ── Veri yükleme ──────────────────────────────────────────────────────────
 
   Future<void> _loadProducts() async {
     if (!mounted) return;
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _currentPage = 0;
+      _hasMore = true;
+    });
     try {
       final productService = ref.read(productServiceProvider);
-      final products = await productService.getProducts();
+      // W4.2: page=0, size=50, search aktifse server-side filter
+      final searchQuery = _searchController.text.trim();
+      final page = await productService.getProductsPage(
+        page: 0,
+        size: _pageSize,
+        search: searchQuery.isEmpty ? null : searchQuery,
+      );
 
       try {
         final cats =
@@ -116,7 +148,9 @@ class _EnhancedProductListScreenState
 
       if (mounted) {
         setState(() {
-          _allProducts = products;
+          _allProducts = page.items;
+          _hasMore = page.hasMore;
+          _currentPage = 0;
           _isLoading = false;
         });
         _applyFilters();
@@ -125,6 +159,37 @@ class _EnhancedProductListScreenState
       if (mounted) {
         setState(() => _isLoading = false);
         AppToast.error(context, t('common.error'));
+      }
+    }
+  }
+
+  /// Sprint 13 W4.2 — sonraki sayfayı çek, mevcut listeye ekle.
+  Future<void> _loadMoreProducts() async {
+    if (!mounted || _isLoadingMore || !_hasMore) return;
+    setState(() => _isLoadingMore = true);
+    try {
+      final productService = ref.read(productServiceProvider);
+      final searchQuery = _searchController.text.trim();
+      final next = _currentPage + 1;
+      final page = await productService.getProductsPage(
+        page: next,
+        size: _pageSize,
+        search: searchQuery.isEmpty ? null : searchQuery,
+      );
+      if (mounted) {
+        setState(() {
+          _allProducts = [..._allProducts, ...page.items];
+          _currentPage = next;
+          _hasMore = page.hasMore;
+          _isLoadingMore = false;
+        });
+        _applyFilters();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingMore = false);
+        AppLogger.warning('Daha fazla ürün yüklenemedi',
+            tag: 'ProductList', error: e);
       }
     }
   }
@@ -141,7 +206,8 @@ class _EnhancedProductListScreenState
           setState(() => _filteredProducts = _allProducts);
         }
       } else {
-        _applyFilters();
+        // W4.2: server-side search — page=0 reset + ilk sayfayı çek
+        _loadProducts();
       }
     });
   }
@@ -516,13 +582,8 @@ class _EnhancedProductListScreenState
         _ => AppColors.textMuted,
       };
 
-  BadgeVariant _getStatusBadgeVariant(String? status) => switch (status) {
-        'DRAFT' => BadgeVariant.warning,
-        'ACTIVE' => BadgeVariant.success,
-        'INACTIVE' => BadgeVariant.secondary,
-        'OUT_OF_STOCK' => BadgeVariant.danger,
-        _ => BadgeVariant.secondary,
-      };
+  // Sprint 14 W1.4: _getStatusBadgeVariant kaldırıldı — ProductCard'a port edildi
+  // (showStatusBadge true ise status enum → AppBadge variant otomatik).
 
   // ── Build ─────────────────────────────────────────────────────────────────
 
@@ -577,8 +638,9 @@ class _EnhancedProductListScreenState
           ? null
           : FloatingActionButton.extended(
               onPressed: () async {
-                final result = await showQuickAddProductModal(context);
-                if (result == true) _loadProducts();
+                // Sprint 12 W4.1: tek "Quick Add" yerine 4 yöntem disambiguation modal
+                final result = await ProductAddMethodSheet.show(context, ref);
+                if (result) _loadProducts();
               },
               backgroundColor: AppColors.primary,
               icon: const Icon(Icons.add, color: Colors.white),
@@ -958,40 +1020,90 @@ class _EnhancedProductListScreenState
   }
 
   Widget _buildListView() {
-    return ListView.builder(
-      padding: AppConstants.pagePadding,
-      itemCount: _filteredProducts.length,
-      itemBuilder: (context, index) {
-        final product = _filteredProducts[index];
-        final id = int.tryParse(product['id']?.toString() ?? '') ?? 0;
-        final isSelected = _selectedProductIds.contains(id);
-        final stock = (product['stock'] ?? 0) as num;
-        final threshold = (product['lowStockThreshold'] ?? 10) as num;
-        return _buildListCard(
-            product, isSelected, stock > 0 && stock <= threshold);
-      },
+    final extraFooter = (_isLoadingMore || (!_hasMore && _filteredProducts.isNotEmpty))
+        ? 1
+        : 0;
+    return RefreshIndicator(
+      onRefresh: _loadProducts,
+      child: ListView.builder(
+        controller: _scrollController,
+        padding: AppConstants.pagePadding,
+        itemCount: _filteredProducts.length + extraFooter,
+        itemBuilder: (context, index) {
+          if (index >= _filteredProducts.length) {
+            return _buildLoadMoreFooter();
+          }
+          final product = _filteredProducts[index];
+          final id = int.tryParse(product['id']?.toString() ?? '') ?? 0;
+          final isSelected = _selectedProductIds.contains(id);
+          final stock = (product['stock'] ?? 0) as num;
+          final threshold = (product['lowStockThreshold'] ?? 10) as num;
+          return _buildListCard(
+              product, isSelected, stock > 0 && stock <= threshold);
+        },
+      ),
     );
   }
 
   Widget _buildGridView() {
-    return GridView.builder(
-      padding: AppConstants.pagePadding,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 0.72,
+    return RefreshIndicator(
+      onRefresh: _loadProducts,
+      child: CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+          SliverPadding(
+            padding: AppConstants.pagePadding,
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 0.72,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final product = _filteredProducts[index];
+                  final id = int.tryParse(product['id']?.toString() ?? '') ?? 0;
+                  final isSelected = _selectedProductIds.contains(id);
+                  final stock = (product['stock'] ?? 0) as num;
+                  final threshold =
+                      (product['lowStockThreshold'] ?? 10) as num;
+                  return _buildGridCard(
+                      product, isSelected, stock > 0 && stock <= threshold);
+                },
+                childCount: _filteredProducts.length,
+              ),
+            ),
+          ),
+          if (_isLoadingMore || (!_hasMore && _filteredProducts.isNotEmpty))
+            SliverToBoxAdapter(child: _buildLoadMoreFooter()),
+        ],
       ),
-      itemCount: _filteredProducts.length,
-      itemBuilder: (context, index) {
-        final product = _filteredProducts[index];
-        final id = int.tryParse(product['id']?.toString() ?? '') ?? 0;
-        final isSelected = _selectedProductIds.contains(id);
-        final stock = (product['stock'] ?? 0) as num;
-        final threshold = (product['lowStockThreshold'] ?? 10) as num;
-        return _buildGridCard(
-            product, isSelected, stock > 0 && stock <= threshold);
-      },
+    );
+  }
+
+  /// Sprint 13 W4.2 — loading spinner (loadMore aktif) veya "Tüm ürünler" bilgi
+  Widget _buildLoadMoreFooter() {
+    if (_isLoadingMore) {
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Center(
+        child: Text(
+          '${_filteredProducts.length} ${t('product.products_loaded') == 'product.products_loaded' ? 'ürün gösteriliyor' : t('product.products_loaded')}',
+          style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+        ),
+      ),
     );
   }
 
@@ -1002,250 +1114,47 @@ class _EnhancedProductListScreenState
     bool isSelected,
     bool isLowStock,
   ) {
+    // Sprint 14 W1.4: ortak ProductCard component'i kullan.
+    // Eski 240 LOC body emekli (status helper + StockChip + OEM mode satır
+    // hepsi ProductCard'a port edildi).
     final idString = product['id']?.toString();
-    final id       = int.tryParse(idString ?? '') ?? 0;
-    final status   = product['status']?.toString();
-    final imageUrl = product['imageUrl']?.toString();
-    final stock    = (product['stock'] ?? 0) as num;
-    final isOutOfStock = stock == 0;
-    final price    = product['price'] ?? 0;
-    final sku      = product['sku']?.toString() ?? '';
-    final category = product['category']?.toString() ?? '';
-
-    final accentColor = isSelected
-        ? AppColors.primary
-        : isOutOfStock
-            ? AppColors.danger
-            : isLowStock
-                ? AppColors.warning
-                : null;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isSelected ? AppColors.primary : AppColors.border,
-          width: isSelected ? 1.5 : 1,
-        ),
-        boxShadow: const [
-          BoxShadow(color: Color(0x0A000000), blurRadius: 8, offset: Offset(0, 2)),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Sol renk aksanı (stok/seçim durumu)
-              if (accentColor != null) Container(width: 4, color: accentColor),
-              // İçerik
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    if (_isSelectionMode) {
-                      setState(() {
-                        if (isSelected) {
-                          _selectedProductIds.remove(id);
-                        } else {
-                          _selectedProductIds.add(id);
-                        }
-                      });
-                    } else {
-                      context.go('/inventory/products/$idString');
-                    }
-                  },
-                  onLongPress: () => setState(() {
-                    _isSelectionMode = true;
-                    _selectedProductIds.add(id);
-                  }),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      children: [
-                        // Seçim ikonu
-                        if (_isSelectionMode)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 10),
-                            child: Icon(
-                              isSelected
-                                  ? Icons.check_circle_rounded
-                                  : Icons.radio_button_unchecked_rounded,
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : AppColors.textMuted,
-                              size: 22,
-                            ),
-                          ),
-
-                        // Ürün görseli
-                        Container(
-                          width: 68, height: 68,
-                          decoration: BoxDecoration(
-                            color: AppColors.bgLight,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                                color: AppColors.border.withValues(alpha: 0.6)),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: imageUrl != null && imageUrl.isNotEmpty
-                                ? Image.network(
-                                    imageUrl,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (ctx, err, st) =>
-                                        _productIconPlaceholder(),
-                                  )
-                                : _productIconPlaceholder(),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-
-                        // Bilgiler
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              // İsim + fiyat
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      product['name']?.toString() ?? '',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.textPrimary,
-                                        height: 1.2,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    _currencyFormat.format(price),
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w800,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-
-                              // SKU · Kategori
-                              Row(
-                                children: [
-                                  if (sku.isNotEmpty)
-                                    Text('SKU: $sku',
-                                        style: const TextStyle(
-                                            fontSize: 10,
-                                            color: AppColors.textMuted)),
-                                  if (sku.isNotEmpty && category.isNotEmpty)
-                                    const Text(' · ',
-                                        style: TextStyle(
-                                            fontSize: 10,
-                                            color: AppColors.textMuted)),
-                                  if (category.isNotEmpty)
-                                    Expanded(
-                                      child: Text(
-                                        category,
-                                        style: const TextStyle(
-                                            fontSize: 10,
-                                            color: AppColors.textMuted),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                ],
-                              ),
-
-                              // OEM satırları (yalnızca OEM modunda)
-                              if (_isOemSearching &&
-                                  (product['_oemNumbers'] ?? '')
-                                      .toString()
-                                      .isNotEmpty) ...[
-                                const SizedBox(height: 3),
-                                Row(children: [
-                                  const Icon(Icons.confirmation_number,
-                                      size: 11, color: AppColors.orange),
-                                  const SizedBox(width: 3),
-                                  Expanded(
-                                    child: Text('OEM: ${product['_oemNumbers']}',
-                                        style: const TextStyle(
-                                            fontSize: 10,
-                                            color: AppColors.orange),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis),
-                                  ),
-                                ]),
-                              ],
-                              if (_isOemSearching &&
-                                  (product['_crossRefs'] ?? '')
-                                      .toString()
-                                      .isNotEmpty) ...[
-                                const SizedBox(height: 2),
-                                Row(children: [
-                                  const Icon(Icons.compare_arrows,
-                                      size: 11, color: AppColors.info),
-                                  const SizedBox(width: 3),
-                                  Expanded(
-                                    child: Text('Ref: ${product['_crossRefs']}',
-                                        style: const TextStyle(
-                                            fontSize: 10, color: AppColors.info),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis),
-                                  ),
-                                ]),
-                              ],
-                              const SizedBox(height: 6),
-
-                              // Stok chip + durum badge
-                              Row(
-                                children: [
-                                  _StockChip(
-                                    stock: stock.toInt(),
-                                    unit: product['unit']?.toString() ?? '',
-                                    isOutOfStock: isOutOfStock,
-                                    isLowStock: isLowStock,
-                                    stockLabel: t('stock.stock'),
-                                  ),
-                                  if (status != null && status != 'ACTIVE') ...[
-                                    const SizedBox(width: 6),
-                                    AppBadge(
-                                      text: _getStatusLabel(status),
-                                      variant: _getStatusBadgeVariant(status),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+    final id = int.tryParse(idString ?? '') ?? 0;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: ProductCard(
+        mode: ProductCardMode.inventoryListView,
+        data: ProductCardData.fromMap(product),
+        sector: ref.watch(sectorConfigProvider),
+        currencyFormat: _currencyFormat,
+        selectionMode: _isSelectionMode,
+        selected: isSelected,
+        showOemRow: _isOemSearching,
+        showStatusBadge: true,
+        onTap: () {
+          if (_isSelectionMode) {
+            setState(() {
+              if (isSelected) {
+                _selectedProductIds.remove(id);
+              } else {
+                _selectedProductIds.add(id);
+              }
+            });
+          } else {
+            if (idString != null) {
+              context.go('/inventory/products/$idString');
+            }
+          }
+        },
+        onLongPress: () => setState(() {
+          _isSelectionMode = true;
+          _selectedProductIds.add(id);
+        }),
       ),
     );
   }
 
-  Widget _productIconPlaceholder() => Container(
-    color: AppColors.bgLight,
-    child: const Center(
-      child: Icon(Icons.inventory_2_outlined, color: AppColors.border, size: 28),
-    ),
-  );
+  // Sprint 14 W1.4: _productIconPlaceholder kaldırıldı — ProductCard'ın kendi
+  // _buildIconFallback'i (AppCachedImage errorWidget) bu işi yapar.
 
   // ── Grid kartı ────────────────────────────────────────────────────────────
 
@@ -1254,15 +1163,17 @@ class _EnhancedProductListScreenState
     bool isSelected,
     bool isLowStock,
   ) {
+    // Sprint 14 W1.4: ortak ProductCard component'i (grid mode).
     final idString = product['id']?.toString();
-    final id       = int.tryParse(idString ?? '') ?? 0;
-    final status   = product['status']?.toString();
-    final imageUrl = product['imageUrl']?.toString();
-    final stock    = (product['stock'] ?? 0) as num;
-    final isOutOfStock = stock == 0;
-    final price    = product['price'] ?? 0;
-
-    return GestureDetector(
+    final id = int.tryParse(idString ?? '') ?? 0;
+    return ProductCard(
+      mode: ProductCardMode.inventoryGridView,
+      data: ProductCardData.fromMap(product),
+      sector: ref.watch(sectorConfigProvider),
+      currencyFormat: _currencyFormat,
+      selectionMode: _isSelectionMode,
+      selected: isSelected,
+      showStatusBadge: true,
       onTap: () {
         if (_isSelectionMode) {
           setState(() {
@@ -1273,194 +1184,15 @@ class _EnhancedProductListScreenState
             }
           });
         } else {
-          context.go('/inventory/products/$idString');
+          if (idString != null) {
+            context.go('/inventory/products/$idString');
+          }
         }
       },
       onLongPress: () => setState(() {
         _isSelectionMode = true;
         _selectedProductIds.add(id);
       }),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
-            width: isSelected ? 1.5 : 1,
-          ),
-          boxShadow: const [
-            BoxShadow(color: Color(0x0A000000), blurRadius: 8, offset: Offset(0, 2)),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Görsel bölümü ──────────────────────────────────────────
-              Expanded(
-                flex: 60,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // Görsel
-                    imageUrl != null && imageUrl.isNotEmpty
-                        ? Image.network(
-                            imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (ctx, err, st) => Container(
-                              color: AppColors.bgLight,
-                              child: const Center(
-                                child: Icon(Icons.inventory_2_outlined,
-                                    color: AppColors.border, size: 36),
-                              ),
-                            ),
-                          )
-                        : Container(
-                            color: AppColors.bgLight,
-                            child: const Center(
-                              child: Icon(Icons.inventory_2_outlined,
-                                  color: AppColors.border, size: 36),
-                            ),
-                          ),
-                    // Alt gradient
-                    Positioned(
-                      bottom: 0, left: 0, right: 0,
-                      child: Container(
-                        height: 48,
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Color(0x00000000), Color(0x33000000)],
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Durum badge (sağ üst)
-                    if (status != null && status != 'ACTIVE')
-                      Positioned(
-                        top: 6, right: 6,
-                        child: AppBadge(
-                          text: _getStatusLabel(status),
-                          variant: _getStatusBadgeVariant(status),
-                        ),
-                      ),
-                    // Seçim ikonu (sol üst)
-                    if (_isSelectionMode)
-                      Positioned(
-                        top: 6, left: 6,
-                        child: Icon(
-                          isSelected
-                              ? Icons.check_circle_rounded
-                              : Icons.radio_button_unchecked_rounded,
-                          color: isSelected
-                              ? AppColors.primary
-                              : Colors.white.withValues(alpha: 0.9),
-                          size: 22,
-                        ),
-                      ),
-                    // Tükendi banner
-                    if (isOutOfStock)
-                      Positioned(
-                        bottom: 0, left: 0, right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 3),
-                          color: AppColors.danger.withValues(alpha: 0.88),
-                          child: Text(
-                            t('stock.out_of_stock'),
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 9,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-
-              // ── Bilgi bölümü ───────────────────────────────────────────
-              Expanded(
-                flex: 40,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        product['name']?.toString() ?? '',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                          height: 1.25,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          // Stok rozeti
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 7, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: isOutOfStock
-                                  ? AppColors.bgDanger
-                                  : isLowStock
-                                      ? AppColors.bgWarning
-                                      : AppColors.bgSuccess,
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (isLowStock && !isOutOfStock)
-                                  const Padding(
-                                    padding: EdgeInsets.only(right: 2),
-                                    child: Icon(Icons.warning_amber_rounded,
-                                        size: 9, color: AppColors.warning),
-                                  ),
-                                Text(
-                                  '${stock.toInt()}',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    color: isOutOfStock
-                                        ? AppColors.danger
-                                        : isLowStock
-                                            ? AppColors.warning
-                                            : AppColors.success,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          // Fiyat
-                          Text(
-                            _currencyFormat.format(price),
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -1671,61 +1403,8 @@ class _SheetChip extends StatelessWidget {
   }
 }
 
-class _StockChip extends StatelessWidget {
-  final int stock;
-  final String unit;
-  final bool isOutOfStock;
-  final bool isLowStock;
-  final String stockLabel;
-
-  const _StockChip({
-    required this.stock,
-    required this.unit,
-    required this.isOutOfStock,
-    required this.isLowStock,
-    required this.stockLabel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = isOutOfStock
-        ? AppColors.danger
-        : isLowStock
-            ? AppColors.warning
-            : AppColors.success;
-    final bg = isOutOfStock
-        ? AppColors.bgDanger
-        : isLowStock
-            ? AppColors.bgWarning
-            : AppColors.bgSuccess;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (isLowStock && !isOutOfStock)
-            Padding(
-              padding: const EdgeInsets.only(right: 3),
-              child: Icon(Icons.warning_amber_rounded, size: 10, color: color),
-            ),
-          Text(
-            '$stockLabel: $stock${unit.isNotEmpty ? ' $unit' : ''}',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// Sprint 14 W1.4: _StockChip emekli — ProductCard içindeki AppBadge stock
+// rozeti (success/warning/danger variant + unit suffix) bu işi yapar.
 
 class _SortTile extends StatelessWidget {
   final String label;

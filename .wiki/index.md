@@ -212,6 +212,7 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 - [[syntheses/sprint-7-implementation-plan-2026-04-25]] — Sprint 7 adım adım uygulama planı (B1+T1-T4+I2, 6 WP)
 - [[syntheses/accounts-development-analysis-2026-04-25-v2]] — geliştirme analizi v2 (review-revize: test+mimari+efor+sprint düzeltmeleri)
 - [[syntheses/accounts-development-analysis-2026-04-25]] — v1 (superseded by v2)
+- [[syntheses/accounts-balance-correctness-audit-2026-04-27]] — bakiye doğruluğu audit (verdict: ✅ yapısal doğru, 3 risk + 3 UX gap; Sprint 13 adayı 7 öneri)
 - [[syntheses/accounts-overview]] · [[syntheses/accounts-hub-production-readiness]] · [[syntheses/account-edit-form-ux]] · [[syntheses/transactions-card-improvements]]
 - [[syntheses/denormalization-strategy]]
 - [[syntheses/error-handling-guide]] — hata yönetim rehberi (pos-product-manager)

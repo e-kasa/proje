@@ -400,12 +400,42 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
       ),
       body: Column(
         children: [
+          // Sprint 13 W4.4: mobile uyarı banner — DataTable scroll mobile'da zor
+          // (Sprint 14: tam responsive kart layout planlandı)
+          if (MediaQuery.of(context).size.width < 600)
+            _buildMobileWarningBanner(t),
           const BatchHeaderForm(),
           _buildSearchBar(cfg, t),
           _BulkActionsPanel(t: t),
           _buildTabBar(state, t),
           Expanded(child: _buildBody(state, cfg, t)),
           _buildSummaryBar(state, t),
+        ],
+      ),
+    );
+  }
+
+  /// Sprint 13 W4.4 — kullanıcıya mobile'da yatay scroll uyarısı.
+  /// Tam responsive kart layout Sprint 14'te (`batch_product_screen` 6,891 LOC
+  /// derin müdahale gerek).
+  Widget _buildMobileWarningBanner(String Function(String) t) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      color: AppColors.bgWarning,
+      child: Row(
+        children: [
+          const Icon(Icons.screen_rotation_outlined,
+              size: 18, color: AppColors.warning),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              t('batch.mobile_landscape_hint') == 'batch.mobile_landscape_hint'
+                  ? 'Toplu giriş ekranı geniş ekran içindir. En iyi deneyim için yatay çevirin veya tablet/masaüstü kullanın.'
+                  : t('batch.mobile_landscape_hint'),
+              style: const TextStyle(fontSize: 11, color: AppColors.warning),
+            ),
+          ),
         ],
       ),
     );

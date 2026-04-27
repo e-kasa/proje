@@ -3,7 +3,21 @@ title: Ürün Ekranları Revize Planı (Sprint 12)
 tags: [synthesis, plan, ui-refactor, product, sprint-12]
 source: ".claude/plans/polymorphic-gathering-flute.md"
 date: 2026-04-27
-status: draft
+status: superseded-by-implementation
+---
+
+## ⚠️ IMPLEMENTASYON GERÇEKLEŞTİ — Sprint 12 Revize Sonucu
+
+Plan onaylandıktan sonra kod doğrulamasında **W2 + W3 scope'unun büyük çoğunluğunun zaten yapılmış olduğu** tespit edildi (Edit modal, sektör-aware step'ler, wizard refactor). Detay: [[log]] 2026-04-27 sprint-12 girişi.
+
+**Gerçek Sprint 12 sonucu:**
+- **W1 ✅**: ProductCard ortak component + referenceDataProvider + POS i18n purge
+- **W2 ❌ → ZATEN VARDI**: Edit Flow / tab consol / sektör tutarlılığı kod gerçeğinde mevcut
+- **W3 ❌ → ZATEN VARDI**: Wizard `add_product_wizard_screen.dart` 524 LOC coordinator + 6 step ayrı
+- **W4 ✅ kısmi**: ProductAddMethodSheet + AppCachedImage entegrasyon. Pagination provider + Batch mobile Sprint 13'e ertelendi (backend hazır, frontend scope büyük)
+
+Aşağıdaki orijinal plan referans olarak korundu — **gelecek sprint planları için** (W4.2/W4.4) kullanılabilir.
+
 ---
 
 # Ürün Ekranları Revize Planı (Sprint 12)

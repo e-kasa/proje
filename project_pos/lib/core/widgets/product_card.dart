@@ -6,6 +6,7 @@ import '../config/sector_config.dart';
 import '../theme/app_colors.dart';
 import '../utils/i18n_helper.dart';
 import 'app_badge.dart';
+import 'app_cached_image.dart';
 
 /// Sprint 12 — POS + Inventory için ortak ürün kartı.
 ///
@@ -26,15 +27,19 @@ class ProductCardData {
   final String? barcode;
   final double? price;
   final int stock;
+  final String? unit; // adet, kg, çift, vb.
   final String? brand;
   final String? categoryName;
   final String? imageUrl;
   final String? status; // ACTIVE | DRAFT | INACTIVE | OUT_OF_STOCK
   final int? minStockLevel; // null → app config default
-  final String? oemNumber; // autoParts
+  final String? oemNumber; // autoParts (kart üstü rozeti)
   final String? variantSize; // footwear (numara/beden)
   final String? variantColor;
   final String? warranty; // technology
+  // OEM search mode için (Inventory listesinde):
+  final String? oemNumbersText; // virgülle ayrılmış OEM listesi
+  final String? crossRefsText; // virgülle ayrılmış cross-ref listesi
   // POS-spesifik:
   final int? myStoreStock;
   final bool availableElsewhere;
@@ -46,6 +51,7 @@ class ProductCardData {
     this.barcode,
     this.price,
     this.stock = 0,
+    this.unit,
     this.brand,
     this.categoryName,
     this.imageUrl,
@@ -55,6 +61,8 @@ class ProductCardData {
     this.variantSize,
     this.variantColor,
     this.warranty,
+    this.oemNumbersText,
+    this.crossRefsText,
     this.myStoreStock,
     this.availableElsewhere = false,
   });
@@ -69,6 +77,7 @@ class ProductCardData {
           (map['basePrice'] as num?)?.toDouble() ??
           (map['price'] as num?)?.toDouble(),
       stock: (map['stock'] as num?)?.toInt() ?? 0,
+      unit: map['unit']?.toString(),
       brand: map['brand']?.toString(),
       categoryName: map['categoryName']?.toString() ?? map['category']?.toString(),
       imageUrl: map['imageUrl']?.toString() ?? map['image']?.toString(),
@@ -78,6 +87,8 @@ class ProductCardData {
       variantSize: map['variantSize']?.toString() ?? map['size']?.toString(),
       variantColor: map['variantColor']?.toString() ?? map['color']?.toString(),
       warranty: map['warranty']?.toString(),
+      oemNumbersText: map['_oemNumbers']?.toString(),
+      crossRefsText: map['_crossRefs']?.toString(),
       myStoreStock: (map['myStoreStock'] as num?)?.toInt(),
       availableElsewhere: map['availableElsewhere'] == true,
     );
@@ -97,6 +108,14 @@ class ProductCard extends ConsumerWidget {
   /// Stok eşiği — null ise [data.minStockLevel] veya default 5 kullanılır.
   final int? lowStockThreshold;
 
+  /// True ise OEM mode (Inventory) — `oemNumbersText` + `crossRefsText`
+  /// satırları liste kartında render edilir.
+  final bool showOemRow;
+
+  /// True ise `data.status` ACTIVE değilse (DRAFT/INACTIVE/OUT_OF_STOCK)
+  /// stok rozetinin yanına status badge eklenir.
+  final bool showStatusBadge;
+
   const ProductCard({
     super.key,
     required this.mode,
@@ -108,6 +127,8 @@ class ProductCard extends ConsumerWidget {
     this.selectionMode = false,
     this.selected = false,
     this.lowStockThreshold,
+    this.showOemRow = false,
+    this.showStatusBadge = false,
   });
 
   @override
@@ -322,6 +343,9 @@ class ProductCard extends ConsumerWidget {
                         ..._buildSectorBadges(),
                       ],
                     ),
+                    // Sprint 14 W1.4: OEM mode — search panel açıkken
+                    // OEM/CrossRef satırları
+                    if (showOemRow) ..._buildOemRows(t),
                   ],
                 ),
               ),
@@ -330,7 +354,14 @@ class ProductCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildStockBadge(t),
+                  Wrap(
+                    spacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      _buildStockBadge(t),
+                      if (showStatusBadge) ..._buildStatusBadgeWidgets(t),
+                    ],
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     _money.format(price),
@@ -458,14 +489,13 @@ class ProductCard extends ConsumerWidget {
   Widget _buildThumbnail(dynamic size, {bool square = true}) {
     final hasImage = data.imageUrl != null && data.imageUrl!.isNotEmpty;
     if (hasImage) {
-      // TODO(sprint12-w4): cached_network_image entegrasyonu — slow network
-      // için placeholder + errorWidget. Şimdilik Image.network fallback.
-      return Image.network(
-        data.imageUrl!,
-        width: square ? size : null,
-        height: size,
+      // W4.3: cached_network_image üzerinden — slow network için cache + loader
+      return AppCachedImage(
+        imageUrl: data.imageUrl!,
+        width: square ? (size is double ? size : null) : null,
+        height: size is double ? size : null,
         fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _buildIconFallback(size),
+        errorWidget: _buildIconFallback(size),
       );
     }
     return _buildIconFallback(size);
@@ -497,10 +527,61 @@ class ProductCard extends ConsumerWidget {
     if (_isTransferOnly) {
       return AppBadge.warning(t('stock.in_transit'));
     }
+    final unitSuffix =
+        data.unit != null && data.unit!.isNotEmpty ? ' ${data.unit}' : '';
     if (_isLowStock) {
-      return AppBadge.warning('$_effectiveStock');
+      return AppBadge.warning('$_effectiveStock$unitSuffix',
+          icon: Icons.warning_amber_rounded);
     }
-    return AppBadge.success('$_effectiveStock');
+    return AppBadge.success('$_effectiveStock$unitSuffix');
+  }
+
+  /// W1.4 — DRAFT/INACTIVE/OUT_OF_STOCK için ek status rozeti.
+  /// ACTIVE veya null ise hiçbir şey render etmez (boş liste).
+  List<Widget> _buildStatusBadgeWidgets(String Function(String) t) {
+    final s = data.status;
+    if (s == null || s == 'ACTIVE') return const [];
+    final (label, variant) = switch (s) {
+      'DRAFT' => (t('product.status_draft'), BadgeVariant.warning),
+      'INACTIVE' => (t('product.status_inactive'), BadgeVariant.secondary),
+      'OUT_OF_STOCK' => (t('stock.out_of_stock'), BadgeVariant.danger),
+      _ => (s, BadgeVariant.secondary),
+    };
+    return [AppBadge(text: label, variant: variant)];
+  }
+
+  /// W1.4 — OEM mode (Inventory listesinde search OEM toggle açık) — eski
+  /// `_buildListCard` içindeki OEM/CrossRef satırları.
+  List<Widget> _buildOemRows(String Function(String) t) {
+    final widgets = <Widget>[];
+    if (data.oemNumbersText != null && data.oemNumbersText!.isNotEmpty) {
+      widgets.add(const SizedBox(height: 3));
+      widgets.add(Row(children: [
+        const Icon(Icons.confirmation_number,
+            size: 11, color: AppColors.warning),
+        const SizedBox(width: 3),
+        Expanded(
+          child: Text('OEM: ${data.oemNumbersText}',
+              style: const TextStyle(fontSize: 10, color: AppColors.warning),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
+        ),
+      ]));
+    }
+    if (data.crossRefsText != null && data.crossRefsText!.isNotEmpty) {
+      widgets.add(const SizedBox(height: 2));
+      widgets.add(Row(children: [
+        const Icon(Icons.compare_arrows, size: 11, color: AppColors.info),
+        const SizedBox(width: 3),
+        Expanded(
+          child: Text('Ref: ${data.crossRefsText}',
+              style: const TextStyle(fontSize: 10, color: AppColors.info),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
+        ),
+      ]));
+    }
+    return widgets;
   }
 
   /// Sektör config'e göre OEM/beden/renk/garanti rozetleri.

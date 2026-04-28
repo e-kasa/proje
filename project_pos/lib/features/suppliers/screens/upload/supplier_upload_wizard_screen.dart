@@ -746,63 +746,67 @@ class _MatchExistingFormState extends State<_MatchExistingForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Benzer Ürünler:',
-          style: TextStyle(fontWeight: FontWeight.bold),
+    return RadioGroup<SimilarProduct>(
+      groupValue: selectedProduct,
+      onChanged: (value) {
+        setState(() {
+          selectedProduct = value;
+          selectedVariant = null;
+        });
+      },
+      child: RadioGroup<ProductVariant>(
+        groupValue: selectedVariant,
+        onChanged: (value) {
+          setState(() {
+            selectedVariant = value;
+          });
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Benzer Ürünler:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            ...widget.product.similarProducts.map((product) {
+              return RadioListTile<SimilarProduct>(
+                title: Text(product.name),
+                subtitle: Text('${product.sku} - ${product.brand}'),
+                value: product,
+              );
+            }),
+            if (selectedProduct != null) ...[
+              const SizedBox(height: 16),
+              const Text(
+                'Varyant Seçin:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              ...selectedProduct!.variants.map((variant) {
+                return RadioListTile<ProductVariant>(
+                  title: Text(variant.name),
+                  subtitle: Text(variant.attributesText),
+                  value: variant,
+                );
+              }),
+            ],
+            if (selectedVariant != null) ...[
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  widget.onSave({
+                    'productSku': selectedProduct!.sku,
+                    'variantSku': selectedVariant!.sku,
+                    'stockToAdd': widget.product.readStock,
+                  });
+                },
+                child: const Text('Kaydet'),
+              ),
+            ],
+          ],
         ),
-        const SizedBox(height: 8),
-        ...widget.product.similarProducts.map((product) {
-          return RadioListTile<SimilarProduct>(
-            title: Text(product.name),
-            subtitle: Text('${product.sku} - ${product.brand}'),
-            value: product,
-            groupValue: selectedProduct,
-            onChanged: (value) {
-              setState(() {
-                selectedProduct = value;
-                selectedVariant = null;
-              });
-            },
-          );
-        }),
-        if (selectedProduct != null) ...[
-          const SizedBox(height: 16),
-          const Text(
-            'Varyant Seçin:',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          ...selectedProduct!.variants.map((variant) {
-            return RadioListTile<ProductVariant>(
-              title: Text(variant.name),
-              subtitle: Text(variant.attributesText),
-              value: variant,
-              groupValue: selectedVariant,
-              onChanged: (value) {
-                setState(() {
-                  selectedVariant = value;
-                });
-              },
-            );
-          }),
-        ],
-        if (selectedVariant != null) ...[
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              widget.onSave({
-                'productSku': selectedProduct!.sku,
-                'variantSku': selectedVariant!.sku,
-                'stockToAdd': widget.product.readStock,
-              });
-            },
-            child: const Text('Kaydet'),
-          ),
-        ],
-      ],
+      ),
     );
   }
 }
@@ -827,28 +831,29 @@ class _AddVariantFormState extends State<_AddVariantForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Ürün Seçin:',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        ...widget.product.similarProducts.map((product) {
-          return RadioListTile<SimilarProduct>(
-            title: Text(product.name),
-            subtitle: Text('${product.sku} - ${product.brand}'),
-            value: product,
-            groupValue: selectedProduct,
-            onChanged: (value) {
-              setState(() {
-                selectedProduct = value;
-              });
-            },
-          );
-        }),
-        if (selectedProduct != null) ...[
+    return RadioGroup<SimilarProduct>(
+      groupValue: selectedProduct,
+      onChanged: (value) {
+        setState(() {
+          selectedProduct = value;
+        });
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Ürün Seçin:',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          ...widget.product.similarProducts.map((product) {
+            return RadioListTile<SimilarProduct>(
+              title: Text(product.name),
+              subtitle: Text('${product.sku} - ${product.brand}'),
+              value: product,
+            );
+          }),
+          if (selectedProduct != null) ...[
           const SizedBox(height: 16),
           TextFormField(
             controller: _variantNameController,
@@ -893,7 +898,8 @@ class _AddVariantFormState extends State<_AddVariantForm> {
             child: const Text('Kaydet'),
           ),
         ],
-      ],
+        ],
+      ),
     );
   }
 

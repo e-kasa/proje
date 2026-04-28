@@ -359,7 +359,7 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen> {
           ]),
           Switch(
             value: _isActive,
-            activeColor: AppColors.success,
+            activeThumbColor: AppColors.success,
             onChanged: (v) => setState(() => _isActive = v),
           ),
         ],

@@ -92,7 +92,7 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
                 children: [
                   // Marka secimi
                   DropdownButtonFormField<String>(
-                    value: selectedMake,
+                    initialValue: selectedMake,
                     isExpanded: true,
                     decoration: const InputDecoration(
                       labelText: 'Arac Markasi',
@@ -118,7 +118,7 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
 
                   // Model secimi
                   DropdownButtonFormField<String>(
-                    value: selectedModel,
+                    initialValue: selectedModel,
                     isExpanded: true,
                     decoration: const InputDecoration(
                       labelText: 'Arac Modeli',

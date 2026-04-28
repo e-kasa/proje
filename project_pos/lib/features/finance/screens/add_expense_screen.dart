@@ -90,6 +90,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         }
       });
     } catch (e) {
+      if (!mounted) return;
       if (!context.mounted) return;
       AppToast.error(context, i18nOf(ref)('common.error'));
     }

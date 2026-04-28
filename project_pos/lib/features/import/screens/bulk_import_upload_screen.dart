@@ -764,7 +764,6 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
   Widget _buildTemplateSection() {
     final sector = _sectors.firstWhere((s) => s['key'] == _selectedSector);
     final color = sector['color'] as Color;
-    final label = sector['label'] as String;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -822,7 +821,6 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
   }
 
   void _downloadTemplate() {
-    final sector = _sectors.firstWhere((s) => s['key'] == _selectedSector);
     AppToast.success(context, t('bulk_import.template_downloading')); // TODO: i18n
     // TODO: Call backend to download sector-specific template
     // ref.read(bulkImportServiceProvider).downloadTemplate(_selectedSector);

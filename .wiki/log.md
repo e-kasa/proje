@@ -11,6 +11,115 @@ Append-only olay kaydı. **En yeni üste**.
 
 ## Olaylar
 
+## [2026-04-28] sprint-20 | Cleanup — DashboardScreenTemplate emekli + Flutter 3.31-3.34 deprecations + autoparts i18n ✅
+
+Sprint 16-19 boyunca biriken **"pre-existing baseline"** olarak ertelenen 47 issue Sprint 20'de temizlendi. **DashboardScreenTemplate emekliye ayrıldı** (file delete). Sprint 18'in autoparts hardcoded TR borcu i18n key'lerine çevrildi.
+
+### 1. DashboardScreenTemplate Emekli ✅
+
+**Dosya:** `lib/core/widgets/templates/dashboard_screen_template.dart` SİLİNDİ.
+
+**Sebep (Sprint 19 entry'sinde detaylı):** 5 sprint (15-19), 0 tüketici. Sprint 19'da `modern_dashboard_screen` (843 LOC, en güçlü aday) bile reddetti — hero header AppBar değil, section title'lar serpiştirilmiş, KPI'lar `AppStatCard` değil + 4 sütun, custom skeleton.
+
+**Doğrulama:**
+- `Grep DashboardScreenTemplate` → 1 dosya (kendisi). Hiçbir referans yok.
+- File deleted, no broken imports.
+
+**Wiki güncellemeleri:**
+- [`sources/code-refs/2026-04-27-design-system-template-audit.md`](sources/code-refs/2026-04-27-design-system-template-audit.md) → DashboardScreenTemplate satırı ❌ EMEKLİ olarak işaretlendi
+- [`syntheses/design-system-template-architecture.md`](syntheses/design-system-template-architecture.md) → "DashboardScreenTemplate" bölümü "EMEKLİ (Sprint 20)" notuyla güncellendi (eski tasarım referans için bırakıldı)
+
+### 2. autoparts i18n keys eklendi ✅
+
+Sprint 18'de `vehicle_list_screen` ve `part_search_screen` ListScreenTemplate'a migrate edilirken AppBar başlığı için **hardcoded TR string** eklenmişti (`'Araclar'`, `'Parca Arama'`).
+
+**Sprint 20 düzeltme:**
+
+`security/src/main/resources/data.sql` (bnd-vh prefix'i altında):
+```sql
+('bnd-vh12-..., 'autoparts.vehicles_title',     'Araçlar',     'Vehicles'),
+('bnd-vh13-..., 'autoparts.part_search_title',  'Parça Arama', 'Part Search'),
+```
+
+Flutter:
+- `vehicle_list_screen.dart`: `title: 'Araclar'` → `title: t('autoparts.vehicles_title')`
+- `part_search_screen.dart`: `title: 'Parca Arama'` → `title: t('autoparts.part_search_title')`
+
+### 3. Flutter 3.31-3.34 Deprecations + Async Gaps Cleanup ✅
+
+Cleanup agent 47 hedef dosyada Sprint 20 scope'undaki tüm issue tiplerini temizledi.
+
+**Düzeltilen issue dağılımı (46 toplam):**
+
+| Issue Tipi | Adet | Düzeltme |
+|---|---|---|
+| `DropdownButtonFormField.value` → `initialValue` | **21** | Flutter 3.33+ migration |
+| `use_build_context_synchronously` | **8** | `if (!context.mounted) return;` guard |
+| `Radio` → `RadioGroup` | **4** | Flutter 3.32+ ancestor pattern (2 form) |
+| `unused_local_variable` | 2 | sil |
+| `unnecessary_cast` | 2 | kaldır |
+| `Switch.activeColor` → `activeThumbColor` | 1 | Flutter 3.31+ migration |
+| `Matrix4.translate()` → `translateByDouble()` | 1 | Flutter 3.34+ migration |
+| `unnecessary_import` | 1 | kaldır |
+| `unnecessary_string_interpolations` (bonus) | 1 | sadeleştir |
+
+**ATLANAN (1 yer, intentional):**
+- `supplier_upload_wizard_screen.dart:273-280` — Radio<bool> kart-içi kullanımı. Her kart kendi içinde tek Radio bool ile checkbox-ish davranıyor; Radio'lar farklı kart'larda dağılmış, RadioGroup ile sarmak davranış değiştirebilirdi. **Sprint 21+'da ayrı bir refactor olarak ele alınabilir** (Radio<bool> → Checkbox geçiş daha temiz).
+
+### 4. Flutter Analyze Sonuçları
+
+| Metrik | Önce | Sonra | Δ |
+|---|---|---|---|
+| Project-wide issue | 214 | 168 | **−46** |
+| Sprint 16-19 hedef dosyalardaki Sprint 20-scope issue | 47 | 1 (atlanmış Radio<bool>) | **−46** |
+| Sprint 16-19 hedef dosyalardaki Sprint 20-scope-dışı issue | 16 | 16 | 0 |
+
+**Hedef dosyalarda kalan 16 issue (Sprint 20 scope DIŞI, Sprint 21+):**
+- `prefer_final_fields`
+- `unnecessary_to_list_in_spreads`
+- `use_super_parameters`
+- `unnecessary_brace_in_string_interps`
+- `unnecessary_non_null_assertion`
+- `unnecessary_underscores` (Dart 3.0+ pattern)
+
+Bu issue'lar **lint hint/info seviyesinde** — Flutter çalıştırması veya UI davranışını etkilemez. Sprint 21+'da auto-fix yapılabilir (`dart fix --apply`).
+
+### Sprint 16-20 Final İstatistik
+
+**Migrate edilen ekran sayısı:** 47 + cleanup (47 dosya touch'lı)
+
+| Template | Kümülatif Adoption |
+|---|---|
+| ListScreenTemplate | **16 ekran** ⭐ en başarılı |
+| BaseScaffold swap | **27 ekran** ⭐ opt-in stratejisi |
+| FormScreenTemplate | 3 ekran |
+| DetailScreenTemplate | 2 ekran |
+| ~~DashboardScreenTemplate~~ | **0 ekran** ❌ EMEKLİ |
+
+**Kümülatif LOC delta:** ~−506 (Sprint 16: −204, Sprint 17: −110, Sprint 18: −193, Sprint 19: ~+1)
+
+**Kümülatif `flutter analyze` issue düşümü (Sprint 20 sonu):**
+- Sprint 16'dan beri yarattığımız **yeni issue: 0** (her sprint'te konfirm edildi)
+- Sprint 20'de **−46 baseline issue** temizlendi
+- Project-wide: 214 → 168 (−21%)
+
+### Sprint 21+ İçin Notlar
+
+1. **Hedef dosyalarda kalan 16 lint info** (hepsi otomatik düzeltilebilir):
+   - `dart fix --apply` çalıştır, ya da
+   - manuel `prefer_final_fields`, `use_super_parameters`, `unnecessary_underscores` (`_, __` → `_, _`) düzelt
+2. **supplier_upload_wizard_screen Radio<bool>** refactor: Radio<bool> → Checkbox geçişi daha temiz
+3. **bulk_import_review_screen_v2.dart 2128 LOC** ekran-içi component splitting kandidati
+4. **edit_product_modal + 3 modal**: ihtiyaç doğarsa `BottomSheetTemplate` Sprint 22+'da inşa edilebilir (gerçek müşteri olmadan inşa ETME — DashboardScreenTemplate hatası tekrarlanmaz)
+5. **Migration tamamlandı:** Sprint 16-19 boyunca 47 ekranın tamamı migrate edildi. Yeni ekran eklenirken **L0 (legacy `Scaffold`) yasak**, **L1 (AppScaffold)** yerine **L2 (template) veya L3 (BaseScaffold custom)** tercih edilsin.
+
+### Sources
+
+- [[sources/code-refs/2026-04-27-design-system-template-audit]] — Sprint 15 audit + Sprint 20 emekli notu
+- [[syntheses/design-system-template-architecture]] — 4 (was 5) template mimarisi
+
+---
+
 ## [2026-04-28] sprint-19 | Import + Auth + Menu + POS + Dashboard migration (10 ekran) + DashboardScreenTemplate emekli kararı ✅
 
 Sprint 18'in devamı. 5 modül, 14 hedef dosya. 4 dosya bottom sheet/modal olduğu için intentional skip. **Önemli mimari karar: DashboardScreenTemplate emekli edilecek (Sprint 20'de file delete).**

@@ -152,7 +152,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: fuelType.isEmpty ? null : fuelType,
+                  initialValue: fuelType.isEmpty ? null : fuelType,
                   decoration: const InputDecoration(
                     labelText: 'Yakit Tipi',
                     border: OutlineInputBorder(),
@@ -169,7 +169,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: bodyType.isEmpty ? null : bodyType,
+                  initialValue: bodyType.isEmpty ? null : bodyType,
                   decoration: const InputDecoration(
                     labelText: 'Kasa Tipi',
                     border: OutlineInputBorder(),

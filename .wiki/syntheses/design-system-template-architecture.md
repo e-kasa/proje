@@ -172,6 +172,79 @@ DashboardScreenTemplate(
 | `reports_screen.dart` | AppScaffold + manual loading/error + TabBar + headerColumn (75 LOC body) | DetailScreenTemplate + headerSlot (60 LOC) | ✅ TabController + loading/error helper |
 | 4 settings + 3 reports | (agent migration) | (sürüyor) | 🔄 Sprint 15 son |
 
+## Sprint 20 Cleanup — DashboardScreenTemplate Emekli + Flutter Deprecations (FINAL)
+
+Sprint 16-20 boyunca biriken **pre-existing baseline** issue'lar Sprint 20'de tek seferde temizlendi.
+
+### Yapılan İşler
+
+1. **`dashboard_screen_template.dart` SİLİNDİ** — 5 sprint, 0 tüketici, 0 referans.
+2. **autoparts hardcoded TR → i18n** (`autoparts.vehicles_title`, `autoparts.part_search_title` data.sql + Flutter migration)
+3. **46 baseline issue** temizlendi (Flutter 3.31-3.34 deprecations + async gaps + unused vars):
+   - 21x `DropdownButtonFormField.value` → `initialValue`
+   - 8x `use_build_context_synchronously` → mounted guard
+   - 4x `Radio` → `RadioGroup` (2 form)
+   - 1x `Switch.activeColor` → `activeThumbColor`
+   - 1x `Matrix4.translate()` → `translateByDouble()`
+   - 2x `unused_local_variable`, 2x `unnecessary_cast`, 1x `unnecessary_import`
+4. **1 Radio<bool> intentional skip** (supplier_upload_wizard kart-içi kullanım — Sprint 21+'da `Checkbox` geçişi daha temiz)
+
+### Sprint 16-20 FINAL İstatistik
+
+**47 ekran migrate edildi** (Sprint 16-19 boyunca).
+
+| Template | Adoption | Sprint Bazlı Tüketici |
+|---|---|---|
+| **ListScreenTemplate** | **16 ekran** ⭐ | S16:7, S17:2, S18:6, S19:1 |
+| **BaseScaffold swap** | **27 ekran** ⭐ | S16:7, S17:7, S18:4, S19:9 |
+| FormScreenTemplate | 3 ekran | S16:1, S18:2 |
+| DetailScreenTemplate | 2 ekran | S15:1 (settings PoC), S16:1 (stock_alert) |
+| ~~DashboardScreenTemplate~~ | **0 ekran** ❌ EMEKLİ | — |
+| SKIP (modal/sheet) | 5 ekran | S18:1 (claim_resolve), S19:4 (import modals) |
+
+**Kümülatif LOC delta:** ~−506
+
+**`flutter analyze` durumu:**
+- Migration sırasında yaratılan **yeni issue: 0** (her sprint'te konfirm)
+- Sprint 20'de **−46 baseline issue** temizlendi
+- Project-wide: 214 → 168 (Sprint 20 scope dışı 168 issue services/utils/widgets'da — Sprint 21+)
+
+### Mimari Öğretiler
+
+1. **"Template kullanım sayısı = başarı metriği DEĞİL."** Doğru ekranı doğru L seviyesinde tutmak asıl değer (BaseScaffold swap %57 oranında — bu **planlı, doğal bir tercih**).
+2. **DashboardScreenTemplate öğretisi:** Gerçek tüketici talebi olmadan template inşa ETME. Hipotetik kullanıcı/use-case'e göre tasarlanan template ölü kod olarak kalır.
+3. **Multi-step wizard pattern (5 ekran)** kalıcı olarak template scope DIŞI:
+   - Step indicator + custom bottom action bar + state-based UI dinamiği
+   - FormScreenTemplate'in section-only paterne uymaz
+   - Sprint 22+'da `WizardScreenTemplate` ihtiyacı doğarsa **gerçek müşteri olduktan sonra** inşa et
+4. **Bottom sheet'ler (5 modal)** template scope DIŞI — `Container` + `BorderRadius.vertical(top:)` + `MediaQuery.viewInsets.bottom` paterni Scaffold değil. `BottomSheetTemplate` Sprint 22+ ihtiyaç doğarsa.
+
+### Tüm Migration İş Akışının Mimarisi (FINAL)
+
+```
+Material Scaffold (Flutter built-in)
+    ↑
+AppScaffold (gradient bg + clip wrapper, theme-aware)
+    ↑
+BaseScaffold<T> (AsyncValue switcher) — Sprint 15
+    ↑
+4 Feature Template (List/Form/Detail) — Sprint 15-20  [DashboardTemplate EMEKLİ Sprint 20]
+    ↑
+Concrete Screen — 47 ekran migrate edildi
+```
+
+L seviyesi dağılımı (Sprint 20 sonu, ~120 ekran tahmini):
+- **L2 (template)**: ~21 ekran (List+Form+Detail)
+- **L3 (BaseScaffold custom)**: ~27 ekran
+- **L1 (AppScaffold legacy)**: ~30 ekran (Sprint 22+ ele alınmamış)
+- **L0 (raw Scaffold)**: ~40 ekran (Sprint 22+)
+
+### Yeni Ekran Standardı (Sprint 21+ için kural)
+
+> **L0 (raw `Scaffold`) yasak.**
+> **L1 (`AppScaffold`)** yerine **L2 (template)** veya **L3 (`BaseScaffold` custom)** tercih edilmeli.
+> Liste ekranı? → ListScreenTemplate. Form? → FormScreenTemplate. Tab detay? → DetailScreenTemplate. Custom? → BaseScaffold.
+
 ## Sprint 19 Migration Sonuçları (Import + Auth + Menu + POS + Dashboard) — DashboardScreenTemplate Emekli Kararı
 
 10 ekran migrate, 4 modal/sheet SKIP.

@@ -200,7 +200,7 @@ class _PartSearchScreenState extends ConsumerState<PartSearchScreen> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _selectedMake,
+                    initialValue: _selectedMake,
                     isExpanded: true,
                     decoration: const InputDecoration(
                       labelText: 'Marka',
@@ -219,7 +219,7 @@ class _PartSearchScreenState extends ConsumerState<PartSearchScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _selectedModel,
+                    initialValue: _selectedModel,
                     isExpanded: true,
                     decoration: const InputDecoration(
                       labelText: 'Model',

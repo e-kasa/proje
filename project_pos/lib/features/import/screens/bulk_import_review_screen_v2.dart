@@ -375,10 +375,12 @@ class _BulkImportReviewScreenV2State extends ConsumerState<BulkImportReviewScree
       await Future.delayed(const Duration(milliseconds: 50));
     }
 
+    if (!mounted) return;
     setState(() {
       _selectedProducts.clear();
     });
 
+    if (!context.mounted) return;
     AppToast.success(context, '$processed ürün için önerilen aksiyonlar uygulandı');
   }
 
@@ -428,10 +430,12 @@ class _BulkImportReviewScreenV2State extends ConsumerState<BulkImportReviewScree
       await Future.delayed(const Duration(milliseconds: 50));
     }
 
+    if (!mounted) return;
     setState(() {
       _selectedProducts.clear();
     });
 
+    if (!context.mounted) return;
     AppToast.success(context, '${products.length} yeni ürün kaydedildi');
   }
 
@@ -489,10 +493,12 @@ class _BulkImportReviewScreenV2State extends ConsumerState<BulkImportReviewScree
       await Future.delayed(const Duration(milliseconds: 50));
     }
 
+    if (!mounted) return;
     setState(() {
       _selectedProducts.clear();
     });
 
+    if (!context.mounted) return;
     AppToast.success(context, '${products.length} ürünün stoğu güncellendi');
   }
 
@@ -535,10 +541,12 @@ class _BulkImportReviewScreenV2State extends ConsumerState<BulkImportReviewScree
       await Future.delayed(const Duration(milliseconds: 50));
     }
 
+    if (!mounted) return;
     setState(() {
       _selectedProducts.clear();
     });
 
+    if (!context.mounted) return;
     AppToast.info(context, '${products.length} ürün atlandı');
   }
 
@@ -718,6 +726,8 @@ class _BulkImportReviewScreenV2State extends ConsumerState<BulkImportReviewScree
       await Future.delayed(const Duration(milliseconds: 30));
     }
 
+    if (!mounted) return;
+    if (!context.mounted) return;
     AppToast.success(context, '${targets.length} ürüne karar uygulandı');
   }
 
@@ -1425,7 +1435,7 @@ class _BulkImportReviewScreenV2State extends ConsumerState<BulkImportReviewScree
             children: [
               Expanded(
                 child: DropdownButtonFormField<ProductStatus?>(
-                  value: _filterStatus,
+                  initialValue: _filterStatus,
                   decoration: const InputDecoration(
                     labelText: 'Durum Filtresi',
                     border: OutlineInputBorder(),

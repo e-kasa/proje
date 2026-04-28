@@ -306,7 +306,7 @@ class _MenuCardState extends State<_MenuCard> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeInOut,
-        transform: _isHovered ? (Matrix4.identity()..translate(0, -4, 0)) : Matrix4.identity(),
+        transform: _isHovered ? (Matrix4.identity()..translateByDouble(0, -4, 0, 1)) : Matrix4.identity(),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),

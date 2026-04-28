@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/templates/form_screen_template.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 
@@ -152,162 +153,141 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
   Widget build(BuildContext context) {
     final isEdit = widget.category != null;
 
-    return AppScaffold(
-      appBar: AppAppBar.primary(
-        title: isEdit ? t('categories.edit') : t('categories.add'),
-        actions: [
-          if (_isLoading)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
+    // Sprint 16-B: FormScreenTemplate migration.
+    // - 3 AppSectionCard → FormSection list (template her bölüm için header çiziyor).
+    // - Body padding AppConstants.pagePadding korundu.
+    // - Save action FormScreenTemplate.onSave (bottom bar otomatik).
+    // - Edit modunda level badge bottom bar yerine bağımsız bir "info" section'ı olarak ekrana koyuldu.
+    // - AppAppBar.primary → standard (template kısıtı, görsel minor change).
+    return FormScreenTemplate(
+      title: isEdit ? t('categories.edit') : t('categories.add'),
+      formKey: _formKey,
+      isSaving: _isLoading,
+      onSave: _saveCategory,
+      saveLabel: isEdit ? t('common.edit') : t('common.save'),
+      padding: AppConstants.pagePadding,
+      sections: [
+        FormSection(
+          title: t('categories.basic_info'),
+          icon: Icons.info_outline,
+          fields: [
+            AppInput(
+              controller: _nameController,
+              label: '${t('categories.title')} *',
+              hint: t('categories.name_hint'),
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? t('categories.name_required')
+                  : null,
+            ),
+            const SizedBox(height: 16),
+            AppInput(
+              controller: _descriptionController,
+              label: t('categories.description'),
+              hint: t('categories.description_hint'),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        FormSection(
+          title: t('categories.icon_selection'),
+          icon: Icons.widgets_outlined,
+          fields: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _availableIcons(t).map(_buildIconTile).toList(),
+            ),
+          ],
+        ),
+        FormSection(
+          title: t('categories.advanced_settings'),
+          icon: Icons.settings_outlined,
+          fields: [
+            _loadingParents
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                : DropdownButtonFormField<String?>(
+                    initialValue: _parentId,
+                    decoration: InputDecoration(
+                      labelText: t('categories.parent_category'),
+                      hintText: t('categories.parent_hint'),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: AppConstants.borderRadiusMedium,
+                        borderSide:
+                            const BorderSide(color: AppColors.border, width: 1.5),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: AppConstants.borderRadiusMedium,
+                        borderSide:
+                            const BorderSide(color: AppColors.border, width: 1.5),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: AppConstants.borderRadiusMedium,
+                        borderSide:
+                            const BorderSide(color: AppColors.primary, width: 2),
+                      ),
+                    ),
+                    items: [
+                      DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text('─ ${t('categories.parent_root')}'),
+                      ),
+                      ..._parentCandidates.map((cat) {
+                        return DropdownMenuItem<String?>(
+                          value: cat['id']?.toString(),
+                          child: Text(
+                            _parentLabel(cat),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }),
+                    ],
+                    onChanged: (v) => setState(() => _parentId = v),
+                  ),
+            const SizedBox(height: 16),
+            AppInput(
+              controller: _sortOrderController,
+              label: t('categories.sort_order'),
+              hint: '0',
+              keyboardType: TextInputType.number,
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 4, left: 4),
+              child: Text(
+                t('categories.sort_order_help'),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textMuted,
                 ),
               ),
             ),
-        ],
-      ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: AppConstants.pagePadding,
-          children: [
-            AppSectionCard(
-              title: t('categories.basic_info'),
-              icon: Icons.info_outline,
-              children: [
-                AppInput(
-                  controller: _nameController,
-                  label: '${t('categories.title')} *',
-                  hint: t('categories.name_hint'),
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? t('categories.name_required')
-                      : null,
-                ),
-                const SizedBox(height: 16),
-                AppInput(
-                  controller: _descriptionController,
-                  label: t('categories.description'),
-                  hint: t('categories.description_hint'),
-                  maxLines: 3,
-                ),
-              ],
-            ),
             const SizedBox(height: 16),
-            AppSectionCard(
-              title: t('categories.icon_selection'),
-              icon: Icons.widgets_outlined,
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _availableIcons(t).map(_buildIconTile).toList(),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(t('categories.status')),
+              subtitle: Text(
+                _isActive ? t('common.active') : t('common.passive'),
+                style: TextStyle(
+                  color:
+                      _isActive ? AppColors.success : AppColors.danger,
+                  fontSize: 12,
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            AppSectionCard(
-              title: t('categories.advanced_settings'),
-              icon: Icons.settings_outlined,
-              children: [
-                _loadingParents
-                    ? const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Center(child: CircularProgressIndicator()),
-                      )
-                    : DropdownButtonFormField<String?>(
-                        initialValue: _parentId,
-                        decoration: InputDecoration(
-                          labelText: t('categories.parent_category'),
-                          hintText: t('categories.parent_hint'),
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: AppConstants.borderRadiusMedium,
-                            borderSide:
-                                const BorderSide(color: AppColors.border, width: 1.5),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: AppConstants.borderRadiusMedium,
-                            borderSide:
-                                const BorderSide(color: AppColors.border, width: 1.5),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: AppConstants.borderRadiusMedium,
-                            borderSide:
-                                const BorderSide(color: AppColors.primary, width: 2),
-                          ),
-                        ),
-                        items: [
-                          DropdownMenuItem<String?>(
-                            value: null,
-                            child: Text('─ ${t('categories.parent_root')}'),
-                          ),
-                          ..._parentCandidates.map((cat) {
-                            return DropdownMenuItem<String?>(
-                              value: cat['id']?.toString(),
-                              child: Text(
-                                _parentLabel(cat),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            );
-                          }),
-                        ],
-                        onChanged: (v) => setState(() => _parentId = v),
-                      ),
-                const SizedBox(height: 16),
-                AppInput(
-                  controller: _sortOrderController,
-                  label: t('categories.sort_order'),
-                  hint: '0',
-                  keyboardType: TextInputType.number,
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 4, left: 4),
-                  child: Text(
-                    t('categories.sort_order_help'),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(t('categories.status')),
-                  subtitle: Text(
-                    _isActive ? t('common.active') : t('common.passive'),
-                    style: TextStyle(
-                      color:
-                          _isActive ? AppColors.success : AppColors.danger,
-                      fontSize: 12,
-                    ),
-                  ),
-                  value: _isActive,
-                  onChanged: (v) => setState(() => _isActive = v),
-                  activeThumbColor: AppColors.success,
-                ),
-              ],
+              ),
+              value: _isActive,
+              onChanged: (v) => setState(() => _isActive = v),
+              activeThumbColor: AppColors.success,
             ),
             if (isEdit) ...[
               const SizedBox(height: 12),
               _buildLevelBadge(widget.category!),
             ],
-            const SizedBox(height: 24),
-            AppButton.primary(
-              text: isEdit ? t('common.edit') : t('common.save'),
-              onPressed: _isLoading ? null : _saveCategory,
-              isLoading: _isLoading,
-              fullWidth: true,
-            ),
-            const SizedBox(height: 16),
           ],
         ),
-      ),
+      ],
     );
   }
 

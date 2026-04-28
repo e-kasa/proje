@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/templates/detail_screen_template.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/features/reports/di/reports_di.dart';
@@ -16,11 +17,11 @@ class ReportsScreen extends ConsumerStatefulWidget {
   ConsumerState<ReportsScreen> createState() => _ReportsScreenState();
 }
 
-class _ReportsScreenState extends ConsumerState<ReportsScreen>
-    with SingleTickerProviderStateMixin {
+class _ReportsScreenState extends ConsumerState<ReportsScreen> {
+  // Sprint 15: TabController self-management → DetailScreenTemplate.
+  // Aktif tab index'i export dialog'unda lazım — onTabChanged ile sync.
   String Function(String) get t => i18nOf(ref);
-
-  late TabController _tabController;
+  int _currentTabIndex = 0;
 
   bool get _isExporting => ref.watch(reportsDashboardProvider).isExporting;
   bool get _isLoading => ref.watch(reportsDashboardProvider).isLoading;
@@ -52,12 +53,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   double get _totalInventoryValue =>
       ref.watch(reportsDashboardProvider).totalInventoryValue;
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-  }
-
   Future<void> _loadReportData() =>
       ref.read(reportsDashboardProvider.notifier).load();
 
@@ -78,8 +73,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
 
   Future<void> _showExportDialog() async {
     final reportTypes = ['sales', 'inventory', 'customers'];
-    final tabIndex = _tabController.index;
-    final reportType = reportTypes[tabIndex];
+    final reportType = reportTypes[_currentTabIndex];
 
     final format = await showDialog<String>(
       context: context,
@@ -128,77 +122,69 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      appBar: AppAppBar.standard(
-        title: t('reports.title'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.date_range),
-            onPressed: _selectDateRange,
-            tooltip: t('reports.date_range'),
-          ),
-          _isExporting
-              ? const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                )
-              : IconButton(
-                  icon: const Icon(Icons.file_download),
-                  onPressed: _showExportDialog,
-                  tooltip: t('reports.download'), // TODO: i18n key: reports.download
-                ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: [
-            Tab(text: t('menu.sales'), icon: const Icon(Icons.shopping_cart)),
-            Tab(text: t('reports.customers'), icon: const Icon(Icons.people)), // TODO: i18n key: reports.customers
-            Tab(text: t('reports.inventory'), icon: const Icon(Icons.inventory_2)), // TODO: i18n key: reports.inventory
-          ],
+    return DetailScreenTemplate(
+      title: t('reports.title'),
+      isLoading: _isLoading,
+      error: _error,
+      onErrorRetry: _loadReportData,
+      onTabChanged: (i) => setState(() => _currentTabIndex = i),
+      appBarActions: [
+        IconButton(
+          icon: const Icon(Icons.date_range),
+          onPressed: _selectDateRange,
+          tooltip: t('reports.date_range'),
         ),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? AppEmptyState.error(
-                  description: t('common.error'),
-                  onAction: _loadReportData,
-                )
-              : Column(
-                  children: [
-                    Container(
-                      padding: AppConstants.pagePadding,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.calendar_today, size: 16),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${_startDate.day}.${_startDate.month}.${_startDate.year} - ${_endDate.day}.${_endDate.month}.${_endDate.year}',
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // ── Detaylı Rapor Kısayolları ─────────────────────────
-                    _buildAdvancedReportLinks(),
-
-                    Expanded(
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildSalesReport(),
-                          _buildCustomerReport(),
-                          _buildInventoryReport(),
-                        ],
-                      ),
-                    ),
-                  ],
+        _isExporting
+            ? const Padding(
+                padding: EdgeInsets.all(12),
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 ),
+              )
+            : IconButton(
+                icon: const Icon(Icons.file_download),
+                onPressed: _showExportDialog,
+                tooltip: t('reports.download'),
+              ),
+      ],
+      headerSlot: Column(
+        children: [
+          Container(
+            padding: AppConstants.pagePadding,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.calendar_today, size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  '${_startDate.day}.${_startDate.month}.${_startDate.year} - ${_endDate.day}.${_endDate.month}.${_endDate.year}',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+          _buildAdvancedReportLinks(),
+        ],
+      ),
+      tabs: [
+        DetailTab(
+          label: t('menu.sales'),
+          icon: Icons.shopping_cart,
+          builder: (_) => _buildSalesReport(),
+        ),
+        DetailTab(
+          label: t('reports.customers'),
+          icon: Icons.people,
+          builder: (_) => _buildCustomerReport(),
+        ),
+        DetailTab(
+          label: t('reports.inventory'),
+          icon: Icons.inventory_2,
+          builder: (_) => _buildInventoryReport(),
+        ),
+      ],
     );
   }
 
@@ -477,11 +463,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     );
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
 }
 
 class _ReportLink {

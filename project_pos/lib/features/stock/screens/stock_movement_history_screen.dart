@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
-import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/templates/list_screen_template.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 
@@ -195,88 +195,105 @@ class _StockMovementHistoryScreenState
     final t = i18nOf(ref);
     final filtered = _filteredMovements;
 
-    return AppScaffold(
-      appBar: AppAppBar.standard(
-        title: t('stock.movement_history'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.date_range),
-            tooltip: t('stock.select_date'),
-            onPressed: _pickDateRange,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Search & date info
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: '${t('stock.search_product_sku')}...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() {});
-                            },
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                    filled: true,
-                    fillColor: AppColors.bgLight,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                  ),
-                  onChanged: _onSearchChanged,
-                ),
-                const SizedBox(height: 8),
-                InkWell(
-                  onTap: _pickDateRange,
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.calendar_today,
-                            size: 14, color: AppColors.primary),
-                        const SizedBox(width: 6),
-                        Text(
-                          '${_dateRange.start.toString().substring(0, 10)} - ${_dateRange.end.toString().substring(0, 10)}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+    return ListScreenTemplate<Map<String, dynamic>>(
+      title: t('stock.movement_history'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.date_range),
+          tooltip: t('stock.select_date'),
+          onPressed: _pickDateRange,
+        ),
+      ],
+      items: filtered,
+      isLoading: _isLoading,
+      error: _error,
+      onErrorRetry: _loadMovements,
+      onRefresh: _loadMovements,
+      listPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      emptyState: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.swap_vert,
+                size: 64, color: AppColors.textMuted),
+            const SizedBox(height: 16),
+            Text(
+              t('stock.no_movements_found'),
+              style: TextStyle(
+                  fontSize: 16,
+                  color: AppColors.textMuted),
             ),
-          ),
-
-          // Filter chips
+          ],
+        ),
+      ),
+      searchSlot: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: Column(
+          children: [
+            TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: '${t('stock.search_product_sku')}...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {});
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
+                filled: true,
+                fillColor: AppColors.bgLight,
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 12),
+              ),
+              onChanged: _onSearchChanged,
+            ),
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: _pickDateRange,
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.calendar_today,
+                        size: 14, color: AppColors.primary),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${_dateRange.start.toString().substring(0, 10)} - ${_dateRange.end.toString().substring(0, 10)}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      filterSlot: Column(
+        children: [
           Container(
             color: Colors.white,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -293,65 +310,10 @@ class _StockMovementHistoryScreenState
               ),
             ),
           ),
-
           const SizedBox(height: 4),
-
-          // Content
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.error_outline,
-                                color: AppColors.danger, size: 48),
-                            const SizedBox(height: 12),
-                            Text(
-                              _error!,
-                              style: const TextStyle(color: AppColors.danger),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 16),
-                            AppButton.primary(
-                        text: t('stock.retry'),
-                        icon: Icons.refresh,
-                        onPressed: _loadMovements,
-                      ),
-                          ],
-                        ),
-                      )
-                    : filtered.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.swap_vert,
-                                    size: 64, color: AppColors.textMuted),
-                                const SizedBox(height: 16),
-                                Text(
-                                  t('stock.no_movements_found'),
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      color: AppColors.textMuted),
-                                ),
-                              ],
-                            ),
-                          )
-                        : RefreshIndicator(
-                            onRefresh: _loadMovements,
-                            child: ListView.builder(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 8),
-                              itemCount: filtered.length,
-                              itemBuilder: (context, index) =>
-                                  _buildMovementCard(filtered[index]),
-                            ),
-                          ),
-          ),
         ],
       ),
+      itemBuilder: (context, item, index) => _buildMovementCard(item),
     );
   }
 

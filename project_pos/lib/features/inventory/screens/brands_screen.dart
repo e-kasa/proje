@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/templates/list_screen_template.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 
@@ -294,87 +295,64 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      appBar: AppAppBar.standard(
-        title: t('menu.brands'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: AppColors.border, height: 1),
-        ),
-      ),
-      body: Column(
-        children: [
-          // Search & Add Section
-          Container(
-            color: Colors.white,
-            padding: AppConstants.pagePadding,
-            child: Column(
+    // Sprint 16-B: ListScreenTemplate migration.
+    // - searchSlot + statsSlot beyaz panel'e sarıldı (önceki bg uyumlu).
+    // - FAB yerine search satırındaki AppButton.primary korundu (davranış aynı).
+    // - listPadding default → AppConstants.pagePadding.
+    return ListScreenTemplate<Map<String, dynamic>>(
+      title: t('menu.brands'),
+      items: _filteredBrands,
+      isLoading: _isLoading,
+      onRefresh: _loadBrands,
+      emptyState: _buildEmptyState(),
+      searchSlot: Container(
+        color: Colors.white,
+        padding: AppConstants.pagePadding,
+        child: Column(
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppSearchInput(
-                        controller: _searchController,
-                        hint: '${t('common.search')}...',
-                        onChanged: _filterBrands,
-                        onClear: () {
-                          _searchController.clear();
-                          _filterBrands('');
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    AppButton.primary(
-                      text: t('inventory.new_brand'),
-                      icon: Icons.add,
-                      onPressed: _showAddBrandDialog,
-                    ),
-                  ],
+                Expanded(
+                  child: AppSearchInput(
+                    controller: _searchController,
+                    hint: '${t('common.search')}...',
+                    onChanged: _filterBrands,
+                    onClear: () {
+                      _searchController.clear();
+                      _filterBrands('');
+                    },
+                  ),
                 ),
-                const SizedBox(height: 12),
-                // Stats
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: AppConstants.borderRadiusSmall,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildStatItem(t('common.total'), '${_brands.length}', Icons.branding_watermark),
-                      Container(width: 1, height: 30, color: AppColors.border),
-                      _buildStatItem(t('common.active'), '${_brands.where((b) => b['active'] == true).length}', Icons.check_circle),
-                      Container(width: 1, height: 30, color: AppColors.border),
-                      _buildStatItem(t('common.passive'), '${_brands.where((b) => b['active'] != true).length}', Icons.cancel),
-                    ],
-                  ),
+                const SizedBox(width: 12),
+                AppButton.primary(
+                  text: t('inventory.new_brand'),
+                  icon: Icons.add,
+                  onPressed: _showAddBrandDialog,
                 ),
               ],
             ),
-          ),
-
-          // Brands List
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredBrands.isEmpty
-                    ? _buildEmptyState()
-                    : ListView.builder(
-                        padding: AppConstants.pagePadding,
-                        itemCount: _filteredBrands.length,
-                        itemBuilder: (context, index) {
-                          final brand = _filteredBrands[index];
-                          return _buildBrandCard(brand);
-                        },
-                      ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: AppConstants.borderRadiusSmall,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildStatItem(t('common.total'), '${_brands.length}', Icons.branding_watermark),
+                  Container(width: 1, height: 30, color: AppColors.border),
+                  _buildStatItem(t('common.active'), '${_brands.where((b) => b['active'] == true).length}', Icons.check_circle),
+                  Container(width: 1, height: 30, color: AppColors.border),
+                  _buildStatItem(t('common.passive'), '${_brands.where((b) => b['active'] != true).length}', Icons.cancel),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
+      itemBuilder: (context, brand, index) => _buildBrandCard(brand),
     );
   }
 

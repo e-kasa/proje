@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/widgets/templates/list_screen_template.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/features/settings/di/settings_di.dart';
@@ -461,8 +462,13 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
   @override
   Widget build(BuildContext context) {
     final t = i18nOf(ref);
-    return AppScaffold(
-      appBar: AppAppBar.standard(title: t('settings.user_management')),
+    return ListScreenTemplate<Map<String, dynamic>>(
+      title: t('settings.user_management'),
+      items: _users,
+      isLoading: _isLoading,
+      onRefresh: _loadData,
+      itemBuilder: (_, user, _) => _buildUserCard(user),
+      listPadding: const EdgeInsets.all(16),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showUserDialog(),
         backgroundColor: AppColors.primary,
@@ -470,119 +476,101 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
         icon: const Icon(Icons.person_add),
         label: Text(t('settings.new_user')),
       ),
-      body: Column(
-        children: [
-          // ── Arama ve Filtre ──────────────────────────────────
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: t('settings.search_user'),
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                      suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _searchController.clear();
-                                ref
-                                    .read(userManagementProvider.notifier)
-                                    .setSearch('');
-                              },
-                            )
-                          : null,
-                    ),
-                    onSubmitted: (value) =>
-                        ref.read(userManagementProvider.notifier).setSearch(value),
+      searchSlot: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: t('settings.search_user'),
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            ref
+                                .read(userManagementProvider.notifier)
+                                .setSearch('');
+                          },
+                        )
+                      : null,
+                ),
+                onSubmitted: (value) =>
+                    ref.read(userManagementProvider.notifier).setSearch(value),
+              ),
+            ),
+            const SizedBox(width: 12),
+            PopupMenuButton<String?>(
+              tooltip: 'Role göre filtrele',
+              icon: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: _selectedRoleFilter != null
+                        ? AppColors.primary
+                        : AppColors.border,
+                    width: _selectedRoleFilter != null ? 2 : 1,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.filter_list,
+                  color: _selectedRoleFilter != null
+                      ? AppColors.primary
+                      : AppColors.textMuted,
+                ),
+              ),
+              onSelected: (value) =>
+                  ref.read(userManagementProvider.notifier).setRoleFilter(value),
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: null,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.people_outline, size: 18),
+                      const SizedBox(width: 8),
+                      Text(t('settings.all_roles')),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                PopupMenuButton<String?>(
-                  tooltip: 'Role göre filtrele',
-                  icon: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: _selectedRoleFilter != null
-                            ? AppColors.primary
-                            : AppColors.border,
-                        width: _selectedRoleFilter != null ? 2 : 1,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.filter_list,
-                      color: _selectedRoleFilter != null
-                          ? AppColors.primary
-                          : AppColors.textMuted,
-                    ),
-                  ),
-                  onSelected: (value) =>
-                      ref.read(userManagementProvider.notifier).setRoleFilter(value),
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: null,
-                      child: Row(
-                        children: [
-                          const Icon(Icons.people_outline, size: 18),
-                          const SizedBox(width: 8),
-                          Text(t('settings.all_roles')),
-                        ],
-                      ),
-                    ),
-                    ..._roles.map((role) {
-                      final code  = role['code']?.toString() ?? '';
-                      final color = _roleColors[code.toUpperCase()] ?? AppColors.info;
-                      return PopupMenuItem<String>(
-                        value: code,
-                        child: Row(
-                          children: [
-                            Icon(
-                              _roleIcons[code.toUpperCase()] ?? Icons.person,
-                              size: 18,
-                              color: color,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(role['name']?.toString() ?? code),
-                          ],
+                ..._roles.map((role) {
+                  final code  = role['code']?.toString() ?? '';
+                  final color = _roleColors[code.toUpperCase()] ?? AppColors.info;
+                  return PopupMenuItem<String>(
+                    value: code,
+                    child: Row(
+                      children: [
+                        Icon(
+                          _roleIcons[code.toUpperCase()] ?? Icons.person,
+                          size: 18,
+                          color: color,
                         ),
-                      );
-                    }),
-                  ],
-                ),
+                        const SizedBox(width: 8),
+                        Text(role['name']?.toString() ?? code),
+                      ],
+                    ),
+                  );
+                }),
               ],
             ),
-          ),
-
-          // ── Hiyerarşi Açıklama Kartı ─────────────────────────
-          if (_users.isEmpty && !_isLoading)
-            _buildRoleHierarchyCard(),
-
-          // ── Kullanıcı Listesi ────────────────────────────────
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _users.isEmpty
-                    ? AppEmptyState.noData(
-                        title: t('settings.no_users'),
-                        description: 'Yeni kullanıcı eklemek için + butonuna basın',
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _loadData,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _users.length,
-                          itemBuilder: (_, i) => _buildUserCard(_users[i]),
-                        ),
-                      ),
+          ],
+        ),
+      ),
+      emptyState: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        children: [
+          _buildRoleHierarchyCard(),
+          AppEmptyState.noData(
+            title: t('settings.no_users'),
+            description: 'Yeni kullanıcı eklemek için + butonuna basın',
           ),
         ],
       ),

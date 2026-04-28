@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/templates/list_screen_template.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'add_category_screen.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
@@ -193,50 +194,82 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      appBar: AppAppBar.primary(
-        title: t('categories.title'),
-        actions: [
-          if (_isSelectionMode) ...[
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: _selectedCategoryIds.isEmpty ? null : _bulkDelete,
-              tooltip: t('common.delete'),
-            ),
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => setState(() {
-                _isSelectionMode = false;
-                _selectedCategoryIds.clear();
-              }),
-              tooltip: t('common.cancel'),
-            ),
-          ] else ...[
-            IconButton(
-              icon: const Icon(Icons.checklist),
-              onPressed: () => setState(() => _isSelectionMode = true),
-              tooltip: t('common.filter'),
-            ),
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _loadCategories,
-              tooltip: t('common.refresh'),
-            ),
-          ],
-        ],
-      ),
-      body: Column(
-        children: [
-          _buildSearchAndFilters(),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredCategories.isEmpty
-                    ? _buildEmptyState()
-                    : _buildCategoryList(),
+    // Sprint 16-B: ListScreenTemplate migration.
+    // - AppAppBar.primary → standard (template kısıtı, görsel minor change).
+    // - Selection mode actions list aynen korundu.
+    // - Search+Filter ayrı _buildSearchAndFilters() → searchSlot.
+    // - Category list builder → itemBuilder.
+    return ListScreenTemplate<Map<String, dynamic>>(
+      title: t('categories.title'),
+      items: _filteredCategories,
+      isLoading: _isLoading,
+      onRefresh: _loadCategories,
+      actions: [
+        if (_isSelectionMode) ...[
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: _selectedCategoryIds.isEmpty ? null : _bulkDelete,
+            tooltip: t('common.delete'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => setState(() {
+              _isSelectionMode = false;
+              _selectedCategoryIds.clear();
+            }),
+            tooltip: t('common.cancel'),
+          ),
+        ] else ...[
+          IconButton(
+            icon: const Icon(Icons.checklist),
+            onPressed: () => setState(() => _isSelectionMode = true),
+            tooltip: t('common.filter'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadCategories,
+            tooltip: t('common.refresh'),
           ),
         ],
-      ),
+      ],
+      searchSlot: _buildSearchAndFilters(),
+      emptyState: _buildEmptyState(),
+      itemBuilder: (ctx, cat, index) {
+        final id = cat['id']?.toString() ?? '';
+        final level = (cat['level'] as int?) ?? 0;
+        final isActive = cat['status'] == 'ACTIVE';
+        final isSelected = _selectedCategoryIds.contains(id);
+
+        return _CategoryTile(
+          category: cat,
+          id: id,
+          level: level,
+          isActive: isActive,
+          isSelected: isSelected,
+          isSelectionMode: _isSelectionMode,
+          t: t,
+          onSelect: () => setState(() {
+            if (isSelected) {
+              _selectedCategoryIds.remove(id);
+            } else {
+              _selectedCategoryIds.add(id);
+            }
+          }),
+          onLongPress: () => setState(() {
+            _isSelectionMode = true;
+            _selectedCategoryIds.add(id);
+          }),
+          onEdit: () async {
+            final result = await Navigator.push<bool>(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => AddCategoryScreen(category: cat)),
+            );
+            if (result == true) _loadCategories();
+          },
+          onDelete: () => _deleteCategory(id, name: cat['name']?.toString()),
+        );
+      },
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           final result = await Navigator.push<bool>(
@@ -319,49 +352,6 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
           );
   }
 
-  Widget _buildCategoryList() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _filteredCategories.length,
-      itemBuilder: (ctx, index) {
-        final cat = _filteredCategories[index];
-        final id = cat['id']?.toString() ?? '';
-        final level = (cat['level'] as int?) ?? 0;
-        final isActive = cat['status'] == 'ACTIVE';
-        final isSelected = _selectedCategoryIds.contains(id);
-
-        return _CategoryTile(
-          category: cat,
-          id: id,
-          level: level,
-          isActive: isActive,
-          isSelected: isSelected,
-          isSelectionMode: _isSelectionMode,
-          t: t,
-          onSelect: () => setState(() {
-            if (isSelected) {
-              _selectedCategoryIds.remove(id);
-            } else {
-              _selectedCategoryIds.add(id);
-            }
-          }),
-          onLongPress: () => setState(() {
-            _isSelectionMode = true;
-            _selectedCategoryIds.add(id);
-          }),
-          onEdit: () async {
-            final result = await Navigator.push<bool>(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => AddCategoryScreen(category: cat)),
-            );
-            if (result == true) _loadCategories();
-          },
-          onDelete: () => _deleteCategory(id, name: cat['name']?.toString()),
-        );
-      },
-    );
-  }
 }
 
 // ──────────────────────────────────────────────────────────────────

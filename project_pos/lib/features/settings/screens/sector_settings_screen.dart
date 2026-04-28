@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:project_pos/core/config/sector_config.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_gradients.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/providers/auth_provider.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
@@ -41,7 +42,7 @@ class SectorSettingsScreen extends ConsumerWidget {
     final currentSector =
         SectorTypeExt.fromApi(user?.sectorType);
 
-    return AppScaffold(
+    return BaseScaffold(
       appBar: AppAppBar.standard(
         title: t('settings.sector'),
         elevation: 0,

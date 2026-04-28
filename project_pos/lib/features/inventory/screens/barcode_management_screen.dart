@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/templates/list_screen_template.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 
@@ -382,129 +383,105 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      appBar: AppAppBar.standard(
-        title: t('menu.barcodes'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: AppColors.border, height: 1),
-        ),
-      ),
-      body: Column(
-        children: [
-          // Search & Filter Section
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: _filterBarcodes,
-                        decoration: InputDecoration(
-                          hintText: '${t('common.search')}...',
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          filled: true,
-                          fillColor: AppColors.bgLight,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton.icon(
-                      onPressed: _showAddBarcodeDialog,
-                      icon: const Icon(Icons.add, size: 20),
-                      label: Text(t('common.add')),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Type Filter Chips
-                SizedBox(
-                  height: 40,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: ['Tümü', 'EAN-13', 'EAN-8', 'CODE-128', 'QR Code'].map((type) {
-                      final isSelected = _filterType == type;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          label: Text(type),
-                          selected: isSelected,
-                          onSelected: (_) => _applyTypeFilter(type),
-                          backgroundColor: AppColors.bgLight,
-                          selectedColor: AppColors.primary.withValues(alpha: 0.2),
-                          labelStyle: TextStyle(
-                            color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          ),
-                          checkmarkColor: AppColors.primary,
-                        ),
-                      );
-                    }).toList(),
+    // Sprint 16-B: ListScreenTemplate migration.
+    // - Search+Add → searchSlot, FilterChip row → filterSlot, Stats → statsSlot.
+    // - Scanner FAB → floatingActionButton parametresi.
+    return ListScreenTemplate<Map<String, dynamic>>(
+      title: t('menu.barcodes'),
+      items: _filteredBarcodes,
+      isLoading: _isLoading,
+      onRefresh: _loadBarcodes,
+      emptyState: _buildEmptyState(),
+      searchSlot: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _searchController,
+                onChanged: _filterBarcodes,
+                decoration: InputDecoration(
+                  hintText: '${t('common.search')}...',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  filled: true,
+                  fillColor: AppColors.bgLight,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
                   ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
-                const SizedBox(height: 12),
-                // Quick Stats
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildQuickStat(t('common.total'), '${_barcodes.length}', Icons.qr_code_2),
-                      Container(width: 1, height: 30, color: AppColors.border),
-                      _buildQuickStat(t('common.active'), '${_barcodes.where((b) => b['status'] == 'active').length}', Icons.check_circle),
-                      Container(width: 1, height: 30, color: AppColors.border),
-                      _buildQuickStat(t('stock.out_of_stock'), '${_barcodes.where((b) => b['stock'] == 0).length}', Icons.warning),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-
-          // Barcodes List
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredBarcodes.isEmpty
-                    ? _buildEmptyState()
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _filteredBarcodes.length,
-                        itemBuilder: (context, index) {
-                          final barcode = _filteredBarcodes[index];
-                          return _buildBarcodeCard(barcode);
-                        },
-                      ),
-          ),
-        ],
+            const SizedBox(width: 12),
+            ElevatedButton.icon(
+              onPressed: _showAddBarcodeDialog,
+              icon: const Icon(Icons.add, size: 20),
+              label: Text(t('common.add')),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
+      filterSlot: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        child: SizedBox(
+          height: 40,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: ['Tümü', 'EAN-13', 'EAN-8', 'CODE-128', 'QR Code'].map((type) {
+              final isSelected = _filterType == type;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  label: Text(type),
+                  selected: isSelected,
+                  onSelected: (_) => _applyTypeFilter(type),
+                  backgroundColor: AppColors.bgLight,
+                  selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                  labelStyle: TextStyle(
+                    color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                  checkmarkColor: AppColors.primary,
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ),
+      statsSlot: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildQuickStat(t('common.total'), '${_barcodes.length}', Icons.qr_code_2),
+              Container(width: 1, height: 30, color: AppColors.border),
+              _buildQuickStat(t('common.active'), '${_barcodes.where((b) => b['status'] == 'active').length}', Icons.check_circle),
+              Container(width: 1, height: 30, color: AppColors.border),
+              _buildQuickStat(t('stock.out_of_stock'), '${_barcodes.where((b) => b['stock'] == 0).length}', Icons.warning),
+            ],
+          ),
+        ),
+      ),
+      itemBuilder: (context, barcode, index) => _buildBarcodeCard(barcode),
       floatingActionButton: FloatingActionButton.extended(
-        
         onPressed: () => context.go('/scanner'),
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.qr_code_scanner, color: Colors.white),

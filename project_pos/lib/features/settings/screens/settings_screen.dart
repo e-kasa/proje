@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/templates/detail_screen_template.dart';
 import 'package:project_pos/providers/theme_provider.dart';
 import 'package:project_pos/providers/auth_provider.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
@@ -16,52 +17,36 @@ class SettingsScreen extends ConsumerStatefulWidget {
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends ConsumerState<SettingsScreen>
-    with SingleTickerProviderStateMixin {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  // Sprint 15 W2: TabController self-management → DetailScreenTemplate'a delege.
   String Function(String) get t => i18nOf(ref);
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-    return AppScaffold(
-      appBar: AppAppBar.standard(
-        title: t('settings.title'),
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: isMobile,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white60,
-          tabs: [
-            Tab(icon: const Icon(Icons.person_outline), text: t('profile.title')),
-            Tab(icon: const Icon(Icons.palette_outlined), text: t('settings.theme')),
-            Tab(icon: const Icon(Icons.store_outlined), text: t('settings.company')),
-            Tab(icon: const Icon(Icons.settings_outlined), text: t('settings.title')),
-          ],
+    return DetailScreenTemplate(
+      title: t('settings.title'),
+      tabs: [
+        DetailTab(
+          label: t('profile.title'),
+          icon: Icons.person_outline,
+          builder: (_) => _buildProfileTab(),
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildProfileTab(),
-          _buildAppearanceTab(),
-          _buildBusinessTab(),
-          _buildSystemTab(),
-        ],
-      ),
+        DetailTab(
+          label: t('settings.theme'),
+          icon: Icons.palette_outlined,
+          builder: (_) => _buildAppearanceTab(),
+        ),
+        DetailTab(
+          label: t('settings.company'),
+          icon: Icons.store_outlined,
+          builder: (_) => _buildBusinessTab(),
+        ),
+        DetailTab(
+          label: t('settings.title'),
+          icon: Icons.settings_outlined,
+          builder: (_) => _buildSystemTab(),
+        ),
+      ],
     );
   }
 
@@ -970,7 +955,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 ],
               ),
             ),
-            if (trailing != null) trailing,
+            ?trailing,
           ],
         ),
       ),

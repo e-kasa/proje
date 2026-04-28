@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/providers/data_providers.dart';
 import 'package:project_pos/providers/navigation_provider.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
@@ -154,7 +155,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
     final stockState = ref.watch(stockProvider);
     final filtered = _applyFilters(stockState.products);
 
-    return AppScaffold(
+    return BaseScaffold(
       body: Column(
         children: [
           // Header with filters

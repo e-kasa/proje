@@ -2,6 +2,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/features/catalog/di/catalog_di.dart';
 import 'package:project_pos/features/catalog/providers/company_category_notifier.dart';
@@ -48,7 +49,10 @@ class _CompanyCategoryScreenState extends ConsumerState<CompanyCategoryScreen> {
     final state = ref.watch(companyCategoryProvider);
     final notifier = ref.read(companyCategoryProvider.notifier);
 
-    return AppScaffold(
+    // Sprint 16-B: Custom gradient AppBar + tree view + custom bottom save bar.
+    // Template fit yok (AppAppBar.standard zorunlu, header+search+tree özel).
+    // AppScaffold → BaseScaffold swap'i ile AsyncValue altyapısı kazandırıldı.
+    return BaseScaffold(
       appBar: _buildAppBar(state, notifier),
       body: _buildBody(state, notifier),
       bottomNavigationBar: _buildBottomBar(state, notifier),

@@ -2,6 +2,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 
@@ -69,33 +70,16 @@ class _StockValueReportScreenState
   @override
   Widget build(BuildContext context) {
     final t = i18nOf(ref);
-    return AppScaffold(
+    return BaseScaffold(
       appBar: AppAppBar.standard(
         title: t('stock.value_report'),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline,
-                          color: AppColors.danger, size: 48),
-                      const SizedBox(height: 12),
-                      Text(
-                        _error!,
-                        style: const TextStyle(color: AppColors.danger),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      AppButton.primary(
-                        text: t('stock.retry'),
-                        icon: Icons.refresh,
-                        onPressed: _loadSummary,
-                      ),
-                    ],
-                  ),
+              ? AppEmptyState.error(
+                  description: _error!,
+                  onAction: _loadSummary,
                 )
               : RefreshIndicator(
                   onRefresh: _loadSummary,

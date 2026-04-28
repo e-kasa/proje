@@ -14,6 +14,7 @@ import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/widgets/quick_add_product_modal.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/core/widgets/product_card.dart';
+import 'package:project_pos/core/widgets/templates/list_screen_template.dart';
 import 'package:project_pos/features/inventory/widgets/product_add_method_sheet.dart';
 import 'package:project_pos/shared/providers/sector_provider.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
@@ -59,7 +60,7 @@ class _EnhancedProductListScreenState
   int _currentPage = 0;
   bool _hasMore = true;
   bool _isLoadingMore = false;
-  final ScrollController _scrollController = ScrollController();
+  // Sprint 16 W1: ScrollController ListScreenTemplate'e delege edildi.
 
   int get _activeFilterCount =>
       (_selectedCategory != null ? 1 : 0) + (_selectedStatus != null ? 1 : 0);
@@ -89,7 +90,6 @@ class _EnhancedProductListScreenState
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
     _loadProducts();
   }
 
@@ -97,22 +97,10 @@ class _EnhancedProductListScreenState
   void dispose() {
     _searchController.dispose();
     _debounceTimer?.cancel();
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
     super.dispose();
   }
 
-  // Sprint 13 W4.2 — bottom-200px tetikleyici
-  void _onScroll() {
-    if (!_scrollController.hasClients) return;
-    final pos = _scrollController.position;
-    if (pos.pixels >= pos.maxScrollExtent - 200 &&
-        !_isLoadingMore &&
-        _hasMore &&
-        !_isLoading) {
-      _loadMoreProducts();
-    }
-  }
+  // Sprint 16: _onScroll + ScrollController ListScreenTemplate.onLoadMore'e delege edildi.
 
   // ── Veri yükleme ──────────────────────────────────────────────────────────
 
@@ -589,51 +577,57 @@ class _EnhancedProductListScreenState
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      appBar: AppAppBar.standard(
-        title: _isSelectionMode
-            ? '${_selectedProductIds.length} ${t('inventory.selected')}'
-            : t('inventory.products'),
-        actions: [
-          if (_isSelectionMode) ...[
-            IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: _bulkDelete,
-              tooltip: t('inventory.bulk_delete'),
-            ),
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => setState(() {
-                _isSelectionMode = false;
-                _selectedProductIds.clear();
-              }),
-            ),
-          ] else ...[
-            IconButton(
-              icon: const Icon(Icons.file_download),
-              onPressed: _exportToCSV,
-              tooltip: t('common.export'),
-            ),
-            IconButton(
-              icon: const Icon(Icons.qr_code_scanner),
-              onPressed: _scanBarcode,
-              tooltip: t('inventory.scan_barcode'),
-            ),
-          ],
+    // Sprint 16 W1: AppScaffold + Column + _buildContent → ListScreenTemplate.
+    return ListScreenTemplate<Map<String, dynamic>>(
+      title: _isSelectionMode
+          ? '${_selectedProductIds.length} ${t('inventory.selected')}'
+          : t('inventory.products'),
+      actions: [
+        if (_isSelectionMode) ...[
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: _bulkDelete,
+            tooltip: t('inventory.bulk_delete'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => setState(() {
+              _isSelectionMode = false;
+              _selectedProductIds.clear();
+            }),
+          ),
+        ] else ...[
+          IconButton(
+            icon: const Icon(Icons.file_download),
+            onPressed: _exportToCSV,
+            tooltip: t('common.export'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner),
+            onPressed: _scanBarcode,
+            tooltip: t('inventory.scan_barcode'),
+          ),
         ],
-      ),
-      body: Column(
+      ],
+      items: _filteredProducts,
+      isLoading: _isLoading,
+      isLoadingMore: _isLoadingMore,
+      hasMore: _hasMore,
+      onRefresh: _loadProducts,
+      onLoadMore: _loadMoreProducts,
+      searchSlot: _buildSearchBar(),
+      statsSlot: (!_isLoading && _allProducts.isNotEmpty && !_isOemSearching)
+          ? _buildStatsBar()
+          : null,
+      filterSlot: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          _buildSearchBar(),
-          if (!_isLoading && _allProducts.isNotEmpty && !_isOemSearching)
-            _buildStatsBar(),
           if (!_isLoading && _categories.isNotEmpty && !_isOemSearching)
             _buildCategoryChips(),
           _buildFilterBar(),
-          Expanded(child: _buildContent()),
-          if (_isSelectionMode) _buildSelectionBottomBar(),
         ],
       ),
+      isGrid: _viewMode == _ViewMode.grid,
       floatingActionButton: _isSelectionMode
           ? null
           : FloatingActionButton.extended(
@@ -647,6 +641,26 @@ class _EnhancedProductListScreenState
               label: Text(t('inventory.quick_add'),
                   style: const TextStyle(color: Colors.white)),
             ),
+      bottomBar: _isSelectionMode ? _buildSelectionBottomBar() : null,
+      emptyState: AppEmptyState(
+        icon: Icons.inventory_2_outlined,
+        title: t('common.no_result'),
+        actionText: t('inventory.add_product'),
+        onAction: () async {
+          final result = await showQuickAddProductModal(context);
+          if (result == true) _loadProducts();
+        },
+      ),
+      itemBuilder: (ctx, product, idx) {
+        final id = int.tryParse(product['id']?.toString() ?? '') ?? 0;
+        final isSelected = _selectedProductIds.contains(id);
+        final stock = (product['stock'] ?? 0) as num;
+        final threshold = (product['lowStockThreshold'] ?? 10) as num;
+        final isLowStock = stock > 0 && stock <= threshold;
+        return _viewMode == _ViewMode.list
+            ? _buildListCard(product, isSelected, isLowStock)
+            : _buildGridCard(product, isSelected, isLowStock);
+      },
     );
   }
 
@@ -996,116 +1010,9 @@ class _EnhancedProductListScreenState
     );
   }
 
-  // ── İçerik ────────────────────────────────────────────────────────────────
-
-  Widget _buildContent() {
-    if (_isLoading) return const AppSkeletonList(itemCount: 8);
-
-    if (_filteredProducts.isEmpty) {
-      return AppEmptyState(
-        icon: Icons.inventory_2_outlined,
-        title: t('common.no_result'),
-        actionText: t('inventory.add_product'),
-        onAction: () async {
-          final result = await showQuickAddProductModal(context);
-          if (result == true) _loadProducts();
-        },
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadProducts,
-      child: _viewMode == _ViewMode.list ? _buildListView() : _buildGridView(),
-    );
-  }
-
-  Widget _buildListView() {
-    final extraFooter = (_isLoadingMore || (!_hasMore && _filteredProducts.isNotEmpty))
-        ? 1
-        : 0;
-    return RefreshIndicator(
-      onRefresh: _loadProducts,
-      child: ListView.builder(
-        controller: _scrollController,
-        padding: AppConstants.pagePadding,
-        itemCount: _filteredProducts.length + extraFooter,
-        itemBuilder: (context, index) {
-          if (index >= _filteredProducts.length) {
-            return _buildLoadMoreFooter();
-          }
-          final product = _filteredProducts[index];
-          final id = int.tryParse(product['id']?.toString() ?? '') ?? 0;
-          final isSelected = _selectedProductIds.contains(id);
-          final stock = (product['stock'] ?? 0) as num;
-          final threshold = (product['lowStockThreshold'] ?? 10) as num;
-          return _buildListCard(
-              product, isSelected, stock > 0 && stock <= threshold);
-        },
-      ),
-    );
-  }
-
-  Widget _buildGridView() {
-    return RefreshIndicator(
-      onRefresh: _loadProducts,
-      child: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
-          SliverPadding(
-            padding: AppConstants.pagePadding,
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
-                childAspectRatio: 0.72,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final product = _filteredProducts[index];
-                  final id = int.tryParse(product['id']?.toString() ?? '') ?? 0;
-                  final isSelected = _selectedProductIds.contains(id);
-                  final stock = (product['stock'] ?? 0) as num;
-                  final threshold =
-                      (product['lowStockThreshold'] ?? 10) as num;
-                  return _buildGridCard(
-                      product, isSelected, stock > 0 && stock <= threshold);
-                },
-                childCount: _filteredProducts.length,
-              ),
-            ),
-          ),
-          if (_isLoadingMore || (!_hasMore && _filteredProducts.isNotEmpty))
-            SliverToBoxAdapter(child: _buildLoadMoreFooter()),
-        ],
-      ),
-    );
-  }
-
-  /// Sprint 13 W4.2 — loading spinner (loadMore aktif) veya "Tüm ürünler" bilgi
-  Widget _buildLoadMoreFooter() {
-    if (_isLoadingMore) {
-      return const Padding(
-        padding: EdgeInsets.all(16),
-        child: Center(
-          child: SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        ),
-      );
-    }
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Center(
-        child: Text(
-          '${_filteredProducts.length} ${t('product.products_loaded') == 'product.products_loaded' ? 'ürün gösteriliyor' : t('product.products_loaded')}',
-          style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
-        ),
-      ),
-    );
-  }
+  // Sprint 16 W1: _buildContent / _buildListView / _buildGridView /
+  // _buildLoadMoreFooter ListScreenTemplate'e delege edildi (search/filter/
+  // stats/loadMore/empty/refresh/grid hepsi template tarafında).
 
   // ── Liste kartı ───────────────────────────────────────────────────────────
 

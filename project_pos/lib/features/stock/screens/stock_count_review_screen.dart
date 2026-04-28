@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/models/stock_management_models.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 
@@ -81,16 +82,16 @@ class _StockCountReviewScreenState extends ConsumerState<StockCountReviewScreen>
   Widget build(BuildContext context) {
     final t = i18nOf(ref);
     if (_isLoading) {
-      return AppScaffold(
+      return BaseScaffold(
         body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (_error != null || _response == null) {
-      return AppScaffold(
+      return BaseScaffold(
         body: Center(child: Text(t('stock.data_load_failed'))),
       );
     }
-    return AppScaffold(
+    return BaseScaffold(
       appBar: AppAppBar.standard(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),

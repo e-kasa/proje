@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/templates/detail_screen_template.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 
@@ -60,54 +61,25 @@ class _StockAlertScreenState extends ConsumerState<StockAlertScreen> {
     final lowList = _filterByLevel('LOW');
     final outList = _filterByLevel('OUT_OF_STOCK');
 
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: AppAppBar.standard(
-          title: t('stock.alerts'),
-          bottom: TabBar(
-            labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.textMuted,
-            indicatorColor: AppColors.primary,
-            tabs: [
-              Tab(text: '${t('stock.critical')} (${criticalList.length})'),
-              Tab(text: '${t('stock.low_stock')} (${lowList.length})'),
-              Tab(text: '${t('stock.out_of_stock')} (${outList.length})'),
-            ],
-          ),
+    return DetailScreenTemplate(
+      title: t('stock.alerts'),
+      isLoading: _isLoading,
+      error: _error,
+      onErrorRetry: _loadAlerts,
+      tabs: [
+        DetailTab(
+          label: '${t('stock.critical')} (${criticalList.length})',
+          builder: (_) => _buildAlertList(criticalList, 'CRITICAL'),
         ),
-        body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.error_outline,
-                            color: AppColors.danger, size: 48),
-                        const SizedBox(height: 12),
-                        Text(
-                          _error!,
-                          style: const TextStyle(color: AppColors.danger),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        AppButton.primary(
-                          text: t('stock.retry'),
-                          icon: Icons.refresh,
-                          onPressed: _loadAlerts,
-                        ),
-                      ],
-                    ),
-                  )
-                : TabBarView(
-                    children: [
-                      _buildAlertList(criticalList, 'CRITICAL'),
-                      _buildAlertList(lowList, 'LOW'),
-                      _buildAlertList(outList, 'OUT_OF_STOCK'),
-                    ],
-                  ),
-      ),
+        DetailTab(
+          label: '${t('stock.low_stock')} (${lowList.length})',
+          builder: (_) => _buildAlertList(lowList, 'LOW'),
+        ),
+        DetailTab(
+          label: '${t('stock.out_of_stock')} (${outList.length})',
+          builder: (_) => _buildAlertList(outList, 'OUT_OF_STOCK'),
+        ),
+      ],
     );
   }
 

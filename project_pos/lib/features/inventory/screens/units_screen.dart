@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/templates/list_screen_template.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 
@@ -383,102 +384,79 @@ class _UnitsScreenState extends ConsumerState<UnitsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      appBar: AppAppBar.standard(
-        title: t('menu.units'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: AppColors.border, height: 1),
-        ),
-      ),
-      body: Column(
-        children: [
-          Container(
-            color: Colors.white,
-            padding: AppConstants.pagePadding,
-            child: Column(
+    // Sprint 16-B: ListScreenTemplate migration (brands_screen ile aynı pattern).
+    return ListScreenTemplate<Map<String, dynamic>>(
+      title: t('menu.units'),
+      items: _filteredUnits,
+      isLoading: _isLoading,
+      onRefresh: _loadUnits,
+      emptyState: _buildEmptyState(),
+      searchSlot: Container(
+        color: Colors.white,
+        padding: AppConstants.pagePadding,
+        child: Column(
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppSearchInput(
-                        controller: _searchController,
-                        hint: '${t('common.search')}...',
-                        onChanged: _filterUnits,
-                        onClear: () {
-                          _searchController.clear();
-                          _filterUnits('');
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    AppButton.primary(
-                      text: t('inventory.new_unit'),
-                      icon: Icons.add,
-                      onPressed: _showAddUnitDialog,
-                    ),
-                  ],
+                Expanded(
+                  child: AppSearchInput(
+                    controller: _searchController,
+                    hint: '${t('common.search')}...',
+                    onChanged: _filterUnits,
+                    onClear: () {
+                      _searchController.clear();
+                      _filterUnits('');
+                    },
+                  ),
                 ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: AppConstants.borderRadiusSmall,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildStatItem(
-                        t('common.total'),
-                        '${_units.length}',
-                        Icons.straighten,
-                      ),
-                      Container(width: 1, height: 30, color: AppColors.border),
-                      _buildStatItem(
-                        t('inventory.unit_type_countable'),
-                        '${_units.where((u) => u['type'] == _kTypeCountable).length}',
-                        Icons.numbers,
-                      ),
-                      Container(width: 1, height: 30, color: AppColors.border),
-                      _buildStatItem(
-                        t('inventory.unit_type_weighable'),
-                        '${_units.where((u) => u['type'] == _kTypeWeighable).length}',
-                        Icons.balance,
-                      ),
-                      Container(width: 1, height: 30, color: AppColors.border),
-                      _buildStatItem(
-                        t('inventory.unit_type_measurable'),
-                        '${_units.where((u) => u['type'] == _kTypeMeasurable).length}',
-                        Icons.square_foot,
-                      ),
-                    ],
-                  ),
+                const SizedBox(width: 12),
+                AppButton.primary(
+                  text: t('inventory.new_unit'),
+                  icon: Icons.add,
+                  onPressed: _showAddUnitDialog,
                 ),
               ],
             ),
-          ),
-
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredUnits.isEmpty
-                    ? _buildEmptyState()
-                    : ListView.builder(
-                        padding: AppConstants.pagePadding,
-                        itemCount: _filteredUnits.length,
-                        itemBuilder: (context, index) {
-                          final unit = _filteredUnits[index];
-                          return _buildUnitCard(unit);
-                        },
-                      ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: AppConstants.borderRadiusSmall,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildStatItem(
+                    t('common.total'),
+                    '${_units.length}',
+                    Icons.straighten,
+                  ),
+                  Container(width: 1, height: 30, color: AppColors.border),
+                  _buildStatItem(
+                    t('inventory.unit_type_countable'),
+                    '${_units.where((u) => u['type'] == _kTypeCountable).length}',
+                    Icons.numbers,
+                  ),
+                  Container(width: 1, height: 30, color: AppColors.border),
+                  _buildStatItem(
+                    t('inventory.unit_type_weighable'),
+                    '${_units.where((u) => u['type'] == _kTypeWeighable).length}',
+                    Icons.balance,
+                  ),
+                  Container(width: 1, height: 30, color: AppColors.border),
+                  _buildStatItem(
+                    t('inventory.unit_type_measurable'),
+                    '${_units.where((u) => u['type'] == _kTypeMeasurable).length}',
+                    Icons.square_foot,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
+      itemBuilder: (context, unit, index) => _buildUnitCard(unit),
     );
   }
 

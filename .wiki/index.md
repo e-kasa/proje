@@ -54,6 +54,7 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 
 ### Code-refs — Sprint öncesi audit'ler
 - [[sources/code-refs/2026-04-27-product-screens-audit]] — ürün menüsü kartları + ürün detay ekranları envanter (Sprint 12 öncesi)
+- [[sources/code-refs/2026-04-27-design-system-template-audit]] — design system + 64+ ekran envanter (Sprint 15 öncesi)
 
 ### Code-refs — migration (eski tarihli code snapshots)
 - [[sources/code-refs/2026-04-17-units-employee-modern]]
@@ -198,6 +199,7 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 
 ### Sprint Plans
 - [[syntheses/product-screens-revision-plan]] — Sprint 12: ürün menüsü kartları + ürün detay ekranları tam refactor (3-4 hafta, 4 hedef alan)
+- [[syntheses/design-system-template-architecture]] — Sprint 15: BaseScaffold + 4 Feature Template (List/Form/Detail/Dashboard) mimarisi + Sprint 16-20 migration roadmap
 
 ### Modül & Mimari Özet
 - [[syntheses/codebase-snapshot-2026-04-25]] — kod ↔ wiki uyum + drift özeti (2026-04-25)

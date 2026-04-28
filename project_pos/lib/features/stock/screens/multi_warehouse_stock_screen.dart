@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:project_pos/models/stock_management_models.dart';
 import 'package:project_pos/services/service_locator.dart';
-import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/templates/list_screen_template.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
@@ -85,39 +85,23 @@ class _MultiWarehouseStockScreenState
   @override
   Widget build(BuildContext context) {
     final t = i18nOf(ref);
-    return AppScaffold(
-      appBar: AppAppBar.standard(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
+    return ListScreenTemplate<WarehouseStockItem>(
+      title: t('stock.warehouse_stock'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh, color: AppColors.textPrimary),
+          onPressed: _loadData,
         ),
-        title: t('stock.warehouse_stock'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.textPrimary),
-            onPressed: _loadData,
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-          ? Center(child: Text(t('stock.data_load_failed')))
-          : Column(
-        children: [
-          _buildFilterButtons(),
-          _buildStatistics(),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _filteredProducts.length,
-              itemBuilder: (context, index) {
-                return _buildProductCard(_filteredProducts[index]);
-              },
-            ),
-          ),
-        ],
-      ),
+      ],
+      items: _filteredProducts,
+      isLoading: _isLoading,
+      error: _error,
+      onErrorRetry: _loadData,
+      onRefresh: _loadData,
+      filterSlot: _buildFilterButtons(),
+      statsSlot: _buildStatistics(),
+      listPadding: const EdgeInsets.all(16),
+      itemBuilder: (context, item, index) => _buildProductCard(item),
     );
   }
 

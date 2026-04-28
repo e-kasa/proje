@@ -11,6 +11,205 @@ Append-only olay kaydı. **En yeni üste**.
 
 ## Olaylar
 
+## [2026-04-28] sprint-16 | Inventory + Catalog + Stock modül migration (16 ekran) ✅
+
+Sprint 15'te kurulan template katmanı + 2 PoC migration sonrası, audit'teki Sprint 16-20 modüler roadmap başlatıldı. Sprint 16 = inventory + catalog + stock üç modülü, toplam 16 ekran.
+
+### Migration Stratejisi
+
+**3 paralel iş kolu:**
+- **16-A (ana iş, kendim)**: `enhanced_product_list_screen.dart` — Sprint 13'te pagination pattern'ı bu ekranda doğmuştu, artık template tüketicisi olmalı (dogfood).
+- **16-B (agent)**: 7 küçük catalog/inventory ekranı.
+- **16-C (agent)**: 8 stock ekranı.
+
+**Karar kuralı (her ekran için):** Template doğal oturuyorsa migrate et; bottom-bar/AppBar dayatması davranış değişikliği yaratacaksa **BaseScaffold swap** yap (AppScaffold→BaseScaffold), ekstra zarar ver-me.
+
+### 16-A: enhanced_product_list_screen.dart (`inventory/screens/`)
+
+ListScreenTemplate'in **referans tüketicisi**. Önceki yapı (Sprint 13'ten miras):
+- `_scrollController` field + `addListener(_onScroll)` initState + `removeListener+dispose` dispose + `_onScroll` bottom-200px metodu
+- `_buildContent` (loading/empty/RefreshIndicator dispatcher)
+- `_buildListView` (RefreshIndicator + ListView.builder + extraFooter)
+- `_buildGridView` (RefreshIndicator + CustomScrollView + SliverGrid + SliverToBoxAdapter footer)
+- `_buildLoadMoreFooter` (spinner veya "X öğe gösteriliyor" text)
+
+Sonrası:
+- Tek `ListScreenTemplate<Map<String,dynamic>>` çağrısı (~95 LOC build())
+- `_scrollController` + `_onScroll` + `_buildContent` + `_buildListView` + `_buildGridView` + `_buildLoadMoreFooter` SİLİNDİ (~120 LOC)
+- Net delta: **-25 LOC** (mantıksal mimari kazancı çok daha büyük: pagination/refresh/grid/empty hepsi template tarafında)
+- `searchSlot`, `statsSlot`, `filterSlot`, `bottomBar` (selection mode), `floatingActionButton`, `emptyState` slot'larına temiz delege
+
+Bu migration template tasarımının **dogfood doğrulaması**. Hiç custom override gerekmedi → API yeterli kapsamda.
+
+### 16-B: 7 catalog/inventory küçük ekran (agent)
+
+| # | Ekran | Karar | LOC Δ |
+|---|---|---|---|
+| 1 | `inventory_screen.dart` | BaseScaffold swap (özel hub layout) | +4/-2 |
+| 2 | `brands_screen.dart` | ListScreenTemplate (search+stats+list) | +53/-75 |
+| 3 | `units_screen.dart` | ListScreenTemplate (brands paralel) | +68/-90 |
+| 4 | `barcode_management_screen.dart` | ListScreenTemplate (3 slot) | +92/-115 |
+| 5 | `category_list_screen.dart` | ListScreenTemplate (selection-aware actions) | +75/-85 |
+| 6 | `add_category_screen.dart` | FormScreenTemplate (3 section) | +121/-141 |
+| 7 | `company_category_screen.dart` | BaseScaffold swap (gradient AppBar uyumsuz) | +5/-1 |
+
+**Net delta:** -91 LOC. **0 yeni issue** (2 pre-existing baseline).
+
+**Dağılım:** ListScreenTemplate ×4, FormScreenTemplate ×1, BaseScaffold swap ×2.
+
+**Minor visual change:** `category_list_screen` + `add_category_screen` — `AppAppBar.primary` → `AppAppBar.standard` (template kısıtı). Davranış değil görsel: gradient/primary renk yerine standard tema rengi.
+
+### 16-C: 8 stock ekranı (agent)
+
+| # | Ekran | Karar | LOC Δ |
+|---|---|---|---|
+| 1 | `enhanced_stock_screen.dart` | BaseScaffold swap (orijinalde AppBar yoktu, dayatma kaçınıldı) | +1 |
+| 2 | `multi_warehouse_stock_screen.dart` | ListScreenTemplate | -27 |
+| 3 | `stock_value_report_screen.dart` | BaseScaffold swap (hero+stat hibrid layout) | -19 |
+| 4 | `stock_transfer_screen.dart` | BaseScaffold swap (custom form, FormScreenTemplate uyumsuz) | +1 |
+| 5 | `stock_alert_screen.dart` | DetailScreenTemplate (3 tab + isLoading/error delege) | -36 |
+| 6 | `stock_movement_history_screen.dart` | ListScreenTemplate | -10 |
+| 7 | `stock_count_review_screen.dart` | BaseScaffold swap (custom save bar) | +1 |
+| 8 | `stock_transfer_review_screen.dart` | BaseScaffold swap (custom approve bar) | +1 |
+
+**Net delta:** -88 LOC. **0 yeni issue** (12 → 12 baseline).
+
+**Dağılım:** ListScreenTemplate ×2, DetailScreenTemplate ×1, BaseScaffold swap ×5.
+
+**Öne çıkan:** `stock_alert_screen.dart` `DefaultTabController + Scaffold` deseninden DetailScreenTemplate'e tertemiz oturdu (-36 LOC tek dosya).
+
+### Sprint 16 Toplam
+
+| Metrik | Değer |
+|---|---|
+| Migrate edilen ekran | 16 |
+| ListScreenTemplate kullanımı | 7 (1×ana + 4 catalog/inventory + 2 stock) |
+| FormScreenTemplate kullanımı | 1 |
+| DetailScreenTemplate kullanımı | 1 |
+| BaseScaffold-only swap | 7 |
+| Net LOC delta (toplam 16 dosya) | **~-204 LOC** |
+| `flutter analyze` 16 dosya | 14 issue (hepsi pre-existing baseline, 0 yeni) |
+
+### Önemli Karar: "BaseScaffold-only swap" pattern'ı
+
+7/16 ekranda template'lere zorla sığdırma yerine sadece `AppScaffold→BaseScaffold` swap yapıldı:
+- Custom layout (hub, hero+stat hibrid, tree-view)
+- Bottom-bar ListView içinde değil Column içinde (transfer/review ekranları)
+- AppBar olmayan ekran (template AppBar'ı dayatıyor)
+- Gradient/custom AppBar (standard.AppAppBar uyumsuz)
+
+Bu, template katmanının **opt-in** doğasını koruyor (mimaride L0/L1/L2/L3 hiyerarşisi). Template ekran sayısını arttırmak başarı metriği değil; **doğru ekranı doğru seviyede tutmak** asıl değer.
+
+### Kalan Sprint 17-20 Modüller
+
+| Sprint | Modül | Ekran | Tahmini |
+|---|---|---|---|
+| 17 | sales + purchases + accounts | ~9 | 2 gün |
+| 18 | finance + hrm + autoparts + supplier_claims | ~13 | 2-3 gün |
+| 19 | import + auth + menu + pos + dashboard | ~10 | 2 gün |
+| 20 | Cleanup: pre-existing teknik borç (deprecated value, underscore stili) | ~10 | 1 gün |
+
+### Doğrulama
+
+- 16 dosya `flutter analyze`: 14 baseline issue, 0 yeni ✅
+- Kullanıcı smoke test: bekliyor
+- Template dogfood: enhanced_product_list_screen başarıyla template tüketicisi oldu — API genişletme gereği yok ✅
+
+### Sources
+
+- [[sources/code-refs/2026-04-27-design-system-template-audit]] — Sprint 15 audit
+- [[syntheses/design-system-template-architecture]] — 4 template mimarisi (Sprint 15)
+
+---
+
+## [2026-04-27] sprint-15 | BaseScaffold + 4 Feature Template mimarisi + Settings/Reports migration ✅
+
+Kullanıcı emri: "tüm ekranları BaseScaffold + Feature Templates + Design System uyumlu hale getir, wiki ile yap". Mega scope (64+ ekran). Sprint 15 = mimari kurulum + Settings+Reports modülü PoC. Sprint 16-20 ile devam edecek (audit'te modüler roadmap).
+
+### Yeni Template Katmanı (5 dosya)
+
+**1. BaseScaffold** — [`core/widgets/base_scaffold.dart`](project_pos/lib/core/widgets/base_scaffold.dart)
+- AppScaffold + Riverpod `AsyncValue<T>` switcher
+- `loading → CircularProgress`, `error → AppEmptyState.error(retry)`, `data → dataBuilder(T)`
+- Sync mode: `body` parametresi de var (asyncValue olmazsa)
+
+**2. ListScreenTemplate** — [`templates/list_screen_template.dart`](project_pos/lib/core/widgets/templates/list_screen_template.dart)
+- Sprint 13'te `enhanced_product_list_screen` üzerinde geliştirilen pagination pattern reusable
+- ScrollController bottom-200px → onLoadMore + RefreshIndicator + loading footer
+- Generic `<T>` + itemBuilder + searchSlot/filterSlot/statsSlot/FAB/bottomBar slot'ları
+- Grid mode (isGrid + gridDelegate)
+
+**3. FormScreenTemplate** — [`templates/form_screen_template.dart`](project_pos/lib/core/widgets/templates/form_screen_template.dart)
+- `FormSection(title, icon, fields)` listesi
+- formKey + isSaving + canSubmit + customBottomBar/secondaryActions/topBanner
+
+**4. DetailScreenTemplate** — [`templates/detail_screen_template.dart`](project_pos/lib/core/widgets/templates/detail_screen_template.dart)
+- TabController + dispose self-managed
+- `DetailTab(label, icon, builder)` listesi
+- onTabChanged callback (tab-aware export gibi)
+- headerSlot (TabBar ile TabBarView arasında — Reports date pill için)
+- isLoading + error switcher
+- keepTabsAlive (IndexedStack mode)
+
+**5. DashboardScreenTemplate** — [`templates/dashboard_screen_template.dart`](project_pos/lib/core/widgets/templates/dashboard_screen_template.dart)
+- statCards grid (default 2 sütun) + sections list + onRefresh
+
+### PoC Migration (2 ekran)
+
+| Ekran | Önce | Sonra | Özet |
+|---|---|---|---|
+| `settings_screen.dart` | AppScaffold + with SingleTickerProviderStateMixin + late TabController + initState/dispose + bottom: TabBar + TabBarView | DetailScreenTemplate(tabs: 4 DetailTab) | Boilerplate kaldırıldı, body 60→25 LOC |
+| `reports_screen.dart` | AppScaffold + manual loading/error/TabController + headerColumn + TabBarView | DetailScreenTemplate(headerSlot, isLoading, error, onTabChanged) | TabController + loading/error helper, body 75→60 LOC |
+
+**DetailScreenTemplate'a Sprint 15'te eklenen feature:** `headerSlot` (Reports'taki date pill + advanced report links için TabBar'ın altında ek alan).
+
+### Agent Migration Sonucu (7 ekran ✅)
+
+| Ekran | Karar | LOC değişim | Sebep |
+|---|---|---|---|
+| `profile_screen.dart` | BaseScaffold | 276→277 | Tab/form/dashboard yapısı yok — pass-through |
+| `company_settings_screen.dart` | BaseScaffold | 339→340 | Save AppBar action'da kalmalı (FormScreenTemplate behavior değişikliği yaratırdı) |
+| `sector_settings_screen.dart` | BaseScaffold | 273→274 | Sektör seçim kartı listesi — özel layout |
+| `user_management_screen.dart` | **ListScreenTemplate** | **910→898 (−12)** | Search/filter/list/refresh/empty hepsi template'a delege ✅ |
+| `daily_summary_screen.dart` | BaseScaffold | 408→409 | Date selector statCards öncesi (DashboardScreenTemplate header slotu yok) |
+| `sales_summary_screen.dart` | BaseScaffold | 399→400 | Custom date pill + period toggle + chart |
+| `profit_overview_screen.dart` | BaseScaffold | 242→243 | Custom date pill + 3 top cards |
+
+**Toplam:** 2847 → 2841 (−6 net LOC). user_management −12 (gerçek refactor), diğerlerinde +1 import shift.
+
+**Karar paterni:** Form/Dashboard template'leri "save AppBar→bottom bar" veya "header slot" gibi UX değişikliği gerektirdiği ekranlarda BaseScaffold tercih edildi — Sprint 16+'da i18n + UX kararıyla beraber FormScreenTemplate/DashboardScreenTemplate'a geçirilebilir.
+
+### Sprint 15 Final İstatistik
+
+- **Yeni dosya:** 5 (BaseScaffold + 4 template)
+- **Migrate edilen ekran:** 9 (settings_screen, reports_screen + agent 7 ekran)
+- **Template kullanım:** DetailScreenTemplate ×2, ListScreenTemplate ×1, BaseScaffold ×6
+- **Toplam LOC değişim:** project_pos/lib +1100 (5 yeni template) − 50 (9 migration nettir)
+- **`flutter analyze`:** 0 yeni issue ✅ (6 pre-existing teknik borç korundu — `_, __` underscores, use_build_context_synchronously, use_null_aware_elements — Sprint 20 cleanup'ında ele alınacak)
+
+### Wiki Back-File
+
+- **Audit:** [[sources/code-refs/2026-04-27-design-system-template-audit]] — design system 21 widget + 64+ ekran envanteri + modüler roadmap
+- **Synthesis:** [[syntheses/design-system-template-architecture]] — 5 dosya mimarisi + L0-L3 migration seviyeleri + Sprint 15 sonuç + riskler
+- **Index:** Sources/Sprint öncesi audit'ler + Syntheses/Sprint Plans bölümlerine yeni satır
+
+### Sprint 16-20 Roadmap
+
+| Sprint | Modül | Ekran | Tahmini |
+|---|---|---|---|
+| 16 | inventory + stock + catalog | ~13 | 2-3 gün |
+| 17 | sales + purchases + accounts | ~9 | 2 gün |
+| 18 | finance + hrm + autoparts + supplier_claims | ~13 | 2-3 gün |
+| 19 | import + auth + menu + pos + dashboard | ~10 | 2 gün |
+| 20 | Cleanup: pre-existing teknik borç (deprecated value, underscore stili) | ~10 | 1 gün |
+
+Toplam ~10 iş günü, 5 sprint.
+
+### Verification
+
+- `flutter analyze` (5 yeni template + 2 PoC ekran): **0 issue** ✅
+- Smoke test bekliyor (kullanıcı runtime)
+
 ## [2026-04-27] sprint-14 | ProductCard tam migration — Inventory list/grid kartları ✅
 
 Sprint 12'den ertelenen W1.4 (ProductCard tam migration) bu sprintte uygulandı. Inventory liste/grid kartlarındaki ~470 LOC kod tek `ProductCard` çağrısına dönüştürüldü.

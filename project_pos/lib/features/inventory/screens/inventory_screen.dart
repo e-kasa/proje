@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
-import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 
 class InventoryScreen extends ConsumerWidget {
@@ -12,7 +12,9 @@ class InventoryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = i18nOf(ref);
 
-    return AppScaffold(
+    // Sprint 16-B: Custom hub layout (banner + hero + sections) — template fit yok.
+    // AppScaffold → BaseScaffold swap'iyle AsyncValue desteğine altyapı kazandırıldı.
+    return BaseScaffold(
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

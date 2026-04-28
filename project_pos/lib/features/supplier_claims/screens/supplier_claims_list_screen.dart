@@ -6,6 +6,7 @@ import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/templates/list_screen_template.dart';
 import 'package:project_pos/features/supplier_claims/models/supplier_claim.dart';
 import 'package:project_pos/features/supplier_claims/providers/supplier_claims_providers.dart';
 import 'package:project_pos/features/supplier_claims/widgets/claim_status_chip.dart';
@@ -32,41 +33,32 @@ class _SupplierClaimsListScreenState
 
   @override
   Widget build(BuildContext context) {
+    // Sprint 18 W1: AppScaffold + Column + manual switcher → ListScreenTemplate.
     final state = ref.watch(supplierClaimsListProvider);
     final theme = Theme.of(context);
 
-    return AppScaffold(
-      appBar: AppAppBar.standard(
-        title: t('su.claim_title'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: () => ref.read(supplierClaimsListProvider.notifier).load(),
-            tooltip: t('common.refresh'),
-          ),
-        ],
+    return ListScreenTemplate<SupplierClaim>(
+      title: t('su.claim_title'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh_rounded),
+          onPressed: () => ref.read(supplierClaimsListProvider.notifier).load(),
+          tooltip: t('common.refresh'),
+        ),
+      ],
+      items: state.claims,
+      isLoading: state.isLoading,
+      error: state.error,
+      onErrorRetry: () =>
+          ref.read(supplierClaimsListProvider.notifier).load(),
+      onRefresh: () async =>
+          ref.read(supplierClaimsListProvider.notifier).load(),
+      filterSlot: _buildFilterBar(state),
+      emptyState: AppEmptyState.noData(
+        title: t('su.claim_list_empty'),
+        description: '',
       ),
-      body: Column(
-        children: [
-          _buildFilterBar(state),
-          Expanded(
-            child: state.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : state.error != null
-                    ? AppEmptyState.error(
-                        description: state.error,
-                        onAction: () =>
-                            ref.read(supplierClaimsListProvider.notifier).load(),
-                      )
-                    : state.claims.isEmpty
-                        ? AppEmptyState.noData(
-                            title: t('su.claim_list_empty'),
-                            description: '',
-                          )
-                        : _buildList(state.claims, theme),
-          ),
-        ],
-      ),
+      itemBuilder: (ctx, claim, idx) => _buildClaimCard(claim, theme),
     );
   }
 
@@ -115,97 +107,90 @@ class _SupplierClaimsListScreenState
     );
   }
 
-  Widget _buildList(List<SupplierClaim> items, ThemeData theme) {
+  Widget _buildClaimCard(SupplierClaim c, ThemeData theme) {
     final fmt = NumberFormat.currency(locale: 'tr_TR', symbol: '₺');
     final dateFmt = DateFormat('dd.MM.yyyy');
 
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-      itemCount: items.length,
-      itemBuilder: (context, i) {
-        final c = items[i];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: AppCard(
-            onTap: () async {
-              await context.push('/supplier-claims/${c.id}');
-              if (mounted) ref.read(supplierClaimsListProvider.notifier).load();
-            },
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: AppCard(
+        onTap: () async {
+          await context.push('/supplier-claims/${c.id}');
+          if (mounted) ref.read(supplierClaimsListProvider.notifier).load();
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: AppColors.warning.withValues(alpha: 0.12),
-                        borderRadius: AppConstants.borderRadiusSmall,
-                      ),
-                      child: const Icon(
-                        Icons.report_problem_outlined,
-                        color: AppColors.warning,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            c.supplierName ??
-                                '${t('su.claim_col_supplier')} #${c.supplierId ?? '-'}',
-                            style: theme.textTheme.titleSmall
-                                ?.copyWith(fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${t('su.claim_col_invoice')}: ${c.sourcePurchaseInvoice ?? '-'}'
-                            '  •  ${c.claimDate != null ? dateFmt.format(c.claimDate!) : '-'}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          fmt.format(c.claimAmount),
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.warning,
-                          ),
-                        ),
-                        if (c.resolvedAmount > 0)
-                          Text(
-                            '${t('su.claim_resolved_amount')}: ${fmt.format(c.resolvedAmount)}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: AppColors.success,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.12),
+                    borderRadius: AppConstants.borderRadiusSmall,
+                  ),
+                  child: const Icon(
+                    Icons.report_problem_outlined,
+                    color: AppColors.warning,
+                    size: 20,
+                  ),
                 ),
-                const SizedBox(height: 10),
-                Row(
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        c.supplierName ??
+                            '${t('su.claim_col_supplier')} #${c.supplierId ?? '-'}',
+                        style: theme.textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${t('su.claim_col_invoice')}: ${c.sourcePurchaseInvoice ?? '-'}'
+                        '  •  ${c.claimDate != null ? dateFmt.format(c.claimDate!) : '-'}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    ClaimReasonChip(reason: c.reason, t: t),
-                    const Spacer(),
-                    ClaimStatusChip(status: c.status, t: t),
+                    Text(
+                      fmt.format(c.claimAmount),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.warning,
+                      ),
+                    ),
+                    if (c.resolvedAmount > 0)
+                      Text(
+                        '${t('su.claim_resolved_amount')}: ${fmt.format(c.resolvedAmount)}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.success,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                   ],
                 ),
               ],
             ),
-          ),
-        );
-      },
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                ClaimReasonChip(reason: c.reason, t: t),
+                const Spacer(),
+                ClaimStatusChip(status: c.status, t: t),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

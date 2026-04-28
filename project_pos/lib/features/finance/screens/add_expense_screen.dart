@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
@@ -89,6 +90,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         }
       });
     } catch (e) {
+      if (!context.mounted) return;
       AppToast.error(context, i18nOf(ref)('common.error'));
     }
   }
@@ -178,7 +180,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   @override
   Widget build(BuildContext context) {
     final t = i18nOf(ref);
-    return AppScaffold(
+    return BaseScaffold(
       appBar: AppAppBar.primary(
         title: widget.expenseId != null ? t('finance.edit_expense') : t('finance.new_expense'),
       ),
@@ -196,7 +198,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                       children: [
                         // Category
                         DropdownButtonFormField<String>(
-                          value: _selectedCategory,
+                          initialValue: _selectedCategory,
                           decoration: const InputDecoration(
                             labelText: 'Kategori *',
                             prefixIcon: Icon(Icons.category),
@@ -256,7 +258,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
                         // Payment Method
                         DropdownButtonFormField<String>(
-                          value: _selectedPaymentMethod,
+                          initialValue: _selectedPaymentMethod,
                           decoration: const InputDecoration(
                             labelText: 'Ödeme Yöntemi *',
                             prefixIcon: Icon(Icons.payment),
@@ -313,7 +315,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
                         // Status
                         DropdownButtonFormField<String>(
-                          value: _selectedStatus,
+                          initialValue: _selectedStatus,
                           decoration: const InputDecoration(
                             labelText: 'Durum *',
                             prefixIcon: Icon(Icons.check_circle),

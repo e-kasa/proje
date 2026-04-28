@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 
@@ -93,12 +94,12 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
       ]);
 
       // Mağaza ve depoları birleştir — her kalem {code, name, type} şeklinde
-      final warehouses = (results[1] as List<Map<String, dynamic>>).map((w) => {
+      final warehouses = results[1].map((w) => {
         'code': w['code']?.toString() ?? w['warehouseCode']?.toString() ?? w['id']?.toString() ?? '',
         'name': w['name']?.toString() ?? '-',
         'type': 'WAREHOUSE',
       }).toList();
-      final stores = (results[2] as List<Map<String, dynamic>>).map((s) => {
+      final stores = results[2].map((s) => {
         'code': s['code']?.toString() ?? s['storeCode']?.toString() ?? s['id']?.toString() ?? '',
         'name': s['name']?.toString() ?? '-',
         'type': 'STORE',
@@ -121,7 +122,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return AppScaffold(
+    return BaseScaffold(
       appBar: AppAppBar.standard(
         title: t('purchases.add'),
         leading: IconButton(
@@ -207,7 +208,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
 
   Widget _buildSupplierDropdown(ThemeData theme) {
     return DropdownButtonFormField<String>(
-      value: _selectedSupplierId,
+      initialValue: _selectedSupplierId,
       decoration: _inputDeco(t('purchases.supplier_required'), Icons.business_outlined, theme),
       hint: Text(t('purchases.select_supplier')),
       items: _suppliers.map((s) {
@@ -249,7 +250,7 @@ class _AddPurchaseScreenState extends ConsumerState<AddPurchaseScreen> {
 
   Widget _buildLocationDropdown(ThemeData theme) {
     return DropdownButtonFormField<String>(
-      value: _selectedLocationId,
+      initialValue: _selectedLocationId,
       decoration: _inputDeco(t('purchases.location_required'), Icons.warehouse_outlined, theme),
       hint: Text(t('purchases.select_location')),
       isExpanded: true,

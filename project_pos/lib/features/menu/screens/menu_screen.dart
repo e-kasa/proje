@@ -7,6 +7,7 @@ import 'package:project_pos/providers/menu_provider.dart';
 import 'package:project_pos/core/utils/responsive.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 
 class MenuScreen extends ConsumerStatefulWidget {
   const MenuScreen({super.key});
@@ -120,7 +121,8 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
       return _CategoryData(cat.title, cat.color, filteredActions);
     }).where((cat) => cat.actions.isNotEmpty).toList();
 
-    return AppScaffold(
+    // Sprint 19 W1: AppScaffold → BaseScaffold (custom hub layout, AppBar yok).
+    return BaseScaffold(
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [

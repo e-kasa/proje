@@ -130,7 +130,7 @@ class _EnhancedStockScreenState extends ConsumerState<EnhancedStockScreen> {
                     reason: 'manual_adjustment',
                   );
 
-              if (!mounted) return;
+              if (!context.mounted) return;
               if (success) {
                 AppToast.success(context, t('stock.stock_updated'));
               } else {

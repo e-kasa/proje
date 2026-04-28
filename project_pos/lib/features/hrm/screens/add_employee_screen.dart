@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
+import 'package:project_pos/core/widgets/templates/form_screen_template.dart';
 import 'package:project_pos/services/hrm_service.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
@@ -139,100 +141,104 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      appBar: AppAppBar.standard(
-        title: _isEditing ? t('hrm.title') : t('hrm.add_employee'), // TODO: i18n edit_employee key
-        actions: [
-          if (!_isLoading)
-            TextButton(
-              onPressed: _isSaving ? null : _save,
-              child: _isSaving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : Text(t('common.save'),
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
+    if (_isLoading) {
+      return BaseScaffold(
+        appBar: AppAppBar.standard(
+          title: _isEditing ? t('hrm.title') : t('hrm.add_employee'), // TODO: i18n edit_employee key
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return FormScreenTemplate(
+      title: _isEditing ? t('hrm.title') : t('hrm.add_employee'), // TODO: i18n edit_employee key
+      formKey: _formKey,
+      isSaving: _isSaving,
+      onSave: _save,
+      saveLabel: _isSaving
+          ? 'Kaydediliyor...' // TODO: i18n saving key
+          : _isEditing
+              ? t('common.save') // TODO: i18n update key
+              : t('common.save'),
+      appBarActions: [
+        TextButton(
+          onPressed: _isSaving ? null : _save,
+          child: _isSaving
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2))
+              : Text(t('common.save'),
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
+        ),
+      ],
+      sections: [
+        FormSection(
+          fields: [
+            _sectionTitle('Kisisel Bilgiler'), // TODO: i18n
+            const SizedBox(height: 12),
+            _buildTextField(
+              controller: _nameCtrl,
+              label: 'Ad Soyad *',
+              icon: Icons.person_outline,
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? 'Zorunlu alan' : null,
             ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Form(
-              key: _formKey,
-              child: ListView(
-                padding: AppConstants.pagePadding,
-                children: [
-                  _sectionTitle('Kisisel Bilgiler'), // TODO: i18n
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                    controller: _nameCtrl,
-                    label: 'Ad Soyad *',
-                    icon: Icons.person_outline,
-                    validator: (v) =>
-                        (v == null || v.trim().isEmpty) ? 'Zorunlu alan' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                    controller: _emailCtrl,
-                    label: 'E-posta',
-                    icon: Icons.email_outlined,
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                    controller: _phoneCtrl,
-                    label: 'Telefon',
-                    icon: Icons.phone_outlined,
-                    keyboardType: TextInputType.phone,
-                  ),
-                  const SizedBox(height: 20),
-                  _sectionTitle('Is Bilgileri'), // TODO: i18n
-                  const SizedBox(height: 12),
-                  _buildDepartmentDropdown(),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                    controller: _positionCtrl,
-                    label: 'Pozisyon',
-                    icon: Icons.work_outline,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildDateField(),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                    controller: _salaryCtrl,
-                    label: 'Maas',
-                    icon: Icons.attach_money,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+            const SizedBox(height: 12),
+            _buildTextField(
+              controller: _emailCtrl,
+              label: 'E-posta',
+              icon: Icons.email_outlined,
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: 12),
+            _buildTextField(
+              controller: _phoneCtrl,
+              label: 'Telefon',
+              icon: Icons.phone_outlined,
+              keyboardType: TextInputType.phone,
+            ),
+          ],
+        ),
+        FormSection(
+          fields: [
+            _sectionTitle('Is Bilgileri'), // TODO: i18n
+            const SizedBox(height: 12),
+            _buildDepartmentDropdown(),
+            const SizedBox(height: 12),
+            _buildTextField(
+              controller: _positionCtrl,
+              label: 'Pozisyon',
+              icon: Icons.work_outline,
+            ),
+            const SizedBox(height: 12),
+            _buildDateField(),
+            const SizedBox(height: 12),
+            _buildTextField(
+              controller: _salaryCtrl,
+              label: 'Maas',
+              icon: Icons.attach_money,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
                     suffixText: '\u20BA',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildStatusToggle(),
-                  const SizedBox(height: 20),
-                  _sectionTitle('Ek Bilgiler'), // TODO: i18n
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                    controller: _notesCtrl,
-                    label: 'Notlar',
-                    icon: Icons.notes_outlined,
-                    maxLines: 3,
-                  ),
-                  const SizedBox(height: 32),
-                  AppButton.primary(
-                    text: _isSaving
-                        ? 'Kaydediliyor...' // TODO: i18n saving key
-                        : _isEditing
-                            ? t('common.save') // TODO: i18n update key
-                            : t('common.save'),
-                    onPressed: _isSaving ? null : _save,
-                    fullWidth: true,
-                    isLoading: _isSaving,
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
             ),
+            const SizedBox(height: 12),
+            _buildStatusToggle(),
+          ],
+        ),
+        FormSection(
+          fields: [
+            _sectionTitle('Ek Bilgiler'), // TODO: i18n
+            const SizedBox(height: 12),
+            _buildTextField(
+              controller: _notesCtrl,
+              label: 'Notlar',
+              icon: Icons.notes_outlined,
+              maxLines: 3,
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -278,7 +284,7 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen> {
 
   Widget _buildDepartmentDropdown() {
     return DropdownButtonFormField<String>(
-      value: _departments.contains(_department) ? _department : _departments.first,
+      initialValue: _departments.contains(_department) ? _department : _departments.first,
       decoration: InputDecoration(
         labelText: 'Departman',
         prefixIcon: const Icon(Icons.business, color: AppColors.primary),

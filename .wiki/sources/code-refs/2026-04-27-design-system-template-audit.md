@@ -38,7 +38,7 @@ Mevcut design system bileşenleri + ekran tipleri + standardizasyon eksiklikleri
 | **`templates/list_screen_template.dart`** | **Sprint 15 YENİ** — search/filter/pagination | ⭐ Sprint 15 |
 | **`templates/form_screen_template.dart`** | **Sprint 15 YENİ** — sections + save toolbar | ⭐ Sprint 15 |
 | **`templates/detail_screen_template.dart`** | **Sprint 15 YENİ** — TabController + headerSlot + isLoading | ⭐ Sprint 15 |
-| **`templates/dashboard_screen_template.dart`** | **Sprint 15 YENİ** — statCards grid + sections list | ⭐ Sprint 15 |
+| ~~`templates/dashboard_screen_template.dart`~~ | **Sprint 15 YENİ** — statCards grid + sections list | ❌ **Sprint 20'de EMEKLİ** (5 sprint, 0 tüketici) |
 
 ## BaseScaffold + Feature Templates Tasarımı (Sprint 15)
 

@@ -1,9 +1,9 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
@@ -141,7 +141,7 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
     final theme = Theme.of(context);
     final cancelled = _purchase['isCancelled'] == true;
 
-    return AppScaffold(
+    return BaseScaffold(
       appBar: AppAppBar.standard(
         title: _isEditing ? t('purchases.edit') : t('purchases.detail'),
         leading: IconButton(

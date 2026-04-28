@@ -6,6 +6,7 @@ import 'package:project_pos/models/supplier_import_models.dart';
 import 'package:project_pos/core/api/api_client.dart';
 import 'package:project_pos/services/bulk_import_service.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/templates/list_screen_template.dart';
 
 /// Modern Tedarikçi İthalat İnceleme Ekranı
 class SupplierImportReviewScreen extends ConsumerStatefulWidget {
@@ -161,53 +162,39 @@ class _SupplierImportReviewScreenState
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      appBar: AppAppBar.standard(
-        title: 'Tedarikçi Ürün Kontrolü', // TODO: i18n supplier_upload.product_review_title
-        actions: [
-          if (!_loading)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '$_decidedCount / ${_response.productCount}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+    return ListScreenTemplate<SupplierProductItem>(
+      title: 'Tedarikçi Ürün Kontrolü', // TODO: i18n supplier_upload.product_review_title
+      actions: [
+        if (!_loading)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '$_decidedCount / ${_response.productCount}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
                   ),
                 ),
               ),
             ),
-        ],
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                _buildProgressHeader(),
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _response.products.length,
-                    itemBuilder: (context, index) {
-                      final item = _response.products[index];
-                      return _buildProductCard(item, index);
-                    },
-                  ),
-                ),
-              ],
-            ),
-      bottomNavigationBar: _loading
+          ),
+      ],
+      isLoading: _loading,
+      items: _loading ? const [] : _response.products,
+      statsSlot: _loading ? null : _buildProgressHeader(),
+      itemBuilder: (context, item, index) => _buildProductCard(item, index),
+      listPadding: const EdgeInsets.all(16),
+      bottomBar: _loading
           ? null
           : SafeArea(
               child: Padding(

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/features/supplier_claims/di/supplier_claims_di.dart';
 import 'package:project_pos/features/supplier_claims/models/supplier_claim.dart';
@@ -21,7 +22,7 @@ class SupplierClaimDetailScreen extends ConsumerWidget {
     final async = ref.watch(supplierClaimDetailProvider(claimId));
     final fmt = NumberFormat.currency(locale: 'tr_TR', symbol: '₺');
 
-    return AppScaffold(
+    return BaseScaffold<SupplierClaim>(
       appBar: AppAppBar.standard(
         title: t('su.claim_detail_title'),
         actions: [
@@ -31,14 +32,9 @@ class SupplierClaimDetailScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => AppEmptyState.error(
-          description: e.toString(),
-          onAction: () => ref.invalidate(supplierClaimDetailProvider(claimId)),
-        ),
-        data: (claim) => _Content(claim: claim, fmt: fmt, t: t, ref: ref),
-      ),
+      asyncValue: async,
+      onRetry: () => ref.invalidate(supplierClaimDetailProvider(claimId)),
+      dataBuilder: (claim) => _Content(claim: claim, fmt: fmt, t: t, ref: ref),
     );
   }
 }

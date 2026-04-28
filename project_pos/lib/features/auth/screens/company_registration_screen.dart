@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/providers/auth_provider.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
@@ -116,7 +117,8 @@ class _CompanyRegistrationScreenState
     final size = MediaQuery.of(context).size;
     final isDesktop = size.width > 900;
 
-    return AppScaffold(
+    // Sprint 19 W1: AppScaffold → BaseScaffold (3-step wizard, custom split + gradient).
+    return BaseScaffold(
       body: isDesktop ? _buildDesktop() : _buildMobile(),
     );
   }

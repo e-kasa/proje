@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_gradients.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/providers/auth_provider.dart';
 import 'package:project_pos/providers/navigation_provider.dart';
@@ -55,7 +56,7 @@ class _ModernDashboardScreenState
       return AppEmptyState.error(description: _error, onAction: _load);
     }
 
-    return AppScaffold(
+    return BaseScaffold(
       body: RefreshIndicator(
         onRefresh: _load,
         color: AppColors.primary,
@@ -765,7 +766,7 @@ class _ModernDashboardScreenState
 
   // ── SKELETON ─────────────────────────────────────────────────────────────────
   Widget _buildSkeleton() {
-    return AppScaffold(
+    return BaseScaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/features/finance/di/finance_di.dart';
 
@@ -31,7 +32,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
     final currencyFormat =
         NumberFormat.currency(locale: 'tr_TR', symbol: '\u20BA');
 
-    return AppScaffold(
+    return BaseScaffold(
       appBar: AppAppBar.standard(
         title: t('finance.cash_flow'),
         actions: [

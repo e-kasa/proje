@@ -138,7 +138,11 @@ DetailScreenTemplate(
 
 **Karar (Sprint 15)**: `headerSlot` slot olarak eklendi (Reports screen ihtiyacı). Sprint 16'da daha fazla esneklik gerekirse `bottomSlot` da eklenebilir.
 
-## DashboardScreenTemplate
+## ~~DashboardScreenTemplate~~ — EMEKLİ (Sprint 20)
+
+> **STATUS: REMOVED 2026-04-28** — 5 sprint (15-19), 0 tüketici. Sprint 20'de file delete. Sebep: hero card + chart + quick action grid + section serpiştirilmesi paterni şablon kalıbına sığmıyor; her dashboard'ın kendi sırası ve KPI dizilimi farklı. BaseScaffold (sync body) ile direkt çalış.
+
+Eski tasarım (ölü kod, referans için):
 
 Stat cards + section list pattern'ı:
 
@@ -167,6 +171,105 @@ DashboardScreenTemplate(
 | `settings_screen.dart` | AppScaffold + AppAppBar.bottom + TabBar + TabBarView (60 LOC body) | DetailScreenTemplate (25 LOC) | ✅ TabController boilerplate kaldırıldı |
 | `reports_screen.dart` | AppScaffold + manual loading/error + TabBar + headerColumn (75 LOC body) | DetailScreenTemplate + headerSlot (60 LOC) | ✅ TabController + loading/error helper |
 | 4 settings + 3 reports | (agent migration) | (sürüyor) | 🔄 Sprint 15 son |
+
+## Sprint 19 Migration Sonuçları (Import + Auth + Menu + POS + Dashboard) — DashboardScreenTemplate Emekli Kararı
+
+10 ekran migrate, 4 modal/sheet SKIP.
+
+| Template Kararı | Sayı | Ekranlar |
+|---|---|---|
+| ListScreenTemplate | 1 | `supplier_import_review` |
+| BaseScaffold swap | 9 | `menu`, `login`, `registration`, `barcode_scanner`, `bulk_import_review_v2`, `bulk_import_upload`, `supplier_import_upload`, `modern_dashboard`, `pos` |
+| **SKIP** (modal/sheet) | 4 | `edit_product_modal`, `manual_match_modal`, `match_confirm_modal`, `update_stock_modal` |
+
+**Template adoption oranı %10** (Sprint 19'da en düşük). Sebep: import workflow ekranları multi-step wizard ağırlıklı; auth ekranları custom split layout; POS L3 custom; dashboard chart-heavy.
+
+### KRİTİK: DashboardScreenTemplate Emekli Edildi
+
+**5 sprint, 0 tüketici.** Sprint 19'da `modern_dashboard_screen` (843 LOC, en güçlü aday) bile reddetti:
+
+1. Hero header AppBar değil — full-width gradient kart, içine refresh+profile gömülü
+2. Section title'lar bloklar arasına serpiştirilmiş — template `sections: [...]` monolithic block bekler
+3. KPI cards `AppStatCard` değil — gradient ikon + raw değer + onTap (lowStock → alerts)
+4. KPI 4 sütun, cardlar birbirinden farklı — template `statCardColumns=2` default
+5. Custom skeleton template'in `isLoading` spinner'ına sığmaz
+
+`finance_dashboard_screen` (Sprint 18) aynı sebeplerle reddetmişti. **POS dashboard'larda ortak desen yok** — herkesin hero card'ı, KPI dizilimi, section sırası farklı.
+
+**Sprint 20 task:** `lib/core/widgets/templates/dashboard_screen_template.dart` SİL.
+
+### Multi-Step Wizard Pattern Doğrulandı (Template Scope Dışı)
+
+Sprint 17 (`supplier_upload_wizard`) + Sprint 19 (4 ekran daha):
+- `company_registration_screen` (3-step)
+- `bulk_import_review_screen_v2` (3-step + custom bottom bar)
+- `bulk_import_upload_screen` (4-state UI: idle/uploading/success/error)
+- `supplier_import_upload_screen` (2-state: form/progress)
+
+Step indicator + custom bottom action bar + state-based UI dinamiği FormScreenTemplate'in section-only paterne uymaz. **Multi-step wizard kalıcı olarak template scope dışı.** İhtiyaç doğarsa `WizardScreenTemplate` Sprint 21+'da, ama gerçek müşteri olmadan inşa etmeyeceğiz (DashboardScreenTemplate hatasını tekrarlama).
+
+### Sprint 16-19 Kümülatif İstatistik
+
+| Template | Adoption (47 ekran) |
+|---|---|
+| ListScreenTemplate | **16 ekran** ✅ |
+| BaseScaffold swap | **27 ekran** ✅ |
+| FormScreenTemplate | 3 ekran |
+| DetailScreenTemplate | 2 ekran |
+| **DashboardScreenTemplate** | **0 ekran** ❌ EMEKLİ |
+
+Toplam Net LOC delta: ~−506
+
+## Sprint 18 Migration Sonuçları (Finance + HRM + Autoparts + Supplier Claims)
+
+12 ekran migrate edildi, 1 ekran (`claim_resolve_sheet`) intentional skip.
+
+| Template Kararı | Sayı | Ekranlar |
+|---|---|---|
+| ListScreenTemplate | 6 | `expense_list`, `employee_list`, `supplier_claims_list`, `part_search`, `vehicle_compatibility`, `vehicle_list` |
+| FormScreenTemplate | 2 | `add_income`, `add_employee` |
+| BaseScaffold swap | 4 | `add_expense` (gradient AppBar), `cash_flow` (chart), `finance_dashboard` (hero+grid), `supplier_claim_detail` |
+| **SKIP (bottom sheet)** | 1 | `claim_resolve_sheet` |
+
+**Template adoption oranı %67** (Sprint 16: %56, Sprint 17: %22). Sebep: bu modüller list-heavy.
+
+**Yeni öğreti — Bottom sheet'ler template scope dışında:** `claim_resolve_sheet` `showModalBottomSheet(builder: (_) => ...)` ile çağrılıyor; `Container` + `BorderRadius.vertical(top:)` + `MediaQuery.viewInsets.bottom` padding pattern'ı = bottom sheet, Scaffold değil. Tüm template katmanı (BaseScaffold dahil) tam-ekran Scaffold için tasarlandı. İleride ihtiyaç doğarsa `BottomSheetTemplate` ayrı bir Sprint'te eklenebilir.
+
+**DashboardScreenTemplate adoption oranı 0/0/0/0 (Sprint 15-18):** `cash_flow` ve `finance_dashboard` aday gibi görünüyordu ama:
+- Hero net-income card (full-width, conditional renkli) `statCards` simetrisine sığmıyor
+- Chart-heavy ekranlar (custom `_BarRow`) template grid'e sığmıyor
+- Quick action grid + kategori breakdown custom layout
+
+**Karar:** DashboardScreenTemplate Sprint 19'da (dashboard modülü) son şansını alacak — ya gerçek tüketici bulur ya da emekli edilir.
+
+**FormScreenTemplate'in iki yüzü:**
+- ✅ Başarı: `add_income` 246→206 (−40 LOC) — 2 temiz section, klasik save
+- ❌ Başarısızlık: `add_expense` AppAppBar.primary (gradient) korunmalı → BaseScaffold swap
+- 🔀 Hibrid: `add_employee` FormScreenTemplate + loading için BaseScaffold fallback dalı
+
+**Sonuç:** ~−193 LOC net, 0 yeni `flutter analyze` issue, 1 baseline issue temizlendi (rewrite sırasında).
+
+## Sprint 17 Migration Sonuçları (Sales + Purchases + Accounts)
+
+9 ekran (sales: 3, purchases: 4, accounts: 1, suppliers: 1 wizard):
+
+| Template Kararı | Sayı | Ekranlar |
+|---|---|---|
+| ListScreenTemplate | 2 | `sale_list`, `purchase_list` |
+| BaseScaffold swap | 7 | `sale_detail`, `purchase_detail`, `sale_return`, `add_purchase`, `purchase_return`, `accounts_hub`, `supplier_upload_wizard` |
+
+**BaseScaffold swap oranı %78** (Sprint 16: %44). Sebep: sales/purchases/accounts doğası gereği **transaction-based** — özel bottom bar (iade tutarı + danger button), dynamic AppBar action (grandTotal chip), master-detail split (accounts_hub), multi-step wizard (supplier_upload).
+
+**Form-look-alike → Form-uyumsuz öğretisi:** `add_purchase`, `sale_return`, `purchase_return` form gibi görünüyor ama:
+- AppBar action chip (`if (_grandTotal > 0)`)
+- Custom bottom bar (toplam iade hesabı + warning gradient)
+- Body içinde inline submit + dinamik expansion list
+
+Bu davranışlar `FormScreenTemplate.sections` API'sine sığmıyor → BaseScaffold swap doğru karar.
+
+**Detail ekranları 800-1000 LOC:** `sale_detail` + `purchase_detail` büyük ama **tab tabanlı değil** (single-view scroll). DetailScreenTemplate tab odaklı, fayda yok. BaseScaffold swap.
+
+**Sonuç:** ~−110 LOC net, 0 yeni `flutter analyze` issue, 19 baseline issue (Sprint 20 cleanup).
 
 ## Sprint 16 Migration Sonuçları (Inventory + Catalog + Stock)
 

@@ -1,6 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/widgets/templates/list_screen_template.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
@@ -287,91 +288,75 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      body: Column(
-        children: [
-          // Search & Add
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: _filterVehicles,
-                        decoration: InputDecoration(
-                          hintText: t('common.search'), // TODO: i18n vehicle search hint
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          filled: true,
-                          fillColor: AppColors.bgLight,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton.icon(
-                      onPressed: () => _showAddEditDialog(),
-                      icon: const Icon(Icons.add, size: 20),
-                      label: Text(t('vehicles.add')),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ],
+    return ListScreenTemplate<Map<String, dynamic>>(
+      title: t('autoparts.vehicles_title'),
+      items: _filteredVehicles,
+      isLoading: _isLoading,
+      onRefresh: _loadVehicles,
+      searchSlot: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _searchController,
+                onChanged: _filterVehicles,
+                decoration: InputDecoration(
+                  hintText: t('common.search'), // TODO: i18n vehicle search hint
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  filled: true,
+                  fillColor: AppColors.bgLight,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildStatItem('Toplam', '${_vehicles.length}', Icons.directions_car), // TODO: i18n
-                      Container(width: 1, height: 30, color: AppColors.border),
-                      _buildStatItem('Aktif', '${_vehicles.where((v) => v['isActive'] == true).length}', Icons.check_circle), // TODO: i18n
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-
-          // Vehicle List
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredVehicles.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.directions_car_outlined, size: 80, color: AppColors.textMuted.withValues(alpha: 0.5)),
-                            const SizedBox(height: 16),
-                            Text(t('common.no_data'), style: const TextStyle(fontSize: 16, color: AppColors.textSecondary)), // TODO: i18n no_vehicles key
-                          ],
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _loadVehicles,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _filteredVehicles.length,
-                          itemBuilder: (context, index) => _buildVehicleCard(_filteredVehicles[index]),
-                        ),
-                      ),
-          ),
-        ],
+            const SizedBox(width: 12),
+            ElevatedButton.icon(
+              onPressed: () => _showAddEditDialog(),
+              icon: const Icon(Icons.add, size: 20),
+              label: Text(t('vehicles.add')),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
       ),
+      statsSlot: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildStatItem('Toplam', '${_vehicles.length}', Icons.directions_car), // TODO: i18n
+              Container(width: 1, height: 30, color: AppColors.border),
+              _buildStatItem('Aktif', '${_vehicles.where((v) => v['isActive'] == true).length}', Icons.check_circle), // TODO: i18n
+            ],
+          ),
+        ),
+      ),
+      emptyState: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.directions_car_outlined, size: 80, color: AppColors.textMuted.withValues(alpha: 0.5)),
+            const SizedBox(height: 16),
+            Text(t('common.no_data'), style: const TextStyle(fontSize: 16, color: AppColors.textSecondary)), // TODO: i18n no_vehicles key
+          ],
+        ),
+      ),
+      itemBuilder: (context, vehicle, index) => _buildVehicleCard(vehicle),
     );
   }
 

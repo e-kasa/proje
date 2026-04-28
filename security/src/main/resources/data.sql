@@ -2746,7 +2746,12 @@ INSERT INTO ext_bundles (id, create_time, create_user, last_modified_time, updat
     ('bnd-vh10-0000-0000-0000-000000000010', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'vehicle.search_placeholder','Plaka ara (örn: 34A)',                  'Search plate (e.g. 34A)'),
     ('bnd-vh11-0000-0000-0000-000000000011', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'vehicle.all_vehicles',     'Tüm plakalar',                            'All vehicles')
+     'vehicle.all_vehicles',     'Tüm plakalar',                            'All vehicles'),
+    -- Sprint 20 cleanup: autoparts AppBar başlıkları (Sprint 18 hardcoded TR borç)
+    ('bnd-vh12-0000-0000-0000-000000000012', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'autoparts.vehicles_title', 'Araçlar',                                 'Vehicles'),
+    ('bnd-vh13-0000-0000-0000-000000000013', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'autoparts.part_search_title', 'Parça Arama',                          'Part Search')
     ON CONFLICT DO NOTHING;
 
 -- ============================================================

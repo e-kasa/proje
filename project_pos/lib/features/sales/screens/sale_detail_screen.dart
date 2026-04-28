@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/services/service_locator.dart';
@@ -64,7 +65,7 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
     final cancelled = _sale['status']?.toString().toLowerCase() == 'cancelled' ||
         _sale['isCancelled'] == true;
 
-    return AppScaffold(
+    return BaseScaffold(
       appBar: AppAppBar.standard(
         title: t('sales.detail'),
         leading: IconButton(
@@ -935,14 +936,12 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
           reasonCtrl.text.trim().isNotEmpty ? reasonCtrl.text.trim() : t('sales.not_specified');
       try {
         await ref.read(salesServiceProvider).cancelSale(widget.saleId, reason);
-        if (mounted) {
-          AppToast.warning(context, t('sales.sale_cancelled_success'));
-          _load();
-        }
+        if (!context.mounted) return;
+        AppToast.warning(context, t('sales.sale_cancelled_success'));
+        _load();
       } catch (e) {
-        if (mounted) {
-          AppToast.error(context, '${t('sales.cancel_error')}: $e');
-        }
+        if (!context.mounted) return;
+        AppToast.error(context, '${t('sales.cancel_error')}: $e');
       }
     }
   }

@@ -6,6 +6,7 @@ import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/features/finance/di/finance_di.dart';
 
 class FinanceDashboardScreen extends ConsumerStatefulWidget {
@@ -28,7 +29,7 @@ class _FinanceDashboardScreenState extends ConsumerState<FinanceDashboardScreen>
     final t = i18nOf(ref);
     final isMobile = MediaQuery.of(context).size.width < 600;
 
-    return AppScaffold(
+    return BaseScaffold(
       appBar: AppAppBar.standard(
         title: t('finance.title'),
         actions: [

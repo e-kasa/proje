@@ -1,10 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/templates/list_screen_template.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/features/sales/di/sales_di.dart';
 import 'package:project_pos/features/sales/providers/sale_list_notifier.dart';
@@ -38,20 +39,29 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Sprint 17 W1: AppScaffold + Column + manual switcher → ListScreenTemplate.
     final state = ref.watch(saleListProvider);
     final theme = Theme.of(context);
     final t = i18nOf(ref);
 
-    return AppScaffold(
-      appBar: AppAppBar.standard(
-        title: t('sales.title'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: () => ref.read(saleListProvider.notifier).load(),
-            tooltip: t('common.refresh'),
-          ),
-        ],
+    return ListScreenTemplate<Map<String, dynamic>>(
+      title: t('sales.title'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh_rounded),
+          onPressed: () => ref.read(saleListProvider.notifier).load(),
+          tooltip: t('common.refresh'),
+        ),
+      ],
+      items: state.filtered,
+      isLoading: state.isLoading,
+      error: state.error,
+      onErrorRetry: () => ref.read(saleListProvider.notifier).load(),
+      onRefresh: () async => ref.read(saleListProvider.notifier).load(),
+      searchSlot: _buildSearchAndFilter(state, theme),
+      emptyState: AppEmptyState.noData(
+        title: t('sales.no_sales'),
+        description: t('sales.new_sale_hint'),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
@@ -61,20 +71,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
         icon: const Icon(Icons.add),
         label: Text(t('sales.new_sale')),
       ),
-      body: Column(
-        children: [
-          _buildSearchAndFilter(state, theme),
-          Expanded(
-            child: state.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : state.error != null
-                    ? _buildError(state.error!)
-                    : state.filtered.isEmpty
-                        ? _buildEmpty()
-                        : _buildList(state.filtered, theme),
-          ),
-        ],
-      ),
+      itemBuilder: (ctx, sale, idx) => _buildSaleCard(sale, theme),
     );
   }
 
@@ -284,18 +281,7 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
     }
   }
 
-  // ─── Sale List ────────────────────────────────────────────────────────────
-
-  Widget _buildList(List<Map<String, dynamic>> items, ThemeData theme) {
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        final s = items[index];
-        return _buildSaleCard(s, theme);
-      },
-    );
-  }
+  // ─── Sale Card ────────────────────────────────────────────────────────────
 
   Widget _buildSaleCard(Map<String, dynamic> s, ThemeData theme) {
     final t = i18nOf(ref);
@@ -513,35 +499,5 @@ class _SaleListScreenState extends ConsumerState<SaleListScreen> {
       default:
         return '';
     }
-  }
-
-  // ─── Error & Empty ────────────────────────────────────────────────────────
-
-  Widget _buildError(String error) {
-    final t = i18nOf(ref);
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 48, color: AppColors.danger),
-          const SizedBox(height: 12),
-          Text(error, textAlign: TextAlign.center),
-          const SizedBox(height: 16),
-          AppButton.primary(
-                        text: t('sales.retry'),
-                        icon: Icons.refresh,
-                        onPressed: () => ref.read(saleListProvider.notifier).load(),
-                      ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmpty() {
-    final t = i18nOf(ref);
-    return AppEmptyState.noData(
-      title: t('sales.no_sales'),
-      description: t('sales.new_sale_hint'),
-    );
   }
 }

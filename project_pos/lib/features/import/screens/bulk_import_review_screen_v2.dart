@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/api/api_client.dart';
 import 'package:project_pos/models/bulk_import_models.dart';
 import 'package:project_pos/services/bulk_import_service.dart';
@@ -1226,7 +1227,7 @@ class _BulkImportReviewScreenV2State extends ConsumerState<BulkImportReviewScree
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
+    return BaseScaffold(
       appBar: AppAppBar.standard(
         title: 'Toplu Ürün Yükleme - İnceleme (${_sectorLabel})', // TODO: i18n bulk_import.review_title
         actions: [

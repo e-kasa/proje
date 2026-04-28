@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import '../providers/pos_provider.dart';
 import '../widgets/product_grid_item.dart';
@@ -78,11 +79,12 @@ class _PosScreenState extends ConsumerState<PosScreen> {
 
     final posState = ref.watch(posProvider);
 
+    // Sprint 19-C: Scaffold → BaseScaffold (cart-aware split layout, custom gradient AppBar).
     return KeyboardListener(
       focusNode: _focusNode,
       autofocus: true,
       onKeyEvent: _handleKeyEvent,
-      child: Scaffold(
+      child: BaseScaffold(
         appBar: _buildAppBar(posState),
         body: LayoutBuilder(
           builder: (context, constraints) {

@@ -5,6 +5,7 @@ import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/models/auth_state.dart';
 import 'package:project_pos/providers/auth_provider.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -67,7 +68,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     final size = MediaQuery.of(context).size;
     final isDesktop = size.width > 900;
 
-    return AppScaffold(
+    // Sprint 19 W1: AppScaffold → BaseScaffold (custom split + gradient layout).
+    return BaseScaffold(
       body: isDesktop
           ? _buildDesktopLayout(authState)
           : _buildMobileLayout(authState),

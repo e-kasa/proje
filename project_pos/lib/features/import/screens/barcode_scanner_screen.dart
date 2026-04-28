@@ -4,6 +4,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:go_router/go_router.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 
 class BarcodeScannerScreen extends ConsumerStatefulWidget {
@@ -138,7 +139,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
+    return BaseScaffold(
       body: Stack(
         children: [
           // Camera Scanner

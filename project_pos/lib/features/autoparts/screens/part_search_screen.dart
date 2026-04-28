@@ -1,7 +1,8 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/widgets/templates/list_screen_template.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
@@ -113,170 +114,162 @@ class _PartSearchScreenState extends ConsumerState<PartSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      body: Column(
-        children: [
-          // Arama kutusu
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _searchController,
-                  onChanged: _onSearchChanged,
-                  decoration: InputDecoration(
-                    hintText: t('common.search'), // TODO: i18n part_search hint key
-                    prefixIcon: const Icon(Icons.search, size: 24),
-                    suffixIcon: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (_searchController.text.isNotEmpty)
-                          IconButton(
-                            icon: const Icon(Icons.clear, size: 20),
-                            onPressed: () {
-                              _searchController.clear();
-                              _performSearch();
-                            },
-                          ),
-                        IconButton(
-                          icon: Icon(
-                            _showFilters ? Icons.filter_list_off : Icons.filter_list,
-                            color: _showFilters ? AppColors.primary : AppColors.textSecondary,
-                          ),
-                          onPressed: () => setState(() => _showFilters = !_showFilters),
-                        ),
-                      ],
-                    ),
-                    filled: true,
-                    fillColor: AppColors.bgLight,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  ),
+    return ListScreenTemplate<Map<String, dynamic>>(
+      title: t('autoparts.part_search_title'),
+      items: _results,
+      isLoading: _isLoading,
+      onRefresh: _hasSearched ? _performSearch : null,
+      searchSlot: _buildSearchSlot(),
+      filterSlot: _showFilters ? _buildFilterSlot() : null,
+      statsSlot: _hasSearched ? _buildStatsSlot() : null,
+      emptyState: !_hasSearched ? _buildWelcomeState() : _buildEmptyState(),
+      itemBuilder: (context, item, index) => _buildResultCard(item),
+    );
+  }
+
+  Widget _buildSearchSlot() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: TextField(
+        controller: _searchController,
+        onChanged: _onSearchChanged,
+        decoration: InputDecoration(
+          hintText: t('common.search'), // TODO: i18n part_search hint key
+          prefixIcon: const Icon(Icons.search, size: 24),
+          suffixIcon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_searchController.text.isNotEmpty)
+                IconButton(
+                  icon: const Icon(Icons.clear, size: 20),
+                  onPressed: () {
+                    _searchController.clear();
+                    _performSearch();
+                  },
                 ),
+              IconButton(
+                icon: Icon(
+                  _showFilters ? Icons.filter_list_off : Icons.filter_list,
+                  color: _showFilters ? AppColors.primary : AppColors.textSecondary,
+                ),
+                onPressed: () => setState(() => _showFilters = !_showFilters),
+              ),
+            ],
+          ),
+          filled: true,
+          fillColor: AppColors.bgLight,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        ),
+      ),
+    );
+  }
 
-                // Arac filtre paneli
-                if (_showFilters) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.bgLight,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.directions_car, size: 16, color: AppColors.primary),
-                            const SizedBox(width: 8),
-                            const Text('Arac Filtresi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                            const Spacer(),
-                            if (_selectedMake != null || _selectedModel != null || _yearController.text.isNotEmpty)
-                              TextButton.icon(
-                                onPressed: _clearFilters,
-                                icon: const Icon(Icons.clear, size: 14),
-                                label: const Text('Temizle', style: TextStyle(fontSize: 12)),
-                                style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 0)),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: DropdownButtonFormField<String>(
-                                value: _selectedMake,
-                                isExpanded: true,
-                                decoration: const InputDecoration(
-                                  labelText: 'Marka',
-                                  border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                  isDense: true,
-                                ),
-                                items: _makes.map((m) => DropdownMenuItem(value: m, child: Text(m, style: const TextStyle(fontSize: 13)))).toList(),
-                                onChanged: (val) {
-                                  setState(() => _selectedMake = val);
-                                  if (val != null) _loadModels(val);
-                                  _performSearch();
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: DropdownButtonFormField<String>(
-                                value: _selectedModel,
-                                isExpanded: true,
-                                decoration: const InputDecoration(
-                                  labelText: 'Model',
-                                  border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                  isDense: true,
-                                ),
-                                items: _models.map((m) => DropdownMenuItem(value: m, child: Text(m, style: const TextStyle(fontSize: 13)))).toList(),
-                                onChanged: (val) {
-                                  setState(() => _selectedModel = val);
-                                  _performSearch();
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              width: 80,
-                              child: TextField(
-                                controller: _yearController,
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
-                                  labelText: 'Yil',
-                                  border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                  isDense: true,
-                                ),
-                                onChanged: (_) {
-                                  _debounce?.cancel();
-                                  _debounce = Timer(const Duration(milliseconds: 500), _performSearch);
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+  Widget _buildFilterSlot() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.bgLight,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.directions_car, size: 16, color: AppColors.primary),
+                const SizedBox(width: 8),
+                const Text('Arac Filtresi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                const Spacer(),
+                if (_selectedMake != null || _selectedModel != null || _yearController.text.isNotEmpty)
+                  TextButton.icon(
+                    onPressed: _clearFilters,
+                    icon: const Icon(Icons.clear, size: 14),
+                    label: const Text('Temizle', style: TextStyle(fontSize: 12)),
+                    style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 0)),
                   ),
-                ],
-
-                // Sonuc sayisi
-                if (_hasSearched) ...[
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      '${_results.length} sonuc bulundu',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                    ),
-                  ),
-                ],
               ],
             ),
-          ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _selectedMake,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Marka',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      isDense: true,
+                    ),
+                    items: _makes.map((m) => DropdownMenuItem(value: m, child: Text(m, style: const TextStyle(fontSize: 13)))).toList(),
+                    onChanged: (val) {
+                      setState(() => _selectedMake = val);
+                      if (val != null) _loadModels(val);
+                      _performSearch();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _selectedModel,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Model',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      isDense: true,
+                    ),
+                    items: _models.map((m) => DropdownMenuItem(value: m, child: Text(m, style: const TextStyle(fontSize: 13)))).toList(),
+                    onChanged: (val) {
+                      setState(() => _selectedModel = val);
+                      _performSearch();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 80,
+                  child: TextField(
+                    controller: _yearController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Yil',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      isDense: true,
+                    ),
+                    onChanged: (_) {
+                      _debounce?.cancel();
+                      _debounce = Timer(const Duration(milliseconds: 500), _performSearch);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-          // Sonuclar
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : !_hasSearched
-                    ? _buildWelcomeState()
-                    : _results.isEmpty
-                        ? _buildEmptyState()
-                        : ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: _results.length,
-                            itemBuilder: (context, index) => _buildResultCard(_results[index]),
-                          ),
-          ),
-        ],
+  Widget _buildStatsSlot() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          '${_results.length} sonuc bulundu',
+          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
       ),
     );
   }

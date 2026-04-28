@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/templates/list_screen_template.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/features/hrm/di/hrm_di.dart';
 import 'package:project_pos/features/hrm/providers/employee_list_notifier.dart';
@@ -62,55 +63,40 @@ class _EmployeeListScreenState extends ConsumerState<EmployeeListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Sprint 18 W1: AppScaffold + Column + manual switcher → ListScreenTemplate.
     final isMobile = MediaQuery.of(context).size.width < 600;
     final state = ref.watch(employeeListProvider);
     final notifier = ref.read(employeeListProvider.notifier);
 
-    return AppScaffold(
-      appBar: AppAppBar.standard(
-        title: t('hrm.employees'),
-        actions: [
-          IconButton(
-            onPressed: notifier.load,
-            icon: const Icon(Icons.refresh),
-            tooltip: t('common.refresh'),
-          ),
-        ],
+    return ListScreenTemplate<Map<String, dynamic>>(
+      title: t('hrm.employees'),
+      actions: [
+        IconButton(
+          onPressed: notifier.load,
+          icon: const Icon(Icons.refresh),
+          tooltip: t('common.refresh'),
+        ),
+      ],
+      items: state.employees,
+      isLoading: state.isLoading,
+      onRefresh: notifier.load,
+      statsSlot: _buildStatsSection(state),
+      searchSlot: _buildFiltersSection(state, notifier, isMobile),
+      emptyState: AppEmptyState(
+        icon: Icons.people_outline,
+        title: t('hrm.no_employees'),
+        description: t('hrm.no_employees_hint'),
       ),
-      body: state.isLoading
-          ? const AppSkeletonList(itemCount: 8)
-          : Column(
-              children: [
-                _buildStatsSection(state),
-                const SizedBox(height: 16),
-                _buildFiltersSection(state, notifier, isMobile),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: state.employees.isEmpty
-                      ? AppEmptyState(
-                          icon: Icons.people_outline,
-                          title: t('hrm.no_employees'),
-                          description: t('hrm.no_employees_hint'),
-                        )
-                      : ListView.separated(
-                          padding: AppConstants.pagePadding,
-                          itemCount: state.employees.length,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final employee = state.employees[index];
-                            return _buildEmployeeCard(employee, isMobile);
-                          },
-                        ),
-                ),
-              ],
-            ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.go('/hrm/employees/add'),
         icon: const Icon(Icons.person_add),
         label: Text(t('hrm.add_employee')),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+      ),
+      itemBuilder: (ctx, employee, idx) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: _buildEmployeeCard(employee, isMobile),
       ),
     );
   }

@@ -5,6 +5,7 @@ import 'package:project_pos/core/utils/app_logger.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/models/supplier_upload_models.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 
 /// Basitleştirilmiş Wizard - Her ürün için 3 seçenek
 class SupplierUploadWizardScreen extends ConsumerStatefulWidget {
@@ -45,7 +46,7 @@ class _SupplierUploadWizardScreenState
       return _buildSummaryScreen();
     }
 
-    return AppScaffold(
+    return BaseScaffold(
       appBar: AppAppBar.standard(
         title: 'Tedarikçi Dosyası - Ürün Kararları', // TODO: i18n supplier_upload.product_decisions_title
         bottom: PreferredSize(
@@ -404,7 +405,7 @@ class _SupplierUploadWizardScreenState
   }
 
   Widget _buildSummaryScreen() {
-    return AppScaffold(
+    return BaseScaffold(
       appBar: AppAppBar.standard(
         title: 'Özet - Kararlarınızı Gözden Geçirin', // TODO: i18n bulk_import.review_decisions_title
         leading: IconButton(
@@ -908,7 +909,7 @@ class _SuccessScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
+    return BaseScaffold(
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

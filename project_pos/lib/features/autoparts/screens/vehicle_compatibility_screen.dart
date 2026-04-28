@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:project_pos/core/widgets/templates/list_screen_template.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
@@ -230,94 +231,80 @@ class _VehicleCompatibilityScreenState extends ConsumerState<VehicleCompatibilit
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      appBar: AppAppBar.standard(
-        title: t('vehicles.compatibility'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
+    return ListScreenTemplate<Map<String, dynamic>>(
+      title: t('vehicles.compatibility'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.add_circle, color: AppColors.primary),
+          onPressed: _showAddCompatibilityDialog,
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_circle, color: AppColors.primary),
-            onPressed: _showAddCompatibilityDialog,
-          ),
-        ],
+      ],
+      items: _compatibilities,
+      isLoading: _isLoading,
+      onRefresh: _loadCompatibilities,
+      emptyState: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.link_off, size: 80, color: AppColors.textMuted.withValues(alpha: 0.5)),
+            const SizedBox(height: 16),
+            Text(t('common.no_data'), style: const TextStyle(fontSize: 16, color: AppColors.textSecondary)), // TODO: i18n no_compatibility key
+            const SizedBox(height: 16),
+            AppButton.primary(
+              text: t('vehicles.add'),
+              icon: Icons.add,
+              onPressed: _showAddCompatibilityDialog,
+            ),
+          ],
+        ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _compatibilities.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.link_off, size: 80, color: AppColors.textMuted.withValues(alpha: 0.5)),
-                      const SizedBox(height: 16),
-                      Text(t('common.no_data'), style: const TextStyle(fontSize: 16, color: AppColors.textSecondary)), // TODO: i18n no_compatibility key
-                      const SizedBox(height: 16),
-                      AppButton.primary(
-                        text: t('vehicles.add'),
-                        icon: Icons.add,
-                        onPressed: _showAddCompatibilityDialog,
-                      ),
-                    ],
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadCompatibilities,
-                  child: ListView.builder(
-                    padding: AppConstants.pagePadding,
-                    itemCount: _compatibilities.length,
-                    itemBuilder: (context, index) {
-                      final compat = _compatibilities[index];
-                      final yearRange = [
-                        if (compat['vehicleYearStart'] != null) compat['vehicleYearStart'].toString(),
-                        if (compat['vehicleYearEnd'] != null) compat['vehicleYearEnd'].toString(),
-                      ].join(' - ');
+      itemBuilder: (context, compat, index) {
+        final yearRange = [
+          if (compat['vehicleYearStart'] != null) compat['vehicleYearStart'].toString(),
+          if (compat['vehicleYearEnd'] != null) compat['vehicleYearEnd'].toString(),
+        ].join(' - ');
 
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: AppConstants.borderRadiusMedium,
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: ListTile(
-                          leading: Container(
-                            width: 44, height: 44,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              borderRadius: AppConstants.borderRadiusSmall,
-                            ),
-                            child: const Center(child: Icon(Icons.directions_car, color: AppColors.primary, size: 24)),
-                          ),
-                          title: Text(
-                            '${compat['vehicleMake']} ${compat['vehicleModel']}',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                          ),
-                          subtitle: Row(
-                            children: [
-                              if (yearRange.isNotEmpty) ...[
-                                Text(yearRange, style: const TextStyle(fontSize: 12)),
-                                const SizedBox(width: 8),
-                              ],
-                              if ((compat['vehicleEngineType'] ?? '').toString().isNotEmpty)
-                                Text(compat['vehicleEngineType'], style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
-                              if (compat['isVerified'] == true) ...[
-                                const SizedBox(width: 8),
-                                const Icon(Icons.verified, size: 14, color: AppColors.success),
-                              ],
-                            ],
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline, color: AppColors.danger, size: 20),
-                            onPressed: () => _deleteCompatibility(compat),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: AppConstants.borderRadiusMedium,
+            border: Border.all(color: AppColors.border),
+          ),
+          child: ListTile(
+            leading: Container(
+              width: 44, height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: AppConstants.borderRadiusSmall,
+              ),
+              child: const Center(child: Icon(Icons.directions_car, color: AppColors.primary, size: 24)),
+            ),
+            title: Text(
+              '${compat['vehicleMake']} ${compat['vehicleModel']}',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            subtitle: Row(
+              children: [
+                if (yearRange.isNotEmpty) ...[
+                  Text(yearRange, style: const TextStyle(fontSize: 12)),
+                  const SizedBox(width: 8),
+                ],
+                if ((compat['vehicleEngineType'] ?? '').toString().isNotEmpty)
+                  Text(compat['vehicleEngineType'], style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                if (compat['isVerified'] == true) ...[
+                  const SizedBox(width: 8),
+                  const Icon(Icons.verified, size: 14, color: AppColors.success),
+                ],
+              ],
+            ),
+            trailing: IconButton(
+              icon: const Icon(Icons.delete_outline, color: AppColors.danger, size: 20),
+              onPressed: () => _deleteCompatibility(compat),
+            ),
+          ),
+        );
+      },
     );
   }
 }

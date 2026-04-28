@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/features/accounts/di/accounts_di.dart';
 import 'package:project_pos/features/accounts/models/statement_args.dart';
 import 'package:project_pos/features/accounts/providers/accounts_list_provider.dart';
@@ -72,7 +73,7 @@ class _AccountsHubScreenState extends ConsumerState<AccountsHubScreen> {
     final t = i18nOf(ref);
     final selectedId = ref.watch(selectedAccountProvider)?.accountId;
 
-    return AppScaffold(
+    return BaseScaffold(
       appBar: AppAppBar.standard(
         title: t('accounts.hub_title'),
         actions: [

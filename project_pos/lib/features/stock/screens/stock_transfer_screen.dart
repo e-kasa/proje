@@ -311,7 +311,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
             const SizedBox(height: 12),
             // Dropdown
             DropdownButtonFormField<String>(
-              value: selectedId,
+              initialValue: selectedId,
               decoration: _inputDeco(
                 '$label *',
                 locationType == _LocationType.warehouse
@@ -319,7 +319,7 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
                     : Icons.store_outlined,
                 theme,
               ),
-              hint: Text('${label.toLowerCase()}'),
+              hint: Text(label.toLowerCase()),
               isExpanded: true,
               items: locations.map((loc) {
                 final code = _locationCode(loc);

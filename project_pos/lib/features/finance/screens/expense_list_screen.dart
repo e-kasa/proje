@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/templates/list_screen_template.dart';
 import 'package:project_pos/features/finance/di/finance_di.dart';
 
 class ExpenseListScreen extends ConsumerStatefulWidget {
@@ -74,61 +75,38 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Sprint 18 W1: AppScaffold + Column + manual switcher → ListScreenTemplate.
     final isMobile = MediaQuery.of(context).size.width < 600;
 
-    return AppScaffold(
-      appBar: AppAppBar.standard(
-        title: t('finance.expenses'),
-        actions: [
-          IconButton(
-            onPressed: _loadExpenses,
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
+    return ListScreenTemplate<Map<String, dynamic>>(
+      title: t('finance.expenses'),
+      actions: [
+        IconButton(
+          onPressed: _loadExpenses,
+          icon: const Icon(Icons.refresh),
+        ),
+      ],
+      items: _filteredExpenses,
+      isLoading: _isLoading,
+      onRefresh: _loadExpenses,
+      statsSlot: _buildStatsSection(),
+      searchSlot: _buildFiltersSection(isMobile),
+      emptyState: AppEmptyState(
+        icon: Icons.receipt_long_outlined,
+        title: t('finance.no_expenses'),
+        actionText: t('finance.no_expense_records'),
       ),
-      body: _isLoading
-          ? const AppSkeletonList(itemCount: 8)
-          : Column(
-              children: [
-                // Stats Section
-                _buildStatsSection(),
-
-                const SizedBox(height: 16),
-
-                // Filters & Search
-                _buildFiltersSection(isMobile),
-
-                const SizedBox(height: 16),
-
-                // Expense List
-                Expanded(
-                  child: _filteredExpenses.isEmpty
-                      ? AppEmptyState(
-                          icon: Icons.receipt_long_outlined,
-                          title: t('finance.no_expenses'),
-                          actionText: t('finance.no_expense_records'),
-                        )
-                      : ListView.separated(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _filteredExpenses.length,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final expense = _filteredExpenses[index];
-                            return _buildExpenseCard(expense, isMobile);
-                          },
-                        ),
-                ),
-              ],
-            ),
       floatingActionButton: FloatingActionButton.extended(
-        
         onPressed: () {
           context.go('/finance/expenses/add');
         },
         icon: const Icon(Icons.add),
         label: Text(t('finance.new_expense')),
         backgroundColor: AppColors.primary,
+      ),
+      itemBuilder: (ctx, expense, idx) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: _buildExpenseCard(expense, isMobile),
       ),
     );
   }
@@ -236,7 +214,7 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _selectedCategory,
+                  initialValue: _selectedCategory,
                   decoration: InputDecoration(
                     labelText: t('finance.category'),
                     filled: true,
@@ -262,7 +240,7 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _selectedStatus,
+                  initialValue: _selectedStatus,
                   decoration: InputDecoration(
                     labelText: t('common.status'),
                     filled: true,

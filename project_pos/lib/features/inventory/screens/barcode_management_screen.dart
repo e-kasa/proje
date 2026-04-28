@@ -134,7 +134,7 @@ class _BarcodeManagementScreenState extends ConsumerState<BarcodeManagementScree
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: selectedType,
+                  initialValue: selectedType,
                   decoration: const InputDecoration(
                     labelText: 'Barkod Tipi',
                     border: OutlineInputBorder(),

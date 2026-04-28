@@ -11,6 +11,329 @@ Append-only olay kaydı. **En yeni üste**.
 
 ## Olaylar
 
+## [2026-04-28] sprint-19 | Import + Auth + Menu + POS + Dashboard migration (10 ekran) + DashboardScreenTemplate emekli kararı ✅
+
+Sprint 18'in devamı. 5 modül, 14 hedef dosya. 4 dosya bottom sheet/modal olduğu için intentional skip. **Önemli mimari karar: DashboardScreenTemplate emekli edilecek (Sprint 20'de file delete).**
+
+### İş Kolları
+
+- **19-A (kendim, 3 ekran)**: `menu_screen` + `login_screen` + `company_registration_screen`
+- **19-B (agent, 5 ekran)**: import workflow (`barcode_scanner`, `bulk_import_review_v2`, `bulk_import_upload`, `supplier_import_review`, `supplier_import_upload`)
+- **19-C (agent, 2 ekran)**: `modern_dashboard_screen` + `pos_screen` — **DashboardScreenTemplate son şansı**
+
+### Sonuçlar
+
+| # | Ekran | Modül | Karar | LOC delta |
+|---|---|---|---|---|
+| 1 | `menu_screen.dart` | menu | BaseScaffold swap | 373→374 (+1) |
+| 2 | `login_screen.dart` | auth | BaseScaffold swap | 813→814 (+1) |
+| 3 | `company_registration_screen.dart` | auth | BaseScaffold swap | 621→622 (+1) |
+| 4 | `barcode_scanner_screen.dart` | import | BaseScaffold swap | 399→400 (+1) |
+| 5 | `bulk_import_review_screen_v2.dart` | import | BaseScaffold swap | 2128→2129 (+1) |
+| 6 | `bulk_import_upload_screen.dart` | import | BaseScaffold swap | 1056→1057 (+1) |
+| 7 | `supplier_import_review_screen.dart` | import | **ListScreenTemplate** | 911→902 (**−9**) |
+| 8 | `supplier_import_upload_screen.dart` | import | BaseScaffold swap | 496→497 (+1) |
+| 9 | `modern_dashboard_screen.dart` | dashboard | BaseScaffold swap | 843→844 (+1) |
+| 10 | `pos_screen.dart` | pos | BaseScaffold swap | 244→246 (+2) |
+| – | `edit_product_modal.dart` | import | **SKIP** (Container/bottom sheet) | – |
+| – | `modals/manual_match_modal.dart` | import | **SKIP** (modal) | – |
+| – | `modals/match_confirm_modal.dart` | import | **SKIP** (modal) | – |
+| – | `modals/update_stock_modal.dart` | import | **SKIP** (modal) | – |
+
+**Net LOC delta:** ~+1 (yalnız supplier_import_review template adoption ile −9 kazandı; geri kalanı +1 import line overhead).
+
+**Template dağılımı (10 migrate):**
+- ListScreenTemplate: **1** (10%)
+- BaseScaffold swap: **9** (90%)
+- DashboardScreenTemplate: **0**
+
+### KRİTİK MİMARİ KARAR: DashboardScreenTemplate emekli edilecek
+
+**5 sprint, 0 tüketici.** Sprint 19-C'de `modern_dashboard_screen` (843 LOC, en güçlü aday) bile reddetti. Agent raporundaki sebepler:
+
+1. **Hero header AppBar değil**: Full-width gradient kart + içine refresh+profile butonları gömülü. Template `AppAppBar.standard(title:)` zorunlu — kabul etmiyor.
+2. **Section title'lar serpiştirilmiş**: "Hızlı Aksiyonlar / Modüller / Son Aktiviteler" bloklar arasına serpiştirilmiş; template `sections: [...]` listesi monolithic block sırası bekliyor.
+3. **KPI cards `AppStatCard` değil**: Gradient ikon + raw değer/label, custom dark/light + onTap (lowStock → /stock/alerts). Template `statCardColumns=2` default; ekran 4 sütun + cardlar birbirinden farklı (lowStock conditional gradient).
+4. **Custom skeleton** template'in `isLoading` spinner'ına sığmaz.
+
+`finance_dashboard_screen` (Sprint 18) aynı sebeplerle reddetti. **POS dashboard'larda ortak desen yok** — herkesin hero card'ı, KPI dizilimi, section sırası farklı.
+
+**Sprint 20 task:** `lib/core/widgets/templates/dashboard_screen_template.dart` SİL, ölü kod → BaseScaffold (sync body) ile direkt çalış.
+
+### Multi-Step Wizard Pattern'ı Doğrulandı
+
+Sprint 17'de `supplier_upload_wizard_screen` ile başlayan, Sprint 19'da 4 ekrana yayılan pattern:
+- `company_registration_screen` (3-step wizard)
+- `bulk_import_review_screen_v2` (3-step bulk import: indicator + custom bottom bar)
+- `bulk_import_upload_screen` (4-state UI: idle/uploading/success/error)
+- `supplier_import_upload_screen` (2-state: form/progress)
+
+**Hepsi BaseScaffold swap.** Step indicator + custom bottom action bar + state-based UI dinamiği FormScreenTemplate'in section-only paterne uymuyor. **Yeni öğreti:** Multi-step wizard pattern'ı kalıcı olarak template scope dışı — Sprint 20+ için `WizardScreenTemplate` ihtiyacı tartışılabilir, ama önce gerçek müşteriye sahip olmalı (DashboardScreenTemplate hatasını tekrarlama).
+
+### Auth Modülünün Özel Yapısı
+
+`login_screen` + `company_registration_screen` her ikisi de:
+- Desktop: 5/6 split (left brand panel + right form)
+- Mobile: gradient header + form card
+- AnimationController + FadeTransition
+- Custom branding panels
+
+FormScreenTemplate'in section-list yapısı bu split layout'u taşıyamaz → BaseScaffold swap. Auth modülü "L3 custom" kategorisinde kalır.
+
+### POS Custom L3 Doğrulandı
+
+Sprint 15 audit'inde POS "L3 custom" olarak işaretlendi. Sprint 19-C agent bunu doğruladı:
+- `KeyboardListener` (F1 ödeme, F5 yenile)
+- Raw `Scaffold` (AppScaffold bile değil!)
+- Custom gradient AppBar (Color(0xFF667eea) → Color(0xFF764ba2)) — `AppAppBar.primary` değil
+- LayoutBuilder cart-aware split (>900px desktop 7/3, mobile single)
+- Conditional FAB (mobile + cart not empty)
+
+**Karar:** `Scaffold` → `BaseScaffold(appBar: customAppBar, body: LayoutBuilder, fab: ...)` swap. Custom gradient AppBar olduğu gibi korundu.
+
+### Modal Skip Listesi
+
+4 dosya migrate **edilmedi**:
+- `edit_product_modal.dart` (546 LOC) — Container döndürüyor (bottom sheet)
+- `modals/manual_match_modal.dart` (421 LOC) — modal
+- `modals/match_confirm_modal.dart` (354 LOC) — modal
+- `modals/update_stock_modal.dart` (217 LOC) — modal
+- (`_DecisionBottomSheet` supplier_import_review içinde inline — yine bottom sheet)
+
+Bu modaller `BottomSheetTemplate` (Sprint 21+ ihtiyaç doğarsa) için aday — ama **gerçek tüketici talebi olmadan template inşa etme**.
+
+### Doğrulama
+
+- `flutter analyze` 10 dosya: **10 issue, 0 yeni** ✅
+- Pre-existing baseline:
+  - 5× `use_build_context_synchronously` (bulk_import_review_v2)
+  - 1× `unnecessary_brace_in_string_interps`, 1× `deprecated_member_use 'value'`
+  - 2× `unused_local_variable` (bulk_import_upload)
+  - 1× `Matrix4.translate` deprecated (menu_screen)
+
+### Sprint 16-19 Toplam Tablosu
+
+| Sprint | Migrate | List | Form | Detail | Dashboard | BaseScaffold | Adoption % | LOC |
+|---|---|---|---|---|---|---|---|---|
+| 16 | 16 | 7 | 1 | 1 | 0 | 7 | 56% | −204 |
+| 17 | 9 | 2 | 0 | 0 | 0 | 7 | 22% | −110 |
+| 18 | 12 | 6 | 2 | 0 | 0 | 4 | 67% | −193 |
+| 19 | 10 | 1 | 0 | 0 | 0 | 9 | 10% | ~+1 |
+| **Σ** | **47** | **16** | **3** | **1** | **0** | **27** | **42%** | **~−506** |
+
+### Sprint 16-19 sonunda template kullanım istatistiği
+
+- ListScreenTemplate: **16 ekran** (en başarılı)
+- FormScreenTemplate: **3 ekran**
+- DetailScreenTemplate: **1 ekran** (settings) + 1 (Sprint 16 stock_alert)
+- **DashboardScreenTemplate: 0 ekran** ❌ EMEKLİ
+- BaseScaffold swap: **27 ekran**
+
+### Sprint 20 Görevleri (Cleanup)
+
+1. **DashboardScreenTemplate emekli** (file delete + audit/synthesis update)
+2. **Pre-existing baseline issue cleanup** (~30 issue tahmini):
+   - `deprecated_member_use 'value'` (DropdownButtonFormField) — Flutter 3.33+ `initialValue` migration
+   - `deprecated_member_use 'activeColor'` (Switch) — `activeThumbColor`
+   - `deprecated_member_use 'groupValue'/'onChanged'` (Radio) — `RadioGroup` ancestor
+   - `use_build_context_synchronously` (5×bulk_import_review_v2 + sale_detail)
+   - `Matrix4.translate` deprecated (menu_screen)
+   - `unused_local_variable` (bulk_import_upload)
+3. **Hardcoded TR strings i18n** (Sprint 18 not):
+   - `autoparts.vehicles_title` → `'Araclar'`
+   - `autoparts.part_search_title` → `'Parça Arama'`
+
+### Sources
+
+- [[sources/code-refs/2026-04-27-design-system-template-audit]]
+- [[syntheses/design-system-template-architecture]]
+
+---
+
+## [2026-04-28] sprint-18 | Finance + HRM + Autoparts + Supplier Claims migration (12 ekran +1 skip) ✅
+
+Sprint 17'nin devamı. 4 modül, 13 hedef ekran. 1 ekran (claim_resolve_sheet) bottom sheet olduğu için intentional skip.
+
+### İş Kolları
+
+- **18-A (kendim, 3 ekran)**: `expense_list_screen` + `employee_list_screen` + `supplier_claims_list_screen`
+- **18-B (agent, 5 ekran)**: finance/hrm form+dashboard ekranları
+- **18-C (agent, 5 ekran)**: autoparts (3) + supplier_claims (2)
+
+### Sonuçlar
+
+| # | Ekran | Modül | Karar | LOC delta |
+|---|---|---|---|---|
+| 1 | `expense_list_screen.dart` | finance | **ListScreenTemplate** | 439→391 (**−48**) |
+| 2 | `employee_list_screen.dart` | hrm | **ListScreenTemplate** | 432→400 (**−32**) |
+| 3 | `supplier_claims_list_screen.dart` | supplier_claims | **ListScreenTemplate** | 212→186 (**−26**) |
+| 4 | `add_expense_screen.dart` | finance | BaseScaffold swap | 318→319 (+1) |
+| 5 | `add_income_screen.dart` | finance | **FormScreenTemplate** | 246→206 (**−40**) |
+| 6 | `cash_flow_screen.dart` | finance | BaseScaffold swap | 399→400 (+1) |
+| 7 | `finance_dashboard_screen.dart` | finance | BaseScaffold swap | 409→410 (+1) |
+| 8 | `add_employee_screen.dart` | hrm | **FormScreenTemplate** | 341→346 (+5) |
+| 9 | `part_search_screen.dart` | autoparts | **ListScreenTemplate** | 458→451 (−7) |
+| 10 | `vehicle_compatibility_screen.dart` | autoparts | **ListScreenTemplate** | 306→293 (−13) |
+| 11 | `vehicle_list_screen.dart` | autoparts | **ListScreenTemplate** | 462→448 (−14) |
+| 12 | `supplier_claim_detail_screen.dart` | supplier_claims | BaseScaffold swap (asyncValue) | 372→351 (**−21**) |
+| – | `claim_resolve_sheet.dart` | supplier_claims | **SKIP** (bottom sheet) | – |
+
+**Net LOC delta:** ~−193 LOC
+
+**Template dağılımı (12 migrate):**
+- ListScreenTemplate: **6** (50%)
+- FormScreenTemplate: **2** (17%)
+- BaseScaffold swap: **4** (33%)
+- DetailScreenTemplate / DashboardScreenTemplate: 0
+
+### Önemli Bulgular
+
+#### 1. claim_resolve_sheet.dart SKIP — Template scope sınırı
+
+`showModalBottomSheet(builder: (_) => ClaimResolveSheet(...))` ile çağrılıyor. `Container(decoration: BoxDecoration(borderRadius: BorderRadius.vertical(top: Radius.circular(16))))` + `MediaQuery.viewInsets.bottom` padding pattern'ı = **bottom sheet**, Scaffold değil.
+
+Template katmanı (BaseScaffold/ListScreenTemplate/FormScreenTemplate/DetailScreenTemplate/DashboardScreenTemplate) **sadece tam-ekran Scaffold** için tasarlandı. Bottom sheet'ler scope dışında — ileride `BottomSheetTemplate` ihtiyacı doğarsa Sprint 21+'da ele alınabilir.
+
+#### 2. FormScreenTemplate başarı + başarısızlık örnekleri
+
+**Başarı:** `add_income_screen` (246→206, **−40 LOC**) — 2 temiz section, klasik save button, dynamic action yok = template'in tam hedefi.
+
+**Başarısızlık:** `add_expense_screen` form gibi ama `AppAppBar.primary` (gradient) kullanıyor. FormScreenTemplate `AppAppBar.standard`'ı zorlar → BaseScaffold swap (gradient korunur).
+
+**Hibrid:** `add_employee_screen` → FormScreenTemplate ama loading state için BaseScaffold fallback dalı eklendi (template loading mode desteklemiyor).
+
+#### 3. Dashboard/chart ekranları template-uyumsuz
+
+`cash_flow_screen` ve `finance_dashboard_screen` ilk bakışta DashboardScreenTemplate adayı görünüyordu:
+- **`cash_flow_screen`**: SegmentedButton period selector + custom `_BarRow` bar chart + dynamic refresh action — chart-heavy, template grid'e sığmaz.
+- **`finance_dashboard_screen`**: Full-width hero net-income card (yeşil/kırmızı conditional) + 2-kolon revenue/expense + 3-satır quick action grid + 2 kategori breakdown — DashboardScreenTemplate'in `statCards` (default 2 sütun grid) yapısı simetrisini bozuyor.
+
+Karar: BaseScaffold swap. **DashboardScreenTemplate adoption oranı şu ana kadar Sprint 15-18'de %0** — bu öğreti Sprint 19+ için önemli (ya template'i revize et, ya da emekli olduğunu kabul et).
+
+#### 4. Hardcoded TR string ek borç (autoparts)
+
+`vehicle_list_screen` ve `part_search_screen` orijinalde **AppBar'sızdı**. ListScreenTemplate AppBar dayatıyor → agent yeni i18n key oluşturmadan 2 hardcoded TR string ekledi: `'Araclar'` ve `'Parça Arama'`. Sprint 20 cleanup'a not: 2 i18n key (`autoparts.vehicles_title`, `autoparts.part_search_title`) eklenmeli.
+
+#### 5. supplier_claim_detail BaseScaffold asyncValue mode
+
+İlk `BaseScaffold<T>(asyncValue: ..., dataBuilder: ...)` kullanımı. Manuel `async.when(loading/error/data)` switcher → template `dataBuilder` + otomatik error retry'a delege edildi.
+
+### Sprint 18 vs 16-17 Karşılaştırma
+
+| Metrik | Sprint 16 | Sprint 17 | Sprint 18 |
+|---|---|---|---|
+| Migrate ekran | 16 | 9 | 12 (+1 skip) |
+| ListScreenTemplate | 7 | 2 | **6** |
+| FormScreenTemplate | 1 | 0 | **2** |
+| DetailScreenTemplate | 1 | 0 | 0 |
+| DashboardScreenTemplate | 0 | 0 | 0 |
+| BaseScaffold swap | 7 | 7 | 4 |
+| **Template adoption %** | **56%** | **22%** | **67%** |
+| Net LOC delta | ~−204 | ~−110 | ~−193 |
+| Yeni `flutter analyze` issue | 0 | 0 | 0 |
+
+Sprint 18 template adoption oranı **%67** — Sprint 16'yı geçti. Sebep: bu modüller (finance/hrm/autoparts/supplier_claims) **list-heavy** (12 ekrandan 6'sı liste). Sprint 17'de transaction-heavy (sale/purchase) modüller %22 idi.
+
+### Doğrulama
+
+- `flutter analyze` 12 dosya: **19 issue, 0 yeni** ✅
+- 1 baseline issue **temizlendi** (add_income_screen `unused_import` rewrite sırasında düştü) — 11→10 baseline
+- Pre-existing kalan: deprecated `value` (×16), `activeColor` (×1), `use_build_context_synchronously`, `unnecessary_to_list_in_spreads` (×2)
+
+### Kalan Roadmap
+
+| Sprint | Modül | Ekran | Tahmini |
+|---|---|---|---|
+| 19 | import + auth + menu + pos + dashboard | ~10 | 2 gün |
+| 20 | Cleanup: deprecated value, activeColor, async gaps, hardcoded TR strings (autoparts) | ~25 issue | 1 gün |
+
+### Sources
+
+- [[sources/code-refs/2026-04-27-design-system-template-audit]] — Sprint 15 audit
+- [[syntheses/design-system-template-architecture]] — 4 template mimarisi
+
+---
+
+## [2026-04-28] sprint-17 | Sales + Purchases + Accounts modül migration (9 ekran) ✅
+
+Sprint 16'nın devamı: 17. modüler hedef sales + purchases + accounts (+suppliers'dan upload wizard). 9 ekran, ~6,800 LOC.
+
+### İş Kolları
+
+- **17-A (kendim, 2 ekran)**: `sale_list_screen` + `purchase_list_screen` — klasik liste yapısı.
+- **17-B (agent, 2 ekran)**: `sale_detail_screen` (939) + `purchase_detail_screen` (881) — büyük tek-view detaylar.
+- **17-C (agent, 5 ekran)**: `sale_return` + `add_purchase` + `purchase_return` + `accounts_hub` + `supplier_upload_wizard` — form/hub/wizard.
+
+### Sonuçlar
+
+| # | Ekran | Modül | Karar | LOC delta |
+|---|---|---|---|---|
+| 1 | `sale_list_screen.dart` | sales | **ListScreenTemplate** | 547→481 (**-66**) |
+| 2 | `purchase_list_screen.dart` | purchases | **ListScreenTemplate** | 312→271 (**-41**) |
+| 3 | `sale_detail_screen.dart` | sales | BaseScaffold swap | 987→988 (+1) |
+| 4 | `purchase_detail_screen.dart` | purchases | BaseScaffold swap | 925→926 (+1) |
+| 5 | `sale_return_screen.dart` | sales | BaseScaffold swap | +1/-1 |
+| 6 | `add_purchase_screen.dart` | purchases | BaseScaffold swap | +1/-1 |
+| 7 | `purchase_return_screen.dart` | purchases | BaseScaffold swap | +1/-1 |
+| 8 | `accounts_hub_screen.dart` | accounts | BaseScaffold swap | +1/-1 |
+| 9 | `supplier_upload_wizard_screen.dart` | suppliers | BaseScaffold swap (×3 — wizard + summary + success) | +5/-3 |
+
+**Net LOC delta:** ~−110 LOC (17-A −107, 17-B/C +5 import overhead).
+
+**Template dağılımı:**
+- ListScreenTemplate: 2
+- FormScreenTemplate: 0
+- DetailScreenTemplate: 0
+- BaseScaffold swap: 7
+
+### Önemli Bulgu: "Form-tarzı görünen ama özel davranışlı"
+
+Sprint 17 öncesi, sale_return + add_purchase + purchase_return ekranlarının FormScreenTemplate adayı olduğu varsayılıyordu. Agent migration sırasında doğru karar verdi: **hiçbiri FormScreenTemplate'e oturmadı.** Sebepler:
+
+- **`add_purchase_screen.dart`**: AppBar `actions:` içinde `if (_grandTotal > 0)` koşullu currency chip + body içinde inline submit + dinamik ürün arama+expansion list — section-only layout'a uymuyor.
+- **`sale_return_screen.dart`** + **`purchase_return_screen.dart`**: Custom bottom bar (toplam iade hesabı + warning gradient + danger button) + checkbox/qty selector item card — FormSection mantığına direnç gösteriyor.
+- **`accounts_hub_screen.dart`**: LayoutBuilder ile responsive master/detail split (≥800px Row, <800px tek panel) + AppBar bottom border + AccountsSummaryBar — herhangi bir template'e sığmaz.
+- **`supplier_upload_wizard_screen.dart`**: 2× AppScaffold (wizard + summary view) + 1× nested `_SuccessScreen` AppScaffold + custom 3-button navbar (Geri/Atla/Kaydet&Devam) + `LinearProgressIndicator` — multi-step wizard pattern'ı FormScreenTemplate'e direnir.
+
+Bu Sprint 16'nın "BaseScaffold-only swap geçerli karar" prensibini doğruluyor: **gerçek dünya formları çoğunlukla template-uyumsuzdur.** Form-look-alike olsa bile dynamic AppBar action, custom bottom bar, multi-step wizard, master-detail split sıkça görülüyor.
+
+### Detail Ekranları Hakkında
+
+Sale + purchase detay ekranlarının 800-1000 LOC olması yanıltıcı. İçleri **tab tabanlı değil** — single-view scroll layout (header + status banner + amount + items + notes + action button cards). DetailScreenTemplate **tab odaklı**, bu ekranlar için fayda yok. BaseScaffold swap doğru karar.
+
+### Doğrulama
+
+- `flutter analyze` 9 dosya: **19 issue, 0 yeni** ✅
+- Pre-existing baseline (Sprint 20 cleanup için listede):
+  - `deprecated_member_use 'value'` (DropdownButtonFormField) ×4
+  - `deprecated_member_use 'groupValue'/'onChanged'` (Radio) ×8
+  - `unnecessary_cast` ×2, `unnecessary_import`, `use_super_parameters`, `unnecessary_underscores`, `use_build_context_synchronously` ×2
+
+### İlginç Pattern: AppBar'sız BaseScaffold
+
+`supplier_upload_wizard_screen` içindeki `_SuccessScreen` (nested success view) AppBar'sız → `BaseScaffold(body: ...)` (appBar parametresi atılır). Sprint 16'da `enhanced_stock_screen` benzeri pattern uygulanmıştı. BaseScaffold AppBar opsiyonel olarak destekliyor.
+
+### Sprint 17 vs 16 Karşılaştırması
+
+| Metrik | Sprint 16 | Sprint 17 |
+|---|---|---|
+| Ekran sayısı | 16 | 9 |
+| ListScreenTemplate | 7 | 2 |
+| FormScreenTemplate | 1 | 0 |
+| DetailScreenTemplate | 1 | 0 |
+| BaseScaffold swap | 7 | 7 (78%) |
+| Net LOC delta | ~−204 | ~−110 |
+| Yeni `flutter analyze` issue | 0 | 0 |
+
+Sprint 17'de BaseScaffold-only swap oranı %78 (Sprint 16'da %44). Bu modüller (sales/purchases/accounts) doğası gereği **işlemsel/transaction-based** — daha çok özel bottom bar + dynamic AppBar action içeriyor.
+
+### Sources
+
+- [[sources/code-refs/2026-04-27-design-system-template-audit]] — Sprint 15 audit
+- [[syntheses/design-system-template-architecture]] — 4 template mimarisi
+
+---
+
 ## [2026-04-28] sprint-16 | Inventory + Catalog + Stock modül migration (16 ekran) ✅
 
 Sprint 15'te kurulan template katmanı + 2 PoC migration sonrası, audit'teki Sprint 16-20 modüler roadmap başlatıldı. Sprint 16 = inventory + catalog + stock üç modülü, toplam 16 ekran.

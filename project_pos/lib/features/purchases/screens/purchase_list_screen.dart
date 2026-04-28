@@ -1,10 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/templates/list_screen_template.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/features/purchases/di/purchases_di.dart';
 import 'package:project_pos/features/purchases/providers/purchase_list_notifier.dart';
@@ -20,6 +21,8 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
   String Function(String) get t => i18nOf(ref);
 
   final _searchCtrl = TextEditingController();
+  final _fmt = NumberFormat.currency(locale: 'tr_TR', symbol: '₺');
+  final _dateFmt = DateFormat('dd.MM.yyyy');
 
   @override
   void initState() {
@@ -37,19 +40,28 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Sprint 17 W1: AppScaffold + Column + manual switcher → ListScreenTemplate.
     final state = ref.watch(purchaseListProvider);
     final theme = Theme.of(context);
 
-    return AppScaffold(
-      appBar: AppAppBar.standard(
-        title: t('purchases.title'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: () => ref.read(purchaseListProvider.notifier).load(),
-            tooltip: t('common.refresh'),
-          ),
-        ],
+    return ListScreenTemplate<Map<String, dynamic>>(
+      title: t('purchases.title'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh_rounded),
+          onPressed: () => ref.read(purchaseListProvider.notifier).load(),
+          tooltip: t('common.refresh'),
+        ),
+      ],
+      items: state.filtered,
+      isLoading: state.isLoading,
+      error: state.error,
+      onErrorRetry: () => ref.read(purchaseListProvider.notifier).load(),
+      onRefresh: () async => ref.read(purchaseListProvider.notifier).load(),
+      searchSlot: _buildSearchAndFilter(state, theme),
+      emptyState: AppEmptyState.noData(
+        title: t('purchases.empty_title'),
+        description: t('purchases.empty_description'),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
@@ -59,20 +71,7 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
         icon: const Icon(Icons.add),
         label: Text(t('purchases.add')),
       ),
-      body: Column(
-        children: [
-          _buildSearchAndFilter(state, theme),
-          Expanded(
-            child: state.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : state.error != null
-                    ? _buildError(state.error!)
-                    : state.filtered.isEmpty
-                        ? _buildEmpty()
-                        : _buildList(state.filtered, theme),
-          ),
-        ],
-      ),
+      itemBuilder: (ctx, p, idx) => _buildPurchaseCard(p, theme),
     );
   }
 
@@ -139,129 +138,119 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
     );
   }
 
-  Widget _buildList(List<Map<String, dynamic>> items, ThemeData theme) {
-    final fmt = NumberFormat.currency(locale: 'tr_TR', symbol: '₺');
-    final dateFmt = DateFormat('dd.MM.yyyy');
+  Widget _buildPurchaseCard(Map<String, dynamic> p, ThemeData theme) {
+    final cancelled = p['isCancelled'] == true;
+    final remaining = (p['remainingDebt'] as num?)?.toDouble() ?? 0;
+    final total = (p['totalAmount'] as num?)?.toDouble() ?? 0;
+    final dateStr = p['purchaseDate'] != null
+        ? _dateFmt.format(DateTime.tryParse(p['purchaseDate'].toString()) ?? DateTime.now())
+        : '-';
 
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        final p = items[index];
-        final cancelled = p['isCancelled'] == true;
-        final remaining = (p['remainingDebt'] as num?)?.toDouble() ?? 0;
-        final total = (p['totalAmount'] as num?)?.toDouble() ?? 0;
-        final dateStr = p['purchaseDate'] != null
-            ? dateFmt.format(DateTime.tryParse(p['purchaseDate'].toString()) ?? DateTime.now())
-            : '-';
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: AppCard(
-          borderColor: cancelled
-              ? AppColors.danger.withValues(alpha: 0.3)
-              : null,
-          onTap: () async {
-            await context.push('/purchases/detail/${p['id']}');
-            if (mounted) ref.read(purchaseListProvider.notifier).load();
-          },
-          child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: AppCard(
+        borderColor: cancelled
+            ? AppColors.danger.withValues(alpha: 0.3)
+            : null,
+        onTap: () async {
+          await context.push('/purchases/detail/${p['id']}');
+          if (mounted) ref.read(purchaseListProvider.notifier).load();
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: cancelled
+                        ? AppColors.danger.withValues(alpha: 0.1)
+                        : AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: AppConstants.borderRadiusSmall,
+                  ),
+                  child: Icon(
+                    cancelled ? Icons.cancel_outlined : Icons.receipt_long_rounded,
+                    color: cancelled ? AppColors.danger : AppColors.primary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: cancelled
-                              ? AppColors.danger.withValues(alpha: 0.1)
-                              : AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: AppConstants.borderRadiusSmall,
-                        ),
-                        child: Icon(
-                          cancelled ? Icons.cancel_outlined : Icons.receipt_long_rounded,
-                          color: cancelled ? AppColors.danger : AppColors.primary,
-                          size: 20,
+                      Text(
+                        p['supplierName'] ?? t('purchases.supplier'),
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          decoration: cancelled ? TextDecoration.lineThrough : null,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              p['supplierName'] ?? t('purchases.supplier'),
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                decoration: cancelled ? TextDecoration.lineThrough : null,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '${t('purchases.invoice_number')}: ${p['invoiceNumber'] ?? '-'}  •  $dateStr',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
+                      const SizedBox(height: 2),
+                      Text(
+                        '${t('purchases.invoice_number')}: ${p['invoiceNumber'] ?? '-'}  •  $dateStr',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            fmt.format(total),
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: cancelled ? AppColors.textMuted : AppColors.primary,
-                            ),
-                          ),
-                          if (remaining > 0 && !cancelled)
-                            Text(
-                              '${t('purchases.debt')}: ${fmt.format(remaining)}',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: AppColors.warning,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                        ],
                       ),
                     ],
                   ),
-                  if (p['itemCount'] != null || cancelled) ...[
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        if (p['itemCount'] != null)
-                          _tag(
-                            '${p['itemCount']} ${t('purchases.items')}',
-                            Icons.inventory_2_outlined,
-                            theme.colorScheme.onSurfaceVariant,
-                            theme,
-                          ),
-                        const Spacer(),
-                        if (cancelled)
-                          _tag(t('common.cancelled'), Icons.cancel_outlined, AppColors.danger, theme)
-                        else if (remaining > 0)
-                          _tag(t('purchases.on_credit'), Icons.schedule_rounded, AppColors.warning, theme)
-                        else
-                          _tag(t('purchases.paid'), Icons.check_circle_outline, AppColors.success, theme),
-                        if (!cancelled) ...[
-                          const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: () => _confirmCancel(p['id'] as String),
-                            child: _tag(t('common.cancel'), Icons.close_rounded, AppColors.danger, theme),
-                          ),
-                        ],
-                      ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      _fmt.format(total),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: cancelled ? AppColors.textMuted : AppColors.primary,
+                      ),
+                    ),
+                    if (remaining > 0 && !cancelled)
+                      Text(
+                        '${t('purchases.debt')}: ${_fmt.format(remaining)}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.warning,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+            if (p['itemCount'] != null || cancelled) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  if (p['itemCount'] != null)
+                    _tag(
+                      '${p['itemCount']} ${t('purchases.items')}',
+                      Icons.inventory_2_outlined,
+                      theme.colorScheme.onSurfaceVariant,
+                      theme,
+                    ),
+                  const Spacer(),
+                  if (cancelled)
+                    _tag(t('common.cancelled'), Icons.cancel_outlined, AppColors.danger, theme)
+                  else if (remaining > 0)
+                    _tag(t('purchases.on_credit'), Icons.schedule_rounded, AppColors.warning, theme)
+                  else
+                    _tag(t('purchases.paid'), Icons.check_circle_outline, AppColors.success, theme),
+                  if (!cancelled) ...[
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () => _confirmCancel(p['id'] as String),
+                      child: _tag(t('common.cancel'), Icons.close_rounded, AppColors.danger, theme),
                     ),
                   ],
                 ],
-          ),
+              ),
+            ],
+          ],
         ),
-        );
-      },
+      ),
     );
   }
 
@@ -280,22 +269,6 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
           Text(label, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w500)),
         ],
       ),
-    );
-  }
-
-  Widget _buildError(String error) {
-    return AppEmptyState.error(
-      title: t('common.load_error'),
-      description: error,
-      actionText: t('common.retry'),
-      onAction: () => ref.read(purchaseListProvider.notifier).load(),
-    );
-  }
-
-  Widget _buildEmpty() {
-    return AppEmptyState.noData(
-      title: t('purchases.empty_title'),
-      description: t('purchases.empty_description'),
     );
   }
 

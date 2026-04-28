@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/config/sector_config.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/providers/sector_provider.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
@@ -207,7 +208,7 @@ class _BulkImportUploadScreenState extends ConsumerState<BulkImportUploadScreen>
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
+    return BaseScaffold(
       appBar: AppAppBar.standard(
         title: t('bulk_import.upload'),
         actions: [

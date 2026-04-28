@@ -1,10 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:project_pos/core/theme/app_colors.dart';
-import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/templates/form_screen_template.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/core/utils/validation_helper.dart';
 import 'package:project_pos/services/finance_service.dart';
@@ -117,162 +116,109 @@ class _AddIncomeScreenState extends ConsumerState<AddIncomeScreen> {
   @override
   Widget build(BuildContext context) {
     final t = i18nOf(ref);
-    return AppScaffold(
-      appBar: AppAppBar.standard(title: t('finance.add_income')),
-      body: SingleChildScrollView(
-        padding: AppConstants.pagePadding,
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      t('finance.general_info'),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Amount
-                    TextFormField(
-                      controller: _amountController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Tutar *',
-                        prefixIcon: Icon(Icons.money),
-                        suffixText: '\u20BA',
-                      ),
-                      validator: ValidationHelper.positiveNumber,
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Category
-                    DropdownButtonFormField<String>(
-                      value: _selectedCategory,
-                      decoration: const InputDecoration(
-                        labelText: 'Kategori *',
-                        prefixIcon: Icon(Icons.category),
-                      ),
-                      items: _categoryOptions
-                          .map<DropdownMenuItem<String>>((cat) {
-                        return DropdownMenuItem<String>(
-                          value: cat['value'],
-                          child: Text(cat['label']!),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() => _selectedCategory = value!);
-                      },
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Description
-                    AppInput(
-                      controller: _descriptionController,
-                      label: 'Aciklama',
-                      prefixIcon: Icons.description,
-                      hint: 'Gelir aciklamasi...',
-                      maxLines: 3,
-                    ),
-                  ],
-                ),
+    return FormScreenTemplate(
+      title: t('finance.add_income'),
+      formKey: _formKey,
+      isSaving: _isSaving,
+      onSave: _saveIncome,
+      saveLabel: _isSaving ? t('common.loading') : t('common.save'),
+      sections: [
+        FormSection(
+          title: t('finance.general_info'),
+          fields: [
+            // Amount
+            TextFormField(
+              controller: _amountController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Tutar *',
+                prefixIcon: Icon(Icons.money),
+                suffixText: '₺',
               ),
-
-              const SizedBox(height: 16),
-
-              AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      t('finance.payment_info'),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Date
-                    TextFormField(
-                      controller: _dateController,
-                      readOnly: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Tarih *',
-                        prefixIcon: Icon(Icons.calendar_today),
-                      ),
-                      onTap: _selectDate,
-                      validator: ValidationHelper.date,
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Payment Method
-                    DropdownButtonFormField<String>(
-                      value: _selectedPaymentMethod,
-                      decoration: const InputDecoration(
-                        labelText: 'Odeme Yontemi *',
-                        prefixIcon: Icon(Icons.payment),
-                      ),
-                      items: _paymentMethods
-                          .map<DropdownMenuItem<String>>((method) {
-                        return DropdownMenuItem<String>(
-                          value: method,
-                          child: Text(method),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() => _selectedPaymentMethod = value!);
-                      },
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Status
-                    DropdownButtonFormField<String>(
-                      value: _selectedStatus,
-                      decoration: const InputDecoration(
-                        labelText: 'Durum *',
-                        prefixIcon: Icon(Icons.check_circle),
-                      ),
-                      items: _statusOptions
-                          .map<DropdownMenuItem<String>>((status) {
-                        return DropdownMenuItem<String>(
-                          value: status['value'],
-                          child: Text(status['label']!),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() => _selectedStatus = value!);
-                      },
-                    ),
-                  ],
-                ),
+              validator: ValidationHelper.positiveNumber,
+            ),
+            const SizedBox(height: 16),
+            // Category
+            DropdownButtonFormField<String>(
+              initialValue: _selectedCategory,
+              decoration: const InputDecoration(
+                labelText: 'Kategori *',
+                prefixIcon: Icon(Icons.category),
               ),
-
-              const SizedBox(height: 24),
-
-              // Save Button
-              SizedBox(
-                width: double.infinity,
-                child: AppButton(
-                  text: _isSaving ? t('common.loading') : t('common.save'),
-                  onPressed: _isSaving ? null : _saveIncome,
-                  icon: Icons.save,
-                ),
-              ),
-            ],
-          ),
+              items: _categoryOptions.map<DropdownMenuItem<String>>((cat) {
+                return DropdownMenuItem<String>(
+                  value: cat['value'],
+                  child: Text(cat['label']!),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() => _selectedCategory = value!);
+              },
+            ),
+            const SizedBox(height: 16),
+            // Description
+            AppInput(
+              controller: _descriptionController,
+              label: 'Aciklama',
+              prefixIcon: Icons.description,
+              hint: 'Gelir aciklamasi...',
+              maxLines: 3,
+            ),
+          ],
         ),
-      ),
+        FormSection(
+          title: t('finance.payment_info'),
+          fields: [
+            // Date
+            TextFormField(
+              controller: _dateController,
+              readOnly: true,
+              decoration: const InputDecoration(
+                labelText: 'Tarih *',
+                prefixIcon: Icon(Icons.calendar_today),
+              ),
+              onTap: _selectDate,
+              validator: ValidationHelper.date,
+            ),
+            const SizedBox(height: 16),
+            // Payment Method
+            DropdownButtonFormField<String>(
+              initialValue: _selectedPaymentMethod,
+              decoration: const InputDecoration(
+                labelText: 'Odeme Yontemi *',
+                prefixIcon: Icon(Icons.payment),
+              ),
+              items: _paymentMethods.map<DropdownMenuItem<String>>((method) {
+                return DropdownMenuItem<String>(
+                  value: method,
+                  child: Text(method),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() => _selectedPaymentMethod = value!);
+              },
+            ),
+            const SizedBox(height: 16),
+            // Status
+            DropdownButtonFormField<String>(
+              initialValue: _selectedStatus,
+              decoration: const InputDecoration(
+                labelText: 'Durum *',
+                prefixIcon: Icon(Icons.check_circle),
+              ),
+              items: _statusOptions.map<DropdownMenuItem<String>>((status) {
+                return DropdownMenuItem<String>(
+                  value: status['value'],
+                  child: Text(status['label']!),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() => _selectedStatus = value!);
+              },
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

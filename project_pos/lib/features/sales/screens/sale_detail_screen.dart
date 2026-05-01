@@ -8,6 +8,8 @@ import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/services/service_locator.dart';
+import 'package:project_pos/services/print/print_service.dart';
+import 'package:project_pos/services/print/print_settings.dart';
 
 class SaleDetailScreen extends ConsumerStatefulWidget {
   final String saleId;
@@ -58,6 +60,27 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
     }
   }
 
+  /// Sprint 22 — USB termal yazıcıdan fişi yeniden yazdır.
+  Future<void> _printReceipt() async {
+    final settings = ref.read(printSettingsProvider);
+    if (!settings.isConfigured) {
+      AppToast.error(
+        context,
+        'Yazici yapilandirilmamis. Ayarlar > Yazici Ayarlari menusunden secin.',
+      );
+      return;
+    }
+    final salePayload = {..._sale, 'items': _items};
+    final result =
+        await ref.read(printServiceProvider).printSaleReceipt(salePayload);
+    if (!mounted) return;
+    if (result.success) {
+      AppToast.success(context, 'Fis yazdirildi.');
+    } else {
+      AppToast.error(context, result.error ?? 'Yazdirma basarisiz.');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -73,6 +96,13 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
           onPressed: () => context.pop(),
         ),
         actions: [
+          // Sprint 22 — Fiş yazdır
+          if (!_isLoading && _error == null)
+            IconButton(
+              icon: const Icon(Icons.print),
+              onPressed: _printReceipt,
+              tooltip: 'Fis Yazdir',
+            ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _load,

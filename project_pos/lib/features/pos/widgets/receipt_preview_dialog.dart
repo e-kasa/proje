@@ -322,12 +322,14 @@ class ReceiptPreviewDialog extends ConsumerWidget {
                       icon: Icons.print_rounded,
                       onPressed: () async {
                         final notifier = ref.read(posProvider.notifier);
-                        final success = await notifier.printLastReceipt();
+                        final result = await notifier.printLastReceipt();
                         if (context.mounted) {
-                          if (success) {
-                            AppToast.success(context, 'Fiş yazdırma komutu gönderildi');
+                          if (result.success) {
+                            AppToast.success(
+                                context, 'Fiş yazdırma komutu gönderildi');
                           } else {
-                            AppToast.error(context, 'Fiş yazdırılamadı');
+                            AppToast.error(context,
+                                result.error ?? 'Fiş yazdırılamadı');
                           }
                         }
                       },

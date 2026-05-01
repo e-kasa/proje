@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:project_pos/services/service_locator.dart';
+import 'package:project_pos/services/print/print_service.dart';
+import 'package:project_pos/services/print/print_settings.dart';
 import 'package:project_pos/core/utils/app_logger.dart';
 import 'package:project_pos/providers/auth_provider.dart';
 import 'package:project_pos/features/accounts/di/accounts_di.dart';
@@ -821,15 +823,31 @@ class PosNotifier extends StateNotifier<PosState> {
     }
   }
 
-  Future<bool> printLastReceipt() async {
-    final saleId = state.lastSaleId;
-    if (saleId == null) return false;
+  /// Sprint 22 — yerel USB termal yazıcıya son satışın fişini gönderir.
+  /// Sprint 23 hot-fix — eski backend `POST /sales/{id}/print` yolu silindi
+  /// (aksiyon almıyordu); şimdi `printService` + `printSettingsProvider` üzerinden
+  /// `lastSaleData` payload'ı ile çalışır.
+  ///
+  /// Returns: `(success, error?)` — receipt_preview_dialog kullanır.
+  Future<({bool success, String? error})> printLastReceipt() async {
+    final saleData = state.lastSaleData;
+    if (saleData == null) {
+      return (success: false, error: 'Yazdırılacak satış bulunamadı.');
+    }
+    final settings = _ref.read(printSettingsProvider);
+    if (!settings.isConfigured) {
+      return (
+        success: false,
+        error:
+            'Yazıcı yapılandırılmamış. Ayarlar > Cihazlar & Entegrasyonlar > Yazıcı menüsünden seçin.',
+      );
+    }
     try {
-      await _ref.read(salesServiceProvider).printReceipt(saleId);
-      return true;
+      final result =
+          await _ref.read(printServiceProvider).printSaleReceipt(saleData);
+      return (success: result.success, error: result.error);
     } catch (e) {
-      state = state.copyWith(error: 'Fiş yazdırılamadı: $e');
-      return false;
+      return (success: false, error: 'Yazdırma hatası: $e');
     }
   }
 

@@ -797,15 +797,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push('/settings/sector')),
           ]),
-          const SizedBox(height: 16),
-          _section('Bildirimler', [ // TODO: i18n
-            _item(Icons.email_outlined, 'E-posta Bildirimleri', 'Günlük raporlar', // TODO: i18n
-                trailing: Switch(value: true, onChanged: (v) {})),
-            _item(Icons.inventory_outlined, 'Stok Uyarıları', 'Düşük stok bildir', // TODO: i18n
-                trailing: Switch(value: true, onChanged: (v) {})),
-            _item(Icons.trending_down, 'Satış Uyarıları', 'Satış düşüşlerini bildir', // TODO: i18n
-                trailing: Switch(value: false, onChanged: (v) {})),
-          ]),
+          // Sprint 23: Bildirimler section'ı (dummy switch'ler) Cihazlar &
+          // Entegrasyonlar hub'ına taşındı. Hub: System tab > Cihazlar.
         ],
       ),
     );
@@ -820,6 +813,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       padding: AppConstants.pagePadding,
       child: Column(
         children: [
+          // Sprint 23: Tek hub — yazıcı, e-posta, SMS, terazi, etiket yazıcı,
+          // cash drawer, barkod tarayıcı, push, stok uyarısı hepsi burada.
+          _section(t('integrations.title'), [
+            _item(Icons.dashboard_customize, t('integrations.menu_label'),
+                t('integrations.menu_subtitle'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/settings/integrations')),
+          ]),
+          const SizedBox(height: 16),
           _section('Veri & Gizlilik', [
             _item(Icons.backup_outlined, 'Yedekleme', 'Son: Bugün 03:00',
                 trailing: const Icon(Icons.chevron_right),

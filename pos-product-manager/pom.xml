@@ -104,6 +104,25 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
+
+        <!-- Sprint 25 — Notifications: @Async + @Retryable for in-memory queue -->
+        <!-- (RabbitMQ Sprint 26-B'de, SendGrid Sprint 28'de) -->
+        <dependency>
+            <groupId>org.springframework.retry</groupId>
+            <artifactId>spring-retry</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aspects</artifactId>
+        </dependency>
+
+        <!-- Sprint 26-A — Twilio SMS provider (config: notification.sms.provider=twilio) -->
+        <!-- Default 'noop' provider: credentials yokken UI/test akışları çalışsın -->
+        <dependency>
+            <groupId>com.twilio.sdk</groupId>
+            <artifactId>twilio</artifactId>
+            <version>10.4.1</version>
+        </dependency>
     </dependencies>
 
     <build>

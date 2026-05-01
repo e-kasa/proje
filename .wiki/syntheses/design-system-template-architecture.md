@@ -172,6 +172,84 @@ DashboardScreenTemplate(
 | `reports_screen.dart` | AppScaffold + manual loading/error + TabBar + headerColumn (75 LOC body) | DetailScreenTemplate + headerSlot (60 LOC) | ✅ TabController + loading/error helper |
 | 4 settings + 3 reports | (agent migration) | (sürüyor) | 🔄 Sprint 15 son |
 
+## Sprint 21 Final — 100% MIGRATION TAMAMLANDI 🎉
+
+Sprint 20'de baseline cleanup yapıldıktan sonra Sprint 21 = kalan 8 legacy L1 ekran + supplier_upload Radio<bool> refactor.
+
+### Sonuç: 64 ekrandan 0'ı L0/L1
+
+```
+Template (L2):     25 ekran  (39%)
+BaseScaffold (L3): 37 ekran  (58%)
+Other (modal):      2 ekran   (3%)
+L1 (AppScaffold):   0 ekran  ✅
+L0 (raw Scaffold):  0 ekran  ✅
+```
+
+### Sprint 21 İşler (8 ekran + 1 refactor)
+
+| Ekran | Karar |
+|---|---|
+| `store_list_screen` | ListScreenTemplate |
+| `store_add_screen` | BaseScaffold swap |
+| `warehouse_list_screen` | ListScreenTemplate |
+| `warehouse_add_screen` | BaseScaffold swap |
+| `product_detail_screen` | BaseScaffold swap (×3 dal) |
+| `batch_product_screen` | BaseScaffold swap (L3 custom) |
+| `customer_sales_analysis_screen` | BaseScaffold swap |
+| `product_sales_analysis_screen` | BaseScaffold swap |
+| `supplier_upload_wizard` | Radio<bool> → Icon refactor + use_super_parameters fix |
+
+**Kalan Radio<bool>:** Sprint 20'de "Radio<bool> kart-içi → RadioGroup karmaşık" diye atlanmıştı. Sprint 21'de daha temiz çözüm bulundu: kart zaten `GestureDetector(onTap)` ile çalışıyordu, Radio sadece görsel select indicator'dı. **`Icon(radio_button_checked / radio_button_unchecked)` ile değiştirildi** — deprecated API kaldırıldı, davranış aynı.
+
+### Sprint 16-21 FINAL İstatistik
+
+**55 ekran migrate edildi** (Sprint 16-21 boyunca, +cleanup+refactor).
+
+| Template | Adoption | Detay |
+|---|---|---|
+| **ListScreenTemplate** | **18 ekran** ⭐ en başarılı | S16:7, S17:2, S18:6, S19:1, S21:2 |
+| **BaseScaffold swap** | **33 ekran** ⭐ opt-in | S16:7, S17:7, S18:4, S19:9, S21:6 |
+| FormScreenTemplate | 3 ekran | S16:1, S18:2 |
+| DetailScreenTemplate | 2 ekran | S15:1, S16:1 |
+| ~~DashboardScreenTemplate~~ | **0** ❌ EMEKLİ Sprint 20 | — |
+| SKIP (modal/sheet) | 5 ekran | S18:1, S19:4 |
+
+**Kümülatif LOC delta:** ~−501 (Sprint 16: −204, S17: −110, S18: −193, S19: ~+1, S20: ~0, S21: ~+5)
+
+**Kümülatif `flutter analyze`:**
+- Migration kaynaklı yeni issue: **0** (6 sprint boyunca konfirm)
+- Sprint 20-21 baseline cleanup: **−53 issue**
+- Project-wide: ~260+ → 165 (≈−37%)
+
+### Final Mimari Hiyerarşisi
+
+```
+Material Scaffold (Flutter built-in)
+    ↑
+AppScaffold (gradient bg + theme wrapper) — DEPRECATED Sprint 22+
+    ↑
+BaseScaffold<T> (AsyncValue switcher) — Sprint 15
+    ↑
+3 Feature Template (List, Form, Detail) — Sprint 15-21  [Dashboard EMEKLİ]
+    ↑
+55 Concrete Screens migrate edildi (100%)
+```
+
+### YENİ EKRAN STANDARDI (Kalıcı Kural — Sprint 22+)
+
+> **Hiçbir yeni ekranda raw `Scaffold` veya `AppScaffold` kullanılmaz.**
+> Liste? → `ListScreenTemplate`. Form? → `FormScreenTemplate`. Tab detay? → `DetailScreenTemplate`. Custom layout? → `BaseScaffold`.
+> 
+> **`AppScaffold` artık deprecated** — sadece `BaseScaffold` ve template katmanı resmi API.
+
+### Sprint 22+ İçin Backlog
+
+1. ~165 lint issue (`dart fix --apply` ile %50+ otomatik)
+2. `WizardScreenTemplate` veya `BottomSheetTemplate` ihtiyaçları **gerçek müşteri talebi olduktan sonra** inşa et (DashboardScreenTemplate hatası tekrarlanmasın)
+3. `bulk_import_review_screen_v2.dart` (2128 LOC) component splitting
+4. `AppScaffold` deprecate notice ekle, Sprint 25+ tamamen sil
+
 ## Sprint 20 Cleanup — DashboardScreenTemplate Emekli + Flutter Deprecations (FINAL)
 
 Sprint 16-20 boyunca biriken **pre-existing baseline** issue'lar Sprint 20'de tek seferde temizlendi.

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/templates/list_screen_template.dart';
 import 'package:project_pos/services/warehouse_service.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
@@ -128,121 +129,102 @@ class _WarehouseListScreenState extends ConsumerState<WarehouseListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Sprint 21 W1: AppScaffold + Column + manual switcher → ListScreenTemplate.
     final isMobile = MediaQuery.of(context).size.width < 600;
 
-    return AppScaffold(
-      appBar: AppAppBar.standard(
-        title: t('warehouses.title'),
-        actions: [
-          IconButton(
-            onPressed: _loadWarehouses,
-            icon: const Icon(Icons.refresh),
-            tooltip: t('common.refresh'),
-          ),
-        ],
+    return ListScreenTemplate<Map<String, dynamic>>(
+      title: t('warehouses.title'),
+      actions: [
+        IconButton(
+          onPressed: _loadWarehouses,
+          icon: const Icon(Icons.refresh),
+          tooltip: t('common.refresh'),
+        ),
+      ],
+      items: _filteredWarehouses,
+      isLoading: _isLoading,
+      onRefresh: _loadWarehouses,
+      statsSlot: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        child: _buildStatsSection(),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                // Filters & Search Section
-                Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      // Statistics Cards
-                      _buildStatsSection(),
-                      const SizedBox(height: 16),
-
-                      // Search Bar
-                      AppSearchInput(
-                        controller: _searchController,
-                        hint: t('warehouses.search_hint'),
-                        onChanged: _filterWarehouses,
-                        onClear: () {
-                          _searchController.clear();
-                          _filterWarehouses('');
-                        },
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Filter Chips
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            ..._typeKeys.map((key) {
-                              final label = key == 'all'
-                                  ? t('common.all')
-                                  : key == 'main'
-                                      ? t('warehouses.type_main')
-                                      : key == 'regional'
-                                          ? t('warehouses.type_regional')
-                                          : t('warehouses.type_backup');
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: FilterChip(
-                                  label: Text(label),
-                                  selected: key == 'all' ? _selectedType == null : _selectedType == _backendTypeMap[key],
-                                  onSelected: (selected) {
-                                    setState(() {
-                                      _selectedType = key == 'all' ? null : _backendTypeMap[key];
-                                    });
-                                    _loadWarehouses();
-                                  },
-                                  selectedColor: AppColors.primary.withValues(alpha: 0.2),
-                                ),
-                              );
-                            }),
-                            const SizedBox(width: 8),
-                            FilterChip(
-                              label: Text(t('warehouses.active_only')),
-                              selected: _selectedStatus == true,
-                              onSelected: (selected) {
-                                setState(() {
-                                  _selectedStatus = selected ? true : null;
-                                });
-                                _loadWarehouses();
-                              },
-                              selectedColor: AppColors.success.withValues(alpha: 0.2),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+      searchSlot: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        child: AppSearchInput(
+          controller: _searchController,
+          hint: t('warehouses.search_hint'),
+          onChanged: _filterWarehouses,
+          onClear: () {
+            _searchController.clear();
+            _filterWarehouses('');
+          },
+        ),
+      ),
+      filterSlot: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              ..._typeKeys.map((key) {
+                final label = key == 'all'
+                    ? t('common.all')
+                    : key == 'main'
+                        ? t('warehouses.type_main')
+                        : key == 'regional'
+                            ? t('warehouses.type_regional')
+                            : t('warehouses.type_backup');
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    label: Text(label),
+                    selected: key == 'all'
+                        ? _selectedType == null
+                        : _selectedType == _backendTypeMap[key],
+                    onSelected: (selected) {
+                      setState(() {
+                        _selectedType =
+                            key == 'all' ? null : _backendTypeMap[key];
+                      });
+                      _loadWarehouses();
+                    },
+                    selectedColor: AppColors.primary.withValues(alpha: 0.2),
                   ),
-                ),
-
-                const Divider(height: 1),
-
-                // Warehouse List
-                Expanded(
-                  child: _filteredWarehouses.isEmpty
-                      ? AppEmptyState(
-                          icon: Icons.warehouse,
-                          title: t('warehouses.empty_title'),
-                          actionText: t('warehouses.add'),
-                          onAction: () => context.push('/warehouses/add'),
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _filteredWarehouses.length,
-                          itemBuilder: (context, index) {
-                            final warehouse = _filteredWarehouses[index];
-                            return _buildWarehouseCard(warehouse, isMobile);
-                          },
-                        ),
-                ),
-              ],
-            ),
+                );
+              }),
+              const SizedBox(width: 8),
+              FilterChip(
+                label: Text(t('warehouses.active_only')),
+                selected: _selectedStatus == true,
+                onSelected: (selected) {
+                  setState(() {
+                    _selectedStatus = selected ? true : null;
+                  });
+                  _loadWarehouses();
+                },
+                selectedColor: AppColors.success.withValues(alpha: 0.2),
+              ),
+            ],
+          ),
+        ),
+      ),
+      emptyState: AppEmptyState(
+        icon: Icons.warehouse,
+        title: t('warehouses.empty_title'),
+        actionText: t('warehouses.add'),
+        onAction: () => context.push('/warehouses/add'),
+      ),
       floatingActionButton: FloatingActionButton.extended(
-        
         onPressed: () => context.push('/warehouses/add'),
         icon: const Icon(Icons.add),
         label: Text(t('warehouses.add')),
         backgroundColor: AppColors.primary,
       ),
+      itemBuilder: (ctx, warehouse, idx) =>
+          _buildWarehouseCard(warehouse, isMobile),
     );
   }
 

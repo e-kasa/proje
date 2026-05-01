@@ -6,6 +6,8 @@ import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/services/print/print_service.dart';
+import 'package:project_pos/services/print/print_settings.dart';
 import '../providers/pos_provider.dart';
 import '../widgets/product_grid_item.dart';
 import '../widgets/cart_panel.dart';
@@ -74,6 +76,15 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       // 4. Çapraz Lokasyon Stok Uyarısı
       if (next.crossLocationAlert != null && previous?.crossLocationAlert == null) {
         _showCrossLocationAlert(context, next.crossLocationAlert!);
+      }
+
+      // 5. Sprint 22 — Auto-print receipt: lastSaleData değiştiyse + ayar açıksa
+      if (next.lastSaleData != null &&
+          next.lastSaleData != previous?.lastSaleData) {
+        final settings = ref.read(printSettingsProvider);
+        if (settings.autoPrintOnSale && settings.isConfigured) {
+          _autoPrintReceipt(next.lastSaleData!);
+        }
       }
     });
 
@@ -152,6 +163,13 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         ),
       ),
       actions: [
+        // Sprint 22 — Son fişi yeniden yazdır (manual)
+        if (posState.lastSaleData != null)
+          IconButton(
+            icon: const Icon(Icons.print, color: Colors.white),
+            tooltip: 'Son Fisi Yazdir',
+            onPressed: () => _printLastReceipt(posState.lastSaleData!),
+          ),
         IconButton(
           icon: const Icon(Icons.sync, color: Colors.white),
           tooltip: 'Yenile',
@@ -160,6 +178,29 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         const SizedBox(width: 4),
       ],
     );
+  }
+
+  Future<void> _autoPrintReceipt(Map<String, dynamic> sale) async {
+    final result = await ref.read(printServiceProvider).printSaleReceipt(sale);
+    if (!mounted) return;
+    if (!result.success) {
+      AppToast.error(context, 'Otomatik yazdirma: ${result.error}');
+    }
+  }
+
+  Future<void> _printLastReceipt(Map<String, dynamic> sale) async {
+    final settings = ref.read(printSettingsProvider);
+    if (!settings.isConfigured) {
+      AppToast.error(context, 'Yazici yapilandirilmamis. Ayarlardan secin.');
+      return;
+    }
+    final result = await ref.read(printServiceProvider).printSaleReceipt(sale);
+    if (!mounted) return;
+    if (result.success) {
+      AppToast.success(context, 'Fis yazdirildi.');
+    } else {
+      AppToast.error(context, result.error ?? 'Yazdirma basarisiz.');
+    }
   }
 
   Widget _buildDesktopLayout(PosState posState) {

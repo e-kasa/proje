@@ -11,6 +11,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:project_pos/core/config/sector_config.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_gradients.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/providers/sector_provider.dart';
 import 'package:go_router/go_router.dart';
@@ -370,7 +371,7 @@ class _BatchProductScreenState extends ConsumerState<BatchProductScreen>
     final state = ref.watch(batchEntryProvider);
     final cfg = ref.watch(sectorConfigProvider);
 
-    return AppScaffold(
+    return BaseScaffold(
       appBar: AppAppBar.standard(
         title: state.supplierName != null
             ? '${t('batch.bulk_product_entry')} · ${state.supplierName}'

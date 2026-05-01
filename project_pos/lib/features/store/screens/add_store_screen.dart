@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/services/store_service.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
@@ -148,7 +149,8 @@ class _AddStoreScreenState extends ConsumerState<AddStoreScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
+    // Sprint 21 W1: AppScaffold → BaseScaffold (custom store_type selector + loading branch).
+    return BaseScaffold(
       appBar: AppAppBar.standard(
         title: widget.storeId != null ? t('stores.edit') : t('stores.add'),
       ),

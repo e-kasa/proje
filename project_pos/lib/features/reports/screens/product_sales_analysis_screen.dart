@@ -2,6 +2,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/features/reports/di/reports_di.dart';
@@ -75,7 +76,7 @@ class _ProductSalesAnalysisScreenState
     final totalRevenue = _products.fold<double>(
         0, (sum, p) => sum + ((p['totalRevenue'] ?? 0).toDouble()));
 
-    return AppScaffold(
+    return BaseScaffold(
       appBar: AppAppBar.standard(
         title: t('reports.product_analysis'),
         actions: [

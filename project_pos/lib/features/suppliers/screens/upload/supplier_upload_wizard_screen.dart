@@ -12,9 +12,9 @@ class SupplierUploadWizardScreen extends ConsumerStatefulWidget {
   final SupplierUploadResponse uploadResponse;
 
   const SupplierUploadWizardScreen({
-    Key? key,
+    super.key,
     required this.uploadResponse,
-  }) : super(key: key);
+  });
 
   @override
   ConsumerState<SupplierUploadWizardScreen> createState() =>
@@ -270,13 +270,19 @@ class _SupplierUploadWizardScreenState
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
-                  Radio<bool>(
-                    value: true,
-                    groupValue: isSelected,
-                    onChanged: isEnabled
-                        ? (value) => onTap?.call()
-                        : null,
-                    activeColor: color,
+                  // Sprint 21 W1: Radio<bool> visual indicator → Icon (deprecated
+                  // API kaldırıldı; kart zaten GestureDetector.onTap ile çalışıyor).
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Icon(
+                      isSelected
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_unchecked,
+                      color: isSelected
+                          ? color
+                          : (isEnabled ? AppColors.textMuted : AppColors.border),
+                      size: 22,
+                    ),
                   ),
                   Icon(icon, color: isEnabled ? color : AppColors.textMuted),
                   const SizedBox(width: 12),

@@ -44,6 +44,36 @@ class _EmailSettingsScreenState extends ConsumerState<EmailSettingsScreen> {
     super.dispose();
   }
 
+  /// Sprint 27 — Test e-posta gönderim. Backend EMAIL kanalı real (Sprint 25);
+  /// `mail.enabled=false` ise FAILED dönecek (errorMessage UI'da gösterilir).
+  Future<void> _sendTestEmail() async {
+    final to = _usernameCtl.text.trim();
+    if (to.isEmpty) {
+      AppToast.error(context, 'Önce kullanıcı adı/e-posta alanını doldurun.');
+      return;
+    }
+    setState(() => _isTesting = true);
+    final result = await ref.read(notificationServiceProvider).send(
+          NotificationRequest(
+            eventType: 'TEST_EMAIL',
+            channel: NotificationChannel.email,
+            recipient: to,
+            subject: 'SEDCORE POS — Test E-postası',
+            body: 'Bu bir test e-postasıdır. Sprint 25 EMAIL kanalı çalışıyor.',
+          ),
+        );
+    if (!mounted) return;
+    setState(() => _isTesting = false);
+    if (result.success) {
+      AppToast.success(
+        context,
+        'Test isteği kuyruğa alındı (durum: ${result.dto?.status.apiValue ?? "?"}).',
+      );
+    } else {
+      AppToast.error(context, 'Test başarısız: ${result.error}');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BaseScaffold(
@@ -200,12 +230,9 @@ class _EmailSettingsScreenState extends ConsumerState<EmailSettingsScreen> {
             children: [
               Expanded(
                 child: AppButton.outline(
-                  text: t('email_settings.test_send'),
+                  text: _isTesting ? '...' : t('email_settings.test_send'),
                   icon: Icons.send,
-                  onPressed: () => AppToast.info(
-                    context,
-                    t('email_settings.test_coming_soon'),
-                  ),
+                  onPressed: _isTesting ? null : _sendTestEmail,
                 ),
               ),
               const SizedBox(width: 12),

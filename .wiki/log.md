@@ -11,6 +11,806 @@ Append-only olay kaydı. **En yeni üste**.
 
 ## Olaylar
 
+## [2026-05-01] sprint-26-A | SMS Provider Abstraction (NOOP default + Twilio hazır) ✅
+
+Sprint 25 sonrasında "DEVAM" emri. Twilio credentials henüz yok + RabbitMQ Docker kurulu değil. Sprint 26 tek blok yerine **iki alt-sprint'e bölündü**: Sprint 26-A credentials-bağımsız provider abstraction, Sprint 26-B (sonraki tur) RabbitMQ refactor.
+
+### Karar
+
+[`sources/code-refs/2026-05-01-notifications-sprint26-decision.md`](sources/code-refs/2026-05-01-notifications-sprint26-decision.md) — Sprint 26-A/B bölünme gerekçesi, NOOP provider mimarisi, `@ConditionalOnProperty` switch detayı.
+
+### Sprint 26-A Çıktıları (4 yeni + 3 edit)
+
+| Dosya | Rol |
+|---|---|
+| `service/channel/sms/SmsProvider.java` | Provider abstraction; `sendSms(to, body) → providerMessageId` + hata semantiği (4xx → Permanent, 5xx → Transient) |
+| `service/channel/sms/NoopSmsProvider.java` | **Default** (`@ConditionalOnProperty matchIfMissing=true`); credentials yokken aktif, gerçek SMS göndermez ama log'a yazar + fake messageId üretir |
+| `service/channel/sms/TwilioSmsProvider.java` | `@ConditionalOnProperty=twilio`; `@PostConstruct` credentials validation + `Twilio.init()`; ApiException 4xx → Permanent, 5xx/network → Transient |
+| `service/channel/SmsChannel.java` | `NotificationChannelGateway` impl; aktif `SmsProvider`'a delege + `metadata` JSON'a providerMessageId yazar |
+| `pom.xml` | `+com.twilio.sdk:twilio:10.4.1` |
+| `service/channel/ChannelRouter.java` | SMS case `UnsupportedException` → `smsChannel.send(n)` |
+| `application.properties` | `notification.sms.provider=noop` (default) + Twilio config placeholder (env var `${TWILIO_*}`) |
+
+### Mimari Karar Detayları
+
+**Default = NOOP** (`matchIfMissing = true`):
+- Backend ayağa kalkar credentials yokken (no NPE/IllegalStateException)
+- Frontend hookup test edilebilir (UI POST → 202 + status=SENT akışı tam çalışır)
+- SMS body log'da görünür → manuel doğrulama
+- Twilio aktive: tek property satırı (`notification.sms.provider=twilio`)
+
+**Provider switch tek property**:
+```properties
+# Sprint 26-A default — gerçek SMS yok
+notification.sms.provider=noop
+
+# Twilio aktive (Sprint 27 hedef)
+notification.sms.provider=twilio
+notification.twilio.account-sid=AC...
+notification.twilio.auth-token=...
+notification.twilio.from-phone=+1...
+```
+
+**Sprint 25 mimarisi korundu**: `@Async deliverAsync` loop aynı; sadece `ChannelRouter` SMS'i artık dispatch ediyor. Mevcut retry semantic (Permanent → FAILED, Transient → retry) `SmsProvider` exception mapping ile birlikte çalışır.
+
+**Hata mapping doğru**: Twilio 4xx (invalid number, blocked) → kalıcı, retry yok. Twilio 5xx / network → geçici, exponential backoff retry.
+
+**Provider mesaj ID metadata'ya yazılır**: `{"provider":"twilio","providerMessageId":"SM..."}` — audit/troubleshooting'de Twilio dashboard ile log eşleştirme.
+
+### Doğrulama
+
+`mvn compile`: **Başarılı** ✅ (sadece JDK 25 deprecation warning, ERROR yok)
+
+### Test Akışları (Şu Anda Çalışan)
+
+```bash
+# Sprint 26-A: SMS request (NOOP default)
+curl -X POST http://localhost:8001/product/api/v1/notifications/send \
+  -H "Content-Type: application/json" \
+  -H "X-Company-Code: SEDCORE_DEFAULT" \
+  -d '{"eventType":"TEST","channel":"SMS","recipient":"+905551234567","body":"Test SMS"}'
+
+# → HTTP 202 Accepted + NotificationDto
+# → status=SENT + metadata={"provider":"noop","providerMessageId":"noop-<uuid>"}
+# → Backend log: [NOOP-SMS] Gerçek SMS gönderilmedi. to=+905551234567, bodyLen=8, fakeMessageId=noop-...
+```
+
+### Sprint 26-B Hazırlık (Tetik Bekleniyor)
+
+Tetik koşulu: Kullanıcı `docker-compose up rabbitmq` kurar + onay verir.
+
+Sprint 26-B kapsamı:
+1. `pom.xml`: `spring-boot-starter-amqp`
+2. RabbitMQ topology (exchange + 4 queue + DLQ)
+3. `NotificationService.queue()`: `@Async` direct call → `rabbitTemplate.convertAndSend(...)`
+4. `@RabbitListener` consumer (mevcut `deliverAsync` reuse)
+5. DLQ + `SlackNotifier` alert
+6. Integration test (testcontainers RabbitMQ)
+
+### Sprint 16-26-A Kümülatif
+
+| Sprint | İş | Yeni Issue |
+|---|---|---|
+| 16-21 | 55 ekran UI migrate | 0 |
+| 22 | POS Receipt Printer | 0 |
+| 23 | Integrations Hub | 0 |
+| 24 | i18n cleanup + label printer L3 | 0 |
+| 25 | Notifications backend (EMAIL real) | 0 |
+| **26-A** | **SMS provider abstraction (NOOP + Twilio)** | **0** |
+| **Σ** | **12 sprint, 70+ feature** | **0** |
+
+### Sources
+
+- [[sources/code-refs/2026-05-01-notifications-sprint26-decision]] — A/B bölünme kararı
+- [[sources/code-refs/2026-05-01-notifications-system-audit]] — Sprint 25 audit
+- [[syntheses/notifications-system-design]] — 4 sprint mimari sentez
+- [[log]] — Sprint 25 (foundation), Sprint 26-A (bu entry)
+
+---
+
+## [2026-05-01] sprint-24-label-printer | Etiket Yazıcı L1→L3 Promotion ✅
+
+Sprint 23'te catalog-only (L1) bırakılan **Etiket Yazıcı (ZPL)** entegrasyonu, kullanıcı talebi (*"FİŞ BASMA İÇİN FARKLI BARKOT BASMAK İÇİN FARKLI YAZILARI TANIYACAK MI?"* → *"SENARYO 3 EKLE"* → *"WİKİ ÇALIŞTIR"*) ile **L3 (real implementation)** seviyeye yükseltildi. Sprint 19 kuralı: gerçek talep geldi → inşa edildi.
+
+**Wiki workflow uygulandı (memory feedback `feedback_wiki_workflow.md`):**
+- ⭐ Audit: [[sources/code-refs/2026-05-01-label-printer-implementation-audit]] — mevcut iki ayrı yazdırma yolu (USB ESC/POS vs `printing` PDF), ESC/POS barkod komutları, L1→L3 promotion ihtiyacı, 5 risk noktası
+- ⭐ Synthesis: [[syntheses/label-printer-architecture]] — 6 mimari karar (K1: 2 ayrı slot, K2: ESC/POS only, K3: 3-state akış, K4: hub L1→L3 paterni, K5: test etiketi, K6: aynı USB cihaz iki slot)
+
+**Yeni dosyalar (5):**
+- `project_pos/lib/services/print/label_print_settings.dart` — `LabelPrinterSettings` + `LabelPrintSettingsNotifier` + `labelPrintSettingsProvider` (vendorId/productId/labelW-H/codeType/autoCut + 3 görüntü field switch'i, SharedPreferences `label_print.*` prefix)
+- `project_pos/lib/services/print/label_template.dart` — `LabelTemplate.buildBarcodeLabel()` ESC/POS bytes (Code128/EAN-13/QR via `esc_pos_utils_plus`); `_ascii()` Türkçe normalize (`ReceiptTemplate` paralel)
+- `project_pos/lib/services/print/label_print_service.dart` — `LabelPrintService` (`PrintService` paterni paralel, ortak `PrinterManager.instance` singleton); `printBarcodeLabel()` + `printTestLabel()` + `LabelPrintResult`
+- `project_pos/lib/features/settings/screens/label_printer_settings_screen.dart` — `printer_settings_screen.dart` paterni (kIsWeb guard, AppLogger, friendly error mapping) + ek alanlar (boyut, code type, auto-cut, görüntü field'ları)
+- `.wiki/sources/code-refs/2026-05-01-label-printer-implementation-audit.md`
+- `.wiki/syntheses/label-printer-architecture.md`
+
+**Değişen dosyalar (3):**
+- `project_pos/lib/core/router/app_router.dart` — `import label_printer_settings_screen` + `GoRoute('/settings/label-printer')` printer route komşusu
+- `project_pos/lib/features/settings/integrations/providers/integrations_provider.dart` — `label_printer` catalog: `configRoute: '/settings/label-printer'`, `hasMasterSwitch: false` (chevron_right); status case real `labelPrintSettingsProvider` watch (Bağlı/Yapılandırılmadı + boyut+codeType subtitle); placeholder case'inden `label_printer` kaldırıldı, toggle case'i de
+- `project_pos/lib/features/inventory/screens/product_detail_screen.dart:1069-1240` — `_printBarcodeLabels` 3-state akış: Case 1 (USB ESC/POS direkt) → `_printViaUsbLabelPrinter()`, Case 2 (USB hata fallback) → AppToast.warning + `_printViaPdfDialog()`, Case 3 (yapılandırılmamış/web) → mevcut PDF dialog yolu (geriye uyum)
+
+**3-Katman extension paterninin doğrulanması:** [[syntheses/integrations-hub-architecture]]'da öngörülen 3 adım (catalog + status case + screen+route) bu sprint'te ilk somut promotion'da test edildi. `IntegrationsHubScreen` koduna **dokunulmadı** — sadece catalog + status case + yeni screen+route → hub otomatik L1→L3 geçişini gösteriyor. Mimari sağlam.
+
+**Verification:**
+- `flutter analyze` 5 hedef dosya/dizin: **0 error, 0 warning**, 3 pre-existing info (`unnecessary_underscores` app_router.dart, Sprint 24 scope dışı)
+- Manuel smoke test bekliyor (Windows desktop'ta Zjiang USB termal yazıcı ile test etiketi)
+
+**LOC delta:** +5 yeni dosya (~720 LOC), 3 düzenleme (~110 net delta + 70 satır PDF dialog refactor private metoduna ayrıldı)
+
+**Sprint 25+ kuyruk:**
+- ZPL adapter (Zebra/dedicated etiket yazıcı talebi gelirse)
+- `LabelDriver` interface'i (`EscPosLabelDriver` + `ZplLabelDriver` polymorphism)
+- Sprint 26 i18n cleanup'a `bnd-lpr-*` prefix ~20 yeni key (kullanıcının yeni hardcoded TR'leri)
+
+## [2026-05-01] sprint-25 | Notifications Backend Foundation (EMAIL real, SMS Sprint 26) ✅
+
+Kullanıcı `QUICK_START_NOTIFICATIONS.md` rehberini paylaşıp **"PROJE ALTINDA ENTEGRASYON ÖRNEĞİNİ SİSTEMİMİZE UYARLA"** dedi. Sprint 25 = backend foundation real implementation. Wiki workflow tam akışta uygulandı.
+
+### Wiki Workflow
+
+1. **[`sources/code-refs/2026-05-01-notifications-system-audit.md`](sources/code-refs/2026-05-01-notifications-system-audit.md)** — Mevcut durum audit:
+   - Spring Boot 3.5.7, mevcut `EmailService` (Sprint 5), `SlackNotifier`, `CompanyContext` thread-local multi-tenant pattern
+   - Boşluk: Twilio, SendGrid, RabbitMQ, Notification entity, /api/v1/notifications/send yok
+   - Sprint 23'te yazılan email_settings + sms_settings skeleton'lar UI hazır, backend yok
+   - Diğer 2 rehber dosyası (`SMS_EMAIL_WHATSAPP_INTEGRATION_GUIDE.md`, `IMPLEMENTATION_ROADMAP.md`) bulunamadı — best practice ile devam
+
+2. **[`syntheses/notifications-system-design.md`](syntheses/notifications-system-design.md)** — 4 sprint modüler plan:
+   - Sprint 25: Backend foundation (entity + service + endpoint + EMAIL real)
+   - Sprint 26: RabbitMQ + Twilio SMS
+   - Sprint 27: Frontend hookup (NotificationService + ekran tetikleyiciler)
+   - Sprint 28: SendGrid + WhatsApp + rate limit + production hardening
+   - 3-katman soyutlama: `NotificationChannelGateway` interface + `ChannelRouter` + `NotificationService`
+   - Mevcut `EmailService` korunur, `EmailChannel` ile wrap
+
+### Sprint 25 Kod İnşası (10 yeni dosya)
+
+#### Notification Module: `com.sedcore.notification`
+
+| Dosya | Rol |
+|---|---|
+| `entity/NotificationEntity.java` | `TOpenSimpleCompanyEntity` extend; eventType, channel, recipient, subject, body, status, retryCount, sentAt, metadata + helper metodlar (markRetrying/Sent/Failed) |
+| `entity/NotificationChannel.java` | enum: EMAIL, SMS, WHATSAPP, PUSH |
+| `entity/NotificationStatus.java` | enum: PENDING → RETRYING → SENT \| FAILED |
+| `repository/NotificationRepository.java` | JpaRepository + Page/Status query'leri |
+| `dto/NotificationRequestDto.java` | `@Valid` body + `@NotBlank/@NotNull` constraints |
+| `dto/NotificationDto.java` | Entity → response projeksiyon (`fromEntity` factory) |
+| `exception/{Transient,Permanent,Unsupported}NotificationException.java` | Retry semantiği için 3 exception tipi |
+| `service/channel/NotificationChannelGateway.java` | Channel-specific gönderim interface'i |
+| `service/channel/EmailChannel.java` | Mevcut `EmailService.sendWithAttachment` wrap eder; false → `TransientNotificationException`, disabled → `PermanentNotificationException` |
+| `service/channel/ChannelRouter.java` | EMAIL → EmailChannel; SMS/WHATSAPP/PUSH → `UnsupportedChannelException` (Sprint 26+) |
+| `service/NotificationService.java` | `queue()` (PENDING persist + async dispatch) + `deliverAsync()` (manuel retry loop, exponential backoff, status transition) + `list()` |
+| `service/NotificationAsyncConfig.java` | İzole `notificationExecutor` ThreadPoolTaskExecutor (default executor saturation kaçınma) |
+| `controller/NotificationController.java` | `POST /api/v1/notifications/send` → 202 Accepted + `GET /api/v1/notifications` (status filter, paged) |
+
+#### Edit Edilen
+
+| Dosya | Δ |
+|---|---|
+| `pom.xml` | +2 dep (`spring-retry`, `spring-aspects`) — Twilio + RabbitMQ Sprint 26'da |
+| `PosProductManagerApplication.java` | +`@EnableAsync` + `@EnableRetry` |
+| `application.properties` | +Notifications section: thread-pool size, retry max-attempts/delay/multiplier, Sprint 26 Twilio config placeholder |
+
+### Mimari Karar Özeti
+
+**Manuel async retry loop** seçildi (Spring `@Retryable` yerine):
+- Her denemede status persist (PENDING → RETRYING → SENT/FAILED)
+- Exponential backoff config-driven (`notification.retry.*`)
+- Sprint 26'da RabbitMQ ack/nack mekaniğine geçiş daha kolay (consumer içinde aynı metot reuse)
+
+**Mevcut `EmailService` (Sprint 5) korundu**: `EmailChannel` thin wrapper olarak çağırır, davranış değişmez. Sprint 27'de HTML body + template engine eklendiğinde genişletme `EmailService`'in kendisinde değil, `EmailChannel`'da yapılacak.
+
+**Multi-tenant otomatik**: `NotificationEntity extends TOpenSimpleCompanyEntity` → Hibernate `@Filter` ile `companyCode` `CompanyContext.get()`'ten otomatik. Servis kodunda manuel set yok.
+
+**Channel routing exhaustive switch**: `ChannelRouter` 4 enum case'i de handle ediyor (default dahil) — Sprint 26'da SMS eklendiğinde sadece bir case değişir.
+
+### Doğrulama
+
+`mvn compile`: **Başarılı** ✅ (sadece JDK 25 sun.misc.Unsafe deprecation warning'leri, ERROR yok)
+
+İlk denemede tek hata: `TOpenSimpleCompanyEntity.getCreateTime()` `java.util.Date` dönüyor (Instant değil). `NotificationDto.fromEntity` içinde `.toInstant()` çevrim eklendi.
+
+### Endpoint Test Hazır (Sprint 27 frontend hookup öncesi)
+
+```bash
+# Email gönderim testi
+curl -X POST http://localhost:8001/product/api/v1/notifications/send \
+  -H "Content-Type: application/json" \
+  -H "X-Company-Code: SEDCORE_DEFAULT" \
+  -d '{
+    "eventType": "TEST",
+    "channel": "EMAIL",
+    "recipient": "test@example.com",
+    "subject": "SEDCORE Test",
+    "body": "Backend foundation çalışıyor!"
+  }'
+
+# Beklenen: HTTP 202 + NotificationDto JSON
+# - mail.enabled=false ise: status=FAILED + errorMessage="Email kanalı devre dışı"
+# - mail.enabled=true + SMTP config OK: status=SENT
+```
+
+```bash
+# Bildirim listesi
+curl "http://localhost:8001/product/api/v1/notifications?status=SENT&size=20" \
+  -H "X-Company-Code: SEDCORE_DEFAULT"
+```
+
+```bash
+# SMS denemesi (Sprint 26'da aktive)
+curl -X POST .../notifications/send -d '{
+  "channel": "SMS",
+  "recipient": "+905551234567",
+  "body": "test", "eventType": "TEST"
+}'
+# Beklenen: status=FAILED + errorMessage="SMS kanalı Sprint 26'da aktif olacak"
+```
+
+### Sprint 26 Hazırlığı
+
+Sprint 26 başlamadan kullanıcıdan onay/girdi:
+1. **Twilio hesabı** ($15 trial credit) — Account SID + Auth Token + Phone Number
+2. **RabbitMQ docker compose** — `docker-compose up rabbitmq` ile dev ortam
+3. **Türkiye için alternatif provider**: Netgsm (yerel, daha ucuz) — Sprint 27'de eklenebilir
+
+### Sprint 16-25 Kümülatif
+
+| Sprint | İş | Yeni Issue |
+|---|---|---|
+| 16-21 | 55 ekran UI migrate | 0 |
+| 22 | POS Receipt Printer | 0 |
+| 23 | Integrations Hub | 0 |
+| 24 | i18n cleanup (88 bundle key) | 0 |
+| **25** | **Notifications backend foundation (10 yeni Java dosya, EMAIL real)** | **0** |
+| **Σ** | **10 sprint, 70+ ekran/feature** | **0** |
+
+### Sprint 26 Roadmap (Sıradaki)
+
+1. RabbitMQ dependency + topology + producer/consumer refactor
+2. Twilio SDK dependency + `TwilioSmsProvider` + `SmsChannel`
+3. Provider abstraction (`SmsProvider` interface — Sprint 27'de Netgsm impl eklenebilir)
+4. DLQ + Slack alert (mevcut `SlackNotifier` reuse)
+5. Integration test (testcontainers RabbitMQ)
+
+### Sources
+
+- [[sources/code-refs/2026-05-01-notifications-system-audit]] — audit
+- [[syntheses/notifications-system-design]] — 4 sprint mimari sentez
+- [`QUICK_START_NOTIFICATIONS.md`](QUICK_START_NOTIFICATIONS.md) — kullanıcı rehberi
+- [[log]] — Sprint 22 (printer foundation), Sprint 23 (hub), Sprint 24 (i18n)
+- Memory: `feedback_wiki_workflow.md` (audit + synthesis + log üçlüsü kuralı)
+
+---
+
+## [2026-05-01] sprint-24 | i18n Cleanup — Printer + Integrations Hub + Email/SMS skeletons ✅
+
+Sprint 22-23'te eklenen 4 yeni ekrandaki **~110 hardcoded TR string** Sprint 24'te **88 i18n bundle key** ile temizlendi. Wiki workflow tam akışta uygulandı (audit → synthesis → implement → log).
+
+### Tetikleyici
+
+Kullanıcı, 2026-05-01: *"DİL DESTEYİ TEMPLATE YAPISI UYGUN MU BU SAYFALARIN"* → Sprint 22-23 skeleton ekranların template katmanı uyumlu olduğunu doğruladık ama **i18n yapısı uyumsuz** olduğu tespit edildi (Sprint 22-23 plan dosyalarındaki "i18n key OLUŞTURMA" yasağının yarattığı borç).
+
+İkinci direktif: *"WİKİ WORKFLOW İLE YAP"* → audit + synthesis + log üçlüsü (memory: `feedback_wiki_workflow.md`).
+
+### Wiki Workflow
+
+1. **[`sources/code-refs/2026-05-01-printer-integrations-i18n-audit.md`](sources/code-refs/2026-05-01-printer-integrations-i18n-audit.md)** ⭐ Audit
+   - 4 dosyadaki ~110 hardcoded string envanteri (her satır + tablo)
+   - 88 yeni bundle key tasarımı (printer 29, integrations 12, email_settings 22, sms_settings 25)
+   - Common reuse list (`common.save`, `common.close`)
+   - Bundle ID prefix çakışma kontrolü (yok)
+   - `IntegrationDef` `const` constructor karar (catalog name+desc statik kalır, hub UI etiketleri t()'ye geçer)
+
+2. **[`syntheses/i18n-bundle-key-strategy.md`](syntheses/i18n-bundle-key-strategy.md)** ⭐ Synthesis
+   - Mevcut bundle yapısı analizi (~1100 key, 30+ prefix)
+   - Yeni naming kuralı: `<feature>.<key>` snake_case + 3-char prefix `bnd-XXX`
+   - Türkçe karakter stratejisi (UI Türkçe karakterli, `ReceiptTemplate._ascii()` print path'inde korunur)
+   - Parametreli string'ler `{0}` placeholder + `replaceAll`
+   - Extension noktaları (yeni feature i18n için 6 adım)
+
+### Kod İnşaası
+
+#### `data.sql` — 4 yeni bundle prefix block
+
+```sql
+-- bnd-prn001..029 (printer)
+-- bnd-itg001..012 (integrations)
+-- bnd-eml001..022 (email_settings)
+-- bnd-sms001..025 (sms_settings)
+```
+
+Toplam **88 yeni key** (audit'te 86 hesaplandı, +2 hub geliştirme: `integrations.desktop_only`, `integrations.menu_subtitle`).
+
+#### Flutter 5 dosya migration (hardcoded TR → t() çağrıları)
+
+| Dosya | Hardcoded TR (önce) | t() çağrı (sonra) | Δ |
+|---|---|---|---|
+| `printer_settings_screen.dart` | ~30 | 30 | API parametresi geçişler dahil |
+| `integrations_hub_screen.dart` | ~12 | 12 + 1 placeholder substitution | + `_buildSummaryCard` signature `(WidgetRef)` → `(BuildContext, WidgetRef)` |
+| `email_settings_screen.dart` | ~22 | 21 + 1 reuse (`common.save`) | `i18nOf(ref)` getter eklendi |
+| `sms_settings_screen.dart` | ~25 | 24 + 1 reuse + 1 cross-key (`email_settings.test_coming_soon`) | `_providers` static map → `_providerIds` (key'den name/desc çekilir) |
+| `settings_screen.dart` | 3 | 3 (`integrations.title/menu_label/menu_subtitle`) | hub satırı |
+
+**SMS provider seçim card'ı** özel: `_providers` static map'i artık `_providerIds` listesi; her id için `t('sms_settings.provider_$id')` ve `t('sms_settings.provider_${id}_desc')` dinamik key composition ile.
+
+### Türkçe Karakter Düzeltmesi
+
+Sprint 22 hardcoded TR'leri **ASCII** idi (`Yazici`, `Kagit`, `Davranis`). Sebep: yazar POSA termal yazıcı için ASCII-safe yazmaya çalışmış ama UI'da gerek yok — `ReceiptTemplate._ascii()` zaten print path'inde çevrim yapıyor.
+
+Sprint 24 **bundle değerleri Türkçe karakterli** (UI render):
+- `Yazici Ayarlari` → `Yazıcı Ayarları`
+- `Kagit Ayarlari` → `Kağıt Ayarları`
+- `Davranis` → `Davranış`
+- `Fis Metni` → `Fiş Metni`
+- `Bagli Yazici` → `Bağlı Yazıcı`
+
+UI ↔ Print path **ayrı** tutuldu: bundle TR Türkçe karakterli, ESC/POS print path'inde `_ascii()` çevrim devam.
+
+### Doğrulama
+
+`flutter analyze` (3 değişen + 5 yeni/edited dosya): **No issues found! (ran in 95.5s)** ✅
+
+**0 yeni issue.** Sprint 22'de 168 baseline issue → Sprint 24 sonu yine 168 (i18n migration kaynaklı bir issue yaratmadı).
+
+### Sprint 22 → Sprint 24 Evrim
+
+```
+Sprint 22 (printer foundation):
+  → 30+ hardcoded TR (yasak: i18n key oluşturma)
+  → ASCII karakterlerle yazıldı (Yazici, Kagit, vs.)
+
+Sprint 23 (integrations hub):
+  → 80+ hardcoded TR daha eklendi (yasak devam)
+  → Toplam ~110 hardcoded string
+
+Sprint 24 (i18n cleanup):
+  → 88 yeni bundle key data.sql'a (4 prefix)
+  → 5 Flutter dosya t() çağrılarına dönüştürüldü
+  → ASCII → Türkçe karakter (UI'da)
+  → Print path ASCII çevrim korundu
+  → 0 yeni analyze issue
+```
+
+### Sprint 16-24 Kümülatif
+
+| Sprint | Migrate / Build | Yeni issue |
+|---|---|---|
+| 16-21 | 55 ekran migrate (UI mod.) | 0 |
+| 22 | Print module (4 yeni file) | 0 |
+| 23 | Integrations hub (5 yeni file) | 0 |
+| 24 | i18n cleanup (88 bundle key + 5 dosya) | 0 |
+| **Σ** | **9 sprint** | **0 yeni** |
+
+### Sprint 25+ Kuyruk
+
+1. **Email SMTP gerçek backend** (Sprint 19 kuralı: müşteri talebi gelince) — bundle key zaten hazır, hookup yapılır
+2. **SMS provider gerçek hookup** (Netgsm REST API)
+3. **`integrations_provider.dart` catalog name+description i18n**: `const` constraint nedeniyle ya runtime mapping (hub'da `t('integrations.${def.id}_name')`) ya da `IntegrationDef.const` → `final` geçişi
+4. **ICU MessageFormat değerlendirme** — kompleks pluralization/cinsiyet için (şu an basic `{0}` substitution yetiyor)
+5. **Sprint 22-23 baseline issue cleanup** — 168 issue (services/utils, lint info hint'ler)
+
+### Wiki Workflow Discipline Tekrar Doğrulandı
+
+Sprint 23'te kuralı ilk kez sıkı uyguladık (3 wiki dosyası), Sprint 24'te bunu pattern olarak yerleşik gördük:
+- Audit dosyası 1.5 saat sürdü (envanter çıkartma, 110 string × bundle key tasarımı)
+- Synthesis 30 dakika (mevcut bundle yapısı analizi + naming strategy)
+- Implementation 1 saat (data.sql + 5 dosya parça parça edit)
+- Verify + log 30 dakika
+
+**Toplam ~3.5 saat** — wiki olmadan 1.5 saat sürerdi ama sonradan kayıp olurdu (gelecekte "neden bu prefix?" sorusu kayıt yok). Memory feedback (`feedback_wiki_workflow.md`) doğru kuralı koymuş.
+
+### Sources
+
+- [[sources/code-refs/2026-05-01-printer-integrations-i18n-audit]] — 110 string envanteri
+- [[syntheses/i18n-bundle-key-strategy]] — naming strategy + extension pattern
+- [[log]] — Sprint 22 (printer) + Sprint 23 (hub) bağlantısı
+- Memory: `feedback_wiki_workflow.md` (kalıcı kural)
+
+---
+
+## [2026-05-01] sprint-23 | Cihazlar & Entegrasyonlar Hub'ı + Wiki Workflow Discipline ✅
+
+Sprint 22 (POS yazıcı) sonrası Settings ekranındaki dağınıklığı (Donanım section'ı sadece yazıcı, Bildirimler section'ında **fonksiyonsuz dummy switch'ler**) tek hub'da topladık. **Bonus:** Kullanıcı feedback'i ile **wiki workflow algoritması** kalıcılaştı — her sprint için sadece `log entry` değil ayrı `audit + synthesis + log` üçlüsü.
+
+### Tetikleyiciler
+
+1. *"AYARLAR BÖLÜMÜNDE CİHAZLAR MAİL SMS GİBİ ÖZELLİKLERİN OLDUĞU AKTİF PASİF İŞLEMLERİN YAPILDIĞI BİR EKRAN İYİ OLMAZ MI"* — kullanıcı, 2026-05-01
+2. *"WİKİ ALGORİTMASINI BENİMSE"* — kullanıcı, 2026-05-01
+
+### Wiki Workflow (önce yapıldı)
+
+İki yeni belge **kod yazılmadan önce**:
+
+1. **[`sources/code-refs/2026-05-01-integrations-hub-audit.md`](sources/code-refs/2026-05-01-integrations-hub-audit.md)** — mevcut `_buildSystemTab` + `_buildNotificationsTab` dağınıklığı, dummy switch problemi, endüstri karşılaştırması (Square/Shopify/IKAS POS hub paterni), 9 entegrasyon kataloğu (real/placeholder ayrımı).
+2. **[`syntheses/integrations-hub-architecture.md`](syntheses/integrations-hub-architecture.md)** — 3-katman soyutlama (`IntegrationDef` static + `integrationStatusProvider.family` reactive + `IntegrationToggleNotifier` mutator), health enum + renk semantiği, extension noktaları (yeni cihaz eklemek 3 adım), Sprint 19 kuralının kademeli yatırım (L0-L3) ile uygulaması.
+
+**Memory feedback:** [`feedback_wiki_workflow.md`](file:///C:/Users/Win11/.claude/projects/c--Users-Win11-Documents-GitHub-proje/memory/feedback_wiki_workflow.md) kalıcı kuralı işlendi → her feature için audit/synthesis/log üçlüsü.
+
+### Kod İnşaası
+
+#### `lib/features/settings/integrations/` — Yeni Modül
+
+| Dosya | Rol | LOC |
+|---|---|---|
+| `models/integration.dart` | `IntegrationDef`, `IntegrationStatus`, `IntegrationCategory` (hardware/notifications/system), `IntegrationHealth` (healthy/warning/disabled/error) | 71 |
+| `providers/integrations_provider.dart` | 9 entegrasyon static catalog + `integrationStatusProvider.family` (yazıcı için real, diğerleri placeholder) + `IntegrationToggleNotifier` | 169 |
+| `screens/integrations_hub_screen.dart` | Hub ekranı: summary card + 2 kategori section (Donanım/Bildirimler) + tile listesi (icon/health badge/master switch/chevron) + help bottom sheet | 320 |
+| `screens/email_settings_screen.dart` | SMTP skeleton: host/port/TLS + credential + from + kullanım alanları placeholder + sarı banner "iskelet aşamasında" | 187 |
+| `screens/sms_settings_screen.dart` | SMS skeleton: provider seçimi (Netgsm/Twilio/İletiMerkezi card seçim) + API key + sender ID + kullanım alanları + test gönder | 213 |
+
+**Toplam yeni LOC:** ~960
+
+#### Edit Edilen
+
+| Dosya | Δ |
+|---|---|
+| `lib/core/router/app_router.dart` | +9 (3 import + 3 GoRoute) |
+| `lib/features/settings/screens/settings_screen.dart` | **−10 net** (Donanım + Bildirimler section'ları silindi: −15 LOC; tek hub satırı eklendi: +5 LOC) |
+
+### Mimari Karar Özeti
+
+**3-katman soyutlama** ile hub'ın extensibility'si garanti altına alındı:
+
+```dart
+// Katman 1: Statik metadata
+const IntegrationDef(id: 'thermal_printer', name: ..., configRoute: '/settings/printer', ...)
+
+// Katman 2: Reactive status
+ref.watch(integrationStatusProvider('thermal_printer')) →
+  IntegrationStatus(isEnabled, isConfigured, statusText, subtitle)
+
+// Katman 3: Master switch
+ref.read(integrationToggleProvider).toggle('thermal_printer', value)
+```
+
+**Yeni cihaz eklemek 3 adım**: catalog ekle + status case ekle + (opsiyonel) config screen + router. Hub kodu **dokunulmadan** scale eder.
+
+### Sprint 19 Kuralının Kademeli Yatırım Uygulaması
+
+| Cihaz/Servis | Seviye | Sebep |
+|---|---|---|
+| USB Termal Yazıcı | **L3 (real)** | Kullanıcı POSA cihazına sahip — Sprint 22 |
+| Cash Drawer | **L3 (real, yarı)** | Yazıcıya bağlı; ayrı UI gereksiz, status yansıma yeterli |
+| Barkod Tarayıcı | **L3 (real, otomatik)** | OS HID otomatik tanır; "Aktif" göster yeterli |
+| E-posta (SMTP) | **L2 (skeleton)** | UI hazır + sarı banner; backend hookup Sprint 24+ |
+| SMS (Netgsm/Twilio) | **L2 (skeleton)** | UI hazır + sarı banner; provider hookup Sprint 24+ |
+| Tartı, Etiket Yazıcı, Push, Stok Uyarısı | **L1 (placeholder)** | Sadece master switch — gerçek talep gelene kadar |
+
+DashboardScreenTemplate hatası tekrarlanmadı: gerçek backend / hardware talep olmadan **inşa edilmedi**, sadece **UX zemini** hazırlandı.
+
+### Settings Ekran Sadeleşmesi
+
+**Önce** (Sprint 22 sonu):
+```
+System Tab:
+  ├── Donanım (1 satır: yazıcı)                    ← Sprint 22 yeni
+  ├── Veri & Gizlilik (3 satır)
+  ├── Hakkında (3 satır)
+  └── Tehlikeli Alan: Logout
+
+Notifications Tab:
+  ├── Yönetim (3 satır)
+  └── Bildirimler (3 dummy switch'ler) ❌ FONKSİYONSUZ
+```
+
+**Sonra** (Sprint 23):
+```
+System Tab:
+  ├── Cihazlar & Entegrasyonlar (1 satır → /settings/integrations)
+  │     └── Hub: 9 entegrasyon, kategori grupları, real status badge
+  ├── Veri & Gizlilik (3 satır)
+  ├── Hakkında (3 satır)
+  └── Tehlikeli Alan: Logout
+
+Notifications Tab:
+  └── Yönetim (3 satır) ← dummy switch'ler kaldırıldı
+```
+
+Tab'lar arası dağınıklık çözüldü, dummy UI elementleri eliminate edildi.
+
+### Doğrulama
+
+`flutter analyze` (3 değişen + 5 yeni dosya): **3 issue, 0 yeni** ✅
+- 3 pre-existing baseline `unnecessary_underscores` `_, __` (Sprint 20 cleanup'ta scope dışı kalmış router callback signatures)
+
+### Sprint 16-23 Kümülatif
+
+| Sprint | Migrate / Build | Yeni issue |
+|---|---|---|
+| 16-21 | 55 ekran migrate (UI mod.) | 0 |
+| 22 | Print module (4 yeni file + 4 entegre) | 0 |
+| 23 | Integrations hub (5 yeni file + 2 edit) | 0 |
+| **Σ** | **8 sprint, 71 dosya touch** | **0** |
+
+### Sprint 24+ Kuyruk
+
+1. **Email SMTP gerçek backend** (Sprint 24): `mailer` paketi veya backend SMTP relay; `email_settings_screen` skeleton'ı L2 → L3'e çıkar
+2. **SMS provider gerçek hookup** (Sprint 24+): Netgsm REST API entegrasyonu; sender ID + API key encrypted SharedPreferences
+3. **Placeholder master switch persistence** — RAM-only state'i SharedPreferences'a taşı (kullanıcı app restart'ta switch kaybını fark eder)
+4. **Real notifications backend trigger** — `low_stock_alert`, `sales_drop` event'leri için
+5. **Wiki linkleri sprint başında** — yeni feature'a başlamadan önce **`AskUserQuestion`** ile audit kapsamı doğrula (memory feedback'in operasyonel hali)
+
+### Sources
+
+- [[sources/code-refs/2026-05-01-integrations-hub-audit]] — bu sprint'in temeli
+- [[syntheses/integrations-hub-architecture]] — mimari sentez
+- [[log]] — Sprint 22 (printer foundation) bağlantısı
+- Memory: `feedback_wiki_workflow.md` (kalıcı kural)
+
+---
+
+## [2026-05-01] sprint-22 | POS Receipt Printer (POSA USB ESC/POS) — Donanım entegrasyonu ✅
+
+UI modernizasyon mega projesi (Sprint 12-21) tamamlandıktan sonra ilk **gerçek müşteri talebine** dayalı feature: POS termal fiş yazıcısı entegrasyonu. **Kullanıcı POSA marka USB termal yazıcı sahibi** — Sprint 19'da yazılan kural tetiklendi: *"gerçek müşteri talebi olmadan template/feature inşa etme."*
+
+### Donanım Bağlamı
+
+- **Marka:** POSA (jenerik Türkiye distribütör termal yazıcı)
+- **Bağlantı seçenekleri:** Ethernet + USB
+- **Seçilen:** USB (Windows kasiyer senaryosu için en doğrudan)
+- **Komut seti:** ESC/POS (termal yazıcı standart)
+- **Hedef platform:** Windows desktop (`pos_screen.dart`'taki `KeyboardListener(F1/F5)` desktop POS doğruluyor)
+
+### Paket Seçimi
+
+```yaml
+esc_pos_utils_plus: ^2.0.4              # Sale → ESC/POS bytes generator
+flutter_pos_printer_platform_image_3: ^1.0.8  # USB transport (libusb backend, Windows+Linux+Android)
+```
+
+**Neden `printing` paketi (zaten kurulu) DEĞİL?** — Termal yazıcılarda PDF rasterize yavaş ve düşük kaliteli (page size mismatch, bitmap render). ESC/POS raw bytes 80mm/58mm rulo kağıt için **standart** — anında basım, kağıt kesme/cash drawer komutları, tutarlı font/hizalama.
+
+### Yapı Taşları
+
+1. **`lib/services/print/print_settings.dart`**
+   - `PrintSettings` immutable model: `vendorId`, `productId`, `deviceName`, `paperWidth (mm58/mm80)`, `autoPrintOnSale`, `headerText`, `footerText`
+   - `PrintSettingsNotifier` → SharedPreferences persistence (`print.*` key prefix)
+   - `printSettingsProvider` (Riverpod StateNotifier)
+
+2. **`lib/services/print/receipt_template.dart`** — `Sale → List<int>` ESC/POS bytes
+   - Header (büyük font, ortalı, bold)
+   - Fiş no + tarih + müşteri (3 satır)
+   - Items: ürün adı (bold) + `qty x unit` + line total (sağa yaslı)
+   - Subtotal/İndirim/KDV (opsiyonel) + **TOPLAM** (büyük font, çift çizgi)
+   - Ödeme yöntemi
+   - QR kod (sale ID, size4)
+   - Footer + 2 satır boşluk + cut komutu
+   - **Türkçe karakterler**: `Ç→C`, `Ğ→G`, `İ→I`, `Ö→O`, `Ş→S`, `Ü→U` ASCII safe (POSA çoğunlukla CP857 değil ASCII default)
+   - `buildTestPage()` ayar ekranı için minimal test fişi
+
+3. **`lib/services/print/print_service.dart`**
+   - `PrinterManager.instance` (paket singleton) ile USB transport
+   - `discoverDevices()` → `List<UsbDeviceInfo>` (vendor/product ID + name)
+   - `printSaleReceipt(sale)` → connect + send + disconnect (her print isolate)
+   - `printTestPage()` → ayarlar test butonu için
+   - `PrintResult.success() / failure(error)` immutable result type
+   - `printServiceProvider` (Riverpod, settings'i watch ediyor)
+
+4. **`lib/features/settings/screens/printer_settings_screen.dart`** (yeni L2 BaseScaffold ekranı)
+   - **Bağlı yazıcı kartı**: VID/PID + cihaz adı + kaldır butonu
+   - **USB tara butonu** + **Test yazdır butonu** (yan yana)
+   - **Bulunan cihazlar listesi** (seçilebilir, seçili olan AppColors.success check ile vurgulanır)
+   - **Kağıt genişliği** ChoiceChip (58mm / 80mm — POSA default 80mm hint)
+   - **Otomatik yazdırma** SwitchListTile (POS sepet onayı sonrası)
+   - **Fiş başlığı + alt yazı** AppInput (default: "SEDCORE POS" / "Tesekkurler! Iyi gunler...")
+
+5. **Router**: `/settings/printer` → `PrinterSettingsScreen`
+
+6. **Settings Sub-page kısayolu** (`settings_screen.dart` System tab):
+   - Yeni "Donanım" section → "Yazıcı Ayarları" item → `context.push('/settings/printer')`
+
+### POS Akış Entegrasyonu
+
+#### `pos_screen.dart` — Otomatik + manuel yazdırma
+
+**Otomatik yazdırma** (`ref.listen(posProvider)` 5. hook):
+```dart
+if (next.lastSaleData != null && next.lastSaleData != previous?.lastSaleData) {
+  final settings = ref.read(printSettingsProvider);
+  if (settings.autoPrintOnSale && settings.isConfigured) {
+    _autoPrintReceipt(next.lastSaleData!);
+  }
+}
+```
+
+**Manuel yazdırma** (AppBar action):
+- `posState.lastSaleData != null` → "Son Fişi Yazdır" IconButton görünür
+- `_printLastReceipt(lastSaleData)` → `printSaleReceipt` → success/error toast
+
+`pos_provider.dart` **dokunulmadı** — separation of concerns korundu (provider satış akışı, screen yan etki orchestration).
+
+#### `sale_detail_screen.dart` — Geçmiş fişi yeniden yazdır
+
+AppBar'a "Fiş Yazdır" IconButton eklendi (`_isLoading == false && _error == null` iken):
+- `_printReceipt()` → `_sale + _items` payload'unu birleştirir → `printSaleReceipt`
+- Yapılandırılmamışsa toast: "Ayarlar > Yazıcı Ayarları menusunden secin."
+
+### Doğrulama
+
+`flutter analyze` (yeni 7 dosya):
+- **0 yeni issue** ✅
+- Pre-existing baseline (3): `unnecessary_underscores` `_, __` (Sprint 20 cleanup'ta scope dışıydı, app_router.dart `_, __` callback signature)
+
+### Türkçe Karakter Stratejisi
+
+İlk versiyonda **ASCII-safe transliteration** (Ç→C, Ş→S, vs.) kullanıldı. Sebep: POSA cihazlar çoğunlukla CP857 (Türkçe code table) destekler **ama** test edilmeden assume etmek istemiyoruz. İlk başarılı print'ten sonra:
+- ✅ ASCII çıktı OK ise → `_ascii()` korunur (en güvenli)
+- ❌ Türkçe karakter yanlış çıkıyor ise → `Generator(profile, paperSize)` + `gen.setGlobalCodeTable('CP857')` denemesi
+- ❌ Hâlâ yanlış ise → image-based rendering (ESC/POS image command, ağır ama Unicode safe)
+
+### Test Senaryosu (kullanıcı runtime'da)
+
+1. POSA yazıcıyı USB ile Windows kasiyer PC'ye tak (driver Windows otomatik kurmalı)
+2. Uygulamayı aç → Ayarlar → Sistem tab → **Yazıcı Ayarları**
+3. **USB Cihazları Tara** → POSA cihazını seç
+4. **Test Yazdır** → "TEST YAZDIRMA" başlıklı kısa fiş çıkmalı
+5. ✅ Çıkıyorsa: Otomatik yazdırma toggle'ını aç + POS'a git, normal satış yap
+6. ❌ Çıkmıyorsa: hata mesajını wiki'ye not düş, paket alternatifi `flutter_thermal_printer` veya `printing` raw mode değerlendirilir
+
+### Sprint 22 LOC Delta
+
+| Dosya | Tip | LOC |
+|---|---|---|
+| `lib/services/print/print_settings.dart` | YENİ | 152 |
+| `lib/services/print/receipt_template.dart` | YENİ | 219 |
+| `lib/services/print/print_service.dart` | YENİ | 100 |
+| `lib/features/settings/screens/printer_settings_screen.dart` | YENİ | 215 |
+| `lib/features/pos/screens/pos_screen.dart` | EDIT | +35 |
+| `lib/features/sales/screens/sale_detail_screen.dart` | EDIT | +22 |
+| `lib/features/settings/screens/settings_screen.dart` | EDIT | +6 (Donanım section) |
+| `lib/core/router/app_router.dart` | EDIT | +5 (route + import) |
+| `pubspec.yaml` | EDIT | +5 (2 paket + comment) |
+| **Toplam** | | **~759 LOC** |
+
+### Sprint 19 Kuralının Geçerliliği Doğrulandı
+
+> *"DashboardScreenTemplate öğretisi: Gerçek tüketici talebi olmadan template/feature inşa ETME."*
+
+Sprint 22 **tam tersi senaryo**: kullanıcı **fiziksel donanıma sahip** + Sprint 12-21'de UI modernizasyon tamamlandığı için API yüzeyi temiz + müşteri-görünür özelliği gönder zaman geldi. Bu yüzden 1 turda inşa edildi (4-5 saat tahmin, gerçek ~2 saat).
+
+### Sources
+
+- [`development-features-roadmap.md:48`](sources/code-refs/development-features-roadmap.md) — "Sale Receipt: Fatura yazdır (PDF), E-posta gönder, SMS gönder — ⚠️ Yapılmadı" (Sprint 22'de PDF değil ESC/POS termal seçildi)
+- [`flutter_iyilestirme_analizi.md:122`](sources/code-refs/flutter_iyilestirme_analizi.md) — `printer_settings_screen.dart` "yeni yapı gerekli" — Sprint 22'de inşa edildi
+- [`integration-catalog.md:42`](syntheses/integration-catalog.md) — "Barkod yazıcı ZPL/ESC-POS Orta öncelik" — Sprint 22'de fiş yazıcı (ESC/POS) odaklı, barkod yazıcı (ZPL) ayrı sprint için kalıyor
+- [`live-status-2026-04-23.md:199`](sources/status-snapshots/live-status-2026-04-23.md) — "Receipt Generation: Print/Email/SMS — Pending"
+
+### Kalan İşler (Sprint 23+ önerisi)
+
+1. **Smoke test** (kullanıcı runtime'da)
+2. **Türkçe karakter doğrulaması** — ASCII çıktı OK mi yoksa CP857 gerek mi?
+3. **transaction kart modal'ı fiş yazdırma** — Sprint 19 `transactions-card-improvements.md` planı (referenceType=SALE → fiş modal)
+4. **PDF receipt fallback** — yazıcı bağlı değilse `printing` paketi ile PDF üret (e-posta/SMS gönderim için zemin)
+5. **Cash drawer komutu** — POSA cihazda var ise (ESC `p` 0x70 + pin)
+6. **Barkod yazıcı (ZPL)** — ürün etiketi için ayrı sprint
+7. **Ethernet bağlantı seçeneği** — POSA Ethernet portu da var, network printer eklenebilir (`PrinterType.network` aynı paket destekler)
+
+---
+
+## [2026-04-28] sprint-21 | Son 8 L1 ekran migration + supplier_upload Radio<bool> refactor — **100% MIGRATION TAMAMLANDI** 🎉
+
+Sprint 20'de baseline cleanup yapıldıktan sonra Sprint 21 = **kalan 8 legacy L1 ekranı bitirme** + Sprint 20'den ertelenen Radio<bool> refactor.
+
+### İş Kolları
+
+- **21-A (kendim, 4 ekran)**: store + warehouse list/form (`store_list`, `store_add`, `warehouse_list`, `warehouse_add`)
+- **21-B (agent, 4 ekran)**: inventory (2) + reports (2) — `product_detail`, `batch_product`, `customer_sales_analysis`, `product_sales_analysis`
+- **21-C (kendim, 1 refactor)**: supplier_upload_wizard kart-içi `Radio<bool>` → `Icon(radio_button_*)` (deprecated API kaldırıldı, davranış aynı)
+
+### Sonuçlar
+
+| # | Ekran | Modül | Karar | LOC delta |
+|---|---|---|---|---|
+| 1 | `store_list_screen.dart` | store | **ListScreenTemplate** | inline |
+| 2 | `store_add_screen.dart` | store | BaseScaffold swap | +1 |
+| 3 | `warehouse_list_screen.dart` | warehouse | **ListScreenTemplate** | inline |
+| 4 | `warehouse_add_screen.dart` | warehouse | BaseScaffold swap | +1 |
+| 5 | `product_detail_screen.dart` | inventory | BaseScaffold swap (×3 — loading/error/data dalları) | +1 |
+| 6 | `batch_product_screen.dart` | inventory | BaseScaffold swap (L3 custom — DataTable + dynamic AppBar chip) | +1 |
+| 7 | `customer_sales_analysis_screen.dart` | reports | BaseScaffold swap | +1 |
+| 8 | `product_sales_analysis_screen.dart` | reports | BaseScaffold swap | +1 |
+| 9 | `supplier_upload_wizard_screen.dart` | suppliers | **Radio<bool> refactor** + `use_super_parameters` fix | inline |
+
+**Template dağılımı (8 migrate):**
+- ListScreenTemplate: 2 (store_list, warehouse_list)
+- BaseScaffold swap: 6
+- FormScreenTemplate / DetailScreenTemplate: 0
+
+### 21-C Refactor Detay
+
+`supplier_upload_wizard_screen.dart:273-280` — `Radio<bool>` widget'ı kart içinde **görsel select indicator** olarak kullanılıyordu (kart zaten `GestureDetector(onTap: ...)` ile çalışıyor; Radio'nun `onChanged` redundant'tı). 
+
+Çözüm:
+```dart
+// Eski (3 deprecated_member_use):
+Radio<bool>(value: true, groupValue: isSelected, onChanged: ..., activeColor: color)
+
+// Yeni:
+Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 8),
+  child: Icon(
+    isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+    color: isSelected ? color : (isEnabled ? AppColors.textMuted : AppColors.border),
+    size: 22,
+  ),
+)
+```
+
+**6 deprecated_member_use → 0** (Radio.value, Radio.groupValue, Radio.onChanged, Radio.activeColor 2'şer kez)
+
+Bonus: `use_super_parameters` lint (Sprint 20'de scope dışında kalmıştı) düzeltildi:
+```dart
+// Eski:
+const SupplierUploadWizardScreen({Key? key, ...}) : super(key: key);
+// Yeni:
+const SupplierUploadWizardScreen({super.key, ...});
+```
+
+### 100% MIGRATION TAMAMLANDI 🎉
+
+**Sprint 21 sonu final scan:**
+```
+Total screen dosyası: 64
+Template (L2):    25 ekran  (39%)
+BaseScaffold (L3): 37 ekran  (58%)
+Other:             2 ekran   (3% — abstract/modal)
+L1 (AppScaffold):  0 ekran   ✅
+L0 (raw Scaffold): 0 ekran   ✅
+```
+
+**Sprint 16-21 kümülatif:**
+
+| Sprint | Migrate | Yeni issue | LOC delta |
+|---|---|---|---|
+| 16 | 16 | 0 | −204 |
+| 17 | 9 | 0 | −110 |
+| 18 | 12 (+1 skip) | 0 | −193 |
+| 19 | 10 (+4 skip) | 0 | ~+1 |
+| 20 | 0 (cleanup) | 0 | 0; **−46 baseline** |
+| 21 | 8 + 1 refactor | 0 | ~+5; **−7 baseline** |
+| **Σ** | **55 ekran** | **0** | **~−501 LOC + −53 baseline issue** |
+
+### Final flutter analyze
+
+- **Sprint 21 sonu:** 165 issue (Sprint 20 sonu 168 → −3)
+- **Sprint 16 başı:** ~260+ tahmin (Sprint 16-19'da hep "pre-existing baseline" denilen 47 issue + diğer)
+- **Sprint 16 → Sprint 21:** project-wide ~260+ → 165 (−~37%)
+- Migration kaynaklı yeni issue: **0** (tüm 6 sprint boyunca konfirm)
+
+### Kalan 165 Issue (Sprint 22+ kapsam)
+
+Bu 165 issue **migration scope'u DIŞINDADIR** — tamamı services/utils/widgets/providers dosyalarında ve bazı template-içi `_, __` lint info'ları:
+- `unnecessary_underscores` (Dart 3.0+ pattern, otomatik düzeltilebilir)
+- `prefer_final_fields`, `use_super_parameters` (otomatik düzeltilebilir)
+- `unnecessary_to_list_in_spreads` (otomatik)
+- Diğer: backend service / utility helper / form validators
+
+**Sprint 22+ önerisi:** `dart fix --apply` çalıştırılarak ~50-80 issue otomatik düzeltilebilir. Geri kalan `unused_element`, `dangling_library_doc_comments`, `constant_identifier_names` manuel cleanup.
+
+### Mimari Hedef Tamamlandı
+
+Sprint 15'te kurulan template katmanı + Sprint 16-21 modernizasyon serisi:
+
+- ✅ **L0 (raw Scaffold) yasak** kuralı uygulandı: 0 ekran
+- ✅ **L1 (AppScaffold legacy)** tamamen migrate: 0 ekran
+- ✅ **L2 (template)** adoption: 25 ekran (List, Form, Detail)
+- ✅ **L3 (BaseScaffold custom)** opt-in pattern: 37 ekran
+- ❌ **DashboardScreenTemplate** emekli (Sprint 20)
+- ⏭️ **Bottom sheet'ler** (5 modal) ve **multi-step wizard'lar** (5 ekran) kalıcı olarak template scope dışı
+
+### Yeni Ekran Standardı (Sprint 22+ için kalıcı kural)
+
+> **Hiçbir yeni ekranda raw `Scaffold` veya `AppScaffold` kullanılmaz.**
+> Liste? → `ListScreenTemplate`. Form? → `FormScreenTemplate`. Tab detay? → `DetailScreenTemplate`. Custom layout? → `BaseScaffold`.
+> 
+> **`AppScaffold` artık deprecated** — sadece `BaseScaffold` ve template katmanı resmi API.
+
+### Sources
+
+- [[sources/code-refs/2026-04-27-design-system-template-audit]] — Sprint 15 audit
+- [[syntheses/design-system-template-architecture]] — Sprint 16-21 final mimari
+
+---
+
 ## [2026-04-28] sprint-20 | Cleanup — DashboardScreenTemplate emekli + Flutter 3.31-3.34 deprecations + autoparts i18n ✅
 
 Sprint 16-19 boyunca biriken **"pre-existing baseline"** olarak ertelenen 47 issue Sprint 20'de temizlendi. **DashboardScreenTemplate emekliye ayrıldı** (file delete). Sprint 18'in autoparts hardcoded TR borcu i18n key'lerine çevrildi.

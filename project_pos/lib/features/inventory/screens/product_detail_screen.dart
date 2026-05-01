@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -6,7 +7,10 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
+import 'package:project_pos/services/print/label_print_service.dart';
+import 'package:project_pos/services/print/label_print_settings.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/providers/sector_provider.dart';
 import 'package:project_pos/core/config/sector_config.dart';
@@ -192,11 +196,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
     final cfg = ref.watch(sectorConfigProvider);
 
     if (_isLoading || _tabController == null) {
-      return const AppScaffold(body: Center(child: CircularProgressIndicator()));
+      return const BaseScaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (_error != null || _product == null) {
-      return AppScaffold(
+      return BaseScaffold(
         appBar: AppAppBar.standard(title: t('common.error')),
         body: Center(
           child: Column(
@@ -213,7 +217,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
     }
 
     final product = _product!;
-    return AppScaffold(
+    return BaseScaffold(
       appBar: AppAppBar.standard(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
@@ -1065,6 +1069,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
     );
   }
 
+  /// Sprint 24 — 3-state akış:
+  /// - Case 1: USB etiket yazıcısı kayıtlı + masaüstü → ESC/POS direkt
+  /// - Case 2: Kayıtlı ama USB hata → fallback PDF dialog + uyarı toast
+  /// - Case 3: Yapılandırılmamış / web → mevcut PDF dialog (geriye uyum)
   Future<void> _printBarcodeLabels(
     BuildContext ctx,
     Map<String, dynamic> product,
@@ -1078,13 +1086,95 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
   ) async {
     if (ctx.mounted) Navigator.of(ctx).pop();
 
+    final labelSettings = ref.read(labelPrintSettingsProvider);
+
+    // Case 1 + 2: Etiket yazıcı yapılandırılmış + masaüstü → USB direkt
+    if (!kIsWeb && labelSettings.isConfigured) {
+      final ok = await _printViaUsbLabelPrinter(
+        product: product,
+        variant: variant,
+        showName: showName,
+        showPrice: showPrice,
+        showSku: showSku,
+        quantity: quantity,
+        codeType: codeType,
+      );
+      if (ok) return;
+      // Case 2: USB hata — fallback dialog'a düş
+      if (mounted) {
+        AppToast.warning(
+          context,
+          'Etiket yazıcısına bağlanılamadı. Sistem yazıcı seçim penceresine düşülüyor.',
+        );
+      }
+    }
+
+    // Case 3: Yapılandırılmamış / web / fallback
+    await _printViaPdfDialog(
+      product: product,
+      variant: variant,
+      showName: showName,
+      showPrice: showPrice,
+      showSku: showSku,
+      labelSize: labelSize,
+      quantity: quantity,
+      codeType: codeType,
+    );
+  }
+
+  /// USB termal etiket yazıcısına ESC/POS bytes gönder.
+  /// Returns true on success.
+  Future<bool> _printViaUsbLabelPrinter({
+    required Map<String, dynamic> product,
+    required _VariantPrint variant,
+    required bool showName,
+    required bool showPrice,
+    required bool showSku,
+    required int quantity,
+    required String codeType,
+  }) async {
+    final service = ref.read(labelPrintServiceProvider);
+    final type = codeType == 'QR'
+        ? LabelCodeType.qr
+        : LabelCodeType.code128;
+
+    try {
+      for (int i = 0; i < quantity; i++) {
+        final result = await service.printBarcodeLabel(
+          value: variant.barcodeValue,
+          productName: showName ? product['name']?.toString() : null,
+          sku: showSku ? variant.sku : null,
+          price: showPrice ? variant.price : null,
+          codeType: type,
+        );
+        if (!result.success) return false;
+      }
+      if (mounted) {
+        AppToast.success(context, '$quantity etiket yazdırıldı.');
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Mevcut PDF dialog yolu (Case 3 + Case 2 fallback).
+  Future<void> _printViaPdfDialog({
+    required Map<String, dynamic> product,
+    required _VariantPrint variant,
+    required bool showName,
+    required bool showPrice,
+    required bool showSku,
+    required String labelSize,
+    required int quantity,
+    required String codeType,
+  }) async {
     final isQr = codeType == 'QR';
     final lW = labelSize == 'S'
         ? PdfPageFormat.cm * 3
         : labelSize == 'M'
             ? PdfPageFormat.cm * 5
             : PdfPageFormat.cm * 8;
-    // QR kare olmalı, barkod ise yatay etiket
     final lH = isQr
         ? lW
         : labelSize == 'S'
@@ -1117,19 +1207,18 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
                           textAlign: pw.TextAlign.center,
                         ),
                       pw.SizedBox(height: 2),
-                      // QR: kare, barkod: yatay
                       isQr
                           ? pw.BarcodeWidget(
                               barcode: pwBarcode,
                               data: variant.barcodeValue,
-                              width:  lW * 0.65,
+                              width: lW * 0.65,
                               height: lW * 0.65,
                               drawText: false,
                             )
                           : pw.BarcodeWidget(
                               barcode: pwBarcode,
                               data: variant.barcodeValue,
-                              width:  lW - 16,
+                              width: lW - 16,
                               height: lH * 0.48,
                               textStyle: pw.TextStyle(fontSize: 6),
                               drawText: true,

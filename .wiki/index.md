@@ -55,6 +55,7 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 ### Code-refs — Sprint öncesi audit'ler
 - [[sources/code-refs/2026-04-27-product-screens-audit]] — ürün menüsü kartları + ürün detay ekranları envanter (Sprint 12 öncesi)
 - [[sources/code-refs/2026-04-27-design-system-template-audit]] — design system + 64+ ekran envanter (Sprint 15 öncesi)
+- [[sources/code-refs/2026-05-01-label-printer-implementation-audit]] — etiket yazıcı L1→L3 implementation (Sprint 24 öncesi audit)
 
 ### Code-refs — migration (eski tarihli code snapshots)
 - [[sources/code-refs/2026-04-17-units-employee-modern]]
@@ -200,6 +201,8 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 ### Sprint Plans
 - [[syntheses/product-screens-revision-plan]] — Sprint 12: ürün menüsü kartları + ürün detay ekranları tam refactor (3-4 hafta, 4 hedef alan)
 - [[syntheses/design-system-template-architecture]] — Sprint 15: BaseScaffold + 4 Feature Template (List/Form/Detail/Dashboard) mimarisi + Sprint 16-20 migration roadmap
+- [[syntheses/integrations-hub-architecture]] — Sprint 23: Cihazlar & Entegrasyonlar Hub mimarisi (3-katman extension paterni: catalog + status case + screen+route)
+- [[syntheses/label-printer-architecture]] — Sprint 24: Etiket yazıcı L1→L3 promotion (USB ESC/POS, ProductDetail 3-state akış, hub paterninin ilk somut kullanımı)
 
 ### Modül & Mimari Özet
 - [[syntheses/codebase-snapshot-2026-04-25]] — kod ↔ wiki uyum + drift özeti (2026-04-25)

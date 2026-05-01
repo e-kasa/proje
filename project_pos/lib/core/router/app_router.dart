@@ -88,6 +88,12 @@ import 'package:project_pos/features/settings/screens/user_management_screen.dar
 import 'package:project_pos/features/settings/screens/company_settings_screen.dart';
 import 'package:project_pos/features/settings/screens/sector_settings_screen.dart';
 import 'package:project_pos/features/settings/screens/profile_screen.dart';
+import 'package:project_pos/features/settings/screens/printer_settings_screen.dart';
+import 'package:project_pos/features/settings/screens/label_printer_settings_screen.dart';
+// Sprint 23 — Integrations Hub
+import 'package:project_pos/features/settings/integrations/screens/integrations_hub_screen.dart';
+import 'package:project_pos/features/settings/integrations/screens/email_settings_screen.dart';
+import 'package:project_pos/features/settings/integrations/screens/sms_settings_screen.dart';
 // Supplier upload models
 import 'package:project_pos/features/suppliers/models/supplier_upload_models.dart' as supplier_models;
 // Layout
@@ -504,6 +510,29 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/settings/sector',
             builder: (context, state) => const SectorSettingsScreen(),
+          ),
+          // Sprint 22 — POS Receipt Printer Settings
+          GoRoute(
+            path: '/settings/printer',
+            builder: (context, state) => const PrinterSettingsScreen(),
+          ),
+          // Sprint 24 — Label Printer Settings (etiket yazıcı L1→L3 promotion)
+          GoRoute(
+            path: '/settings/label-printer',
+            builder: (context, state) => const LabelPrinterSettingsScreen(),
+          ),
+          // Sprint 23 — Integrations Hub + skeleton ayar ekranları
+          GoRoute(
+            path: '/settings/integrations',
+            builder: (context, state) => const IntegrationsHubScreen(),
+          ),
+          GoRoute(
+            path: '/settings/email',
+            builder: (context, state) => const EmailSettingsScreen(),
+          ),
+          GoRoute(
+            path: '/settings/sms',
+            builder: (context, state) => const SmsSettingsScreen(),
           ),
         ],
       ),

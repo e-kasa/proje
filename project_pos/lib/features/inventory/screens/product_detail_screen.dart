@@ -11,6 +11,8 @@ import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/services/print/label_print_service.dart';
 import 'package:project_pos/services/print/label_print_settings.dart';
+// Sprint 29-fix: fiş yazıcısı fallback (Case 1.5)
+import 'package:project_pos/services/print/print_settings.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/providers/sector_provider.dart';
 import 'package:project_pos/core/config/sector_config.dart';
@@ -1069,8 +1071,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
     );
   }
 
-  /// Sprint 24 — 3-state akış:
+  /// Sprint 24 + 29-fix — 4-state akış:
   /// - Case 1: USB etiket yazıcısı kayıtlı + masaüstü → ESC/POS direkt
+  /// - Case 1.5 (Sprint 29-fix): Etiket yazıcı yok ama fiş yazıcısı kayıtlı →
+  ///   fiş yazıcısını etiket için reuse et (POSA hem fiş hem etiket basabilir)
   /// - Case 2: Kayıtlı ama USB hata → fallback PDF dialog + uyarı toast
   /// - Case 3: Yapılandırılmamış / web → mevcut PDF dialog (geriye uyum)
   Future<void> _printBarcodeLabels(
@@ -1106,6 +1110,36 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
           context,
           'Etiket yazıcısına bağlanılamadı. Sistem yazıcı seçim penceresine düşülüyor.',
         );
+      }
+    }
+
+    // Case 1.5 (Sprint 29-fix): Etiket yazıcı yok ama fiş yazıcısı kayıtlı →
+    // fiş yazıcısını etiket için reuse et. POSA gibi termal cihazlar
+    // ESC/POS standardında barkod basabilir; ekstra cihaz almayı zorunlu kılma.
+    if (!kIsWeb && !labelSettings.isConfigured) {
+      final receiptSettings = ref.read(printSettingsProvider);
+      if (receiptSettings.isConfigured) {
+        final ok = await _printViaReceiptPrinterFallback(
+          receiptSettings: receiptSettings,
+          product: product,
+          variant: variant,
+          showName: showName,
+          showPrice: showPrice,
+          showSku: showSku,
+          quantity: quantity,
+          codeType: codeType,
+        );
+        if (ok) {
+          if (mounted) {
+            AppToast.info(
+              context,
+              'Etiket fiş yazıcısı (${receiptSettings.deviceName ?? "USB"}) ile basıldı. '
+              'Özel etiket yazıcı için: Ayarlar → Cihazlar → Etiket Yazıcı.',
+            );
+          }
+          return;
+        }
+        // Fallback hata → Case 3 PDF
       }
     }
 
@@ -1151,6 +1185,55 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
       }
       if (mounted) {
         AppToast.success(context, '$quantity etiket yazdırıldı.');
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Sprint 29-fix — Case 1.5: Etiket yazıcı yok ama fiş yazıcısı (Sprint 22)
+  /// var. Fiş yazıcısının USB info'sunu makul label defaults ile birleştirip
+  /// `LabelPrintService` ile gönderir (aynı paket, aynı ESC/POS driver).
+  ///
+  /// POSA gibi termal cihazlar (80mm rulo) hem fiş hem barkod basabilir.
+  Future<bool> _printViaReceiptPrinterFallback({
+    required PrintSettings receiptSettings,
+    required Map<String, dynamic> product,
+    required _VariantPrint variant,
+    required bool showName,
+    required bool showPrice,
+    required bool showSku,
+    required int quantity,
+    required String codeType,
+  }) async {
+    final type = codeType == 'QR'
+        ? LabelCodeType.qr
+        : LabelCodeType.code128;
+    // Fiş yazıcısı ID'si + makul label default'ları
+    final fallbackSettings = LabelPrinterSettings(
+      vendorId: receiptSettings.vendorId,
+      productId: receiptSettings.productId,
+      deviceName: receiptSettings.deviceName,
+      labelWidthMm: receiptSettings.paperWidth.mm,  // 58 veya 80
+      labelHeightMm: 25,                            // termal rulo için makul
+      defaultCodeType: type,
+      autoCutAfterEach: true,
+      showProductName: showName,
+      showSku: showSku,
+      showPrice: showPrice,
+    );
+    final fallbackService = LabelPrintService(fallbackSettings);
+    try {
+      for (int i = 0; i < quantity; i++) {
+        final result = await fallbackService.printBarcodeLabel(
+          value: variant.barcodeValue,
+          productName: showName ? product['name']?.toString() : null,
+          sku: showSku ? variant.sku : null,
+          price: showPrice ? variant.price : null,
+          codeType: type,
+        );
+        if (!result.success) return false;
       }
       return true;
     } catch (_) {

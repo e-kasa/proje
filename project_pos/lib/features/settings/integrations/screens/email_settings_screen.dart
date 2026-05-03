@@ -6,6 +6,7 @@ import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/services/notification/notification_models.dart';
 import 'package:project_pos/services/notification/notification_service.dart';
+import 'package:project_pos/services/notification/notification_config_service.dart';
 
 /// Sprint 23 — E-posta (SMTP) entegrasyonu — Skeleton.
 ///
@@ -33,6 +34,15 @@ class _EmailSettingsScreenState extends ConsumerState<EmailSettingsScreen> {
   bool _useTls = true;
   bool _obscure = true;
   bool _isTesting = false;  // Sprint 27: test send loading state
+  bool _isSaving = false;   // Sprint 29: save loading state
+  bool _passwordMasked = false; // Sprint 29: backend mask göstergesi
+
+  @override
+  void initState() {
+    super.initState();
+    // Sprint 29: backend'den mevcut config yükle
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadConfig());
+  }
 
   @override
   void dispose() {
@@ -42,6 +52,62 @@ class _EmailSettingsScreenState extends ConsumerState<EmailSettingsScreen> {
     _passwordCtl.dispose();
     _fromCtl.dispose();
     super.dispose();
+  }
+
+  /// Sprint 29 — Backend'den mevcut email config'i yükle ve controller'lara
+  /// doldur. Password backend'den maskeli ("****") gelir.
+  Future<void> _loadConfig() async {
+    final cfg = await ref.read(notificationConfigServiceProvider).loadEmail();
+    if (!mounted || cfg == null) return;
+    setState(() {
+      _hostCtl.text = cfg.host ?? '';
+      _portCtl.text = cfg.port?.toString() ?? '587';
+      _useTls = cfg.useTls ?? true;
+      _usernameCtl.text = cfg.username ?? '';
+      // Maskeli ise placeholder göster, kullanıcı yeni şifre girerse override
+      _passwordCtl.text = cfg.isPasswordMasked ? '••••••••' : '';
+      _passwordMasked = cfg.isPasswordMasked;
+      _fromCtl.text = cfg.from ?? '';
+    });
+  }
+
+  /// Sprint 29 — Email config'i kaydet. Password mask değişmediyse omit edilir
+  /// (backend kısmi update — mevcut password korunur).
+  Future<void> _saveConfig() async {
+    setState(() => _isSaving = true);
+    try {
+      // Password değişmediyse (hala mask) → omit; aksi halde gönder
+      String? passwordToSend;
+      final pw = _passwordCtl.text;
+      if (pw.isNotEmpty && pw != '••••••••') {
+        passwordToSend = pw;
+      }
+      final dto = EmailConfigDto(
+        host: _hostCtl.text.trim(),
+        port: int.tryParse(_portCtl.text.trim()) ?? 587,
+        useTls: _useTls,
+        username: _usernameCtl.text.trim(),
+        password: passwordToSend,
+        from: _fromCtl.text.trim(),
+      );
+      final saved = await ref.read(notificationConfigServiceProvider).saveEmail(dto);
+      if (!mounted) return;
+      setState(() {
+        _isSaving = false;
+        if (saved != null) {
+          _passwordMasked = saved.isPasswordMasked;
+          if (_passwordMasked) _passwordCtl.text = '••••••••';
+        }
+      });
+      AppToast.success(
+        context,
+        'Kaydedildi. (Şifreler dev ortamda plain text saklanır — Sprint 30 Vault entegrasyonu önerilir.)',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      AppToast.error(context, 'Kayıt başarısız: $e');
+    }
   }
 
   /// Sprint 27 — Test e-posta gönderim. Backend EMAIL kanalı real (Sprint 25);
@@ -238,12 +304,9 @@ class _EmailSettingsScreenState extends ConsumerState<EmailSettingsScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: AppButton.primary(
-                  text: t('common.save'),
+                  text: _isSaving ? '...' : t('common.save'),
                   icon: Icons.save,
-                  onPressed: () => AppToast.info(
-                    context,
-                    t('email_settings.save_coming_soon'),
-                  ),
+                  onPressed: _isSaving ? null : _saveConfig,
                 ),
               ),
             ],

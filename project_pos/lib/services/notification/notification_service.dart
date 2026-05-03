@@ -45,7 +45,7 @@ class NotificationService {
       return NotificationResult.success(NotificationDto.fromJson(data));
     } on DioException catch (e) {
       final msg = _extractError(e);
-      AppLogger.warn('Notification send başarısız: $msg');
+      AppLogger.warning('Notification send başarısız: $msg');
       return NotificationResult.failure(msg);
     } catch (e) {
       AppLogger.error('Notification send beklenmeyen hata', error: e);
@@ -77,7 +77,7 @@ class NotificationService {
       }
       return const [];
     } on DioException catch (e) {
-      AppLogger.warn('Notification list başarısız: ${_extractError(e)}');
+      AppLogger.warning('Notification list başarısız: ${_extractError(e)}');
       return const [];
     }
   }

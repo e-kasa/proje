@@ -10,6 +10,8 @@ import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/services/print/print_service.dart';
 import 'package:project_pos/services/print/print_settings.dart';
+import 'package:project_pos/services/notification/notification_models.dart';
+import 'package:project_pos/services/notification/notification_service.dart';
 
 class SaleDetailScreen extends ConsumerStatefulWidget {
   final String saleId;
@@ -81,6 +83,56 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
     }
   }
 
+  /// Sprint 27 — Sale customer telefonunu çıkar (sale JSON'unda farklı
+  /// alanlarda gelebilir — birkaç fallback ile bul).
+  String? _customerPhone() {
+    final candidates = [
+      _sale['customerPhone'],
+      _sale['phone'],
+      (_sale['customer'] is Map ? (_sale['customer'] as Map)['phone'] : null),
+    ];
+    for (final c in candidates) {
+      final s = c?.toString().trim();
+      if (s != null && s.isNotEmpty && s.length >= 7) return s;
+    }
+    return null;
+  }
+
+  /// Sprint 27 — Müşteriye fiş özeti SMS olarak gönder.
+  /// Backend SMS kanalı NOOP default; Twilio aktive ise gerçek gönderim olur.
+  Future<void> _sendSaleSms() async {
+    final phone = _customerPhone();
+    if (phone == null) {
+      AppToast.error(context, 'Müşteri telefonu bulunamadı.');
+      return;
+    }
+    final saleNo = _sale['saleNumber']?.toString() ??
+        _sale['id']?.toString() ??
+        '-';
+    final total = (_sale['totalAmount'] as num?)?.toDouble() ??
+        (_sale['grandTotal'] as num?)?.toDouble() ??
+        0;
+    final body = 'SEDCORE POS — Fiş #$saleNo. '
+        'Tutar: ₺${total.toStringAsFixed(2)}. Teşekkürler!';
+    final result = await ref.read(notificationServiceProvider).send(
+          NotificationRequest(
+            eventType: 'SALE_RECEIPT_SMS',
+            channel: NotificationChannel.sms,
+            recipient: phone,
+            body: body,
+          ),
+        );
+    if (!mounted) return;
+    if (result.success) {
+      AppToast.success(
+        context,
+        'SMS isteği kuyruğa alındı (durum: ${result.dto?.status.apiValue ?? "?"}).',
+      );
+    } else {
+      AppToast.error(context, 'SMS başarısız: ${result.error}');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -102,6 +154,13 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
               icon: const Icon(Icons.print),
               onPressed: _printReceipt,
               tooltip: 'Fis Yazdir',
+            ),
+          // Sprint 27 — Müşteriye SMS gönder (telefon varsa enabled)
+          if (!_isLoading && _error == null && _customerPhone() != null)
+            IconButton(
+              icon: const Icon(Icons.sms),
+              onPressed: _sendSaleSms,
+              tooltip: 'Müşteriye SMS Gönder',
             ),
           IconButton(
             icon: const Icon(Icons.refresh),

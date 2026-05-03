@@ -8,6 +8,9 @@ import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/services/print/print_service.dart';
 import 'package:project_pos/services/print/print_settings.dart';
+import 'package:project_pos/services/notification/notification_models.dart';
+import 'package:project_pos/services/notification/notification_service.dart';
+import 'package:project_pos/services/notification/notification_settings.dart';
 import '../providers/pos_provider.dart';
 import '../widgets/product_grid_item.dart';
 import '../widgets/cart_panel.dart';
@@ -84,6 +87,15 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         final settings = ref.read(printSettingsProvider);
         if (settings.autoPrintOnSale && settings.isConfigured) {
           _autoPrintReceipt(next.lastSaleData!);
+        }
+
+        // 6. Sprint 28 — Auto-SMS: yeni satış + müşteri telefonu varsa + toggle aktifse
+        final notif = ref.read(notificationSettingsProvider);
+        if (notif.smsAutoOnSale) {
+          final phone = _extractCustomerPhone(next.lastSaleData!);
+          if (phone != null) {
+            _autoSendSaleSms(next.lastSaleData!, phone);
+          }
         }
       }
     });
@@ -185,6 +197,43 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     if (!mounted) return;
     if (!result.success) {
       AppToast.error(context, 'Otomatik yazdirma: ${result.error}');
+    }
+  }
+
+  /// Sprint 28 — pos_provider lastSaleData içindeki customer map'inden
+  /// telefon çıkar. Müşteri seçilmemişse null döner (perakende satış).
+  String? _extractCustomerPhone(Map<String, dynamic> sale) {
+    final customer = sale['customer'];
+    if (customer is! Map) return null;
+    final candidates = [customer['phone'], customer['phoneNumber']];
+    for (final c in candidates) {
+      final s = c?.toString().trim();
+      if (s != null && s.isNotEmpty && s.length >= 7) return s;
+    }
+    return null;
+  }
+
+  /// Sprint 28 — Otomatik satış SMS'i (fire-and-forget). Backend NOOP/Twilio
+  /// kanal seçimine göre gerçek gönderim olur. Hata sessizce toast olarak
+  /// gösterilir; satış akışı engellenmiyor.
+  Future<void> _autoSendSaleSms(Map<String, dynamic> sale, String phone) async {
+    final saleNo = sale['saleNumber']?.toString() ??
+        sale['saleId']?.toString() ??
+        '-';
+    final total = (sale['grandTotal'] as num?)?.toDouble() ?? 0;
+    final body = 'SEDCORE POS — Fiş #$saleNo. '
+        'Tutar: ₺${total.toStringAsFixed(2)}. Teşekkürler!';
+    final result = await ref.read(notificationServiceProvider).send(
+          NotificationRequest(
+            eventType: 'SALE_AUTO_SMS',
+            channel: NotificationChannel.sms,
+            recipient: phone,
+            body: body,
+          ),
+        );
+    if (!mounted) return;
+    if (!result.success) {
+      AppToast.error(context, 'Otomatik SMS başarısız: ${result.error}');
     }
   }
 

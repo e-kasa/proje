@@ -1,8 +1,8 @@
-/// Sprint 27 — Notification feature için DTO + enum'lar.
-///
-/// Backend karşılığı: `com.sedcore.notification.dto.{NotificationRequestDto,
-/// NotificationDto}` ve `com.sedcore.notification.entity.{NotificationChannel,
-/// NotificationStatus}`.
+// Sprint 27 — Notification feature için DTO + enum'lar.
+//
+// Backend karşılığı: `com.sedcore.notification.dto.{NotificationRequestDto,
+// NotificationDto}` ve `com.sedcore.notification.entity.{NotificationChannel,
+// NotificationStatus}`.
 
 enum NotificationChannel {
   email('EMAIL'),

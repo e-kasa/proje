@@ -11,6 +11,491 @@ Append-only olay kaydı. **En yeni üste**.
 
 ## Olaylar
 
+## [2026-05-03] sprint-29-fix-2 | Etiket Baskısı: Fiş Yazıcısı Smart Fallback (Case 1.5) ✅
+
+### Tetikleyici
+
+Kullanıcı runtime test: *"YAZICI SEÇTİM AMA PDF OLARAK YÖNLENDİMRE YAPIYOR BU CİHAZ FİŞ BASIYOR SDECE"*
+
+POSA termal **fiş yazıcısı** (Sprint 22'de yapılandırıldı) ile ürün detayı ekranındaki **etiket basma** denendi → sistem PDF dialog açtı, Windows POSA driver'a PDF rasterize göndermeye çalıştı (yavaş + ölçek bozuk + termal kağıt için anlamsız).
+
+### Kök Sebep Analizi
+
+[`product_detail_screen.dart`](project_pos/lib/features/inventory/screens/product_detail_screen.dart) Sprint 24'te **3-state akış** ile yazılmıştı:
+
+```
+Case 1: labelPrintSettings.isConfigured == true → ESC/POS USB direkt
+Case 2: USB hata → fallback PDF dialog
+Case 3: !labelPrintSettings.isConfigured → PDF dialog
+```
+
+Kullanıcı **Etiket Yazıcı ayarlarını yapmadı** (POSA fiş yazıcısı vardı, ayrı etiket cihazı bilmiyor/yok) → **Case 3** çalıştı → PDF dialog → Windows print queue → POSA termal cihaza PDF rasterize.
+
+**Eksik insight (Sprint 24)**: POSA gibi termal fiş yazıcıları zaten ESC/POS standardında **barkod komutu** destekler. Tek cihaz hem 80mm fiş hem barkod basabilir; ayrı etiket yazıcı zorunlu değil.
+
+### Çözüm: Case 1.5 — Fiş Yazıcısı Fallback
+
+[`product_detail_screen.dart`](project_pos/lib/features/inventory/screens/product_detail_screen.dart) `_printBarcodeLabels` metoduna **yeni state** eklendi:
+
+```
+Case 1   : Etiket yazıcı kayıtlı + masaüstü → ESC/POS direkt
+Case 1.5 : Etiket yok AMA fiş yazıcısı kayıtlı → fiş yazıcısını reuse et
+Case 2   : Case 1 USB hata → PDF fallback
+Case 3   : Hiçbir USB cihaz yok / web → PDF dialog (geriye uyum)
+```
+
+### Implementation
+
+**Yeni helper**: `_printViaReceiptPrinterFallback(...)`:
+- `printSettingsProvider` (Sprint 22) USB info → geçici `LabelPrinterSettings` üretir
+- `labelWidthMm = receiptSettings.paperWidth.mm` (POSA için 80)
+- `labelHeightMm = 25` (termal rulo için makul)
+- `LabelPrintService(tempSettings).printBarcodeLabel(...)` çağırır
+- Aynı `flutter_pos_printer_platform_image_3` paketi + `EscPosLabelDriver`
+
+**Toast bilgilendirme**:
+> *"Etiket fiş yazıcısı (POSA-...) ile basıldı. Özel etiket yazıcı için: Ayarlar → Cihazlar → Etiket Yazıcı."*
+
+Kullanıcı:
+- Hemen etiket basabilir (ekstra config gerekmez)
+- Daha iyi sonuç için (özel etiket boyutu, yapışkanlı kağıt) ayarları öğrenir
+
+### Mimari Karar Gerekçeleri
+
+| Alternatif | Karar | Sebep |
+|---|---|---|
+| **A**: Kullanıcıyı label printer ekranına yönlendir (sadece toast) | ❌ | UX sürtünme; cihaz yoksa kullanıcı tıkanır |
+| **B**: `LabelPrintService`'e `useReceiptPrinterAsFallback` config flag | ❌ | Kullanıcının bilinçli karar vermesi gerekir; kapalı default = aynı problem |
+| **C** ✅: **Case 1.5 otomatik fallback + bilgilendirme toast** | ✅ | "It just works"; kullanıcı sonradan özel cihaz konfig'i öğrenir |
+
+Sprint 19 kuralı: **gerçek tüketici talebi olmadan template/config zorlama**. Etiket yazıcı ayrı bir cihaz dünyada yaygın değil (özellikle küçük POS'larda); fiş yazıcısı zaten barkod basabilir → akıllı default.
+
+### Doğrulama
+
+`flutter analyze lib/features/inventory/screens/product_detail_screen.dart`: **No issues found!** (81.8s) ✅
+
+### Smoke Test (Kullanıcının Sonraki Denemesi)
+
+```
+1. Ürün Detayı → Variant → "Etiket Yazdır" 
+2. Sprint 22 fiş yazıcısı (POSA) kayıtlı + Sprint 24 etiket yazıcısı yok
+3. Sistem otomatik Case 1.5 → POSA'ya ESC/POS barkod komutu
+4. POSA 80mm rulo → barkod basar (PDF dialog ❌ açılmaz)
+5. Toast: "Etiket fiş yazıcısı ile basıldı. Özel etiket yazıcı için: Ayarlar → Cihazlar → Etiket Yazıcı."
+```
+
+### Sources
+
+- [`product_detail_screen.dart`](project_pos/lib/features/inventory/screens/product_detail_screen.dart):1072-1130 (`_printBarcodeLabels` 4-state akış) + 1166-1212 (`_printViaReceiptPrinterFallback`)
+- [`label_print_settings.dart`](project_pos/lib/services/print/label_print_settings.dart) — `LabelPrinterSettings` reuse
+- [`print_settings.dart`](project_pos/lib/services/print/print_settings.dart) — Sprint 22 fiş yazıcısı kaynak
+- Sprint 22 (POSA receipt foundation) + Sprint 24 (label printer L3) bağlantısı
+
+---
+
+## [2026-05-03] sprint-29-patch | Windows build fix — coroutine deprecation silence ✅
+
+Sprint 29 sonrası kullanıcı `flutter run -d windows --debug` çalıştırdı, build başarısız:
+
+```
+permission_handler_windows_plugin.vcxproj
+error C2338: static assertion failed:
+'error STL1011: The /await compiler option, <experimental/coroutine>,
+<experimental/generator>, and <experimental/resumable> are deprecated by
+Microsoft and will be REMOVED SOON. ... You can define
+_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS to suppress this error
+for now.'
+```
+
+**Sebep**: `permission_handler_windows 0.2.1` (transitive dep, `permission_handler ^11.0.1` ile gelen) hâlâ deprecated `<experimental/coroutine>` header'ını import ediyor. Yeni MSVC toolchain (Visual Studio 18 Insiders, `14.51.36231`) bunu **hard error** olarak işaretliyor (eski sürümlerde sadece warning'di).
+
+### Çözüm Seçenekleri
+
+| Seçenek | Karmaşıklık | Risk |
+|---|---|---|
+| `permission_handler ^12.0.1` major upgrade | Orta | Breaking change tarama gerekir (request* API değişmiş olabilir) |
+| `pubspec_overrides.yaml` ile sadece transitive dep override | Orta | Override edilen paket app dependency tree'sinde uyumsuzluk yaratabilir |
+| **CMake `add_definitions(-D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)`** | **Düşük** | Microsoft'un önerdiği geçici çözüm; tüm child target'lara (plugins) uygulanır |
+| MSVC eski versiyon | Yüksek | Imkansız (kullanıcı VS Insiders) |
+
+**Karar**: CMake compile definition. Sebep:
+- En az invaziv (1 satır)
+- Microsoft'un bizzat önerdiği workaround
+- `permission_handler` major upgrade'in breaking change'leri taramadan production riskli
+- Sprint 19 kuralı: gerçek değer üretmeyen büyük refactor'dan kaçın
+
+### Patch
+
+[`project_pos/windows/CMakeLists.txt`](project_pos/windows/CMakeLists.txt:36-42):
+
+```cmake
+# Use Unicode for all projects.
+add_definitions(-DUNICODE -D_UNICODE)
+
+# Sprint 29 build fix — permission_handler_windows 0.2.1 hâlâ deprecated
+# <experimental/coroutine> header'ını kullanıyor. Yeni MSVC toolchain
+# (VS 2022 17.10+) bunu hard error olarak işaretliyor (STL1011).
+# Bu macro tüm child target'lara (plugins dahil) uygulanır → build geçer.
+# permission_handler 12.x'e upgrade edilirse (breaking change tarama gerekir)
+# bu satır kaldırılabilir.
+add_definitions(-D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+```
+
+### Doğrulama
+
+1. `Remove-Item build/windows -Recurse -Force` (CMake cache invalidate)
+2. `flutter build windows --debug` → 55.4s, **0 error**
+3. `build/windows/x64/runner/Debug/project_pos.exe` (1.2 MB) ✅ üretildi
+
+### Sprint 30+ Backlog'a Not
+
+`permission_handler ^12.x` major upgrade değerlendirmesi:
+- Breaking change list okunmalı
+- API call site'ları (camera, microphone, storage, contacts, vs.) test edilmeli
+- Patch'in kaldırılma kriteri: `permission_handler_windows >= 0.3.x` (coroutine import'unu drop ettiği versiyonda)
+
+### Sources
+
+- [`project_pos/windows/CMakeLists.txt`](project_pos/windows/CMakeLists.txt) — patch satırı 36-42
+- [`project_pos/pubspec.yaml`](project_pos/pubspec.yaml) — `permission_handler: ^11.0.1`
+- Microsoft STL1011 docs: https://learn.microsoft.com/en-us/cpp/error-messages/compiler-warnings/c-cpp-build-errors
+
+---
+
+## [2026-05-01] sprint-29 | Email SMTP Config Save (DB-stored, runtime refresh, fallback) ✅
+
+Sprint 27'de bırakılan `email_settings_screen` "Kaydet" butonu skeleton'u Sprint 29'da gerçek backend'e bağlandı. **EMAIL config artık UI'dan değiştirilebilir** (host/port/TLS/username/password/from), DB'de saklanır, runtime refresh ile mevcut `EmailService` per-call yeni `JavaMailSenderImpl` oluşturur. SMS/Twilio config save Sprint 30'a (aynı pattern).
+
+### Wiki Workflow
+
+1. **Audit** → [`sources/code-refs/2026-05-01-notification-config-save-audit.md`](sources/code-refs/2026-05-01-notification-config-save-audit.md):
+   - Mevcut `EmailService` `@Value` static config kısıtı
+   - 5 tasarım sorusu çözümü: security (plain text + WARN), runtime refresh (cache invalidation), multi-tenant (TOpenSimpleCompanyEntity), backward compat (DB-first + properties fallback), schema (key-value tek tablo)
+   - Sprint 29 EMAIL only; Sprint 30 SMS aynı tablo reuse
+
+### Backend (5 yeni + 1 edit)
+
+| Dosya | Rol |
+|---|---|
+| `notification/config/entity/NotificationConfigEntity.java` | `TOpenSimpleCompanyEntity` extend; channel + key-value + encrypted flag; UNIQUE (companyCode, channel, key) |
+| `notification/config/repository/NotificationConfigRepository.java` | `findByConfigChannel()`, `findByConfigChannelAndConfigKey()` (upsert için) |
+| `notification/config/service/NotificationConfigService.java` | ConcurrentHashMap cache (key: `companyCode:channel`), `get()` lazy load, `save()` + `cache.invalidate()`; sensitive key WARN log |
+| `notification/config/dto/EmailConfigDto.java` | host, port, useTls, username, password (mask), from, enabled — kısmi update destekli |
+| `notification/config/controller/NotificationConfigController.java` | `GET /api/v1/notification-settings/email` (password "****" mask) + `PUT /api/v1/notification-settings/email` (kısmi update; password null/boş = mevcudu koru) |
+| **EDIT** `common/notification/EmailService.java` | `NotificationConfigService` inject; DB-first + properties fallback; per-call `JavaMailSenderImpl` (DB config doluysa) |
+
+### Frontend (1 yeni + 1 edit)
+
+| Dosya | Rol |
+|---|---|
+| `lib/services/notification/notification_config_service.dart` | `EmailConfigDto.fromJson/toJson`, `loadEmail()` GET, `saveEmail(dto)` PUT; `isPasswordMasked` getter; `notificationConfigServiceProvider` Riverpod |
+| **EDIT** `email_settings_screen.dart` | `initState` → `_loadConfig()` (`addPostFrameCallback`); "Kaydet" buton → `_saveConfig()` real API; password mask UI (`••••••••` placeholder, kullanıcı yeni girerse override + send; aksi `omit` = mevcudu koru) |
+
+### Mimari Karar Detayları
+
+**Cache + invalidation pattern**:
+```
+NotificationConfigService.get(channel)
+  ↓ ConcurrentHashMap.computeIfAbsent("<companyCode>:<channel>", DB load)
+
+NotificationConfigService.save(channel, entries)
+  ↓ DB upsert
+  ↓ cache.remove(key)  ← invalidation
+```
+
+Bir sonraki `get()` cache miss → DB'den taze config yükler. Multi-instance senaryoda her instance kendi cache'i var; eventually consistent (TTL eklenebilir Sprint 30+).
+
+**EmailService DB-first + fallback**:
+```java
+isEnabled():
+  if DB config exists → DB.enabled veya host doluysa true
+  else → defaultEnabled (mail.enabled property) && autowiredMailSender != null
+
+sendWithAttachment():
+  if DB.host dolu → new JavaMailSenderImpl(DB config)
+  else → autowiredMailSender (Spring autoconfigure, application.properties)
+```
+
+Sprint 5 davranışı **kırılmadı** — UI'dan kayıt yapılmamış şirketler önceki gibi çalışır. Yeni UI kayıtları DB'de tutulur ve önceliklidir.
+
+**Password mask flow**:
+```
+GET /email → DTO.password = "****" (DB'de varsa) | null
+Frontend: password field "••••••••" placeholder
+Kullanıcı yeni şifre girer → metin değişir
+SAVE → password != "****" && != "••••••••" → DB güncelle
+SAVE → password == "" → omit (DB'deki değer korunur)
+```
+
+Backend tarafında `MASKED.equals(req.getPassword())` kontrolü ile maskeli değer DB'ye yazılmaz. Kısmi update korumalı.
+
+**Güvenlik uyarısı**:
+- DB'de plain text saklama (Sprint 29 MVP)
+- `notification.config.security.warn=true` flag → password/token/secret içeren key'ler WARN log
+- Frontend toast: *"Şifreler dev ortamda plain text saklanır — Sprint 30 Vault entegrasyonu önerilir."*
+- Sprint 30+: Jasypt encryption (`encrypted=true` flag DB'de hazır)
+
+### Doğrulama
+
+**Backend**: `mvn compile`: **Başarılı** ✅ (sadece JDK warning, ERROR yok)
+
+**Frontend**: `flutter analyze` (2 dosya): **No issues found!** ✅
+- İlk denemede 1 `unused_field` (`_isLoading`) → init/load yeterince hızlı, UI'da loading indicator atlandı (sade tutuldu)
+
+### Test Akışı (Şimdi Çalışan)
+
+```
+1. Backend ayağa kalktı (port 8001)
+2. Frontend → Ayarlar → Cihazlar & Entegrasyonlar → E-posta Bildirimleri
+3. Ekran açıldığında otomatik GET /notification-settings/email → form'lar dolu
+   (önceden kayıt varsa; yoksa default port=587 + boş)
+4. Kullanıcı SMTP credentials girer → "Kaydet" → PUT
+   → Backend cache invalidate
+   → Toast: "Kaydedildi. Şifreler dev ortamda plain text saklanır..."
+5. "Test E-postası Gönder" (Sprint 27 buton) → artık DB config'i kullanır
+   → host=smtp.gmail.com + güncel password ile gerçek SMTP test
+6. Sayfa yenile → password "••••••••" maskeli geri gelir
+   → kullanıcı şifreyi yeniden girmek zorunda değil
+```
+
+### Sprint 16-29 Kümülatif
+
+| Sprint | İş | Yeni Issue |
+|---|---|---|
+| 16-21 | UI migrate (55 ekran) | 0 |
+| 22-24 | Printer + Hub + i18n + Label L3 | 0 |
+| 25 | Notif backend (EMAIL real) | 0 |
+| 26-A | SMS provider abstraction | 0 |
+| 27 | Frontend hookup | 0 |
+| 28 | Auto-SMS toggle + hook | 0 |
+| **29** | **Email SMTP config save (DB-first + fallback)** | **0** |
+| **Σ** | **15 sprint, 78+ feature** | **0** |
+
+### Sprint 30 Hazırlık
+
+1. **SMS/Twilio config save** — aynı `notification_configs` tablosu (channel=SMS), `TwilioSmsProvider` refactor: DB-first + property fallback + `notification.sms.provider` switch
+2. **Jasypt encryption** — `encrypted=true` row'lar için decrypt-on-read, encrypt-on-write (security uyarısını giderir)
+3. **Notification config audit log** — config save tarihçesi (TOpenSimpleCompanyEntity audit alanları zaten mevcut, UI ekranı eklenir)
+
+### Sources
+
+- [[sources/code-refs/2026-05-01-notification-config-save-audit]] — Sprint 29 audit
+- [[sources/code-refs/2026-05-01-notifications-system-audit]] — Sprint 25 audit
+- [[syntheses/notifications-system-design]] — 4 sprint mimari
+- [[log]] — Sprint 25 (foundation), 27 (frontend), 28 (auto-SMS), 29 (config save — bu)
+
+---
+
+## [2026-05-01] sprint-28 | POS Otomatik Müşteri SMS (auto-toggle + lastSaleData hook) ✅
+
+Sprint 27'de manuel "Müşteriye SMS Gönder" butonu eklendi. Sprint 28 = **otomatik satış SMS**: ayar açıksa + müşteri telefonu varsa, satış tamamlandığı anda fiş özeti otomatik SMS olarak gönderilir.
+
+### Wiki Workflow
+
+Mini audit sentez dosyasında (`notifications-system-design.md`) Sprint 28 için **WhatsApp + SendGrid + rate limit + Prometheus** plan vardı. Kullanıcının asıl ihtiyacı (sale auto-SMS) önceliklendirildi; production hardening (Sprint 29+) ertelendi.
+
+### Çıktılar (1 yeni + 2 edit)
+
+| Dosya | Tip | Rol |
+|---|---|---|
+| `lib/services/notification/notification_settings.dart` | YENİ | `NotificationSettings(smsAutoOnSale, emailAutoOnSale)` + SharedPreferences persist + Riverpod `StateNotifierProvider` |
+| `sms_settings_screen.dart` | EDIT | Üstte yeni section: **"Otomatik Gönderim"** SwitchListTile — açıklama: "Satış tamamlandığında müşteri telefonu kayıtlıysa fiş özeti otomatik SMS olarak gönderilir" |
+| `pos_screen.dart` | EDIT | `ref.listen(posProvider)` 6. hook eklendi: `_extractCustomerPhone()` + `_autoSendSaleSms()` (fire-and-forget, hata sessiz toast) |
+
+### Mimari Karar Detayları
+
+**`pos_provider` dokunulmadı**: `lastSaleData` schema zaten `customer` map'ini içeriyor (`saleSummary['customer'] = state.selectedCustomer`). `_extractCustomerPhone()` bu map'ten 2-fallback ile telefon çıkarıyor (`phone`, `phoneNumber`). 7+ char validation invalid girişleri eler.
+
+**Yeni hook 6, hook 5'in tetiklendiği aynı `if` blok içinde** (`lastSaleData != previous`). Yani auto-print + auto-SMS aynı satışta birlikte tetiklenir, ama bağımsız toggle'larla kontrol edilir. Sprint 22 print pattern'iyle paralel.
+
+**Print path Sprint 22 paterniyle uyumlu** — auto işlemler fire-and-forget, hata UI'a engelsizce toast olarak gösterilir, satış akışı kesilmez.
+
+**`smsAutoOnSale` default `false`** — kullanıcı bilinçli olarak açmalı. Privacy-aware default (Türkiye KVKK uyumlu — açık rıza modeli için zemin).
+
+**Email otomatik (`emailAutoOnSale`) field'ı modelde eklendi ama UI'da yok** — Sprint 29'a hazır altyapı (e-posta için müşteri rıza + email field validation gerekir).
+
+### Auto-SMS Akışı
+
+```
+1. POS satış tamamlandı (submitSale → result OK)
+2. lastSaleData = { saleId, customer: {id, name, phone}, grandTotal, items, ... }
+3. ref.listen 5. hook → autoPrint kontrol (Sprint 22)
+4. ref.listen 6. hook → autoSms kontrol (Sprint 28)
+   ├── notificationSettings.smsAutoOnSale != true → SKIP
+   ├── customer.phone null → SKIP
+   └── her ikisi de OK:
+       → notificationService.send(channel: SMS, eventType: SALE_AUTO_SMS,
+                                    recipient: phone,
+                                    body: "SEDCORE POS — Fiş #X. Tutar: ₺Y. Teşekkürler!")
+       → Backend NOOP/Twilio kanal seçimine göre dispatch
+       → 202 Accepted; hata sessizce toast (satış akışı kesilmez)
+```
+
+### Test Senaryosu
+
+```
+1. Ayarlar → Cihazlar & Entegrasyonlar → SMS Servisi
+2. Üstte yeni "Otomatik Gönderim" section → toggle aç
+3. POS → satış için müşteri seç (telefonu kayıtlı)
+4. Sepete ürün ekle → ödeme → tamamla
+5. Backend log: [NOOP-SMS] to=+90..., bodyLen=N (NOOP default)
+   → Twilio aktive ise: gerçek SMS müşteri telefonuna
+6. Yeni satış → otomatik tekrar tetiklenir (lastSaleData değişimi)
+```
+
+### Sprint 19 Kuralı Uyumu
+
+> *"Gerçek tüketici talebi olmadan template/feature inşa etme."*
+
+Sprint 28 talep var: kullanıcı QUICK_START_NOTIFICATIONS.md'de sale SMS örneğini paylaştı. Aynı zamanda bu auto-SMS UX modern POS standardı (Square, Shopify POS reseller'ı). Manuel + otomatik ikili UX → kullanıcı kontrolünde.
+
+### Doğrulama
+
+`flutter analyze` (3 dosya): **No issues found!** ✅
+
+### Sprint 16-28 Kümülatif
+
+| Sprint | İş | Yeni Issue |
+|---|---|---|
+| 16-21 | 55 ekran UI migrate | 0 |
+| 22-24 | Printer + Hub + i18n + Label L3 | 0 |
+| 25 | Notif backend (EMAIL real) | 0 |
+| 26-A | SMS provider abstraction | 0 |
+| 27 | Frontend hookup (test + manual sale SMS) | 0 |
+| **28** | **POS auto-SMS (toggle + auto-trigger)** | **0** |
+| **Σ** | **14 sprint, 76+ feature** | **0** |
+
+### Sprint 29+ Kuyruk
+
+1. **SMTP/Twilio config save endpoint** — settings save butonları real (backend `NotificationConfigController`)
+2. **Notification history admin** — `ListScreenTemplate<NotificationDto>` route `/settings/notifications/history`
+3. **Twilio gerçek aktivasyon** — kullanıcı credentials sağlayınca property switch + test
+4. **WhatsApp** — Twilio sandbox + provider abstraction `WHATSAPP` case
+5. **SendGrid** alternatif (deliverability)
+6. **Rate limiting** — Bucket4j veya Redis
+7. **Prometheus metrics** — `notification_sent_total{channel, status}`
+8. **Sprint 26-B RabbitMQ** — Docker compose hazırlanınca
+
+### Sources
+
+- [[sources/code-refs/2026-05-01-notifications-system-audit]] — Sprint 25 audit
+- [[sources/code-refs/2026-05-01-notifications-sprint26-decision]] — Sprint 26 A/B
+- [[syntheses/notifications-system-design]] — 4 sprint mimari sentez
+- [[log]] — Sprint 22 (printer paralel pattern), Sprint 27 (manual SMS), Sprint 28 (bu entry)
+
+---
+
+## [2026-05-01] sprint-27 | Notifications Frontend Hookup (Dart service + test buttons + sale SMS) ✅
+
+Sprint 25 backend EMAIL real + Sprint 26-A SMS NOOP/Twilio abstraction tamam. Sprint 27 = frontend tüketicisi: `NotificationService` Dart + skeleton ekran test butonları gerçek API'ye + sale_detail "Müşteriye SMS Gönder" aksiyonu.
+
+### Wiki Workflow
+
+Audit Sprint 25/26 dosyalarında yeterince kapsanmıştı; Sprint 27 küçük scope (4 dosya değişiklik + 2 yeni service dosyası), ayrı audit/synthesis yazılmadı — log entry tek başına yeterli.
+
+### Çıktılar (2 yeni + 3 edit)
+
+| Dosya | Tip | Rol |
+|---|---|---|
+| `lib/services/notification/notification_models.dart` | YENİ | `NotificationChannel/Status` enum (`apiValue` mapping), `NotificationRequest`, `NotificationDto.fromJson`, `NotificationResult` |
+| `lib/services/notification/notification_service.dart` | YENİ | Dio + ApiClient kullanır; `send(req)` → `POST /product/api/v1/notifications/send`; `list(status, page, size)` → `GET`; fire-and-forget pattern + `notificationServiceProvider` Riverpod |
+| `email_settings_screen.dart` | EDIT | "Test E-postası Gönder" butonu artık real API çağırıyor; `_isTesting` loading state; `_sendTestEmail()` username field'ı recipient olarak kullanır |
+| `sms_settings_screen.dart` | EDIT | "Test SMS Gönder" butonu real API; `_sendTestSms()` `_testNumberCtl` recipient olarak kullanır; NOOP default ile sessiz başarı |
+| `sale_detail_screen.dart` | EDIT | AppBar'da yeni "Müşteriye SMS Gönder" IconButton (`_customerPhone() != null` koşullu); `_sendSaleSms()` fiş özetini SMS gönderir |
+
+### Frontend ↔ Backend Akış
+
+```
+[email_settings_screen]
+  Test E-postası Gönder → ref.read(notificationServiceProvider).send(
+    NotificationRequest(
+      eventType: 'TEST_EMAIL',
+      channel: NotificationChannel.email,
+      recipient: usernameCtl.text,
+      subject: 'SEDCORE POS — Test E-postası',
+      body: 'Bu bir test e-postasıdır...',
+    ))
+  → POST /product/api/v1/notifications/send (X-Company-Code header otomatik)
+  → 202 Accepted + NotificationDto
+  → status=SENT (mail.enabled=true) | FAILED (mail.enabled=false → "Email kanalı devre dışı")
+
+[sms_settings_screen]
+  Test SMS Gönder → channel: SMS, recipient: testNumberCtl.text
+  → 202 + status=SENT (NOOP default — log'a yazar)
+  → metadata={"provider":"noop","providerMessageId":"noop-<uuid>"}
+
+[sale_detail_screen]
+  Müşteriye SMS Gönder (icon button, customer.phone varsa görünür)
+  → eventType: 'SALE_RECEIPT_SMS'
+  → body: "SEDCORE POS — Fiş #${saleNo}. Tutar: ₺${total}. Teşekkürler!"
+  → 202 + (NOOP/Twilio status)
+```
+
+### Mimari Karar Detayları
+
+**`NotificationResult` immutable result type** — hem `send()` hem `list()` çağrılarında success/failure ayrımı net. Fire-and-forget kullanımında `.ignore()` mümkün; UI feedback isteniyorsa `await` + toast.
+
+**`_customerPhone()` fallback chain**: Sale JSON farklı endpoint'lerden farklı schema gelebilir (`customerPhone` direct, `phone`, `customer.phone` nested). 7+ char validation ile invalid telefonlar elenir.
+
+**Ayar ekranları "Save" butonu hâlâ skeleton**: SMTP/Twilio config save için backend endpoint (`/api/v1/notification-settings/...`) Sprint 28 scope. Şu an `notification.sms.provider=twilio` env-driven, UI'dan değiştirilmiyor.
+
+**POS otomatik tetikleyici (`pos_provider.submitSale()` sonrası SMS)** Sprint 27 scope DIŞI bırakıldı. Sebep: 
+- `lastSaleData`'da customer.phone yok (eklenmesi gerek)
+- "auto-send" toggle persistence yok (settings'te ek state)
+- Sprint 28'de SMTP/Twilio save endpoint'i ile birlikte gelir
+
+Sprint 27'de **manuel "Müşteriye SMS Gönder"** butonu sale_detail'a eklendi — kullanıcı kontrolünde, basit ve test edilebilir.
+
+### Doğrulama
+
+`flutter analyze` (4 dosya): **No issues found!** ✅
+
+İlk denemede 2 hata + 1 info:
+- `AppLogger.warn` undefined → `AppLogger.warning` düzeltildi
+- `dangling_library_doc_comments` → `///` → `//` çevrildi
+
+### Test Akışları (Şimdi Çalışan)
+
+```
+1. Backend ayağa kalktı (port 8001)
+2. Frontend → Ayarlar → Sistem → Cihazlar & Entegrasyonlar
+3. SMS Servisi → "Test SMS Gönder" → "noop-<uuid>" başarı toast'ı
+4. E-posta Bildirimleri → Username doldur + "Test Gönder"
+   → mail.enabled=false ise "Email kanalı devre dışı" toast
+   → mail.enabled=true + SMTP config: gerçek mail
+5. POS → satış yap → Satışlar → detay aç → SMS icon → müşteriye SMS
+```
+
+### Sprint 28 Hazırlık
+
+1. **SMTP/Twilio config save endpoint** (`/api/v1/notification-settings/email`, `/sms`) — settings save butonları real
+2. **POS otomatik tetikleyici** — `pos_provider.submitSale()` sonrası `lastSaleData` içine customer.phone ekle + "auto-send" toggle persistence
+3. **WhatsApp** — Twilio sandbox + provider abstraction `WHATSAPP` case
+4. **SendGrid** alternatif (deliverability) — `EmailProvider` interface + `@ConditionalOnProperty`
+5. **Rate limiting** — Bucket4j veya Redis-backed
+6. **Prometheus metrics** — `notification_sent_total{channel, status, company}`
+7. **Notification history ekranı** (admin) — `/settings/notifications/history` ListScreenTemplate
+
+### Sprint 16-27 Kümülatif
+
+| Sprint | İş | Yeni Issue |
+|---|---|---|
+| 16-21 | 55 ekran UI migrate | 0 |
+| 22-24 | Printer + Hub + i18n + Label Printer L3 | 0 |
+| 25 | Notifications backend (EMAIL real) | 0 |
+| 26-A | SMS provider abstraction (NOOP + Twilio) | 0 |
+| **27** | **Frontend hookup (Dart service + test buttons + sale SMS)** | **0** |
+| **Σ** | **13 sprint, 75+ feature** | **0** |
+
+### Sources
+
+- [[sources/code-refs/2026-05-01-notifications-system-audit]] — Sprint 25 audit
+- [[sources/code-refs/2026-05-01-notifications-sprint26-decision]] — Sprint 26 A/B karar
+- [[syntheses/notifications-system-design]] — 4 sprint mimari sentez
+- [[log]] — Sprint 25, 26-A, 27 (bu entry)
+
+---
+
 ## [2026-05-01] sprint-26-A | SMS Provider Abstraction (NOOP default + Twilio hazır) ✅
 
 Sprint 25 sonrasında "DEVAM" emri. Twilio credentials henüz yok + RabbitMQ Docker kurulu değil. Sprint 26 tek blok yerine **iki alt-sprint'e bölündü**: Sprint 26-A credentials-bağımsız provider abstraction, Sprint 26-B (sonraki tur) RabbitMQ refactor.

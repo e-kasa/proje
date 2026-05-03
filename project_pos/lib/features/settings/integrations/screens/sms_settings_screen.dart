@@ -6,6 +6,7 @@ import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/services/notification/notification_models.dart';
 import 'package:project_pos/services/notification/notification_service.dart';
+import 'package:project_pos/services/notification/notification_settings.dart';
 
 /// Sprint 23 — SMS entegrasyonu — Skeleton.
 ///
@@ -28,6 +29,7 @@ class _SmsSettingsScreenState extends ConsumerState<SmsSettingsScreen> {
 
   String _provider = 'netgsm';
   bool _obscureKey = true;
+  bool _isTesting = false;  // Sprint 27: test send loading state
 
   // Provider id'leri (i18n için name/description bundle'dan okunur)
   static const _providerIds = ['netgsm', 'twilio', 'iletimerkezi'];
@@ -40,13 +42,65 @@ class _SmsSettingsScreenState extends ConsumerState<SmsSettingsScreen> {
     super.dispose();
   }
 
+  /// Sprint 27 — Test SMS gönderim. Backend SMS kanalı NOOP default
+  /// (Sprint 26-A); Twilio aktive değilse log'a yazar, gerçek SMS gitmez.
+  /// `notification.sms.provider=twilio` set edildiğinde gerçek gönderim olur.
+  Future<void> _sendTestSms() async {
+    final to = _testNumberCtl.text.trim();
+    if (to.isEmpty) {
+      AppToast.error(context, 'Önce test telefon numarası alanını doldurun.');
+      return;
+    }
+    setState(() => _isTesting = true);
+    final result = await ref.read(notificationServiceProvider).send(
+          NotificationRequest(
+            eventType: 'TEST_SMS',
+            channel: NotificationChannel.sms,
+            recipient: to,
+            body: 'SEDCORE POS — Test SMS. Sprint 26-A NOOP/Twilio entegrasyonu.',
+          ),
+        );
+    if (!mounted) return;
+    setState(() => _isTesting = false);
+    if (result.success) {
+      AppToast.success(
+        context,
+        'Test isteği kuyruğa alındı (durum: ${result.dto?.status.apiValue ?? "?"}).',
+      );
+    } else {
+      AppToast.error(context, 'Test başarısız: ${result.error}');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final notifSettings = ref.watch(notificationSettingsProvider);
     return BaseScaffold(
       appBar: AppAppBar.standard(title: t('sms_settings.title')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Sprint 28 — Otomatik satış SMS toggle (üstte, hemen görünür)
+          AppSectionCard(
+            title: 'Otomatik Gönderim',
+            icon: Icons.auto_awesome,
+            children: [
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Satış sonrası müşteriye otomatik SMS'),
+                subtitle: const Text(
+                  'Satış tamamlandığında, müşteri telefonu kayıtlıysa fiş özeti '
+                  'otomatik SMS olarak gönderilir.',
+                  style: TextStyle(fontSize: 11),
+                ),
+                value: notifSettings.smsAutoOnSale,
+                onChanged: (v) => ref
+                    .read(notificationSettingsProvider.notifier)
+                    .updateSmsAutoOnSale(v),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           // Banner — bu ekran skeleton
           Container(
             padding: const EdgeInsets.all(12),
@@ -229,12 +283,9 @@ class _SmsSettingsScreenState extends ConsumerState<SmsSettingsScreen> {
               SizedBox(
                 width: double.infinity,
                 child: AppButton.outline(
-                  text: t('sms_settings.test_send'),
+                  text: _isTesting ? '...' : t('sms_settings.test_send'),
                   icon: Icons.send,
-                  onPressed: () => AppToast.info(
-                    context,
-                    t('email_settings.test_coming_soon'),
-                  ),
+                  onPressed: _isTesting ? null : _sendTestSms,
                 ),
               ),
             ],

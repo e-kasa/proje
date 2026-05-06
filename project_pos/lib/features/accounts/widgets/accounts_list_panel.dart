@@ -7,6 +7,7 @@ import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/features/accounts/models/statement_args.dart';
 import 'package:project_pos/features/accounts/providers/accounts_list_provider.dart';
+import 'package:project_pos/features/accounts/providers/accounts_list_settings.dart';
 import 'package:project_pos/features/accounts/widgets/account_edit_form.dart';
 import 'package:project_pos/features/accounts/widgets/accounts_error_view.dart';
 
@@ -98,6 +99,19 @@ class _AccountsListPanelState extends ConsumerState<AccountsListPanel> {
                       notifier.setQuery('');
                     },
                   ),
+                ),
+                const SizedBox(width: 8),
+                _PageSizeButton(
+                  current: ref.watch(accountsListPaginationProvider).pageLimit,
+                  onSelect: (limit) async {
+                    await ref
+                        .read(accountsListPaginationProvider.notifier)
+                        .setPageLimit(limit);
+                    if (!mounted) return;
+                    await ref
+                        .read(accountsListProvider.notifier)
+                        .refresh();
+                  },
                 ),
                 const SizedBox(width: 8),
                 _NewAccountButton(onTap: () => _openCreateModal(context)),
@@ -218,6 +232,68 @@ class _AccountsListPanelState extends ConsumerState<AccountsListPanel> {
             )),
           );
         },
+      ),
+    );
+  }
+}
+
+class _PageSizeButton extends StatelessWidget {
+  final int current;
+  final ValueChanged<int> onSelect;
+
+  const _PageSizeButton({required this.current, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<int>(
+      tooltip: 'Sayfa boyutu (şu an: $current)',
+      initialValue: current,
+      onSelected: onSelect,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppConstants.borderRadiusSmall,
+      ),
+      itemBuilder: (_) => AccountsListPagination.allowed
+          .map((v) => PopupMenuItem<int>(
+                value: v,
+                child: Row(
+                  children: [
+                    Icon(
+                      v == current ? Icons.check : Icons.format_list_numbered,
+                      size: 16,
+                      color: v == current
+                          ? AppColors.primary
+                          : AppColors.textMuted,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '$v / sayfa',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: v == current
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                        color: v == current
+                            ? AppColors.primary
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ))
+          .toList(),
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: AppColors.border),
+          borderRadius: AppConstants.borderRadiusSmall,
+        ),
+        child: const Icon(
+          Icons.tune,
+          size: 18,
+          color: AppColors.textSecondary,
+        ),
       ),
     );
   }

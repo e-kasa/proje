@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'label_driver.dart';
 import 'label_print_settings.dart';
 import 'label_template.dart';
-import 'print_service.dart' show UsbDeviceInfo;
+import 'print_service.dart' show UsbDeviceInfo, PrintService;
 
 /// Sprint 24 — Etiket yazıcı servis abstraction.
 ///
@@ -26,9 +26,13 @@ class LabelPrintService {
       : _driver = driver;
 
   /// Bağlı USB cihazları tara — UI'da etiket yazıcı seçimi için.
+  ///
+  /// Sprint 29-fix-5: Sanal yazıcılar (PDF/OneNote/Fax) filtre dışı
+  /// — `PrintService._virtualPrinterPatterns` ile aynı liste kullanılır.
   Future<List<UsbDeviceInfo>> discoverDevices() async {
     final devices = await _manager.discovery(type: PrinterType.usb).toList();
     return devices
+        .where((d) => !PrintService.isVirtualPrinterName(d.name))
         .map((d) => UsbDeviceInfo(
               name: d.name,
               vendorId: int.tryParse(d.vendorId ?? '') ?? 0,

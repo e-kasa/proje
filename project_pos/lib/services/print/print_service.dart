@@ -17,12 +17,44 @@ class PrintService {
 
   PrintService(this._settings);
 
+  /// Sprint 29-fix-5 — Sanal yazıcı isim pattern'ları.
+  ///
+  /// `flutter_pos_printer_platform_image_3` Windows'ta `EnumPrintersW`
+  /// kullanır → tüm kayıtlı sistem yazıcılarını döndürür (sanal dahil).
+  /// Bu pattern'lar listelenmemeli; çünkü kullanıcı POSA gibi termal
+  /// cihaz arıyor, sanal PDF/OneNote/Fax değil.
+  static const _virtualPrinterPatterns = [
+    'microsoft print to pdf',
+    'microsoft xps document writer',
+    'print to pdf',
+    'save as pdf',
+    'fax',
+    'onenote',
+    'send to onenote',
+    'feedme',     // FeedMe POS Print Job sanal yazıcısı
+    'print job',  // generic "POS Print Job" sanal yazıcılar
+    'to pdf',     // Foxit PDF, vs.
+    'pdf creator',
+    'cutepdf',
+    'doPDF',
+  ];
+
+  /// `LabelPrintService` aynı blacklist'i reuse eder.
+  static bool isVirtualPrinterName(String name) {
+    final lower = name.toLowerCase().trim();
+    return _virtualPrinterPatterns.any((p) => lower.contains(p));
+  }
+
   /// Bağlı USB cihazları tara. UI'da seçim için kullanılır.
+  ///
+  /// Sprint 29-fix-5: Sanal yazıcılar (Microsoft Print to PDF, OneNote,
+  /// Fax, FeedMe POS Print Job, vb.) filtre dışı tutulur.
   ///
   /// Returns: vendor/product ID + cihaz adı listesi.
   Future<List<UsbDeviceInfo>> discoverDevices() async {
     final devices = await _manager.discovery(type: PrinterType.usb).toList();
     return devices
+        .where((d) => !isVirtualPrinterName(d.name))
         .map((d) => UsbDeviceInfo(
               name: d.name,
               vendorId: int.tryParse(d.vendorId ?? '') ?? 0,

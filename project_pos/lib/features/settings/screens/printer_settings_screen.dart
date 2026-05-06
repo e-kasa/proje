@@ -35,6 +35,23 @@ class _PrinterSettingsScreenState
     final s = ref.read(printSettingsProvider);
     _headerCtl = TextEditingController(text: s.headerText);
     _footerCtl = TextEditingController(text: s.footerText);
+
+    // Sprint 29-fix-5: Önceden kayıtlı sanal yazıcıyı (Microsoft Print to PDF
+    // gibi) otomatik temizle — kullanıcı yanlışlıkla seçmiş olabilir, fiş
+    // basamayacağı için silinmeli.
+    final name = s.deviceName ?? '';
+    if (name.isNotEmpty && PrintService.isVirtualPrinterName(name)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(printSettingsProvider.notifier).clearDevice();
+        if (mounted) {
+          AppToast.warning(
+            context,
+            'Önceki seçim "$name" sanal bir yazıcıydı (PDF/OneNote/Fax) — '
+            'temizlendi. Lütfen gerçek termal cihaz seçin.',
+          );
+        }
+      });
+    }
   }
 
   @override
@@ -114,6 +131,32 @@ class _PrinterSettingsScreenState
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Sprint 29-fix-5 — Bilgi banner: Windows yazıcı kurulum rehberi
+          Container(
+            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: AppColors.info.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.info.withValues(alpha: 0.25)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.info_outline, color: AppColors.info, size: 20),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Yazıcı listede yoksa: Windows Ayarlar → Bluetooth ve cihazlar → '
+                    'Yazıcılar ve tarayıcılar → Cihaz ekle → POSA cihazınızı seçin '
+                    '(veya manuel: Generic / Text Only sürücüsü). Sanal yazıcılar '
+                    '(PDF/OneNote/Fax) bu listede gizlidir.',
+                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                ),
+              ],
+            ),
+          ),
           // ── Bağlı yazıcı durumu ────────────────────────────────────────────
           AppSectionCard(
             title: t('printer.connected_printer'),

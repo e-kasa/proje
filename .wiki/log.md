@@ -11,6 +11,592 @@ Append-only olay kaydı. **En yeni üste**.
 
 ## Olaylar
 
+## [2026-05-06] wiki-revision | Etiket Yazıcı Manuel Test Rehberi — Sprint 29-fix-6/7 hizalama ✅
+
+### Tetikleyici
+
+Plan [[plans/polymorphic-gathering-flute]] (Sprint 24 — Etiket Yazıcı Ayrı Slot) **tamamlanmış** ama yan ürünü olan [[sources/code-refs/2026-05-01-label-printer-manual-test-guide]] **stale**:
+
+- Senaryo 1 + 3 + 5 + Smoke S1/S3: *"Windows print dialog açılır"* → **artık geçersiz** (Sprint 29-fix-6'da PDF path tamamen silindi)
+- Senaryo 4 (Web): "Masaüstü badge"den ötesi yok → barkod basma denemesi davranışı belirtilmemiş
+- Sprint 29-fix-2/3/4/5 davranışları + fix-7 KDV fişi rehberde yer almıyor
+- Yeni hata varyantları (sanal yazıcı tek görünür, PDF dosyası negatif kontrol) eksik
+
+Kullanıcı talebi: *"PLANA DEVAM ET"* — plan tamamlandığı için yan-dokümantasyon güncel akışla hizalanmalı.
+
+### Değişiklikler
+
+[`2026-05-01-label-printer-manual-test-guide.md`](.wiki/sources/code-refs/2026-05-01-label-printer-manual-test-guide.md):
+
+| Bölüm | Eski | Yeni |
+|---|---|---|
+| Frontmatter | `date: 2026-05-01` | `date: 2026-05-06` + `revisions:` listesi (2026-05-01 + 2026-05-06) |
+| Üst banner | — | "PDF print path tamamen kaldırıldı" uyarısı |
+| **Senaryo 1** | "Windows standart print dialog açılır" | "**USB yazıcı yapılandırılmamış**" error toast + PDF AÇILMAZ kontrolü |
+| **Senaryo 3** | "Sistem yazıcı seçim penceresine düşülüyor" | "**Etiket yazıcısına bağlanılamadı...**" error toast + PDF fallback yok |
+| **Senaryo 4** | Sadece UI guard kontrolü | Ek: barkod basma denemesi → web error toast |
+| **Senaryo 7 (yeni)** | — | Case 1.5 (POSA fiş yazıcısı reuse) — Sprint 29-fix-2/3 davranışı |
+| **Senaryo 8 (yeni)** | — | KDV oranı fiş görüntüsü (`*20` + KDV TABLOSU footer) — Sprint 29-fix-7 |
+| Hata tablosu | 5 satır | 9 satır (sanal yazıcı, sürücü kurulum, KDV `taxRate` eksik, PDF negatif kontrol) |
+| Smoke checklist | S1-S6 + 2 ek | S1-S8 + 2 negatif kontrol (PDF dosyası oluşmaz, sanal yazıcı listede yok) |
+| Sources | Sprint 24 sınırlı | + `print_service.dart` (fix-5), `receipt_template.dart` (fix-7), `printer_settings_screen.dart` (fix-5) |
+
+### Doğrulama
+
+- Markdown render kontrolü: revisions frontmatter, tablo + checklist syntaksı geçerli
+- Cross-link: audit + synthesis bağlantıları korundu, `[[log]]` referansı + Sprint 29-fix-2/3/4/5/6/7 girdilerine işaret eklendi
+- Code-ref satır numaraları: [`product_detail_screen.dart:1080-1182`](project_pos/lib/features/inventory/screens/product_detail_screen.dart#L1080-L1182) (`_printBarcodeLabels`) + [`product_detail_screen.dart:1230-1274`](project_pos/lib/features/inventory/screens/product_detail_screen.dart#L1230-L1274) (`_printViaReceiptPrinterFallback`) güncel
+- `flutter analyze`: kod değişikliği yok → analiz çalıştırmaya gerek yok (saf wiki revizyonu)
+
+### Sprint 30 Backlog
+
+Plan [[plans/polymorphic-gathering-flute]] kapsamı dışında, log'da kayıtlı:
+
+1. **Gerçek USB scan paketi araştırması** — `usb_serial`, `quick_usb`, libusb Dart binding (mevcut `EnumPrintersW` Windows printer enum, gerçek USB scan değil)
+2. **POSA Windows kurulum tutorial** — `/docs/printer-setup.md` GIF/screenshot dizisi
+3. **ZPL adapter (Zebra)** — yasaklar listesinden, talep gelirse Sprint 25+
+4. Fiş `*<oran>` standardı için E-Arşiv fatura uyumluluk denetimi (KDV TABLOSU formatı Maliye yazılım kılavuzuna göre)
+
+### Sources
+
+- [`2026-05-01-label-printer-manual-test-guide.md`](.wiki/sources/code-refs/2026-05-01-label-printer-manual-test-guide.md) — yeniden yazılmış 8-senaryo + checklist + hata tablosu
+- Plan: [[plans/polymorphic-gathering-flute]] (Sprint 24 tamamlandı, yan dokümantasyon hizalandı)
+- İlişkili log girdileri: Sprint 29-fix-2 → fix-7 (PDF kaldırma yolculuğu + KDV fiş)
+
+---
+
+## [2026-05-03] sprint-29-fix-7 | Fiş KDV Oranı + Breakdown Tablosu (Türkiye fiş standardı) ✅
+
+### Tetikleyici
+
+Kullanıcı, satış fişi modal'ından örnek fiş paylaştı (Fren Balata - On Aks ₺377.60) + *"FİŞTE KDV ORANI YAZMIYOR"*.
+
+Sprint 22 `ReceiptTemplate` KDV TUTARINI yazıyordu (`KDV: TL 57.60`) ama **oran (%20)** ve oran bazlı breakdown yoktu. Türkiye fiş standardı her satırda `*20` KDV göstergesi + footer'da `KDV TABLOSU` matrah/KDV detayı ister.
+
+### Sprint 29-fix-7 Değişiklikleri
+
+[`receipt_template.dart`](project_pos/lib/services/print/receipt_template.dart):
+
+#### 1. Item satırlarında KDV göstergesi
+
+```
+Fren Balata - On Aks
+  1 x TL 320.00         TL 377.60 *20
+                                   ↑ Türkiye fiş standardı KDV oran göstergesi
+```
+
+`item['taxRate']` field'ı okunur (POS `cartItems` zaten gönderiyor); yoksa default 20 varsayılır. Item satırının sağ kolonu `${tutar} *${oran}` formatında.
+
+#### 2. Totals — oran bazlı KDV satırları
+
+Her oran için ayrı satır (eski tek `KDV:` yerine):
+
+```
+Ara Toplam:        TL 320.00
+KDV %20:            TL 57.60
+KDV %1:              TL 3.20    ← varsa (örn. gıda)
+====================
+TOPLAM             TL 377.60
+```
+
+#### 3. KDV TABLOSU footer (yeni section)
+
+Türkiye standardı detay matris — Maliye Bakanlığı/POS denetim için zorunlu:
+
+```
+KDV TABLOSU
+--------------------
+Oran  Matrah     KDV
+%20   TL 320.00  TL 57.60
+%1    TL 320.00  TL  3.20  ← farklı oran varsa
+--------------------
+```
+
+### Implementation
+
+**Aggregator pattern**: `Map<int, _TaxBucket>` items loop sırasında her oranın `netSum + taxSum`'unu hesaplar. Footer breakdown bu map'ten render edilir.
+
+**Net hesabı**: `lineNet = lineTotal / (1 + rate/100)` — fiyat KDV dahil olduğundan ayrıştırma. `lineTax = lineTotal - lineNet`. Toplam KDV `bucket.taxSum`.
+
+**Backward compat**: `taxBuckets.isEmpty` (item'larda taxRate yoksa) → eski tek `KDV: TL X` satırı korunur (regression yok).
+
+### Doğrulama
+
+`flutter analyze lib/services/print/receipt_template.dart`: **No issues found!** ✅
+
+### Test Akışı
+
+```
+1. POS'ta KDV %20'lik bir ürün ekle (Fren Balata)
+2. Sale tamamla → Receipt Preview Dialog açılır
+3. "Fiş Yazdır" → POSA termal cihaza basar:
+
+   SEDCORE POS
+   Fis No: POS-20260503-61FAEE
+   Tarih: 03.05.2026 07:30
+   --------------------
+   Fren Balata - On Aks
+     1 x TL 320.00     TL 377.60 *20      ← *20 KDV göstergesi
+   --------------------
+   Ara Toplam:       TL 320.00
+   KDV %20:           TL 57.60            ← oran ile
+   ====================
+   TOPLAM            TL 377.60
+   ====================
+   Odeme: Nakit
+   
+   KDV TABLOSU                           ← yeni section
+   --------------------
+   Oran  Matrah     KDV
+   %20   TL 320.00  TL 57.60
+   --------------------
+   
+   [QR kod]
+   #<saleId>
+   
+   Tesekkurler! Iyi gunler...
+```
+
+Birden fazla farklı KDV oranı (örn. gıda %1 + içecek %20) varsa breakdown 2 satır gösterir.
+
+### Sources
+
+- [`receipt_template.dart`](project_pos/lib/services/print/receipt_template.dart):82-128 (item satır + bucket aggregate), 142-170 (oran bazlı KDV satırları), 222-258 (KDV TABLOSU section), 360-365 (`_TaxBucket` private class)
+- Kullanıcı ekran görüntüsü: Satış Fişi modal "Fren Balata - On Aks ₺377.60"
+- Türkiye fiş standardı: `*${oran}` Maliye Bakanlığı yazılım kılavuzu
+
+---
+
+## [2026-05-03] sprint-29-fix-6 | PDF Print Path Tamamen Kaldırıldı ✅
+
+### Tetikleyici
+
+Kullanıcı, *"BİZİM PDF İLE YAZDIRMA GİBİ BİR İŞLEMİMİZ YOK ŞU AN"* — `Printing.layoutPdf` üzerinden PDF print akışı sistemde kullanılmıyor; etiket basma sadece USB ESC/POS olmalı.
+
+### Değişiklikler
+
+[`product_detail_screen.dart`](project_pos/lib/features/inventory/screens/product_detail_screen.dart):
+
+1. **Import temizliği**: `package:pdf/pdf.dart`, `package:pdf/widgets.dart as pw`, `package:printing/printing.dart` kaldırıldı (etiket için kullanılmıyor)
+2. **`_printViaPdfDialog` metodu tamamen silindi** (~80 satır PDF generate kodu)
+3. **`_printBarcodeLabels` Case 3** `if (kIsWeb)` web fallback bloğu da kaldırıldı → web'de açık hata: *"Etiket basma için masaüstü uygulamasını + USB yazıcı kullanın."*
+
+### Sonuç Akışı
+
+```
+Case 1   : labelPrintSettings.isConfigured → ESC/POS direkt
+Case 1.5 : printSettings.isConfigured (POSA fiş yazıcısı) → reuse
+ELSE     : "USB yazıcı yapılandırılmamış. Ayarlar..." error toast
+```
+
+PDF dialog **hiçbir koşulda açılmaz** (web/desktop/edge case).
+
+### Statement PDF (statement_pdf_service.dart) Korundu
+
+Müşteriye **PDF email / share** için meşru kullanım — yazdırma değil. `pdf` ve `printing` paketleri pubspec'te kalır.
+
+### Doğrulama
+
+`flutter analyze lib/features/inventory/screens/product_detail_screen.dart`: **No issues found!** ✅
+
+### Sources
+
+- [`product_detail_screen.dart`](project_pos/lib/features/inventory/screens/product_detail_screen.dart) — `_printViaPdfDialog` silindi, import'lar temizlendi
+
+---
+
+## [2026-05-03] sprint-29-fix-5 | Sanal Yazıcı Filtreleme + Windows Kurulum Rehberi ✅
+
+### Tetikleyici
+
+Kullanıcı `printer_settings_screen` ekran görüntüsü:
+- "Bağlı Yazıcı" → **"Microsoft Print to PDF"** (VID:0 PID:0)
+- "Bulunan Cihazlar (1)" → **"Microsoft Print to PDF"**
+- POSA termal cihaz **görünmüyor**
+
+### Kök Sebep Analizi (Paket Internals)
+
+[`flutter_pos_printer_platform_image_3-1.2.3/windows/include/printer.cpp`](C:/Users/Win11/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_pos_printer_platform_image_3-1.2.3/windows/include/printer.cpp):
+
+```cpp
+EnumPrintersW(flags, nullptr, 2, ...);   // satır 31, 39
+docInfo.pDatatype = L"RAW";              // satır 86
+StartDocPrinterW(...);                   // satır 89
+WritePrinter(...);                       // satır 97
+```
+
+**Tespit**:
+1. Paket Windows'ta **`EnumPrintersW`** kullanıyor → gerçek USB scan değil, **Windows'a kayıtlı sistem yazıcılarını** listeler
+2. Send tarafında **RAW print job** (`pDatatype = "RAW"` + `WritePrinter`) — **iyi haber**: POSA Windows'a yazıcı olarak kurulursa raw ESC/POS bytes geçer, PDF rasterize değil
+3. POSA listede yok çünkü **Windows'a yazıcı olarak yüklenmemiş** — sadece sanal yazıcılar (Microsoft Print to PDF, OneNote, FeedMe POS Print Job, vs.) görünüyor
+
+### Çözüm: 3 Katmanlı Müdahale
+
+#### 1. Sanal Yazıcı Filtreleme
+
+[`print_service.dart`](project_pos/lib/services/print/print_service.dart) `discoverDevices()` artık blacklist uygular:
+
+```dart
+static const _virtualPrinterPatterns = [
+  'microsoft print to pdf',
+  'microsoft xps document writer',
+  'print to pdf',
+  'save as pdf',
+  'fax',
+  'onenote',
+  'send to onenote',
+  'feedme',         // FeedMe POS Print Job
+  'print job',      // generic POS Print Job sanal
+  'to pdf',
+  'pdf creator', 'cutepdf', 'doPDF',
+];
+
+static bool isVirtualPrinterName(String name) {
+  final lower = name.toLowerCase().trim();
+  return _virtualPrinterPatterns.any((p) => lower.contains(p));
+}
+
+return devices
+    .where((d) => !isVirtualPrinterName(d.name))   // ⛔ sanal hariç
+    .map((d) => UsbDeviceInfo(...))
+    .toList();
+```
+
+`label_print_service.dart` aynı blacklist'i reuse eder (`PrintService.isVirtualPrinterName(...)`).
+
+#### 2. Otomatik Sanal Yazıcı Temizleme
+
+[`printer_settings_screen.dart`](project_pos/lib/features/settings/screens/printer_settings_screen.dart) `initState`:
+
+```dart
+final name = s.deviceName ?? '';
+if (name.isNotEmpty && PrintService.isVirtualPrinterName(name)) {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    ref.read(printSettingsProvider.notifier).clearDevice();
+    AppToast.warning(context,
+      'Önceki seçim "$name" sanal bir yazıcıydı (PDF/OneNote/Fax) — '
+      'temizlendi. Lütfen gerçek termal cihaz seçin.');
+  });
+}
+```
+
+Kullanıcının ekran görüntüsündeki "Bağlı Yazıcı: Microsoft Print to PDF" otomatik silinir.
+
+#### 3. Windows Kurulum Bilgi Banner
+
+`printer_settings_screen.dart` üstte info banner:
+
+> **Yazıcı listede yoksa**: Windows Ayarlar → Bluetooth ve cihazlar → Yazıcılar ve tarayıcılar → Cihaz ekle → POSA cihazınızı seçin (veya manuel: Generic / Text Only sürücüsü). Sanal yazıcılar (PDF/OneNote/Fax) bu listede gizlidir.
+
+### Beklenen Davranış (Hot Restart Sonrası)
+
+```
+1. Yazıcı Ayarları ekranı açılır
+2. Bağlı Yazıcı "Microsoft Print to PDF" idi → otomatik temizlenir
+   Toast: "Önceki seçim sanal bir yazıcıydı — temizlendi"
+3. Üstte info banner: "Yazıcı yoksa Windows'tan kur..."
+4. USB Cihazları Tara → sadece gerçek printer'lar listelenir
+   (Microsoft Print to PDF / OneNote / Fax filtre dışı)
+5. POSA Windows'a kurulu DEĞİLSE → "Bulunan Cihazlar (0)" görünür
+   Kullanıcı banner'ı okur → POSA'yı Windows'a kurar
+6. POSA Windows'ta kurulduktan sonra tekrar tara → "POSA-80 Series" görünür
+   → Seç → Test Yazdır → ESC/POS RAW bytes Windows print queue üzerinden POSA'ya
+```
+
+### Doğrulama
+
+`flutter analyze` (3 dosya): **No issues found!** ✅
+- 1 hata: `label_print_service.dart` `PrintService` import eksikti → `show UsbDeviceInfo, PrintService` ile çözüldü
+
+### Sprint 30 Backlog
+
+**Real USB device tarama** için alternatif paket araştırması:
+- Mevcut paket Windows'ta `EnumPrintersW` (system printer enumeration) — gerçek USB scan değil
+- POSA'yı sürücüsüz kullanmak isteyen kullanıcılar için: `usb_serial`, `quick_usb`, veya `libusb` Dart binding araştır
+- WinUSB driver kurulumu opsiyonel kılınabilir
+
+**POSA Windows kurulum tutorial** içine bir GIF/screenshot dizisi eklenebilir (`/docs/printer-setup.md`).
+
+### Sprint 29-fix-2/3/4/5 Özet
+
+5 iter sürdü çünkü her seferinde paket davranışı + Windows print spooler arasındaki ilişki katmanlı çözüldü:
+
+| Iter | Çözüm | Sonuç |
+|---|---|---|
+| fix-2 | Case 1.5 (fiş yazıcısı reuse) | Silent fail → PDF |
+| fix-3 | Result type + warning toast | PDF dialog koşulsuz devam |
+| fix-4 | `kIsWeb` gating + return | PDF dialog desktop'ta kapalı |
+| **fix-5** | **Sanal printer filter + auto-clear + banner** | **Kullanıcıya net rehber** |
+
+**Lesson learned**: Üçüncü-parti paket davranışını **kaynak koda inerek** doğrulamak şart. `flutter_pos_printer_platform_image_3` "USB scan" ismi yanıltıcıydı — gerçekte `EnumPrintersW`. Eğer ilk başta bunu doğrulasaydım, Sprint 22'de farklı paket seçer veya custom Win32 helper yazardım.
+
+### Sources
+
+- [`flutter_pos_printer_platform_image_3-1.2.3/windows/include/printer.cpp`](C:/Users/Win11/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_pos_printer_platform_image_3-1.2.3/) — `EnumPrintersW` + RAW print job
+- [`print_service.dart`](project_pos/lib/services/print/print_service.dart) — virtual printer filter
+- [`label_print_service.dart`](project_pos/lib/services/print/label_print_service.dart) — reuse filter
+- [`printer_settings_screen.dart`](project_pos/lib/features/settings/screens/printer_settings_screen.dart) — auto-clear + info banner
+
+---
+
+## [2026-05-03] sprint-29-fix-4 | PDF Dialog Desktop'ta Tamamen Devre Dışı (kIsWeb gating) ✅
+
+### Tetikleyici
+
+Sprint 29-fix-3 sonrası kullanıcı tekrar test etti. Windows sağ alt toast:
+> *"Yazdırma Bildirimi: Dosya, Belgeler klasörüne kaydedildi. **FeedMe POS Print Job (17)** öğesini görüntüleyin."*
+
+(17) → 17 deneme. PDF dialog hâlâ açılıyordu.
+
+### Sprint 29-fix-3 Eksikliği
+
+Sprint 29-fix-3'te warning toast ekledim ama **`_printViaPdfDialog` çağrısını koşulsuz bıraktım**:
+
+```dart
+if (mounted) {
+  AppToast.warning(...);  // sadece toast
+}
+}
+
+// ❌ HER DURUMDA çağrılıyordu (web ve desktop)
+await _printViaPdfDialog(...);
+```
+
+Toast gösterildikten sonra PDF dialog yine devreye giriyor → Windows default printer (FeedMe POS Print Job sanal yazıcısı) → "Belgeler klasörüne kaydedildi" toast → kullanıcı "Print" tıkladı sanıyor ama gerçekte cihaz hiçbir şey basmadı.
+
+### Çözüm: `kIsWeb` Gating
+
+```dart
+// Desktop: hiç USB cihaz yoksa AÇIK HATA + return (PDF açılmaz)
+AppToast.error(
+  context,
+  'USB yazıcı yapılandırılmamış. Ayarlar → Cihazlar & Entegrasyonlar → '
+  'Etiket Yazıcı veya Fiş Yazıcı menüsünden cihaz seçin.',
+);
+return;
+
+// Sadece WEB build'te PDF dialog (web'de USB yok, son çare)
+if (kIsWeb) {
+  await _printViaPdfDialog(...);
+}
+```
+
+### Final Akış
+
+```
+Case 1   : Etiket yazıcı kayıtlı (desktop) → ESC/POS direkt
+           ✗ → Error + RETURN
+
+Case 1.5 : Etiket yok + Fiş yazıcısı (POSA) (desktop) → POSA reuse
+           ✓ → Info toast
+           ✗ → Error + RETURN
+
+Case 3a  : Hiç USB cihaz yok + DESKTOP →
+           "USB yazıcı yapılandırılmamış. Ayarlar..." Error + RETURN
+           ⛔ PDF DIALOG AÇILMAZ
+
+Case 3b  : Hiç USB cihaz yok + WEB →
+           PDF dialog (web'de USB yok zaten)
+```
+
+### Sprint 29-fix-2/3/4 Yolculuğu (Lesson Learned)
+
+| Iter | Eklenen | Yetersizlik |
+|---|---|---|
+| fix-2 | Case 1.5 fiş yazıcısı reuse, `bool` return | Silent fail → Case 3 PDF |
+| fix-3 | Result type + warning toast | `_printViaPdfDialog` koşulsuz devam ediyordu |
+| **fix-4** | **`kIsWeb` gating** | Final — PDF dialog desktop'ta hiç açılmaz |
+
+3 iter gerekti çünkü her seferinde **akışın "kapanmasını"** unuttum (`return` yok, `if` yok). Pragmatik kural: **early return + explicit guard** her hata branchında.
+
+### Doğrulama
+
+`flutter analyze lib/features/inventory/screens/product_detail_screen.dart`: **No issues found!** ✅
+
+### Smoke Test (Kritik)
+
+```
+1. Hot RESTART (sadece reload yeterli olmayabilir — yeni bool flag eklendi)
+2. Etiket Yazdır butonuna bas
+3. Beklenen davranış:
+   ✓ POSA fiş yazıcısı kayıtlıysa → POSA basıyor + "Fiş yazıcısı ile basıldı..." info
+   ✗ POSA kayıtlı değilse + USB cihaz yok →
+     "USB yazıcı yapılandırılmamış. Ayarlar → Cihazlar..." error toast
+     ⛔ FeedMe POS Print Job artık AÇILMAYACAK
+     ⛔ "Belgeler klasörüne kaydedildi" toast yok
+4. Belgeler klasörüne git → eski "FeedMe POS Print Job (1-17).pdf" dosyalarını
+   manuel sil (cleanup)
+```
+
+### Sprint 30 Backlog'a Not
+
+PDF dialog'u tamamen kaldırmak da değerlendirilebilir:
+- `printing` paketi web build için tutuyor
+- Web'de zaten PDF generate'e gerek yok mu (alternatif: `Printing.sharePdf()` ile download)?
+- Sadece statement_pdf_service kalır (cari hesap PDF, bu meşru kullanım)
+
+### Sources
+
+- [`product_detail_screen.dart`](project_pos/lib/features/inventory/screens/product_detail_screen.dart):1158-1185 (Case 3 web-only gating)
+- Kullanıcı ekran görüntüsü: Windows toast "FeedMe POS Print Job (17)"
+- Sprint 29-fix-2 + fix-3 (önceki iterasyonlar)
+
+---
+
+## [2026-05-03] hotfix | AppEmptyState Column Overflow ✅
+
+### Tetikleyici
+
+Runtime: `RenderFlex overflowed by 26 pixels on the bottom` — `app_empty_state.dart:90` Column. Constraint `BoxConstraints(0.0<=w<=258.9, 0.0<=h<=175.0)` → 175px yüksekliğe (icon 120 + spacing 24 + title + spacing 8 + description + spacing 24 + button) sığmıyor.
+
+Muhtemel kullanım: `IntegrationsHubScreen` veya benzer bir küçük tile içinde `AppEmptyState` render edilmiş.
+
+### Çözüm
+
+[`app_empty_state.dart:85-94`](project_pos/lib/core/widgets/app_empty_state.dart): `Padding` wrapper → `SingleChildScrollView(padding: ..., child: Column(mainAxisSize: MainAxisSize.min, ...))`.
+
+```dart
+// Eski (overflow):
+Center(
+  child: Padding(
+    padding: AppConstants.paddingLarge,
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [...],
+    ),
+  ),
+)
+
+// Yeni:
+Center(
+  child: SingleChildScrollView(
+    padding: AppConstants.paddingLarge,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [...],
+    ),
+  ),
+)
+```
+
+### Davranış
+
+- **Geniş alanda** (≥ 250px): Column ortalanır (Center > SingleChildScrollView > Column), scroll devreye girmez (içerik fits)
+- **Küçük alanda** (< 250px): SingleChildScrollView devreye girer, kullanıcı scroll edebilir, **overflow yok**
+
+### Doğrulama
+
+`flutter analyze lib/core/widgets/app_empty_state.dart`: **No issues found!** ✅
+
+Sprint 16-21 mimari kuralı: shared widget'lar **defansif** olmalı (her constraint'te crash yok). `AppEmptyState` 55+ ekran tarafından kullanılıyor; bir yerde küçük constraint olunca eskisi tüm ekranı bozuyordu.
+
+### Sources
+
+- [`app_empty_state.dart`](project_pos/lib/core/widgets/app_empty_state.dart) — refactor satırı 85-94
+- Runtime hata: `RenderFlex overflowed by 26 pixels on the bottom`
+
+---
+
+## [2026-05-03] sprint-29-fix-3 | PDF Dialog Düşmesini Engelle: Desktop'ta Detaylı Hata ✅
+
+### Tetikleyici
+
+Sprint 29-fix-2'den sonra kullanıcı tekrar test etti, ekran görüntüsü paylaştı:
+> *"FİŞ YAZ DEDİĞİM BU EKRANA YÖNLEDİRİYOR"* — Adobe Acrobat Reader açılıp `'FeedMe POS Print Job (7).pdf'` corrupt dosyası göstermeye çalışıyor
+
+### Kök Sebep
+
+Sprint 29-fix-2'de Case 1.5 (fiş yazıcısı fallback) eklendi. **AMA**: Case 1.5 USB exception fırlatınca `bool false` dönüyordu → kod silently Case 3 PDF dialog'a düşüyordu → Windows'un default sistem yazıcısı **"FeedMe POS Print Job"** (Microsoft Print to PDF benzeri sanal yazıcı) PDF generate edip Adobe ile açılmaya çalışıyordu.
+
+Adobe açamıyordu çünkü PDF spooler bazen incomplete/corrupt dosyalar üretiyor (özellikle paralel istek varsa). Sayı `(7)` → kullanıcı 7 deneme yapmış, 7 corrupt PDF birikmiş.
+
+### Sprint 29-fix-2 Eksikliği
+
+```dart
+Future<bool> _printViaReceiptPrinterFallback(...) async {
+  try { ... }
+  catch (_) { return false; }  // ❌ silent error swallow
+}
+
+if (ok) { return; }
+// 🚨 buradan Case 3 PDF dialog'a düşüyordu — kullanıcı şaşırıyordu
+```
+
+### Çözüm: Sprint 29-fix-3
+
+**1. Result type refactor**: `_printViaReceiptPrinterFallback` artık `({bool success, String? error})` dönüyor. Hata mesajı kayboluyor değil.
+
+**2. Case 1.5 fail handler**: Detaylı toast göster (`AppToast.error`), PDF dialog'a **DÜŞME** (`return`).
+
+**3. Case 1 fail handler güncellendi**: Önceden "fallback PDF dialog'a düşülüyor" warning'di, artık "USB bağlantı + driver kontrol edin" error toast + return.
+
+**4. Case 3 koşulu daraltıldı**: Sadece **hiç USB cihaz yok** ise PDF dialog tetiklenir (web build için + edge case). Kullanıcı bilinçli yapmadan PDF yoluna düşmüyor.
+
+### Yeni Akış
+
+```
+Case 1   : Etiket yazıcı kayıtlı → ESC/POS direkt
+           ✗ → AppToast.error("USB driver kontrol edin") + RETURN
+
+Case 1.5 : Etiket yok + fiş yazıcısı kayıtlı → POSA reuse
+           ✓ → AppToast.info("Fiş yazıcısı ile basıldı...")
+           ✗ → AppToast.error("Fiş yazıcısı (POSA): <gerçek hata>") + RETURN
+
+Case 3   : Hiç USB cihaz yok (web veya yapılandırılmamış)
+           → AppToast.warning("Sistem yazıcı seçim penceresi (PDF açılırsa
+             termal cihaz basamaz)")
+           → PDF dialog (son çare)
+```
+
+### Davranış Değişiklikleri
+
+| Senaryo | Eski | Yeni |
+|---|---|---|
+| Etiket yazıcı kayıtlı, USB hata | "Sistem yazıcı seçim penceresine düşülüyor" warning + PDF dialog | "USB bağlantı + driver kontrol edin" error, **PDF açılmaz** |
+| Etiket yok + Fiş yazıcısı (POSA) var, USB hata | Silent fail → PDF dialog | "Fiş yazıcısı (POSA): `<hata detayı>`" error, **PDF açılmaz** |
+| Hiç USB cihaz yok | PDF dialog sessizce | "Hiç USB yazıcı yok, sanal yazıcı seçilirse termal basamaz" warning + PDF dialog |
+
+### Doğrulama
+
+`flutter analyze lib/features/inventory/screens/product_detail_screen.dart`: **No issues found!** ✅
+
+### Smoke Test
+
+```
+1. Hot restart (debug konsolda 'R')
+2. Ürün Detayı → Variant → Etiket Yazdır
+3. POSA fiş yazıcısı kayıtlı + etiket yazıcı yok
+4. Sprint 29-fix-2 Case 1.5 → POSA üzerinden ESC/POS gönder
+   ✓ Başarılı: "Etiket fiş yazıcısı (POSA-...) ile basıldı..."
+   ✗ USB hata: "Fiş yazıcısı (POSA-...): <gerçek hata mesajı>"
+5. Adobe / FeedMe PDF Print Job dialog'u **AÇILMAZ**.
+```
+
+### Mimari Karar Detayı
+
+**Sessiz fail = kötü UX**. Sprint 29-fix-2'de "fallback fallback" zincirini düşündüm ama gerçekte:
+- PDF dialog → sistem default printer (genelde sanal PDF) → kullanıcı şaşırır
+- Kullanıcı "neden PDF açıldı, fiş basacaktım" diye sorar
+- Hata mesajı kaybolur
+
+**Sprint 29-fix-3**: Açık hata > Otomatik fallback. Kullanıcı USB driver problemini bilirse çözer. Sanal PDF "alternatif" değil, **anti-pattern**.
+
+**Sprint 19 kuralı**: "Gerçek müşteri talebi olmadan template/fallback inşa etme." PDF dialog'u tutmak (web için) tamam, ama desktop'ta default yapma.
+
+### Sources
+
+- [`product_detail_screen.dart`](project_pos/lib/features/inventory/screens/product_detail_screen.dart):1072-1085 (4-state akış doc), 1090-1138 (`_printBarcodeLabels` ana akış), 1186-1215 (`_printViaReceiptPrinterFallback` result type)
+- Kullanıcı ekran görüntüsü: Adobe Acrobat "FeedMe POS Print Job (7).pdf could not open"
+- Sprint 29-fix-2 (önceki Case 1.5 eklemesi)
+
+### Sprint 30+ Backlog
+
+- POSA ile USB exception sebebini netleştirmek için **detaylı log** (libusb / WinUSB driver tanı)
+- Yapılandırılmamış USB durumunda **direkt printer settings ekranına yönlendirme** (warning toast yerine `context.push('/settings/printer')`)
+
+---
+
 ## [2026-05-03] sprint-29-fix-2 | Etiket Baskısı: Fiş Yazıcısı Smart Fallback (Case 1.5) ✅
 
 ### Tetikleyici

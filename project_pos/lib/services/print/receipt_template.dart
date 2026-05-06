@@ -79,7 +79,12 @@ class ReceiptTemplate {
     bytes.addAll(gen.hr());
 
     // ── ITEMS ──────────────────────────────────────────────────────────────
+    // Sprint 29-fix-7: Türkiye fiş standardı — her item yanında KDV oran
+    // göstergesi (*20 = %20). Footer'da oran bazlı KDV breakdown.
     final items = (sale['items'] as List?) ?? const [];
+    // taxRate → {netSum, taxSum} aggregator (footer breakdown için)
+    final Map<int, _TaxBucket> taxBuckets = {};
+
     for (final raw in items) {
       final item = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
       final name = _ascii(
@@ -92,17 +97,31 @@ class ReceiptTemplate {
       final lineTotal = (item['total'] as num?)?.toDouble() ??
           (item['lineTotal'] as num?)?.toDouble() ??
           (qty * unitPrice);
+      // KDV oranı (%): integer (1, 8, 10, 18, 20). Item'da yoksa 20 varsay.
+      final taxRateRaw = (item['taxRate'] as num?)?.toDouble() ?? 20.0;
+      final taxRate = taxRateRaw.round();
+
+      // Aggregator: line için net + tax hesapla
+      // lineTotal = net * (1 + rate/100)  →  net = lineTotal / (1 + rate/100)
+      final divisor = 1 + (taxRate / 100.0);
+      final lineNet = divisor > 0 ? lineTotal / divisor : lineTotal;
+      final lineTax = lineTotal - lineNet;
+      final bucket = taxBuckets.putIfAbsent(taxRate, () => _TaxBucket());
+      bucket.netSum += lineNet;
+      bucket.taxSum += lineTax;
 
       // Ürün adı (max line)
       bytes.addAll(gen.text(name, styles: const PosStyles(bold: true)));
 
-      // Miktar x birim fiyat → toplam (sağa yaslı)
+      // Miktar x birim fiyat → toplam *KDV oranı (sağa yaslı)
       final qtyStr = qty == qty.toInt() ? qty.toInt().toString() : qty.toStringAsFixed(2);
+      // *20 formatı — Türkiye fişlerinde standart KDV göstergesi
+      final lineRight = '${_money.format(lineTotal)} *$taxRate';
       bytes.addAll(gen.row([
-        PosColumn(text: '  $qtyStr x ${_money.format(unitPrice)}', width: 7),
+        PosColumn(text: '  $qtyStr x ${_money.format(unitPrice)}', width: 6),
         PosColumn(
-          text: _money.format(lineTotal),
-          width: 5,
+          text: lineRight,
+          width: 6,
           styles: const PosStyles(align: PosAlign.right, bold: true),
         ),
       ]));
@@ -138,7 +157,26 @@ class ReceiptTemplate {
         ),
       ]));
     }
-    if (tax != null && tax > 0) {
+    // Sprint 29-fix-7: KDV oran bazlı breakdown (Türkiye fiş standardı)
+    // Eğer item'lardan toplanmış bucket varsa onu kullan; yoksa eski tek
+    // "KDV: TL X" satırı.
+    if (taxBuckets.isNotEmpty) {
+      // Sıralı çıktı (oran küçükten büyüğe)
+      final sortedRates = taxBuckets.keys.toList()..sort();
+      for (final rate in sortedRates) {
+        final bucket = taxBuckets[rate]!;
+        if (bucket.taxSum <= 0) continue;
+        bytes.addAll(gen.row([
+          PosColumn(text: 'KDV %$rate:', width: 7),
+          PosColumn(
+            text: _money.format(bucket.taxSum),
+            width: 5,
+            styles: const PosStyles(align: PosAlign.right),
+          ),
+        ]));
+      }
+    } else if (tax != null && tax > 0) {
+      // Fallback: items içinde taxRate bilgisi yoksa toplam KDV göster
       bytes.addAll(gen.row([
         PosColumn(text: 'KDV:', width: 7),
         PosColumn(
@@ -179,6 +217,42 @@ class ReceiptTemplate {
           styles: const PosStyles(align: PosAlign.right),
         ),
       ]));
+    }
+
+    // ── KDV TABLOSU (Türkiye fiş standardı) ────────────────────────────────
+    // Sprint 29-fix-7: Her oran için Matrah + KDV detay satırı.
+    // Birden fazla farklı oran varsa (örn. %1 gıda + %20 genel) ayrı satır.
+    if (taxBuckets.isNotEmpty) {
+      bytes.addAll(gen.feed(1));
+      bytes.addAll(gen.text(
+        'KDV TABLOSU',
+        styles: const PosStyles(align: PosAlign.center, bold: true),
+      ));
+      bytes.addAll(gen.hr());
+      // Sütun başlıkları
+      bytes.addAll(gen.row([
+        PosColumn(text: 'Oran',  width: 2, styles: const PosStyles(bold: true)),
+        PosColumn(text: 'Matrah', width: 5, styles: const PosStyles(align: PosAlign.right, bold: true)),
+        PosColumn(text: 'KDV',    width: 5, styles: const PosStyles(align: PosAlign.right, bold: true)),
+      ]));
+      final sortedRates = taxBuckets.keys.toList()..sort();
+      for (final rate in sortedRates) {
+        final bucket = taxBuckets[rate]!;
+        bytes.addAll(gen.row([
+          PosColumn(text: '%$rate', width: 2),
+          PosColumn(
+            text: _money.format(bucket.netSum),
+            width: 5,
+            styles: const PosStyles(align: PosAlign.right),
+          ),
+          PosColumn(
+            text: _money.format(bucket.taxSum),
+            width: 5,
+            styles: const PosStyles(align: PosAlign.right),
+          ),
+        ]));
+      }
+      bytes.addAll(gen.hr());
     }
 
     bytes.addAll(gen.feed(1));
@@ -281,4 +355,11 @@ class ReceiptTemplate {
         .replaceAll('Ş', 'S').replaceAll('ş', 's')
         .replaceAll('Ü', 'U').replaceAll('ü', 'u');
   }
+}
+
+/// Sprint 29-fix-7 — KDV oran bazlı aggregator.
+/// Items içinde her satırın net + tax tutarını oran (%X) bazında topla.
+class _TaxBucket {
+  double netSum = 0.0;
+  double taxSum = 0.0;
 }

@@ -32,6 +32,13 @@ class CartItemRow extends ConsumerWidget {
         color: AppColors.danger.withValues(alpha: 0.1),
         child: const Icon(Icons.delete_outline, color: AppColors.danger),
       ),
+      confirmDismiss: (_) => AppConfirmationDialog.showDelete(
+        context: context,
+        title: 'Sepetten çıkar',
+        message: 'Ürün sepetten kaldırılacak.',
+        itemName: item.name,
+        confirmText: 'Çıkar',
+      ),
       onDismissed: (_) => onRemove(),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -143,13 +150,13 @@ class CartItemRow extends ConsumerWidget {
             onTap: () => onQuantityChanged(item.quantity - 1),
           ),
           Container(
-            constraints: const BoxConstraints(minWidth: 32),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 40),
             padding: const EdgeInsets.symmetric(horizontal: 4),
             alignment: Alignment.center,
             child: Text(
               '${item.quantity}',
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: 15,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -170,9 +177,10 @@ class CartItemRow extends ConsumerWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(6),
-      child: Padding(
-        padding: const EdgeInsets.all(6),
-        child: Icon(icon, size: 16, color: AppColors.primary),
+      child: Container(
+        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+        alignment: Alignment.center,
+        child: Icon(icon, size: 20, color: AppColors.primary),
       ),
     );
   }
@@ -247,19 +255,30 @@ class CartItemRow extends ConsumerWidget {
   void _showDiscountDialog(BuildContext context) {
     final controller =
         TextEditingController(text: item.discount.toStringAsFixed(0));
+    final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('İndirim (%)'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: '0 - 100',
-            suffixText: '%',
-            border: OutlineInputBorder(),
+        content: Form(
+          key: formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          child: TextFormField(
+            controller: controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            autofocus: true,
+            decoration: const InputDecoration(
+              hintText: '0 - 100',
+              suffixText: '%',
+              border: OutlineInputBorder(),
+            ),
+            validator: (v) {
+              final val = double.tryParse((v ?? '').replaceAll(',', '.'));
+              if (val == null) return 'Sayı girin';
+              if (val < 0 || val > 100) return '0 ile 100 arasında olmalı';
+              return null;
+            },
           ),
         ),
         actions: [
@@ -270,8 +289,9 @@ class CartItemRow extends ConsumerWidget {
           AppButton.primary(
             text: 'Uygula',
             onPressed: () {
-              final val = double.tryParse(controller.text) ?? 0;
-              onDiscountChanged(val.clamp(0, 100));
+              if (!(formKey.currentState?.validate() ?? false)) return;
+              final val = double.parse(controller.text.replaceAll(',', '.'));
+              onDiscountChanged(val);
               Navigator.pop(ctx);
             },
           ),

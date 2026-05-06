@@ -3,9 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
+// Sprint 29-fix-6: PDF print akışı sistemde kullanılmıyor → pdf/printing
+// import'ları kaldırıldı. Statement export PDF'i ayrı service'ta yaşıyor.
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
@@ -1071,12 +1070,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
     );
   }
 
-  /// Sprint 24 + 29-fix — 4-state akış:
+  /// Sprint 24 + 29-fix-3 — 4-state akış:
   /// - Case 1: USB etiket yazıcısı kayıtlı + masaüstü → ESC/POS direkt
   /// - Case 1.5 (Sprint 29-fix): Etiket yazıcı yok ama fiş yazıcısı kayıtlı →
   ///   fiş yazıcısını etiket için reuse et (POSA hem fiş hem etiket basabilir)
-  /// - Case 2: Kayıtlı ama USB hata → fallback PDF dialog + uyarı toast
-  /// - Case 3: Yapılandırılmamış / web → mevcut PDF dialog (geriye uyum)
+  /// - Case 2: USB hata → detaylı hata toast (PDF'e DÜŞME — kullanıcı
+  ///   "FeedMe POS Print Job" gibi sistem sanal yazıcısına yönlendirilince
+  ///   şaşırıyor)
+  /// - Case 3: SADECE web build veya hiçbir USB cihaz yok → PDF dialog
   Future<void> _printBarcodeLabels(
     BuildContext ctx,
     Map<String, dynamic> product,
@@ -1092,7 +1093,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
 
     final labelSettings = ref.read(labelPrintSettingsProvider);
 
-    // Case 1 + 2: Etiket yazıcı yapılandırılmış + masaüstü → USB direkt
+    // Case 1: Etiket yazıcı yapılandırılmış + masaüstü → USB direkt
     if (!kIsWeb && labelSettings.isConfigured) {
       final ok = await _printViaUsbLabelPrinter(
         product: product,
@@ -1104,13 +1105,15 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
         codeType: codeType,
       );
       if (ok) return;
-      // Case 2: USB hata — fallback dialog'a düş
+      // Case 2: USB hata — kullanıcıya detaylı hata, PDF'e DÜŞME
       if (mounted) {
-        AppToast.warning(
+        AppToast.error(
           context,
-          'Etiket yazıcısına bağlanılamadı. Sistem yazıcı seçim penceresine düşülüyor.',
+          'Etiket yazıcısına bağlanılamadı. USB bağlantı + driver kontrol edin '
+          '(Ayarlar → Cihazlar → Etiket Yazıcı).',
         );
       }
+      return;
     }
 
     // Case 1.5 (Sprint 29-fix): Etiket yazıcı yok ama fiş yazıcısı kayıtlı →
@@ -1119,7 +1122,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
     if (!kIsWeb && !labelSettings.isConfigured) {
       final receiptSettings = ref.read(printSettingsProvider);
       if (receiptSettings.isConfigured) {
-        final ok = await _printViaReceiptPrinterFallback(
+        final res = await _printViaReceiptPrinterFallback(
           receiptSettings: receiptSettings,
           product: product,
           variant: variant,
@@ -1129,7 +1132,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
           quantity: quantity,
           codeType: codeType,
         );
-        if (ok) {
+        if (res.success) {
           if (mounted) {
             AppToast.info(
               context,
@@ -1139,21 +1142,43 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
           }
           return;
         }
-        // Fallback hata → Case 3 PDF
+        // Sprint 29-fix-3: Fallback hata → detaylı toast, PDF'e DÜŞME.
+        // (Önceden Case 3 PDF dialog'a düşüyordu → "FeedMe POS Print Job"
+        // gibi sistem sanal yazıcısı kullanıcıyı şaşırtıyordu.)
+        if (mounted) {
+          AppToast.error(
+            context,
+            'Fiş yazıcısı (${receiptSettings.deviceName ?? "USB"}) ile etiket '
+            'basılamadı: ${res.error}. USB bağlantı + WinUSB driver kontrol edin.',
+          );
+        }
+        return;
       }
+      // Sprint 29-fix-4 (kullanıcı 17 deneme): Desktop'ta hiç USB cihaz yoksa
+      // PDF dialog'u açmıyoruz — Windows default sistem yazıcısı genellikle
+      // sanal PDF (FeedMe POS Print Job, Microsoft Print to PDF) ve kullanıcı
+      // bunlara basılan PDF'i Adobe Reader ile açmaya çalışıp şaşırıyor.
+      // Açık hata + ayar ekranına yönlendirme net UX.
+      if (mounted) {
+        AppToast.error(
+          context,
+          'USB yazıcı yapılandırılmamış. Ayarlar → Cihazlar & Entegrasyonlar → '
+          'Etiket Yazıcı veya Fiş Yazıcı menüsünden cihaz seçin.',
+        );
+      }
+      return;
     }
 
-    // Case 3: Yapılandırılmamış / web / fallback
-    await _printViaPdfDialog(
-      product: product,
-      variant: variant,
-      showName: showName,
-      showPrice: showPrice,
-      showSku: showSku,
-      labelSize: labelSize,
-      quantity: quantity,
-      codeType: codeType,
-    );
+    // Sprint 29-fix-6: PDF dialog tamamen kaldırıldı. Web build'de de USB
+    // yapılandırılması zorunlu (çünkü termal cihaz Windows desktop'ta).
+    // Web kullanıcısı için açık mesaj.
+    if (kIsWeb && mounted) {
+      AppToast.error(
+        context,
+        'Etiket basma için masaüstü uygulamasını + USB yazıcı kullanın. '
+        'Web tarayıcıda yazıcı erişimi yoktur.',
+      );
+    }
   }
 
   /// USB termal etiket yazıcısına ESC/POS bytes gönder.
@@ -1192,12 +1217,17 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
     }
   }
 
-  /// Sprint 29-fix — Case 1.5: Etiket yazıcı yok ama fiş yazıcısı (Sprint 22)
+  /// Sprint 29-fix-3 — Case 1.5: Etiket yazıcı yok ama fiş yazıcısı (Sprint 22)
   /// var. Fiş yazıcısının USB info'sunu makul label defaults ile birleştirip
   /// `LabelPrintService` ile gönderir (aynı paket, aynı ESC/POS driver).
   ///
   /// POSA gibi termal cihazlar (80mm rulo) hem fiş hem barkod basabilir.
-  Future<bool> _printViaReceiptPrinterFallback({
+  ///
+  /// Returns detailed result so the caller can surface the real error
+  /// instead of falling silently to the PDF dialog (which spawns the
+  /// system default printer — typically a virtual PDF printer that
+  /// confuses users).
+  Future<({bool success, String? error})> _printViaReceiptPrinterFallback({
     required PrintSettings receiptSettings,
     required Map<String, dynamic> product,
     required _VariantPrint variant,
@@ -1233,103 +1263,30 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
           price: showPrice ? variant.price : null,
           codeType: type,
         );
-        if (!result.success) return false;
+        if (!result.success) {
+          return (success: false, error: result.error ?? 'Bilinmeyen yazıcı hatası');
+        }
       }
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  /// Mevcut PDF dialog yolu (Case 3 + Case 2 fallback).
-  Future<void> _printViaPdfDialog({
-    required Map<String, dynamic> product,
-    required _VariantPrint variant,
-    required bool showName,
-    required bool showPrice,
-    required bool showSku,
-    required String labelSize,
-    required int quantity,
-    required String codeType,
-  }) async {
-    final isQr = codeType == 'QR';
-    final lW = labelSize == 'S'
-        ? PdfPageFormat.cm * 3
-        : labelSize == 'M'
-            ? PdfPageFormat.cm * 5
-            : PdfPageFormat.cm * 8;
-    final lH = isQr
-        ? lW
-        : labelSize == 'S'
-            ? PdfPageFormat.cm * 1
-            : labelSize == 'M'
-                ? PdfPageFormat.cm * 2
-                : PdfPageFormat.cm * 3;
-
-    try {
-      await Printing.layoutPdf(
-        onLayout: (format) async {
-          final doc = pw.Document();
-          final pwBarcode =
-              isQr ? pw.Barcode.qrCode() : pw.Barcode.code128();
-
-          for (int i = 0; i < quantity; i++) {
-            doc.addPage(
-              pw.Page(
-                pageFormat: PdfPageFormat(lW, lH, marginAll: 4),
-                build: (context) => pw.Center(
-                  child: pw.Column(
-                    mainAxisAlignment: pw.MainAxisAlignment.center,
-                    crossAxisAlignment: pw.CrossAxisAlignment.center,
-                    children: [
-                      if (showName)
-                        pw.Text(
-                          product['name']?.toString() ?? '',
-                          style: pw.TextStyle(
-                              fontSize: 7, fontWeight: pw.FontWeight.bold),
-                          textAlign: pw.TextAlign.center,
-                        ),
-                      pw.SizedBox(height: 2),
-                      isQr
-                          ? pw.BarcodeWidget(
-                              barcode: pwBarcode,
-                              data: variant.barcodeValue,
-                              width: lW * 0.65,
-                              height: lW * 0.65,
-                              drawText: false,
-                            )
-                          : pw.BarcodeWidget(
-                              barcode: pwBarcode,
-                              data: variant.barcodeValue,
-                              width: lW - 16,
-                              height: lH * 0.48,
-                              textStyle: pw.TextStyle(fontSize: 6),
-                              drawText: true,
-                            ),
-                      if (showSku && variant.sku.isNotEmpty)
-                        pw.Text('SKU: ${variant.sku}',
-                            style: pw.TextStyle(fontSize: 5)),
-                      if (showPrice) ...[
-                        pw.SizedBox(height: 2),
-                        pw.Text(
-                          _currFmt.format(variant.price),
-                          style: pw.TextStyle(
-                              fontSize: 9, fontWeight: pw.FontWeight.bold),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }
-          return doc.save();
-        },
-      );
+      return (success: true, error: null);
     } catch (e) {
-      if (mounted) AppToast.error(context, t('common.error'));
+      return (success: false, error: e.toString());
     }
   }
+
+  // Sprint 29-fix-6: _printViaPdfDialog metodu tamamen KALDIRILDI.
+  //
+  // Sebep: Sistemde PDF print akışı kullanılmıyor. Eski Case 3 fallback
+  // Windows default sistem yazıcısına (sanal PDF: Microsoft Print to PDF,
+  // FeedMe POS Print Job, vb.) yönlendiriyordu — termal POSA cihaz PDF
+  // basamadığı için kullanıcı şaşırıyordu.
+  //
+  // Etiket basma artık SADECE USB ESC/POS:
+  //   Case 1   : labelPrintSettings.isConfigured → ESC/POS direkt
+  //   Case 1.5 : printSettings (fiş yazıcısı) → POSA reuse
+  //   ELSE     : Açık hata toast + Ayar ekranına yönlendirme
+  //
+  // pdf/printing import'ları da kaldırıldı (statement_pdf_service.dart hâlâ
+  // kullanıyor — pubspec.yaml'da paket kalır). Eski kod git history'de.
 
   // ─── TAB: OEM ─────────────────────────────────────────────────────────────
 

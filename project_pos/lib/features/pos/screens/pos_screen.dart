@@ -275,26 +275,53 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             onCategorySelected: (cat) => ref.read(posProvider.notifier).selectCategory(cat),
           ),
         Expanded(
-          child: posState.isLoadingProducts 
-            ? const Center(child: CircularProgressIndicator()) 
-            : GridView.builder(
-                padding: const EdgeInsets.all(16),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: _isDesktop(context) ? 4 : 2,
-                  mainAxisSpacing: 16, crossAxisSpacing: 16, mainAxisExtent: 160
-                ),
-                itemCount: posState.filteredProducts.length,
-                itemBuilder: (context, index) {
-                  final product = posState.filteredProducts[index];
-                  return ProductGridItem(
-                    product: product, 
-                    currencyFormat: _currencyFormat, 
-                    onTap: () => _handleProductTap(product),
-                  );
-                },
-              ),
+          child: _buildProductGrid(posState),
         ),
       ],
+    );
+  }
+
+  Widget _buildProductGrid(PosState posState) {
+    final crossAxis = _isDesktop(context) ? 4 : 2;
+
+    if (posState.isLoadingProducts) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: AppSkeletonGrid(crossAxisCount: crossAxis, itemCount: crossAxis * 3),
+      );
+    }
+
+    if (posState.filteredProducts.isEmpty) {
+      final hasFilter = (posState.searchQuery).isNotEmpty ||
+          posState.selectedCategoryId != null;
+      return hasFilter
+          ? AppEmptyState.search(
+              title: 'Ürün bulunamadı',
+              description: 'Arama veya kategori filtresini temizleyip tekrar deneyin.',
+            )
+          : AppEmptyState.noData(
+              title: 'Henüz ürün yok',
+              description: 'Bu mağazada satışa hazır ürün bulunmuyor. Stok ekleyin.',
+            );
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxis,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        mainAxisExtent: 160,
+      ),
+      itemCount: posState.filteredProducts.length,
+      itemBuilder: (context, index) {
+        final product = posState.filteredProducts[index];
+        return ProductGridItem(
+          product: product,
+          currencyFormat: _currencyFormat,
+          onTap: () => _handleProductTap(product),
+        );
+      },
     );
   }
 

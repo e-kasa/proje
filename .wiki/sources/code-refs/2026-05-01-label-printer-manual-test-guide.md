@@ -1,15 +1,20 @@
 ---
-title: Etiket Yazıcı Manuel Test Rehberi (Sprint 24)
-tags: [test-guide, label-printer, manual-test, sprint-24, escpos, zjiang]
+title: Etiket Yazıcı Manuel Test Rehberi (Sprint 24 + Sprint 29-fix-6/7 güncellemesi)
+tags: [test-guide, label-printer, manual-test, sprint-24, sprint-29, escpos, posa, zjiang]
 source: project_pos/lib/services/print/, lib/features/inventory/screens/product_detail_screen.dart
-date: 2026-05-01
+date: 2026-05-06
 status: verified
 related-sprint: 24
+revisions:
+  - 2026-05-01 — Sprint 24 ilk yayım (Case 3 PDF dialog fallback dahil)
+  - 2026-05-06 — Sprint 29-fix-6 (PDF kaldırıldı) + fix-7 (KDV fiş) sonrası rehber güncel akışa hizalandı
 ---
 
 # Etiket Yazıcı Manuel Test Rehberi
 
-Sprint 24 implementasyonu sonrası **kullanıcı tarafından runtime'da yapılacak** smoke test akışı. Audit: [[sources/code-refs/2026-05-01-label-printer-implementation-audit]] · Synthesis: [[syntheses/label-printer-architecture]].
+Sprint 24 implementasyonu + Sprint 29 düzeltmeleri sonrası **kullanıcı tarafından runtime'da yapılacak** smoke test akışı. Audit: [[sources/code-refs/2026-05-01-label-printer-implementation-audit]] · Synthesis: [[syntheses/label-printer-architecture]].
+
+> ⚠️ **Sprint 29-fix-6 sonrası kritik değişiklik**: PDF print path **tamamen kaldırıldı**. Hiçbir senaryoda Windows print dialog / "FeedMe POS Print Job" / "Microsoft Print to PDF" açılmaz. Yapılandırma yoksa açık hata toast + ayar ekranına yönlendirme.
 
 ## Önkoşullar
 
@@ -30,24 +35,26 @@ flutter run -d windows
 
 ---
 
-## Senaryo 1: Yapılandırılmamış (Geriye Uyum — Case 3)
+## Senaryo 1: Hiç USB Yazıcı Yapılandırılmamış (Açık Hata Yolu)
 
-**Amaç:** Sprint 24 öncesi davranış korunmuş mu?
+**Amaç:** Etiket yazıcı + fiş yazıcı kayıtlı değilken kullanıcı net bir yönlendirme alıyor mu?
 
 **Adımlar:**
-1. Settings → Cihazlar & Entegrasyonlar → "Etiket Yazıcı" satırı görmeli
-2. Status: **turuncu** "Yapılandırılmadı" badge + subtitle "Tara → Cihaz seç"
-3. **Tıklamadan** geri çık → ürün listesine git
-4. Bir ürün aç → **Barkod Yaz** butonu (toolbar veya ilgili tab)
-5. Modal: barkod tipi/boyut/adet seç → **Yazdır** tıkla
+1. Settings → Cihazlar & Entegrasyonlar → **Etiket Yazıcı** satırı: turuncu "Yapılandırılmadı" badge
+2. Settings → **Fiş Yazıcı** satırı: turuncu "Yapılandırılmadı" badge (Sprint 22)
+3. Geri → ürün listesine git
+4. Bir ürün aç → **Barkod Yaz** → modal aç → adet 1 → **Yazdır**
 
-**Beklenen sonuç:**
+**Beklenen sonuç (Sprint 29-fix-6 sonrası):**
 - Modal kapanır
-- Windows **standart print dialog** açılır (yazıcı seçim penceresi)
-- Sistem yazıcılarından biri seçilebilir
-- "İptal" çekilse bile uygulama crash etmez, dialog kapanır
+- ⚠️ Toast (kırmızı/error): **"USB yazıcı yapılandırılmamış. Ayarlar → Cihazlar & Entegrasyonlar → Etiket Yazıcı veya Fiş Yazıcı menüsünden cihaz seçin."**
+- ❌ Windows print dialog **AÇILMAZ**
+- ❌ "FeedMe POS Print Job" / "Microsoft Print to PDF" kayıtlı PDF dosyası **OLUŞMAZ**
+- ❌ Belgeler klasöründe yeni `.pdf` dosyası bulunmaz
 
-**Doğrulama:** Sprint 24 öncesi davranış birebir aynı — bu sprint regresyon yaratmadı.
+**Doğrulama:** Sprint 29-fix-6 PDF kaldırma + fix-4 kIsWeb gating birlikte çalışıyor.
+
+> ⚠️ **Sprint 24'teki eski davranış**: Bu senaryo eski rehberde "Windows print dialog açılır" idi. Sprint 29-fix-2/3/4/5/6 boyunca PDF path kademeli olarak kaldırıldı (5 iter, kullanıcı 17 deneme dahil). Artık dialog yerine açık hata gösterilir.
 
 ---
 
@@ -79,28 +86,29 @@ flutter run -d windows
 
 ---
 
-## Senaryo 3: Yapılandırılmış + USB Hata (Case 2 Fallback)
+## Senaryo 3: Yapılandırılmış + USB Bağlantı Hatası (Case 2 — Açık Hata)
 
-**Amaç:** Cihaz bağlantı hatasında graceful fallback çalışıyor mu?
+**Amaç:** Cihaz erişilemiyor olduğunda kullanıcı gerçek hatayı görüyor mu?
 
 **Setup:**
 1. Senaryo 2'de yazıcı yapılandırıldı (status yeşil)
-2. **Zjiang yazıcısının USB kablosunu çıkar** (veya gücünü kapat)
+2. **Zjiang/POSA yazıcısının USB kablosunu çıkar** (veya cihaz gücünü kapat)
 3. Bir ürün aç → **Barkod Yaz** → adet 1 → **Yazdır**
 
-**Beklenen sonuç:**
-- ⚠️ Toast: **"Etiket yazıcısına bağlanılamadı. Sistem yazıcı seçim penceresine düşülüyor."**
-- Windows print dialog açılır (Senaryo 1 davranışı)
+**Beklenen sonuç (Sprint 29-fix-6 sonrası):**
+- ⚠️ Toast (error): **"Etiket yazıcısına bağlanılamadı. USB bağlantı + driver kontrol edin (Ayarlar → Cihazlar → Etiket Yazıcı)."**
+- ❌ Windows print dialog **AÇILMAZ** (eski PDF fallback davranışı silindi)
+- ❌ Sistem yazıcısı seçim penceresi **AÇILMAZ**
 - Uygulama crash etmez
-- Logger console'da: `Etiket yazıcı USB tarama hatası` veya bağlantı hatası kaydı
+- Logger console'da: `LabelPrintService` connect/send hatası veya `LabelPrintResult.failure(...)` kaydı
 
-**Doğrulama:** Case 2 → Case 3 graceful fallback çalışıyor; kullanıcı kayıp etiket basamaz, alternatif yola düşer.
+**Doğrulama:** Hata kaynağı görünür kalır; sessiz PDF fallback yok. Kullanıcı USB/driver sorununa odaklanabilir.
 
 ---
 
 ## Senaryo 4: Web Platform Guard
 
-**Amaç:** Tarayıcıda donanım entegrasyonu disabled görünüyor mu?
+**Amaç:** Tarayıcıda donanım entegrasyonu disabled görünüyor mu + barkod basma denemesi açık hata veriyor mu?
 
 **Komut:** `flutter run -d chrome`
 
@@ -109,8 +117,14 @@ flutter run -d windows
 2. Görsel: **dim opacity (~0.55)** + sağda küçük "Masaüstü" badge (desktop_windows ikonu + tooltip)
 3. Switch yok (chevron_right de göstermesin — `hasMasterSwitch: false`)
 4. Tıkla → Toast: "Etiket Yazıcı yalnız masaüstü uygulamasında kullanılır."
+5. Bir ürün aç → **Barkod Yaz** → adet 1 → **Yazdır**
 
-**Beklenen sonuç:** Tarayıcıda donanım entegrasyonu pasif görünüyor; kullanıcı yanlış yola sapmaz.
+**Beklenen sonuç (Sprint 29-fix-6 sonrası):**
+- ⚠️ Toast (error): **"Etiket basma için masaüstü uygulamasını + USB yazıcı kullanın. Web tarayıcıda yazıcı erişimi yoktur."**
+- ❌ Tarayıcı PDF preview / "save as" dialog **AÇILMAZ**
+- ❌ Yeni sekmede `printing` paketinin tarayıcı PDF görüntüleyicisi **AÇILMAZ** (eski Sprint 24 davranışı silindi)
+
+**Doğrulama:** Web'de donanım entegrasyonu pasif + barkod akışı açık hata veriyor. Sprint 24'te web fallback PDF dialog vardı → fix-6'da kaldırıldı.
 
 ---
 
@@ -130,6 +144,82 @@ flutter run -d windows
 - İki kayıt bağımsız, biri silinince diğeri etkilenmez
 
 **Doğrulama:** Synthesis K6 (aynı USB cihaz iki slot) doğrulandı; KOBİ senaryosu desteklenir.
+
+---
+
+## Senaryo 7: Yalnız Fiş Yazıcısı (POSA) — Etiket Reuse (Case 1.5)
+
+**Amaç:** Etiket yazıcı yapılandırılmamış ama POSA fiş yazıcısı kayıtlı → POSA'dan etiket basma çalışıyor mu? (Sprint 29-fix-2/3 davranışı)
+
+**Setup:**
+1. Settings → Cihazlar & Entegrasyonlar → **Etiket Yazıcı** kaydı **YOK** (turuncu badge)
+2. Settings → **Fiş Yazıcı** (Sprint 22) kaydı **VAR** (yeşil badge — POSA-80 Series gibi)
+3. Bir ürün aç → **Barkod Yaz** → adet 2, tip Code128 → **Yazdır**
+
+**Beklenen sonuç:**
+- ✅ POSA'dan **2 ayrı barkod etiketi** çıkar (kağıt 80mm, label 25mm yükseklik fallback)
+- ℹ️ Toast (info): **"Etiket fiş yazıcısı (POSA-80 Series) ile basıldı. Özel etiket yazıcı için: Ayarlar → Cihazlar → Etiket Yazıcı."**
+- ❌ Windows print dialog **AÇILMAZ**
+- ❌ "FeedMe POS Print Job" sanal yazıcı **AÇILMAZ**
+
+**Doğrulama:** Sprint 29-fix-2 Case 1.5 reuse + fix-3 result type + fix-6 PDF kaldırma birlikte çalışıyor. KOBİ tek-yazıcı senaryosu desteklenir (ayrı etiket yazıcı satın almak zorunlu değil).
+
+**Hata varyantı:** POSA bağlı değilse → **"Fiş yazıcısı (POSA-80 Series) ile etiket basılamadı: <error>. USB bağlantı + WinUSB driver kontrol edin."** error toast (Senaryo 1'deki gibi PDF dialog'a düşmez).
+
+---
+
+## Senaryo 8: Fiş KDV Oranı Görüntüsü (Sprint 29-fix-7)
+
+**Amaç:** POS satışı sonrası basılan fişte her satırda `*<oran>` göstergesi + footer'da "KDV TABLOSU" matris çıkıyor mu? (Türkiye Maliye fiş standardı)
+
+> Bu senaryo etiket yazıcı değil **fiş yazıcı (Sprint 22) testidir**, fakat aynı `LabelPrintService`/`PrintService` ESC/POS pipeline'ında çalıştığı için bu rehbere ekli — Sprint 29-fix-7 ile birlikte gelen davranıştır.
+
+**Setup:**
+1. POSA fiş yazıcısı kayıtlı (Senaryo 2 setup'ı gibi ama `Fiş Yazıcı` slotunda)
+2. POS ekranında 2 farklı KDV oranlı ürün ekle:
+   - "Fren Balata" — KDV %20, KDV-dahil ₺377.60
+   - "Su" — KDV %1, KDV-dahil ₺25.50 (varsa; yoksa tek %20 ile devam)
+3. Satışı tamamla → "Fiş Yazdır" tıkla
+
+**Beklenen fiş içeriği:**
+
+```
+SEDCORE POS
+Fis No: POS-...
+Tarih: 06.05.2026 ...
+--------------------
+Fren Balata
+  1 x TL 320.00     TL 377.60 *20      ← *20 KDV göstergesi
+Su
+  1 x TL 25.25      TL 25.50  *1       ← *1 KDV göstergesi
+--------------------
+Ara Toplam:        TL 345.25
+KDV %20:            TL 57.60
+KDV %1:              TL 0.25
+====================
+TOPLAM             TL 403.10
+====================
+Odeme: Nakit
+
+KDV TABLOSU                          ← yeni section
+--------------------
+Oran  Matrah     KDV
+%20   TL 320.00  TL 57.60
+%1    TL  25.25  TL  0.25
+--------------------
+
+[QR kod]
+#<saleId>
+```
+
+**Doğrulama kriterleri:**
+- ✅ Her satırda sağda `*<oran>` (örn. `*20`, `*1`, `*8`)
+- ✅ Totals bölümünde her oran için ayrı `KDV %<oran>:` satırı
+- ✅ Footer'da "KDV TABLOSU" başlığı + "Oran / Matrah / KDV" 3 sütunlu matris
+- ✅ Birden fazla oran varsa her oran için 1 satır
+- ✅ Backward compat: cart item'larında `taxRate` yoksa eski tek `KDV: TL X` korunur (regression yok)
+
+**Doğrulama:** [`receipt_template.dart`](project_pos/lib/services/print/receipt_template.dart) Sprint 29-fix-7 davranışı runtime'da görünür.
 
 ---
 
@@ -158,35 +248,48 @@ flutter run -d windows
 
 | Belirti | Olası Sebep | Çözüm |
 |---|---|---|
-| "USB cihaz bulunamadı" | Yazıcı kapalı, kablo gevşek, driver yok | Aygıt Yöneticisi kontrolü |
+| "USB yazıcı yapılandırılmamış" toast (Senaryo 1) | Hiç USB cihaz kayıtlı değil | Settings → Cihazlar → Etiket Yazıcı VEYA Fiş Yazıcı → Tara → Cihaz seç |
+| "Etiket yazıcısına bağlanılamadı" toast (Senaryo 3) | Yazıcı kapalı, kablo gevşek, driver yok | Aygıt Yöneticisi kontrolü; yazıcıyı aç + USB'yi yeniden tak |
+| "Microsoft Print to PDF" listede tek görünür (Sprint 29-fix-5) | POSA Windows'a yazıcı olarak yüklenmemiş | Windows Ayarlar → Bluetooth ve cihazlar → Yazıcılar ve tarayıcılar → Cihaz ekle → Generic / Text Only sürücüsü |
+| Önceki sanal yazıcı seçimi (PDF/OneNote/Fax) bağlı görünür | Sprint 29-fix-5 öncesi seçilmiş kayıt | Otomatik temizlenir (initState `clearDevice`); ardından tekrar tara |
 | Test etiketi çıktı ama Türkçe karakter bozuk | Codepage CP857 değil — `_ascii()` zaten ASCII'ye çeviriyor | Beklenen davranış (yazıcı codepage destekleyene kadar) |
 | Barkod basıldı ama metin altında değil | `BarcodeText.below` ESC/POS komutu yazıcı tarafından desteklenmiyor | Yazıcı dökümantasyonuna bak; alternatif `Generator.text()` ile elle yaz |
 | 3 etiket istenince 1 etiket basıldı, sonra durdu | Cihaz buffer dolu / disconnect | USB hub değiştir, doğrudan PC'ye bağla |
+| Fişte `*20` KDV göstergesi yok (Senaryo 8) | Cart item'da `taxRate` field'ı yok → backward compat eski tek `KDV:` satırı | Ürün KDV oranı ürün ekleme/düzenleme ekranında set edildi mi kontrol et |
 | Uygulama crash | Catch dışı exception | AppLogger.error console kayıtlarına bak — bug raporla |
+| Belgeler klasöründe "FeedMe POS Print Job (X).pdf" oluşur | **OLMAMALI** (Sprint 29-fix-6 sonrası) — eski PDF path bulgusu | `flutter clean && flutter pub get && flutter run -d windows` ile temiz build al; eski PDF'leri manuel sil |
 
 ---
 
-## Smoke Test Checklist (Hızlı Kontrol)
+## Smoke Test Checklist (Hızlı Kontrol — Sprint 29-fix-6/7 sonrası)
 
-- [ ] **S1** Yapılandırılmamış → PDF dialog açılır (Case 3, geriye uyum)
-- [ ] **S2** Yapılandırılmış + USB → 3 etiket termal yazıcıdan direkt çıkar (Case 1)
-- [ ] **S3** USB kopuk → uyarı toast + PDF dialog fallback (Case 2)
-- [ ] **S4** Web → "Masaüstü" badge + tıklama bloke
+- [ ] **S1** Hiç USB yazıcı yok → **error toast** ("USB yazıcı yapılandırılmamış...") + PDF dialog AÇILMAZ
+- [ ] **S2** Etiket yazıcı kayıtlı + USB → 3 etiket termal yazıcıdan direkt çıkar (Case 1)
+- [ ] **S3** USB kopuk → "Etiket yazıcısına bağlanılamadı..." error toast (Case 2, PDF fallback yok)
+- [ ] **S4** Web → "Masaüstü" badge + tıklama bloke + barkod basma error toast
 - [ ] **S5** Tek yazıcı 2 slot → ikisi de çalışır
 - [ ] **S6** Restart → SharedPreferences korunmuş
+- [ ] **S7** Sadece fiş yazıcısı (POSA) kayıtlı → Case 1.5 reuse + info toast ("fiş yazıcısı ile basıldı")
+- [ ] **S8** POS satışı → fişte `*20` KDV göstergesi + footer "KDV TABLOSU" matris (Sprint 29-fix-7)
 - [ ] Test etiketi içerik kontrolü (barkod okunur mu — telefon kamera ile barcode reader app)
 - [ ] Hız ölçümü: Case 1'de 5 etiket < 4 saniye
+- [ ] **Negatif kontrol**: Belgeler klasöründe yeni `.pdf` dosyası **OLUŞMAZ** (Sprint 29-fix-6 regresyon kontrolü)
+- [ ] **Negatif kontrol**: Sanal yazıcı (Microsoft Print to PDF, OneNote, FeedMe POS Print Job) USB tarama listesinde **GÖRÜNMEZ** (Sprint 29-fix-5)
 
 ## Sources
 
-- [`product_detail_screen.dart:1069-1240`](project_pos/lib/features/inventory/screens/product_detail_screen.dart#L1069-L1240) — `_printBarcodeLabels` 3-state akış
-- [`label_print_service.dart`](project_pos/lib/services/print/label_print_service.dart) — `LabelPrintService` + `EscPosLabelDriver` enjeksiyonu
+- [`product_detail_screen.dart:1080-1182`](project_pos/lib/features/inventory/screens/product_detail_screen.dart#L1080-L1182) — `_printBarcodeLabels` (Case 1 → Case 1.5 → error toast, PDF kaldırıldı)
+- [`product_detail_screen.dart:1230-1274`](project_pos/lib/features/inventory/screens/product_detail_screen.dart#L1230-L1274) — `_printViaReceiptPrinterFallback` (Sprint 29-fix-3 result type)
+- [`label_print_service.dart`](project_pos/lib/services/print/label_print_service.dart) — `LabelPrintService` + `EscPosLabelDriver` enjeksiyonu + `isVirtualPrinterName` reuse
 - [`label_template.dart`](project_pos/lib/services/print/label_template.dart) — `EscPosLabelDriver` impl
 - [`label_printer_settings_screen.dart`](project_pos/lib/features/settings/screens/label_printer_settings_screen.dart) — UI
+- [`print_service.dart`](project_pos/lib/services/print/print_service.dart) — `_virtualPrinterPatterns` blacklist (Sprint 29-fix-5)
+- [`receipt_template.dart`](project_pos/lib/services/print/receipt_template.dart) — KDV bucket aggregator + KDV TABLOSU footer (Sprint 29-fix-7)
+- [`printer_settings_screen.dart`](project_pos/lib/features/settings/screens/printer_settings_screen.dart) — auto-clear sanal yazıcı + Windows kurulum banner (Sprint 29-fix-5)
 - [[syntheses/label-printer-architecture]] — mimari karar referansı
 - [[syntheses/integrations-hub-architecture]] — hub L1→L3 paterni
 
 ## Related
 
 - [[sources/code-refs/2026-05-01-label-printer-implementation-audit]]
-- [[log]]
+- [[log]] (özellikle Sprint 29-fix-2/3/4/5/6/7 girdileri — bu rehber 2026-05-06 revizyonu fix-6 + fix-7 sonrası gerçek davranışa hizalandı)

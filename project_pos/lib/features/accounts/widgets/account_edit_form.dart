@@ -147,7 +147,16 @@ class _AccountEditFormState extends ConsumerState<AccountEditForm> {
       widget.onSuccess();
     } catch (e) {
       if (!mounted) return;
-      AppToast.error(context, 'Hata: $e');
+      final raw = e.toString();
+      final friendly = raw.contains('duplicate') || raw.contains('UNIQUE')
+          ? 'Bu kayıt zaten mevcut. Ad, telefon veya vergi no'
+              ' farklı olmalı.'
+          : raw.contains('SocketException') || raw.contains('TimeoutException')
+              ? 'Sunucuya ulaşılamıyor. İnternet bağlantınızı kontrol edin.'
+              : raw.contains('401') || raw.contains('403')
+                  ? 'Bu işlem için yetkiniz yok.'
+                  : 'Kaydedilemedi: ${raw.replaceFirst('Exception: ', '')}';
+      AppToast.error(context, friendly);
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -168,6 +177,7 @@ class _AccountEditFormState extends ConsumerState<AccountEditForm> {
       padding: const EdgeInsets.all(12),
       child: Form(
         key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -350,9 +360,20 @@ class _AccountEditFormState extends ConsumerState<AccountEditForm> {
       inputFormatters: inputFormatters,
       maxLines: maxLines,
       style: const TextStyle(fontSize: 13),
-      validator: required
-          ? (v) => (v == null || v.trim().isEmpty) ? '*' : null
-          : null,
+      validator: (v) {
+        final value = (v ?? '').trim();
+        if (required && value.isEmpty) return '$label zorunlu';
+        if (value.isEmpty) return null;
+        if (keyboardType == TextInputType.emailAddress &&
+            !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value)) {
+          return 'Geçerli e-posta girin';
+        }
+        if (keyboardType == TextInputType.phone &&
+            !RegExp(r'^[\d\s\+\-\(\)]{7,}$').hasMatch(value)) {
+          return 'Geçerli telefon girin';
+        }
+        return null;
+      },
       decoration: InputDecoration(
         labelText: required ? '$label *' : label,
         labelStyle: const TextStyle(fontSize: 12),

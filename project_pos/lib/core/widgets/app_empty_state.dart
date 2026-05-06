@@ -84,10 +84,14 @@ class AppEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // SingleChildScrollView: küçük alanlarda (örn. integration tile içi 175px)
+    // Column overflow oluyordu — scrollable yaparak güvenli kıldık. Geniş
+    // alanlarda Column zaten ortalanır, scroll devreye girmez.
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: AppConstants.paddingLarge,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Animated Icon

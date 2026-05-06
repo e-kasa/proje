@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:project_pos/features/accounts/di/accounts_di.dart';
+import 'package:project_pos/features/accounts/providers/accounts_list_settings.dart';
 import 'package:project_pos/services/service_locator.dart';
 
 enum AccountsFilter { all, overdue, customer, supplier }
@@ -91,12 +91,8 @@ class AccountsListNotifier extends StateNotifier<AccountsListState> {
   AccountsListNotifier(this._ref) : super(const AccountsListState());
 
   static const String _endpoint = 'product/api/v1/accounts/list';
-  // Sprint 8 hot-fix v2 (zeynep müşteri görünmüyor sorunu sonrası):
-  // KOBİ tenant'larda 100 müşteri tipik; ilk yüklemede 100 + auto-prefetch
-  // ile toplam ~200 müşteri gelir → "Z" harfli müşteri ilk açılışta görünür.
-  // 200+ müşterili büyük tenant'lar için scroll loadMore zaten devreye girer.
-  // Backend Math.min(200, limit) ile clamp eder; üst sınır.
-  static const int _pageLimit = 100;
+  // Sayfa boyutu Sprint 30'dan beri `accountsListPaginationProvider` üzerinden
+  // dinamik (50/100/200, default 100). Backend Math.min(200, limit) ile clamp.
 
   /// Sprint 8 B0 — sayfanın ilk yüklenmesi (initial veya filter/query değişimi).
   ///
@@ -164,8 +160,10 @@ class AccountsListNotifier extends StateNotifier<AccountsListState> {
 
   Future<void> _fetch({String? cursor, required bool append}) async {
     try {
+      final pageLimit =
+          _ref.read(accountsListPaginationProvider).pageLimit;
       final params = <String, dynamic>{
-        'limit': _pageLimit,
+        'limit': pageLimit,
         'filter': _filterToString(state.filter),
       };
       if (cursor != null && cursor.isNotEmpty) params['cursor'] = cursor;

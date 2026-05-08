@@ -5,6 +5,7 @@ import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/utils/app_logger.dart';
+import 'package:project_pos/services/print/hidden_printers.dart';
 import 'package:project_pos/services/print/label_print_service.dart';
 import 'package:project_pos/services/print/label_print_settings.dart';
 import 'package:project_pos/services/print/print_service.dart' show UsbDeviceInfo;
@@ -45,6 +46,17 @@ class _LabelPrinterSettingsScreenState
     super.dispose();
   }
 
+  /// Hidrasyon initState sonrası tamamlandığı için controller'lar default
+  /// değerle doldu — ilk `loaded=true` build'inde gerçek değerlerle senkronize et.
+  /// (Sprint 30 receipt-printer-repeated-pairing fix paralel)
+  bool _dimsHydrated = false;
+  void _hydrateDimensionControllers(LabelPrinterSettings settings) {
+    if (_dimsHydrated || !settings.loaded) return;
+    _dimsHydrated = true;
+    _widthCtl.text = settings.labelWidthMm.toString();
+    _heightCtl.text = settings.labelHeightMm.toString();
+  }
+
   Future<void> _scanDevices() async {
     if (kIsWeb) {
       AppToast.error(context,
@@ -74,6 +86,88 @@ class _LabelPrinterSettingsScreenState
     } finally {
       if (mounted) setState(() => _isScanning = false);
     }
+  }
+
+  /// Sprint 30 — Tarama listesindeki cihazı kullanıcı blacklist'ine ekler.
+  /// `printer_settings_screen.dart` paterni paralel; ortak `hiddenPrintersProvider`
+  /// kullanır, böylece fiş + etiket yazıcı taramaları tek listeden filtreli.
+  Future<void> _hideDevice(UsbDeviceInfo device) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Yazıcıyı listeden gizle'),
+        content: Text(
+          '"${device.displayName}" cihazı tarama listesinde gösterilmesin mi? '
+          'Bu işlem yazıcıyı Windows\'tan kaldırmaz; sadece bu uygulamadaki '
+          'tarama listesini sadeleştirir. İstediğiniz zaman geri alabilirsiniz.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Vazgeç'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Gizle'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(hiddenPrintersProvider.notifier).hide(device.displayName);
+    if (!mounted) return;
+    setState(() {
+      _devices.removeWhere((d) =>
+          d.displayName.toLowerCase().trim() ==
+          device.displayName.toLowerCase().trim());
+    });
+    AppToast.info(context, '"${device.displayName}" listeden gizlendi.');
+  }
+
+  Future<void> _unhideDevice(String name) async {
+    await ref.read(hiddenPrintersProvider.notifier).unhide(name);
+    if (mounted) {
+      AppToast.info(context, '"$name" geri yüklendi. Tekrar tara.');
+    }
+  }
+
+  Future<void> _unhideAll() async {
+    await ref.read(hiddenPrintersProvider.notifier).clearAll();
+    if (mounted) {
+      AppToast.info(context, 'Tüm gizli yazıcılar geri yüklendi. Tekrar tara.');
+    }
+  }
+
+  Widget _buildHiddenPrintersCard() {
+    final hidden = ref.watch(hiddenPrintersProvider);
+    if (hidden.hiddenNames.isEmpty) return const SizedBox.shrink();
+    final names = hidden.hiddenNames.toList()..sort();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: AppSectionCard(
+        title: 'Gizli yazıcılar (${names.length})',
+        icon: Icons.visibility_off,
+        children: [
+          for (final name in names)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.print_disabled, color: AppColors.textMuted),
+              title: Text(name),
+              trailing: IconButton(
+                icon: const Icon(Icons.restore, color: AppColors.primary),
+                tooltip: 'Geri al',
+                onPressed: () => _unhideDevice(name),
+              ),
+            ),
+          const SizedBox(height: 8),
+          AppButton.outline(
+            text: 'Tümünü geri al',
+            icon: Icons.restore_page,
+            onPressed: _unhideAll,
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _selectDevice(UsbDeviceInfo device) async {
@@ -124,6 +218,14 @@ class _LabelPrinterSettingsScreenState
   Widget build(BuildContext context) {
     final settings = ref.watch(labelPrintSettingsProvider);
     final notifier = ref.read(labelPrintSettingsProvider.notifier);
+    _hydrateDimensionControllers(settings);
+
+    if (!settings.loaded) {
+      return BaseScaffold(
+        appBar: AppAppBar.standard(title: 'Etiket Yazıcı Ayarları'),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return BaseScaffold(
       appBar: AppAppBar.standard(title: 'Etiket Yazıcı Ayarları'),
@@ -210,8 +312,13 @@ class _LabelPrinterSettingsScreenState
               title: 'Bulunan Cihazlar (${_devices.length})',
               icon: Icons.list,
               children: _devices.map((d) {
+                // Sprint 30 fix — Generic / Text Only sürücüsü VID=0 PID=0
+                // verir; sadece VID/PID match'i tüm Generic kayıtları "seçili"
+                // gösteriyor. Cihaz adını da match'e dahil et.
                 final isSelected = settings.vendorId == d.vendorId &&
-                    settings.productId == d.productId;
+                    settings.productId == d.productId &&
+                    (settings.deviceName ?? '').toLowerCase().trim() ==
+                        d.displayName.toLowerCase().trim();
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: Icon(
@@ -222,15 +329,24 @@ class _LabelPrinterSettingsScreenState
                   ),
                   title: Text(d.displayName),
                   subtitle: Text('VID: ${d.vendorId}  PID: ${d.productId}'),
+                  // Sprint 30: seçili olmayanlara gizle ikonu (printer_settings paralel).
+                  // Kırmızı ✕ — "Bağlı Yazıcı" kartı paterni ile tutarlı.
                   trailing: isSelected
                       ? const Icon(Icons.check_circle,
                           color: AppColors.success)
-                      : const Icon(Icons.chevron_right),
+                      : IconButton(
+                          icon: const Icon(Icons.close, color: AppColors.danger),
+                          tooltip: 'Listede gösterme',
+                          onPressed: () => _hideDevice(d),
+                        ),
                   onTap: () => _selectDevice(d),
                 );
               }).toList(),
             ),
           if (_devices.isNotEmpty) const SizedBox(height: 16),
+
+          // ── Gizli yazıcılar (Sprint 30 — aktif olmayan yazıcı yönetimi) ─────
+          _buildHiddenPrintersCard(),
 
           // ── Etiket Boyutu ──────────────────────────────────────────────────
           AppSectionCard(
@@ -301,6 +417,41 @@ class _LabelPrinterSettingsScreenState
           ),
           const SizedBox(height: 16),
 
+          // ── Sprint 30: Yazıcı Protokolü ────────────────────────────────────
+          AppSectionCard(
+            title: 'Yazıcı Protokolü',
+            icon: Icons.code,
+            children: [
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: LabelProtocol.values
+                    .map((p) => ChoiceChip(
+                          label: Text(p.label),
+                          selected: settings.protocol == p,
+                          onSelected: (v) {
+                            if (v) notifier.updateProtocol(p);
+                          },
+                          selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                        ))
+                    .toList(),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                settings.protocol.description,
+                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'TSPL: Zjiang LABEL-9X10, Argox, TSC etiket cihazları için.\n'
+                'ESC/POS: POSA, Zjiang ZJ-58/80 fiş termal yazıcılar için.\n'
+                'Yanlış protokol seçilirse cihaz bytes\'ı sessizce reddeder, çıktı vermez.',
+                style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
           // ── Davranış ──────────────────────────────────────────────────────
           AppSectionCard(
             title: 'Davranış',
@@ -310,7 +461,7 @@ class _LabelPrinterSettingsScreenState
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Her etiketten sonra otomatik kes'),
                 subtitle: const Text(
-                  'ESC/POS GS V kesim komutu — yazıcı destekliyorsa',
+                  'ESC/POS GS V / TSPL CUT komutu — yazıcı destekliyorsa',
                   style: TextStyle(fontSize: 11),
                 ),
                 value: settings.autoCutAfterEach,

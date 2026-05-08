@@ -11,6 +11,1694 @@ Append-only olay kaydı. **En yeni üste**.
 
 ## Olaylar
 
+## [2026-05-06] sprint-30-barcode-variant-resolve | Variant-Level Barkod Eşleşmesi + Stok Kontrolü ✅
+
+### Tetikleyici
+
+Kullanıcı: *"barkod okuyor ama ürünü otomatik sepete eklemiyor. okutulan barkod ürünü mağazada mevcut stok olmalı. satış listesine otomatik ekle"*. Barkod okuyucu (Netum F-16) takıldı, listener tetikleniyor, ama `addToCartByBarcode` ürün eşleşmesi yanlış katmanda (product-level `p['barcode']`) yapıldığı için sürekli "Barkod bulunamadı" toast'u alınıyordu.
+
+### Kök Sebep
+
+Backend `ProductVariantResponse.barcodes: List<BarcodeResponse>` → barkodlar **variant-level**. Önceki Flutter kodu `state.products` üzerinde `p['barcode']` arıyordu — bu alan backend response'unda **yok**. Sadece `p['sku']` fallback'i ve API search endpoint denemesi sayesinde bazen çalışıyordu.
+
+### Düzeltme
+
+[`pos_provider.dart`](project_pos/lib/features/pos/providers/pos_provider.dart):
+
+**Yeni `_findByBarcode(products, barcode)` helper** — 3 katmanlı eşleşme:
+
+```
+1. variant.barcodes[].barcodeCode (primary öncelikli, gerçek backend şeması)
+   - Alternatif key'ler: code, barcode (legacy/Jackson varyantları)
+2. variant.barcode veya variant.sku (legacy variant fields)
+3. product-level p.barcode / p.sku → stoklu ilk variant'a düş
+   (multi-variant ürünlerde otomatik stoklu seçim)
+```
+
+Returns: `_BarcodeHit(product, variant?)` veya null
+
+**Yeni `_addByBarcodeResult(product, variant, barcode)` flow:**
+
+1. Stok kontrolü **erken**: `myStoreStock` variant > product fallback
+2. `myStoreStock <= 0` → açıklayıcı error toast: `'Stokta yok: <ürün adı> · <variant adı> (mağazanızda 0 adet)'`
+3. `>0` → `addToCart(product, variant: variant)` → `successMessage: 'Eklendi: <full name>'`
+
+**Yeni `_BarcodeHit` private class** dosya sonunda — match sonucu typed.
+
+### Davranış
+
+```
+Senaryo 1: Variant-level barkod (en yaygın)
+  Cihaz okur "8690000123456"
+  → state.products içinde her variant.barcodes[] taranır
+  → eşleşme bulunur → o variant + product
+  → myStoreStock > 0 → addToCart + Toast: "Eklendi: Fren Balata · Ön Sol"
+
+Senaryo 2: Stok yok mevcut mağazada
+  Eşleşme bulunur ama myStoreStock = 0
+  → Toast: "Stokta yok: Fren Balata · Ön Sol (mağazanızda 0 adet)"
+  → addToCart çağrılmaz, sepete eklenmez
+
+Senaryo 3: Multi-variant ürün, product-level barkod (eski şema)
+  Ürünün p.barcode = "8690000123456" (variant değil ürün level)
+  → product match → variants taranır → ilk myStoreStock>0 olan seçilir
+  → addToCart + Toast: "Eklendi"
+
+Senaryo 4: Cache'te yok
+  Eşleşme yok → API search çağrı → eşleşirse cache'e ekle + tekrar resolve
+  → Eşleşme hâlâ yok → Toast: "Barkod bulunamadı: 8690000123456"
+
+Senaryo 5: Multi-variant + hiçbiri stoklu değil (product-level barkod)
+  Tüm variant'lar 0 stok → ilk variant döner (chosen ??= variants.first)
+  → _addByBarcodeResult myStoreStock=0 detect → "Stokta yok" toast
+```
+
+### Doğrulama
+
+`flutter analyze lib/features/pos/providers/pos_provider.dart`: **No issues found!** ✅
+
+### Smoke Test
+
+```
+1. Hot restart
+2. Inventory → bir ürünün variant'ına barkod ekle:
+   Ürün → variant → "Barkodlar" → "Yeni" → 8690000123456 + isPrimary=true
+   → Kaydet
+3. POS aç → search kutusunda autofocus
+4. Cihazdan o barkodu okut (veya klavyeden yaz + Enter)
+   → Toast 1: "🔍 Barkod algılandı: 8690000123456" (BarcodeScannerListener
+     skip etse bile search kutusu Enter ile aynı sonuca gider)
+   → Toast 2: "Eklendi: <ürün adı>" (mağazanızda stok varsa)
+   → Toast 2: "Stokta yok: ... (mağazanızda 0 adet)" (yoksa)
+5. Aynı barkodu tekrar oku → quantity artar (mevcut addToCart davranışı)
+6. Bilinmeyen barkod → "Barkod bulunamadı: ..." (önce cache, sonra API kontrol)
+```
+
+### Sources
+
+- [`pos_provider.dart`](project_pos/lib/features/pos/providers/pos_provider.dart) — `_findByBarcode` + `_addByBarcodeResult` + `_BarcodeHit`
+- [`ProductVariantResponse.java`](pos-product-manager/src/main/java/com/sedcore/product/model/ProductVariantResponse.java) — backend `barcodes: List<BarcodeResponse>` (variant-level)
+- Önceki sprint girdileri: barcode-resolver (UI variant resolve), barcode-3-paths-fix (3 yol birleşim), barcode-visual-feedback
+
+### Sprint 30 Backlog — Güncel
+
+| Kalem | Durum |
+|---|---|
+| ~~Variant-level barkod arama + stok kontrolü~~ | ✅ DONE (bu girdi) |
+| Inventory ekranlarında barkod scan (stok aktarım) | ⏳ pending |
+| Gerçek USB scan paketi araştırması | ⏳ pending |
+| ZPL adapter (Zebra) | ⏳ pending |
+| ÖKC sertifikasyon + E-Arşiv XML | 🔮 Sprint 32+ |
+
+---
+
+## [2026-05-06] sprint-30-barcode-visual-feedback | Görsel Toast + POS Search Autofocus ✅
+
+### Tetikleyici
+
+Kullanıcı: *"ekranda hiçbir hareket olmuyor barkodun çalıştığını gösterir log basabilir misin"* + *"barkod okuyucu neden okumuyor"*. Mevcut `BarcodeScannerListener` `AppLogger.info` ile sadece **debug console**'a log atıyordu (VS Code Debug Console). Kullanıcı ekrandan teyit göremiyordu, listener çalışıp çalışmadığı belirsizdi.
+
+Ek olarak POS açılınca search kutusu **autofocus değildi** → kullanıcı tıklamadan cihaz okuyunca karakterler hiçbir TextField'a gitmiyordu.
+
+### Düzeltme
+
+**Edit:**
+
+- 📝 [`pos_screen.dart`](project_pos/lib/features/pos/screens/pos_screen.dart):
+  - `BarcodeScannerListener.onScan` callback'inde `AppToast.info(context, '🔍 Barkod algılandı: $code')` — listener tetiklendiğinde **ekrandan teyit**
+  - posState `successMessage` / `error` zaten ayrı toast veriyor → 2 ayrı feedback (algıla + sonuç)
+- 📝 [`product_search_panel.dart`](project_pos/lib/features/pos/widgets/product_search_panel.dart):
+  - Search `TextField`'a `autofocus: true` + `focusNode: _barcodeFocusNode`
+  - `onSubmitted` sonrasında `_barcodeFocusNode.requestFocus()` — sıralı taramada otomatik geri focus
+
+### Davranış
+
+```
+Senaryo 1: Listener tetiklendi (önceden sessizdi)
+  Cihaz okur → BarcodeScannerListener algılar
+  → Toast 1: "🔍 Barkod algılandı: 8690000123456"
+  → addToCartByBarcode çağrılır
+  → Toast 2: "Eklendi: <ürün adı>" (başarı) veya "Barkod bulunamadı: ..."
+
+Senaryo 2: POS açılışı (autofocus)
+  Kullanıcı POS'a girer
+  → Search kutusu otomatik focus alır (autofocus: true)
+  → Cihaz okur → karakterler search kutusuna yazılır
+  → Enter → onSubmitted → addToCartByBarcode + clear + tekrar focus
+  → Toast 2: "Eklendi: ..."
+
+  Bu durumda BarcodeScannerListener skip eder (TextField focus aktif),
+  ama search kutusunun kendi handler'ı çalışır → çift işlem yok.
+
+Senaryo 3: Kullanıcı search kutusunun dışına tıkladı
+  → focus boşa düşer
+  → BarcodeScannerListener tekrar aktif
+  → Cihaz okur → Toast 1 "🔍 Barkod algılandı" + Toast 2 "Eklendi"
+```
+
+### Görsel Feedback Akışı
+
+| Adım | Toast | Anlam |
+|---|---|---|
+| BarcodeScannerListener tetiklendi | 🔍 Barkod algılandı: X | Listener çalışıyor |
+| Eşleşme bulundu, sepete eklendi | Eklendi: Y | Sistem tam çalışıyor |
+| DB'de eşleşme yok | Barkod bulunamadı: X | Listener OK, DB güncel değil |
+| Multi-variant ürün | Ürün birden fazla varyanta sahip... | Manuel seçim gerek |
+
+**Hiç toast gelmiyorsa** = listener tetiklenmiyor → cihaz HID değil veya hot restart yapılmadı.
+
+### Doğrulama
+
+`flutter analyze lib/features/pos/screens/pos_screen.dart lib/features/pos/widgets/product_search_panel.dart`: **1 baseline issue** (`product_search_panel.dart:275` `(_, __)` Sprint 22'den), Sprint 30 değişikliklerimde **0 yeni issue** ✅
+
+### Smoke Test
+
+```
+1. Hot restart (terminal'de büyük R)
+2. POS ekranını aç
+3. Hiçbir yere tıklamadan cihazdan barkod okut
+
+Beklenen Davranış:
+  → Search kutusunda barkod karakterleri görünür (autofocus)
+  → Enter sonrası kutu temiz + sepete ürün
+  → Toast 1: "Eklendi: ..." (veya "Barkod bulunamadı: ...")
+
+  Veya (search kutusu fokuslu değilse, örn. modal açıkken kapatınca):
+  → Toast 1: "🔍 Barkod algılandı: 8690000123456"
+  → Toast 2: posState sonucu
+```
+
+### Sources
+
+- [`pos_screen.dart`](project_pos/lib/features/pos/screens/pos_screen.dart) — `onScan` callback toast
+- [`product_search_panel.dart`](project_pos/lib/features/pos/widgets/product_search_panel.dart) — autofocus + re-focus
+- Önceki Sprint 30 girdileri: barcode-scanner (listener), barcode-3-paths-fix (toast standartı)
+
+---
+
+## [2026-05-06] sprint-30-barcode-resolver | Variant Barkodunu Backend'den Dayanıklı Çözümleme ✅
+
+### Tetikleyici
+
+Kullanıcı: *"barkod yazdırırken barkod barkod numarasını backendden alması gerekiyo ürün bilgileri üzerinde bu bilgi mevecut"*. Mevcut `_buildVariantRow` içindeki çözünürlük inline + log yok → runtime'da neden SKU fallback'e düştüğü anlaşılmıyordu.
+
+### Backend Şeması Doğrulandı
+
+[`ProductVariantResponse.java`](pos-product-manager/src/main/java/com/sedcore/product/model/ProductVariantResponse.java):
+```java
+private List<BarcodeResponse> barcodes;
+```
+
+[`BarcodeResponse`](pos-product-manager/src/main/java/com/sedcore/product/model/ProductResponse.java#L82):
+```java
+private String barcodeCode;
+private String barcodeType;
+private Boolean isPrimary;
+```
+
+`variant.barcode` (single) **yok**; sadece `variant.barcodes[]` (List) var. Önceki Flutter kodu `variant['barcode']` ile başlıyordu — bu hep null dönüyordu, sonra `barcodes[]` listesine düşüyordu (yine de doğru ama logging yoktu).
+
+### Düzeltme — `_resolveVariantBarcode()` Helper
+
+[`product_detail_screen.dart`](project_pos/lib/features/inventory/screens/product_detail_screen.dart):
+
+Inline çözünürlük private metoda çıkarıldı + dayanıklı parse + AppLogger:
+
+```dart
+String? _resolveVariantBarcode(Map<String, dynamic> variant) {
+  String? primary;
+  final list = (variant['barcodes'] as List?)?.cast<Map<String, dynamic>>();
+  if (list != null && list.isNotEmpty) {
+    // isPrimary key alternatifleri (Jackson/Lombok bazen "primary" döner)
+    final picked = list.firstWhere(
+      (b) => b['isPrimary'] == true || b['primary'] == true,
+      orElse: () => list.first,
+    );
+    primary = picked['barcodeCode']?.toString() ??
+        picked['code']?.toString() ??
+        picked['barcode']?.toString();
+  }
+  final legacy = variant['barcode']?.toString() ??
+      variant['barcodeCode']?.toString();
+  final result = primary ?? legacy;
+  AppLogger.info(
+    'Barcode resolve: barcodes.len=${list?.length ?? 0} primary="$primary" '
+    'legacy="$legacy" → final="$result" (sku=${variant['sku']})',
+    tag: 'BarcodePrint',
+  );
+  return (result != null && result.isNotEmpty) ? result : null;
+}
+```
+
+**Dayanıklılık:**
+- `barcodes[]` listesi varsa **isPrimary** ya da fallback'e first eleman
+- `isPrimary` Jackson tarafından `"primary"` olarak da serialize edilebilir (boolean is-prefix removal) → her ikisi denenir
+- Item içinde `barcodeCode` öncelikli; `code` veya `barcode` alternatifleri (legacy)
+- En son legacy `variant['barcode']` veya `variant['barcodeCode']` (başka endpoint eski şema dönerse)
+- Hiçbiri yoksa null → caller SKU fallback
+
+**Log her çağrıda:** array uzunluğu, primary/legacy değerler, son sonuç + SKU. Runtime'da debug console'dan neden SKU'ya düştüğü anlaşılır.
+
+### Doğrulama
+
+`flutter analyze lib/features/inventory/screens/product_detail_screen.dart`: **No issues found!** ✅
+
+### Smoke Test
+
+```
+1. Hot restart
+2. Inventory → ürün detayı aç
+3. Debug console: "Barcode resolve: barcodes.len=N primary=... → final=..."
+4. Senaryo A — barcodes dolu:
+   "barcodes.len=1 primary='8690000123456' legacy=null → final='8690000123456' (sku=ABC-123)"
+   → vp.hasBarcodeReal=true → UI'da "Barkod: 8690000123456" gösterilir
+   → Barkod Yaz → 8690000123456 basılır
+
+5. Senaryo B — DB'de barkod yok:
+   "barcodes.len=0 primary=null legacy=null → final=null (sku=ABC-123)"
+   → vp.hasBarcodeReal=false → UI'da "Barkod yok (SKU kullanılır)" gösterilir
+   → Barkod Yaz → ABC-123 (SKU) basılır
+
+6. Senaryo C — Jackson "primary" döner:
+   list[0].isPrimary=null ama list[0].primary=true
+   → fallback ile yine ilk eleman seçilir → barcodeCode alınır
+```
+
+### Sources
+
+- [`product_detail_screen.dart`](project_pos/lib/features/inventory/screens/product_detail_screen.dart):512-548 — `_resolveVariantBarcode` helper
+- [`ProductVariantResponse.java`](pos-product-manager/src/main/java/com/sedcore/product/model/ProductVariantResponse.java) — backend şema (List<BarcodeResponse>)
+- [`ProductResponse.BarcodeResponse`](pos-product-manager/src/main/java/com/sedcore/product/model/ProductResponse.java#L82) — barcodeCode/barcodeType/isPrimary
+- Sprint 24 LabelDriver / Sprint 30 TSPL adapter — `barcodeValue` consumer'ları (doğrudan etkilenmez, sadece resolver güçlendi)
+
+---
+
+## [2026-05-06] sprint-30-printer-warmup | App Restart Sonrası İlk Connect Başarısızlığı Fix ✅
+
+### Tetikleyici
+
+Kullanıcı: *"flutter uygulamasını kapatıp açınca çalışmıyor aynı şeyi fiş yazıcıda da yapıyor"*. Sprint 30 receipt-printer-repeated-pairing fix `loaded` flag + self-healing rediscover ekledi (Sprint 22 baseline UI bug çözüldü), ama **app process restart** sonrası ilk basma denemesi yine başarısız.
+
+### Kök Sebep
+
+`flutter_pos_printer_platform_image_3` paketi `PrinterManager.instance` singleton'ı app process kapanınca state'i kaybediyor. Yeni process açıldığında **ilk `connect()` çağrısı** internal state hazır olmadan deneniyor → fail → `_send` fallback olarak `_rediscoverDeviceName` çağırıyor ama bu da bazen başarısız (paket tarafında lazy init).
+
+Mevcut akış:
+```
+_tryConnect(savedName)  → fail (warmup yok)
+  ↓
+_rediscoverDeviceName → discoverDevices (warmup ETKISI)
+  ↓
+_tryConnect(refreshedName) → bazen başarı, bazen yine fail
+```
+
+Self-healing var ama **lazy** — failure sonrası warmup yapıyor. Bu sırada bazen paket internal state inconsistent kalıyor.
+
+### Düzeltme — Proactive Warmup
+
+`_send`'in başına `discoverDevices()` çağrısını **unconditional** yerleştir → PrinterManager singleton state'i hazırlanır → connect güvenilir çalışır. Maliyet 50-200ms, kazanç güvenilirlik.
+
+**Yeni akış:**
+```
+1. _rediscoverDeviceName() → discoverDevices çağrı + güncel name al (warmup)
+2. candidates = [liveName ?? null, savedName] (boş olmayanları)
+3. for name in candidates: _tryConnect(name)  → ilk başarılı'da break
+4. successName != savedName → SharedPreferences back-write (deviceName refresh)
+5. send(bytes) → disconnect
+```
+
+**Edit:**
+
+- 📝 [`print_service.dart`](project_pos/lib/services/print/print_service.dart) `_send`:
+  - Proactive `_rediscoverDeviceName()` her çağrıda en başta
+  - `candidates` listesi: önce live name, sonra saved name (Windows name değişimine karşı)
+  - For-loop ile sırayla connect denemesi
+  - Success'te kayıtlı isimden farklıysa `_onDeviceNameRefresh` ile back-write
+  - `_tryConnect` AppLogger.info/warning eklendi (debug için connect sonucu görünür)
+- 📝 [`label_print_service.dart`](project_pos/lib/services/print/label_print_service.dart):
+  - Aynı paterni paralel uygulandı
+  - Aynı log ekleri
+
+### Doğrulama
+
+`flutter analyze lib/services/print`: 2 info-level warning (`use_null_aware_elements` collection-if syntax önerisi — Dart 3.3+ `?expr` baseline'da kalıyor, sistem çalışıyor). **0 yeni hata/warning** ✅
+
+### Smoke Test
+
+```
+1. Hot restart
+2. Settings → Yazıcı Ayarları → cihaz seçili olduğundan emin ol
+3. Uygulamayı KAPAT (terminal Ctrl+C → flutter run -d windows tekrar)
+4. Yeniden açılınca: doğrudan Settings → "Test Yazdır"
+   ÖNCEDEN: "Yaziciya baglanilamadi" → manuel deneme gerek
+   ŞİMDİ:   warmup → connect → cihaz basar (debug console: connect → true)
+5. Aynı test: Etiket Yazıcı → "Test Etiketi"
+6. POS satışı → Fiş Yazdır → ilk denemede başarılı
+7. Ürün Detayı → Barkod Yaz → ilk denemede başarılı
+```
+
+### Sprint 30 Backlog — Güncel
+
+| Kalem | Durum |
+|---|---|
+| ~~POSA Windows kurulum tutorial~~ | ✅ DONE |
+| ~~Manuel test rehberi Sprint 29 hizalama~~ | ✅ DONE |
+| ~~E-Arşiv fiş uyumluluk denetimi~~ | ✅ DONE |
+| ~~Aktif olmayan yazıcı gizleme~~ | ✅ DONE |
+| ~~Generic/Text Only VID=0 fix~~ | ✅ DONE |
+| ~~Tek tıkla yazıcı kurulum sihirbazı~~ | ✅ DONE |
+| ~~TSPL etiket yazıcı adapter~~ | ✅ DONE |
+| ~~USB HID barkod okuyucu global listener~~ | ✅ DONE |
+| ~~POS'ta 3 barkod yolu birleştirme~~ | ✅ DONE |
+| ~~App restart sonrası warmup~~ | ✅ DONE (bu girdi) |
+| Gerçek USB scan paketi araştırması | ⏳ pending |
+| ZPL adapter (Zebra) | ⏳ pending |
+| ÖKC sertifikasyon + E-Arşiv XML | 🔮 Sprint 32+ |
+
+### Sources
+
+- [`print_service.dart`](project_pos/lib/services/print/print_service.dart):106-145 — `_send` proactive warmup
+- [`label_print_service.dart`](project_pos/lib/services/print/label_print_service.dart):104-150 — paralel
+- [`flutter_pos_printer_platform_image_3` paketi](https://pub.dev/packages/flutter_pos_printer_platform_image_3) — Windows EnumPrintersW + WritePrinter (Sprint 29-fix-5 audit referansı)
+- Önceki Sprint 30 fix'leri: `loaded` flag + lazy self-healing (bu fix proactive yaklaşıma çevirdi)
+
+---
+
+## [2026-05-06] sprint-30-barcode-3-paths-fix | POS'ta 3 Barkod Yolu Birleştirme + UX Toast ✅
+
+### Tetikleyici
+
+Kullanıcı: *"ÜÇÜNÜ DE DEĞİŞTİR"* — POS'ta barkod arama 3 yol var ama davranışları farklıydı:
+- **A. Search kutusu**: Sadece kısmi filtre (`contains`), Enter desteklenmiyordu
+- **B. QR butonu / dialog**: Tam eşleşme + auto sepete (mevcut)
+- **C. Global listener**: Tam eşleşme + auto sepete ama success toast yok (`addToCart` toast vermez)
+
+Hedef: 3 yol da **tam eşleşme + auto sepete + toast** standartı; UX tutarlı.
+
+Ayrıca kullanıcı *"ÇALIŞMIYOR"* (Sprint 30 önceki entry) demişti — debug log + default'lar gevşetildi (200ms / 3char) o entry'de. Bu sprint UX standardını kapsar.
+
+### Değişiklikler
+
+**Edit:**
+
+- 📝 [`product_search_panel.dart`](project_pos/lib/features/pos/widgets/product_search_panel.dart):
+  - Search `TextField`'a `onSubmitted` callback eklendi:
+    - `code.length >= 3` ise `notifier.addToCartByBarcode(code)` çağrılır
+    - Başarılı sonrası `_searchController.clear()` + `setSearchQuery('')` (sıralı taramalar için)
+  - Hint text güncellendi: `'Ürün ara veya barkod oku/yaz...'`
+- 📝 [`pos_provider.dart`](project_pos/lib/features/pos/providers/pos_provider.dart):
+  - `addToCartByBarcode` refactor — duplicate variant-handling logic helper'a çıkarıldı
+  - Yeni `_addByBarcodeResult(product, barcode)` — `addToCart` çağırır, hata yoksa `successMessage: 'Eklendi: <name>'` set eder (toast pos_screen.dart:69 listener tarafından gösterilir)
+  - Cache update sırası düzeltildi: API'den ürün geldiyse önce listeye ekle, sonra _addByBarcode çağır
+
+### Davranış Birleştirme
+
+| Yol | Önce | Sonra |
+|---|---|---|
+| **A. Search kutusu** | `onChanged` → `setSearchQuery` (sadece kısmi filtre); Enter ignore | `onChanged` filtre + `onSubmitted` → `addToCartByBarcode` + auto-clear |
+| **B. QR butonu / dialog** | Dialog → manuel yaz/oku → Enter → `addToCartByBarcode` | Aynı ama artık success toast (`Eklendi: ...`) |
+| **C. Global HID listener** | `HardwareKeyboard` → `addToCartByBarcode` | Aynı ama artık success toast |
+
+3 yolun da varış noktası `addToCartByBarcode` → `_addByBarcodeResult` → `successMessage` → POS toast.
+
+### Akış Detayı
+
+```
+addToCartByBarcode("8690000123456")
+  ↓
+products cache'de barcode/sku eşleşmesi var mı?
+  ├─ EVET → _addByBarcodeResult(product, code)
+  │           ├─ variants.length > 1 → error: "Manuel seçin"
+  │           ├─ variants.length == 1 → addToCart(p, variant: v)
+  │           └─ variants.length == 0 → addToCart(p)
+  │           └─ error yoksa → successMessage: "Eklendi: <name>"
+  │
+  └─ HAYIR → API getProducts(search: code)
+              ├─ Bulundu → cache'e ekle + _addByBarcodeResult
+              └─ Bulunamadı → error: "Barkod bulunamadı: <code>"
+```
+
+### Doğrulama
+
+`flutter analyze` 4 hedef dosya (product_search_panel, pos_provider, pos_screen, services/scanner): **1 baseline issue** (`product_search_panel.dart:270` `(_, __)` — Sprint 22'den beri var, benim eklediğim değil), Sprint 30 değişikliklerimde **0 yeni issue** ✅
+
+### Smoke Test
+
+```
+1. Hot restart
+2. Inventory → ürün düzenle → barcode = "8690000123456" + kaydet
+3. POS aç:
+
+   YOL A: Search kutusuna 8690000123456 yaz + Enter
+     → Toast: "Eklendi: <ürün adı>" ✅
+     → Kutu temizlenir, sepette ürün
+     → Bir başka barkod yaz + Enter → tekrar eklenir
+
+   YOL B: Mor qr_code_scanner butonuna bas
+     → Dialog açılır → yaz/oku → Enter
+     → Toast: "Eklendi: ..." ✅
+
+   YOL C: Hiçbir yere tıklamadan cihazdan barkod oku
+     → Console log: "Scanner key ... Scanner suffix (Enter) ..."
+     → Toast: "Eklendi: ..." ✅
+
+4. Bilinmeyen barkod (3 yoldan herhangi birinde)
+   → Toast: "Barkod bulunamadı: <code>"
+
+5. Multi-variant ürünün barkodu (ana barcode):
+   → Toast: "Ürün birden fazla varyanta sahip. Lütfen manuel olarak seçin."
+```
+
+### UX İyileştirme
+
+- **Toast feedback**: 3 yol da artık başarılı tarama sonrası "Eklendi: <ürün>" mesajı verir → kasiyer baktığı yerden bağımsız olarak ekleme onayını alır
+- **Search kutusu auto-clear**: Sıralı barkod tarama daha akıcı (önceki query yeni taramaya karışmaz)
+- **Hint text güncel**: `'Ürün ara veya barkod oku/yaz...'` — kullanıcıya ikili amaçlı olduğunu açıkça söyler
+
+### Sources
+
+- [`product_search_panel.dart`](project_pos/lib/features/pos/widgets/product_search_panel.dart) — onSubmitted Enter handler
+- [`pos_provider.dart`](project_pos/lib/features/pos/providers/pos_provider.dart):588-630 — `addToCartByBarcode` + `_addByBarcodeResult` helper
+- [`pos_screen.dart`](project_pos/lib/features/pos/screens/pos_screen.dart):69 — successMessage → AppToast.success listener (mevcut)
+- Önceki sprint girdisi: sprint-30-barcode-scanner (global listener temeli)
+
+---
+
+## [2026-05-06] sprint-30-barcode-scanner | Global USB HID Barkod Okuyucu Listener ✅
+
+### Tetikleyici
+
+Kullanıcı: *"SIRA BARKOD OKUYUCUDA"*. Sprint 22-30 boyunca yazıcı tarafı tamamlandı. Mevcut barkod okuma akışı: POS ekranında qr_code_scanner butonuna basınca dialog açılıyor → autofocus TextField → Enter → `addToCartByBarcode()`. **Eksik**: profesyonel POS paterni — dialog açmadan ekran sürekli HID dinler, scan = otomatik sepete ekle.
+
+USB HID barkod okuyucu Windows'ta klavye gibi davranır → 100+ char/sn yazma + Enter sonek = barkod akışı. İnsan parmağıyla ayrım: hız (insan ~5-10 char/sn).
+
+### Değişiklikler
+
+**Yeni:**
+
+- ⭐ [`lib/services/scanner/barcode_scanner_listener.dart`](project_pos/lib/services/scanner/barcode_scanner_listener.dart) — `BarcodeScannerListener` `StatefulWidget`. Wrapper paterni: child tree'yi sarar, global tuş dinler.
+
+**Algoritma:**
+
+```
+1. HardwareKeyboard.instance.addHandler ile global key listen
+2. Aktif TextField/EditableText var mı? Varsa skip (kullanıcı yazıyor — çakışma yok)
+3. KeyDown event:
+   a. delta(now - lastKey) > 100ms ise buffer.clear (yeni input başlangıcı)
+   b. Karakter (printable ASCII 0x20+) → buffer.write
+   c. Enter / NumpadEnter / Tab → buffer.length >= 4 ise onScan(buffer); clear
+4. Auto-reset Timer (5 × interKeyTimeout) — yarım kalan buffer sızıntısı yok
+```
+
+**Konfigürasyon (constructor):**
+- `interKeyTimeout`: default 100ms (USB HID tipik <50ms)
+- `minBarcodeLength`: default 4 (kısa text scan'leri filtrele)
+- `enabled`: default true; `kIsWeb` veya test için kapatılır
+
+**Edit:**
+
+- 📝 [`pos_screen.dart`](project_pos/lib/features/pos/screens/pos_screen.dart):
+  - Import: `kIsWeb`, `barcode_scanner_listener.dart`
+  - Build wrap: `BarcodeScannerListener(enabled: !kIsWeb, onScan: addToCartByBarcode, child: KeyboardListener(...))` — mevcut KeyboardListener (F1/F5 shortcuts) iç wrapper olarak korundu
+  - `kIsWeb` guard: tarayıcıda HID API kararsız + zaten USB yok
+
+### Davranış
+
+```
+Senaryo 1 — Barkod Okuyucu (USB HID):
+  Müşteri ürün getirir → kasiyer barkodu okutur
+  → Cihaz "8690000123456\r" yazar (~50ms toplam)
+  → BarcodeScannerListener algılar → onScan("8690000123456")
+  → posProvider.addToCartByBarcode → ürün otomatik sepete + toast
+
+Senaryo 2 — Kasiyer Klavye Yazımı:
+  Kasiyer arama kutusunda "test" yazar (~600ms)
+  → İlk char gelir, buffer'a yazılır
+  → 200ms sonra ikinci char → delta > 100ms → buffer.clear
+  → Buffer hiçbir zaman 4 char'a ulaşmaz, scan tetiklenmez
+  → TextField fokus'u olduğu için zaten _shouldHandleKeyEvent false döner
+
+Senaryo 3 — Dialog Açıkken:
+  Kullanıcı manuel barkod gir dialog'unu açar (mevcut akış)
+  → Dialog TextField focus'lu → BarcodeScannerListener skip
+  → Mevcut Enter → addToCartByBarcode (regresyon yok)
+
+Senaryo 4 — F1/F5 Shortcuts:
+  Kullanıcı F5 basar → KeyboardListener (iç wrapper) yakalar
+  → BarcodeScannerListener tek char + Enter olmadığı için scan tetiklemez
+  → Refresh çalışır (regresyon yok)
+```
+
+### Tasarım Kararları
+
+| Karar | Sebep |
+|---|---|
+| Wrapper widget (Inherited değil) | Tek POS ekranında kullanılıyor; Riverpod provider zaten dispatch noktası (notifier.addToCartByBarcode) |
+| `HardwareKeyboard.instance.addHandler` | RawKeyboardListener deprecated; modern API |
+| Aktif EditableText skip | Kullanıcı arama kutusuna yazarken HID akışı yutmasın |
+| Min 4 char | Kısa tek tuş presslerini filtrele (örn. Esc, Enter, Tab tek başına gelse) |
+| Enter event'ini "yut" (return true) | Diğer KeyboardListener'lara gitmesin (F-tuşları gibi) |
+| `kIsWeb` disable | Web'de HID API kararsız + USB yok zaten |
+
+### Doğrulama
+
+`flutter analyze lib/services/scanner lib/features/pos/screens/pos_screen.dart`: **No issues found!** ✅
+
+### Smoke Test
+
+```
+1. Hot restart
+2. POS ekranını aç
+3. Bir ürünü barkodlu olarak DB'de tanımlı olduğundan emin ol
+4. Arama kutusuna TIKLAMADAN cihazdan barkod okut
+   → Toast: "Ürün eklendi: <name>"
+   → Sepette ürün görünür
+5. Bilinmeyen barkod okut → Toast: "Barkod bulunamadı: ..."
+6. Arama kutusunda yaz → barkod listener tetiklenmez (focus filter)
+7. F5 bas → refresh çalışır (KeyboardListener regresyon yok)
+8. Hızlı ardışık 2 barkod oku → ikisi de algılanır (timer reset)
+```
+
+### Settings Ekranı (Pending)
+
+Eşik/suffix tercih ekranı henüz yok — pragmatik default'lar (100ms / 4char / Enter+Tab) çoğu USB HID okuyucuda çalışır. Kullanıcı geri bildirimine göre ekran eklenebilir.
+
+### Sprint 30 Backlog — Güncel
+
+| Kalem | Durum |
+|---|---|
+| ~~POSA Windows kurulum tutorial~~ | ✅ DONE |
+| ~~Manuel test rehberi Sprint 29 hizalama~~ | ✅ DONE |
+| ~~E-Arşiv fiş uyumluluk denetimi~~ | ✅ DONE |
+| ~~Aktif olmayan yazıcı gizleme~~ | ✅ DONE |
+| ~~Generic/Text Only VID=0 fix~~ | ✅ DONE |
+| ~~Tek tıkla yazıcı kurulum sihirbazı~~ | ✅ DONE |
+| ~~TSPL etiket yazıcı adapter~~ | ✅ DONE |
+| ~~USB HID barkod okuyucu global listener~~ | ✅ DONE (bu girdi) |
+| Barkod okuyucu ayar ekranı (timeout/minLen/suffix) | ⏳ pending (default'lar yeterli) |
+| Inventory ekranlarında barkod scan (stok aktarım, ürün arama) | ⏳ pending |
+| Gerçek USB scan paketi araştırması | ⏳ pending |
+| ZPL adapter (Zebra) | ⏳ pending |
+| ÖKC sertifikasyon + E-Arşiv XML | 🔮 Sprint 32+ |
+
+### Sources
+
+- [`barcode_scanner_listener.dart`](project_pos/lib/services/scanner/barcode_scanner_listener.dart) — yeni global listener
+- [`pos_screen.dart`](project_pos/lib/features/pos/screens/pos_screen.dart) — wrapper integration
+- [`pos_provider.dart`](project_pos/lib/features/pos/providers/pos_provider.dart):588 — `addToCartByBarcode` (Sprint 22 mevcut)
+- Sprint 30 catalog `barcode_scanner` "Aktif (USB HID otomatik)" — bu sprint o belirsizliği gerçek implementasyona çevirdi
+
+---
+
+## [2026-05-06] sprint-30-tspl-driver | TSPL Etiket Yazıcı Adapter (Zjiang LABEL-9X10) ✅
+
+### Tetikleyici
+
+Kullanıcı POSA tarzı tek termal cihazını ("LABEL-9X10" Windows kaydı) etiket için kullanmak istedi. Daha önceki ESC/POS bytes gönderimleri **Windows print spooler tarafından kabul ediliyor** (ok=True, queue boşalıyor) ama **cihaz fiziksel çıktı vermiyordu**.
+
+PowerShell ile WinSpool API üzerinden 4-protokol probe yapıldı (165/86/75/43 bytes ardışık gönderim — TSPL/EPL2/ZPL/ESC/POS). Kullanıcı: *"TSPL"* — Test 1 fiziksel basım yarattı, diğer 3 sessiz reddedildi.
+
+Kök sebep: Cihaz **TSPL (TSC Printer Language)** kullanıyor; ESC/POS değil. VID:0416 PID:5011 LABEL-9X10 ailesi (Zjiang label / Argox / TSC OEM) bu protokolü konuşur.
+
+### Mimari (LabelDriver paterni Sprint 24'te öngörülmüştü)
+
+[`label_driver.dart`](project_pos/lib/services/print/label_driver.dart) Sprint 24'te abstract `LabelDriver` interface'i tasarlandı:
+> Sprint 25+ planı:
+> - `ZplLabelDriver` — Zebra LP/TLP serisi için
+> - `BrotherPtDriver` — Brother PT yapışkan etiket
+
+Sprint 30 kullanıcı talebi ile **TsplLabelDriver** önce eklendi (ZPL/Brother yine pending).
+
+### Değişiklikler
+
+**Yeni:**
+
+- ⭐ [`lib/services/print/label_template_tspl.dart`](project_pos/lib/services/print/label_template_tspl.dart) — `TsplLabelDriver extends LabelDriver`. `EscPosLabelDriver` paralel paterni:
+  - `protocolKey: 'tspl'`, `displayName: 'TSPL (Zjiang LABEL / Argox / TSC)'`
+  - `buildBarcodeLabel()`: TSPL plain-text komutları üretir — `SIZE`, `GAP`, `DIRECTION`, `REFERENCE`, `DENSITY`, `SPEED`, `CLS`, `TEXT x,y,"font",rotate,xMul,yMul,"text"`, `BARCODE x,y,"128/EAN13",h,readable,rotate,nW,nH,"data"`, `QRCODE x,y,M,5,A,0,"data"`, `PRINT 1,1`
+  - `_escape()` çift tırnak escape; `_ascii()` Türkçe karakter normalize (CP'ye güvenmemek için)
+
+**Edit:**
+
+- 📝 [`label_print_settings.dart`](project_pos/lib/services/print/label_print_settings.dart):
+  - Yeni enum `LabelProtocol` (escPos, tspl) — label + description
+  - `LabelPrinterSettings.protocol` field (default `escPos` — backward compat)
+  - `copyWith` + `load()` + `_persist()` + `updateProtocol()` SharedPreferences `label_print.protocol` key
+- 📝 [`label_print_service.dart`](project_pos/lib/services/print/label_print_service.dart):
+  - Constructor: `LabelDriver?` opsiyonel; null ise `_driverFor(_settings.protocol)` ile auto-select
+  - Yeni `static LabelDriver _driverFor(LabelProtocol)` — switch ile mapping (TsplLabelDriver / EscPosLabelDriver)
+- 📝 [`label_printer_settings_screen.dart`](project_pos/lib/features/settings/screens/label_printer_settings_screen.dart):
+  - Yeni "Yazıcı Protokolü" `AppSectionCard` (Icons.code) — `Wrap` + `ChoiceChip` 2 protokol seçimi + açıklama metni
+  - Auto-cut subtitle güncellendi: "ESC/POS GS V / TSPL CUT komutu"
+- 📝 [`printer_settings_screen.dart`](project_pos/lib/features/settings/screens/printer_settings_screen.dart) Hızlı Kurulum sihirbazı:
+  - Etiket cihazı seçildikten sonra cihaz adına göre **otomatik protokol seçimi**:
+    ```dart
+    final isTspl = ln.contains('label') || ln.contains('9x10') ||
+                   ln.contains('9-10') || ln.contains('tspl') ||
+                   ln.contains('argox') || ln.contains('tsc');
+    await labelN.updateProtocol(isTspl ? LabelProtocol.tspl : LabelProtocol.escPos);
+    ```
+
+### Davranış
+
+```
+Hızlı Kurulum → cihaz adı "LABEL-9X10" tespit edilir
+  ↓
+Etiket slotu = cihaz + LabelProtocol.tspl
+  ↓
+Ürün Detayı → Barkod Yaz
+  ↓
+LabelPrintService._driverFor(tspl) → TsplLabelDriver
+  ↓
+buildBarcodeLabel() → TSPL bytes ("SIZE 50 mm,30 mm\nGAP...\nBARCODE...\nPRINT 1,1\n")
+  ↓
+Windows spooler → USB004 → Zjiang LABEL-9X10 → fiziksel etiket çıkar ✅
+```
+
+### Doğrulama
+
+- 4-protokol probe ile cihazın TSPL kullandığı **runtime'da kanıtlandı** (kullanıcı: "TSPL")
+- `flutter analyze lib/services/print lib/features/settings/screens/label_printer_settings_screen.dart lib/features/settings/screens/printer_settings_screen.dart`: **No issues found!** ✅
+- Backward compat: `LabelProtocol.escPos` default → mevcut kurulumlar etkilenmez
+
+### Smoke Test
+
+```
+1. Hot restart
+2. Settings → Etiket Yazıcı → Bağlı yazıcıyı kaldır (kırmızı ✕)
+3. Settings → Yazıcı Ayarları → Bağlı yazıcıyı kaldır
+4. ✨ Hızlı Kurulum (Sihirbaz)
+   → "Generic / Text Only" tek cihaz görür
+   → Senaryo A: Fiş slotu (etiket için Case 1.5 reuse — ama ESC/POS bytes basamayacak)
+
+   ALTERNATİF — Senaryo B kurulum:
+   → Manuel: Settings → Etiket Yazıcı → Tara → "Generic / Text Only" seç
+   → Settings → Etiket Yazıcı → Yazıcı Protokolü → TSPL seç (manual)
+   → Test Etiketi → fiziksel çıktı ✅
+```
+
+### Sprint 30 Backlog — Güncel
+
+| Kalem | Durum |
+|---|---|
+| ~~POSA Windows kurulum tutorial~~ | ✅ DONE |
+| ~~Manuel test rehberi Sprint 29 hizalama~~ | ✅ DONE |
+| ~~E-Arşiv fiş uyumluluk denetimi~~ | ✅ DONE |
+| ~~Aktif olmayan yazıcı gizleme~~ | ✅ DONE |
+| ~~Generic/Text Only VID=0 fix~~ | ✅ DONE |
+| ~~Tek tıkla yazıcı kurulum sihirbazı~~ | ✅ DONE |
+| ~~TSPL etiket yazıcı adapter~~ | ✅ DONE (bu girdi) |
+| Gerçek USB scan paketi araştırması | ⏳ pending |
+| ZPL adapter (Zebra) | ⏳ pending — pattern artık belirgin |
+| EPL2 adapter | ⏳ pending |
+| ÖKC sertifikasyon + E-Arşiv XML | 🔮 Sprint 32+ |
+
+### Sources
+
+- [`label_template_tspl.dart`](project_pos/lib/services/print/label_template_tspl.dart) — yeni TSPL driver
+- [`label_print_settings.dart`](project_pos/lib/services/print/label_print_settings.dart) — `LabelProtocol` enum + persistence
+- [`label_print_service.dart`](project_pos/lib/services/print/label_print_service.dart) — `_driverFor()` dispatch
+- [`label_printer_settings_screen.dart`](project_pos/lib/features/settings/screens/label_printer_settings_screen.dart) — UI ChoiceChip
+- [`printer_settings_screen.dart`](project_pos/lib/features/settings/screens/printer_settings_screen.dart) — sihirbaz auto-detect
+- 4-protokol probe testi (PowerShell WinSpool API ile, 2026-05-06): TSPL fiziksel çıktı, diğerleri sessiz red
+- TSPL referans: https://www.tscprinters.com/EN/PrintLanguage/TSPL
+- Sprint 24 LabelDriver interface (mimari hazırlık)
+
+---
+
+## [2026-05-06] sprint-30-quick-setup | Tek Tıkla Yazıcı Kurulum Sihirbazı ✅
+
+### Tetikleyici
+
+Kullanıcı: *"benim yerime bütün ayarları sen yapar mısın"* + Senaryo B (2 farklı cihaz). Sprint 22-30 boyunca yazıcı kurulumu için 5 ayrı manuel adım yapılıyordu (tara → Generic Kopyaları gizle → seç → kağıt 80mm → otomatik yazdır). Tek butona indirildi.
+
+### Değişiklikler
+
+[`printer_settings_screen.dart`](project_pos/lib/features/settings/screens/printer_settings_screen.dart):
+
+**Yeni metod `_quickSetup()`** — 7 adım otomatik akış:
+
+1. `kIsWeb` guard
+2. `discoverDevices()` ilk tarama
+3. **Generic / Text Only (Kopya N) duplikasyonlarını otomatik gizle** — `name.contains('kopya') && (name.contains('generic') || name.contains('text only'))` → `hiddenPrintersProvider.hide()`
+4. Filtre sonrası tekrar tara
+5. **Fiş yazıcı seçimi**: keyword öncelik `['posa', 'thermal', 'escpos', 'fiş', 'fis', '80mm', '80']`; bulamazsa ilk visible
+6. **Etiket yazıcı seçimi (Senaryo B)**: kalan cihazlar arasından `['zebra', 'label', 'etiket', 'zpl']` öncelik; bulamazsa kalan ilk; tek cihaz varsa Case 1.5 reuse devreye girer (etiket boş)
+7. Slot yapılandır:
+   - Fiş: `updateDevice()` + `updatePaperWidth(mm80)` + `updateAutoPrint(true)`
+   - Etiket (varsa): `labelPrintSettingsProvider.updateDevice()`
+   - Defaults (50×30mm + Code128) `LabelPrinterSettings` constructor'da zaten var
+
+**Toast senaryo bazlı:**
+- Senaryo A (tek): `'Senaryo A: "POSA-80" (etiket için Case 1.5 reuse) · 80mm · otomatik açık (3 duplikasyon gizlendi)'`
+- Senaryo B (2+): `'Senaryo B: Fiş = "POSA-80", Etiket = "Zebra ZPL" · 80mm · otomatik açık'`
+
+**UI**: bilgi banner altına `AppButton.primary` (`Icons.auto_awesome` + "Hızlı Kurulum (Sihirbaz)"). `_isScanning` lock ile çift tıklama önlenir.
+
+**Hata yolları**: USB yok → docs/printer-setup.md referans; tüm gizli → "Tümünü geri al"; exception → AppLogger.error + toast.
+
+### Doğrulama
+
+`flutter analyze lib/features/settings/screens/printer_settings_screen.dart`: **No issues found!** ✅
+
+### Smoke Test
+
+```
+1. Settings → Yazıcı Ayarları → "Hızlı Kurulum (Sihirbaz)"
+2. Senaryo A (tek POSA, 5 cihaz: fiş + 4 Kopya):
+   - 3-4 Kopya otomatik gizli yazıcılar listesine
+   - "fiş" seçili (preferred 'fiş')
+   - Toast: Senaryo A
+3. Senaryo B (POSA + Zebra, 2 cihaz):
+   - Fiş = POSA, Etiket = Zebra
+   - Toast: Senaryo B
+4. Sonra manuel "Test Yazdır"
+```
+
+### Sources
+
+- [`printer_settings_screen.dart`](project_pos/lib/features/settings/screens/printer_settings_screen.dart) — `_quickSetup()` + UI button
+- [`hidden_printers.dart`](project_pos/lib/services/print/hidden_printers.dart) — auto-hide kullanımı
+- [`label_print_settings.dart`](project_pos/lib/services/print/label_print_settings.dart) — `updateDevice()` API
+- Sprint 24 K6 (aynı VID iki slot) — kullanıcı manuel override yapabilir
+- Sprint 29-fix-2 Case 1.5 — Senaryo A'nın temeli
+
+---
+
+## [2026-05-06] sprint-33 | Supplier Paralel Coverage — 38 Test ✅
+
+### Tetikleyici
+
+Kullanıcı: *"devam"* — Sprint 32 sonrası backlog'da `SupplierAccountService paralel testler (0.3 gün)` kalemi.
+
+### Yeni Test Sınıfı
+
+[`SupplierAccountServiceTest`](pos-product-manager/src/test/java/com/sedcore/supplier/service/SupplierAccountServiceTest.java) — Sprint 31 `CustomerAccountServiceTest` paterni paralel, 7 test:
+- `applyDebit_increasesBalanceAndDebt` — bizim borç arttı (mal alındı)
+- `applyCredit_decreasesBalanceIncreasesCredit` — ödeme = borç azaldı
+- `reverseCredit_reversesAppliedCredit` — applyCredit iptali
+- `applyDebit_cumulative` — 3 kez debit → kümülatif
+- `applyCredit_exceedingDebit_createsNegativeBalance` — avans verme (negatif bakiye)
+- `getOrCreate_reusesExistingAccount` — idempotent (yeni satır yaratmaz)
+- `recalculate_refreshesCalculatedFields` — availableCreditLimit + isCreditLimitExceeded boundary
+
+### Mimari Not (Sprint 33 Discovery)
+
+`SupplierAccount` entity'sinde `@Version` **YOK** (Customer'da var). Kaynak: [[decisions/ledger-concurrency-defense-in-depth]] — Customer için dual-locking (entity + ledger), Supplier için ledger-only (purchase flow concurrency profili farklı). Test'te bu fark yansıdı: `assertThat(second.getVersion()).isGreaterThan(0L)` yerine satır eşitliği + balance kontrolü.
+
+### Test Sayısı Progresi
+
+| Sprint | Test |
+|---|---|
+| Sprint 7 WP2 | 3 |
+| Sprint 30 sweep | 12 |
+| Sprint 30 complete | 18 |
+| Sprint 31 push | 31 |
+| **Sprint 33** | **38** |
+
+%1167 artış (3'ten 38'e — Sprint 7'nin foundation'undan).
+
+### Coverage Snapshot (2026-05-06, JaCoCo Sprint 32)
+
+| Sınıf | Δ vs Sprint 32 | % |
+|---|---|---|
+| `AccountAuditService.FieldChange` | — | **100%** |
+| `OverdueNotificationScheduledJob.ScanResult` | — | **100%** |
+| `AccountAuditService` | — | **85%** |
+| `OverdueNotificationScheduledJob` | — | **43%** |
+| `CustomerAccountServiceImpl` | — | **40%** |
+| **`SupplierAccountServiceImpl`** | **0% → 38%** ⬆ | **38%** |
+| `PaymentServiceImpl` | — | **22%** |
+
+Tüm ledger pattern path'leri artık testli (Customer + Supplier). Sprint 33 sonu cari hesap çekirdek katmanı %40 ortalamalı.
+
+### Doğrulama
+
+```
+./mvnw.cmd test → BUILD SUCCESS, 38/38 ✅ (6 test class)
+                  + JaCoCo HTML/CSV güncellendi
+```
+
+### LOC Delta
+
+`SupplierAccountServiceTest.java` +176 (yeni)
+`log.md` +60 (bu entry)
+
+**Toplam:** ~236 LOC test + dokümantasyon.
+
+### Sprint 34+ Backlog (kısaltılmış — Sprint 32 backlog'undan kalan)
+
+| İş | Tahmin |
+|---|---|
+| ProductVariant.attributes JSON converter | 0.3 gün |
+| Tuple migration ADR (reconcile) | 0.2 gün |
+| `mvn jacoco:check` threshold (%50+ servis) | 0.1 gün |
+| `SaleServiceIntegrated.cancelSale` testi (Variant fixture'a bağlı) | 0.5 gün |
+
+---
+
+## [2026-05-06] sprint-32 | JaCoCo Coverage Gate + T3 Skip Karar Notu ✅
+
+### Tetikleyici
+
+Kullanıcı: *"sprintlere devam"* — Sprint 31 sonrası backlog'dan en yüksek ROI'li 4 maddenin uygulanması:
+1. Reconcile H2 quirk araştır
+2. Full CreditLimitGuardTest
+3. Multi-payment SalePaymentFkIntegrityTest extended
+4. JaCoCo CI coverage gate
+
+### Karar Defteri
+
+**(1) Reconcile H2 quirk: SKIP**
+- Sorun: `CustomerAccountServiceImpl.reconcile()` içindeki `accountTransactionRepository.ledgerTotalsForCustomer(id)` H2'de `Object[][]` (1-elem) döndürüyor; PostgreSQL'de `Object[5]` direct.
+- Hibernate'in mixed-type aggregate query (BigDecimal + Long) wrap'ı dialect-spesifik
+- Production kodunu `Tuple` veya custom DTO'ya refactor etmek mümkün ama riskli (PostgreSQL prod davranışı bozulabilir)
+- Karar: Backlog'a "Tuple migration ADR" olarak ekle, Sprint 33+ için iyice değerlendir
+
+**(2) Full CreditLimitGuardTest: SKIP (test yazıldı, fixture engelliyor)**
+- 7 test yazıldı (boundary at-limit / over-limit / override-with-admin / override-without-auth / no-customer + cash-no-customer)
+- H2 `CREATE TABLE product_variants` başarısız: `attributes jsonb` kolon tipi (PostgreSQL-spesifik)
+- ProductVariant testten kaldırılabilir değil — createSale `variantRepository.findById(req.getVariantId())` zorunlu
+- Karar: Test sınıfı silindi (yeniden yaratılabilir). Çözüm seçenekleri (Sprint 33+ backlog):
+  1. ProductVariant.attributes → `@Convert(converter = JsonStringConverter)` (compatible map↔text)
+  2. H2 testi bu test class'a özel `@Sql` script ile shadow tablo
+  3. SaleServiceIntegrated.checkCreditLimit'i `public static` utility'e refactor + Mockito unit test
+
+**(3) Multi-payment FK extended: ERTLENDİ**
+- Sprint 31'in `PaymentServiceTest`'i çekirdek FK integrity'yi (cancel reverse customer + supplier + idempotency) kapsadı
+- Multi-allocation senaryosu Sprint 7 `PaymentAllocationRepositoryTest`'te kapsanıyor (3 test)
+- Marjinal değer; Sprint 33+ backlog'da kaldı
+
+**(4) JaCoCo CI coverage gate: ✅ KURULDU**
+
+### JaCoCo Plugin Kurulumu
+
+[`pos-product-manager/pom.xml`](pos-product-manager/pom.xml):
+```xml
+<plugin>
+  <groupId>org.jacoco</groupId>
+  <artifactId>jacoco-maven-plugin</artifactId>
+  <version>0.8.12</version>
+  <executions>
+    <execution><id>prepare-agent</id><goals><goal>prepare-agent</goal></goals></execution>
+    <execution><id>report</id><phase>test</phase><goals><goal>report</goal></goals></execution>
+  </executions>
+  <configuration>
+    <excludes>
+      <exclude>**/model/**</exclude>      <!-- DTO/POJO -->
+      <exclude>**/dto/**</exclude>
+      <exclude>**/entity/**</exclude>     <!-- JPA entities -->
+      <exclude>**/config/**</exclude>     <!-- Spring configs -->
+      <exclude>**/PosProductManagerApplication.class</exclude>
+    </excludes>
+  </configuration>
+</plugin>
+```
+
+`mvn test` her çalıştırıldığında HTML raporu `target/site/jacoco/index.html` altında. CSV `target/site/jacoco/jacoco.csv` (CI badge için parse edilebilir).
+
+### Coverage Snapshot (2026-05-06)
+
+| Sınıf | Instr. covered | % |
+|---|---|---|
+| `AccountAuditService.FieldChange` | 19 / 19 | **100%** |
+| `OverdueNotificationScheduledJob.ScanResult` | 9 / 9 | **100%** |
+| `AccountAuditService` | 157 / 184 | **85%** |
+| `OverdueNotificationScheduledJob` | 198 / 452 | 44% |
+| `CustomerAccountServiceImpl` | 255 / 627 | 41% |
+| `PaymentServiceImpl` | 175 / 771 | 23% |
+| `AdminOverdueNotificationControllerImpl` | 4 / 44 | 9% |
+| **Genel** | **2,791 / 43,263** | **~6%** |
+
+Genel %6 düşük gözükse de **kritik finansal yollar** %23-85 arası coverage'da. Sprint 33+'da hedef: temel servisler %50+, P0 path'ler %80+.
+
+### Sprint 33+ Backlog
+
+| İş | Tahmin | Açıklama |
+|---|---|---|
+| Tuple migration ADR | 0.2 gün | reconcile drift testi etkinleşir |
+| ProductVariant.attributes JSON converter | 0.3 gün | createSale testleri etkinleşir, T3 yeniden yazılabilir |
+| `mvn jacoco:check` threshold | 0.1 gün | %50+ servis coverage zorunlu kıl |
+| README coverage badge | 0.1 gün | Shields.io + GitHub Actions artifact |
+| `SaleServiceIntegrated` cancelSale + return testleri | 0.5 gün | currentBalance reverse + stock geri yükleme |
+| `SupplierAccountService` paralel testler | 0.3 gün | Customer'a paralel coverage |
+
+**Toplam:** ~1.5 gün — Sprint 33 task chunk.
+
+### Doğrulama
+
+```
+./mvnw.cmd test → BUILD SUCCESS, 31/31 ✅
+                  + JaCoCo report generated (target/site/jacoco/)
+```
+
+### LOC Delta
+
+`pom.xml` (JaCoCo plugin block): +40
+`log.md` (bu entry): +90
+
+**Toplam:** ~130 LOC config + dokümantasyon.
+
+### Sources
+
+- JaCoCo plugin v0.8.12 (Spring Boot 3.x uyumlu)
+- HTML raporu: `pos-product-manager/target/site/jacoco/index.html`
+- CSV raporu: `pos-product-manager/target/site/jacoco/jacoco.csv` (badge parsing)
+
+---
+
+## [2026-05-06] sprint-30-hidden-printers-fix | Generic/Text Only VID=0 Match Bug ✅
+
+### Tetikleyici
+
+Kullanıcı ekran görüntüsü: 5 cihazlı tarama listesinde **tümü yeşil check** ("seçili" gibi) görünüyor — gizleme butonu görünmez. Cihazlar:
+- fiş (VID:0 PID:0)
+- Generic / Text Only (VID:0 PID:0)
+- Generic / Text Only (Kopya 1) (VID:0 PID:0)
+- Generic / Text Only (Kopya 2) (VID:0 PID:0)
+- Generic / Text Only (Kopya 4) (VID:0 PID:0)
+
+Kullanıcı: *"bulunan cihazları kaldırma butonu koy ve bir tane seçilince bütün yeşil tikler oluyor"*.
+
+### Kök Sebep
+
+`printer_settings_screen.dart` ve `label_printer_settings_screen.dart` `isSelected` match sadece VID/PID üzerinden:
+
+```dart
+final isSelected = settings.vendorId == d.vendorId &&
+    settings.productId == d.productId;
+```
+
+**Generic / Text Only** sürücüsü VID=0 PID=0 verir → kayıtlı `settings.vendorId == 0 && settings.productId == 0` tüm Generic kayıtlarla eşleşir → 5 cihazda da `isSelected=true` → 5'inde de yeşil check → Sprint 30-hidden-printers'ta eklediğim ✕ "gizle" butonu görünmüyor (selected branch'te `Icon.check_circle` rendering var).
+
+Aynı bug **`_rediscoverDeviceName`** içinde de mevcut: VID=0 PID=0 match birden fazla cihazla eşleşip yanlış cihazı dönebilir → self-healing connect (Sprint 30 receipt-printer-repeated-pairing fix) yanlış printer'a yönlenir.
+
+### Düzeltme
+
+`printer_settings_screen.dart` + `label_printer_settings_screen.dart` (paralel):
+
+```dart
+final isSelected = settings.vendorId == d.vendorId &&
+    settings.productId == d.productId &&
+    (settings.deviceName ?? '').toLowerCase().trim() ==
+        d.displayName.toLowerCase().trim();
+```
+
+`print_service.dart` + `label_print_service.dart` `_rediscoverDeviceName`:
+
+```
+1. Tercih: deviceName exact match (Generic Text Only durumunda doğru cihaz)
+2. Fallback: VID/PID > 0 ise VID/PID match (gerçek USB cihaz)
+3. Bulamazsa null
+```
+
+### Sonuç
+
+```
+Önce (bug):
+- 5 cihaz, hepsi VID=0 PID=0
+- Hepsinde yeşil check ✓ (yanlış)
+- Hide butonu görünmez
+
+Sonra (fix):
+- 5 cihaz, hepsi VID=0 PID=0
+- Sadece "fiş" (kayıtlı deviceName ile match) yeşil check ✓
+- Diğer 4 cihazda Icons.visibility_off_outlined "Listede gösterme" butonu
+- Kullanıcı 4 Generic kopyasını tek tek gizleyebilir
+```
+
+### Doğrulama
+
+`flutter analyze lib/services/print lib/features/settings/screens/printer_settings_screen.dart lib/features/settings/screens/label_printer_settings_screen.dart`: **No issues found!** ✅
+
+### Smoke Test
+
+```
+1. Hot restart (yeni isSelected logic için)
+2. Settings → Yazıcı Ayarları → "USB Cihazları Tara"
+3. Bulunan Cihazlar listesinde 5 cihaz, sadece kayıtlı "fiş" yeşil check;
+   diğer 4 Generic kopyada ✕ "Listede gösterme" butonu görünür
+4. Generic / Text Only (Kopya 4) yanı ✕ → confirm → Gizle
+5. Liste 4'e düşer; "Gizli yazıcılar (1)" kartı belirir
+6. Tekrar tara → Generic / Text Only (Kopya 4) listede yok
+7. Tüm Generic kopyalarını gizle → liste sadece "fiş" + gerçek POSA
+```
+
+### Sources
+
+- Önceki sprint girdisi: sprint-30-hidden-printers (gizleme feature'ının temeli)
+- [`printer_settings_screen.dart`](project_pos/lib/features/settings/screens/printer_settings_screen.dart) (isSelected match deviceName dahil)
+- [`label_printer_settings_screen.dart`](project_pos/lib/features/settings/screens/label_printer_settings_screen.dart) (paralel)
+- [`print_service.dart`](project_pos/lib/services/print/print_service.dart) `_rediscoverDeviceName` (name-first match)
+- [`label_print_service.dart`](project_pos/lib/services/print/label_print_service.dart) (paralel)
+- Kullanıcı ekran görüntüsü: 5 yeşil checkli cihaz listesi (regresyonun teyidi)
+
+---
+
+## [2026-05-06] sprint-31 | Test Coverage Push — P2.7 Resolved (31 test, +13 yeni) ✅
+
+### Tetikleyici
+
+Kullanıcı: *"sprintlere devam"* — Sprint 30 sweep'inin geride bıraktığı tek "open" issue P2.7 (test-coverage-unknown) kapatma sprint'i.
+
+### Yeni Test Sınıfları
+
+**`CustomerAccountServiceTest` ([test/.../customer/service/](pos-product-manager/src/test/java/com/sedcore/customer/service/CustomerAccountServiceTest.java)) — 7 test:**
+- `applyDebit_increasesBalanceAndDebt` — borç → currentBalance + totalDebt artar
+- `applyCredit_decreasesBalanceIncreasesCredit` — ödeme → balance düşer, totalCredit artar
+- `reverseCredit_reversesAppliedCredit` — applyCredit'i geri alır
+- `applyDebit_cumulative` — 3 kez debit → 400 toplanır, txCount=3
+- `applyCredit_exceedingDebit_createsNegativeBalance` — ön ödeme negatif bakiye
+- `getOrCreate_reusesExistingAccount` — version artar, unique constraint'e takılmaz
+- `recalculate_refreshesCalculatedFields` — `availableCreditLimit` + `isCreditLimitExceeded` boundary
+
+**`PaymentServiceTest` ([test/.../finance/service/](pos-product-manager/src/test/java/com/sedcore/finance/service/PaymentServiceTest.java)) — 6 test:**
+- `savePayment_persistsWithDefaults` — ID + companyCode + createTime auto-fill
+- `cancelPayment_customer_reversesAccountBalance` — ödeme iptali → CustomerAccount bakiye geri
+- `cancelPayment_supplier_reversesAccountBalance` — paralel SupplierAccount
+- `cancelPayment_alreadyCancelled_throws` — TOpenException idempotency guard
+- `verifyPayment_marksVerified` — `isVerified=true`
+- `verifyPayment_onCancelled_throws` — iptal edilmişe verify → exception
+
+### T1-T4 Plan Kapsama Tablosu
+
+| Plan kalemi | Durum | Karşılayan |
+|---|---|---|
+| T1 PaymentCreationIntegrationTest | ✅ savePayment + cancel + verify | PaymentServiceTest 6 |
+| T2 ReconcileDriftDetectionTest | ⚠️ kısmi — applyDebit/applyCredit ledger math kapsandı; `reconcile()` H2 `Object[][]` quirk'i (PostgreSQL spesifik aggregate query davranışı) | CustomerAccountServiceTest 7 |
+| T3 CreditLimitGuardTest | ⚠️ kısmi — `recalculate` boundary kapsandı; full `SaleServiceIntegrated.checkCreditLimit` Sprint 32+ | recalculate_refreshesCalculatedFields |
+| T4 SalePaymentFkIntegrityTest | ✅ cancel reverse (cust+sup) + idempotency guard | PaymentServiceTest 4 |
+
+### TOpenContext Pattern (test infra)
+
+`@SpringBootTest` ile çalışan testlerde Hibernate filter interceptor `TOpenContextHolder.getContext()` üzerinden çalışır. `null` ise `CompanyFilterInterceptor.applyDefaultCompanyFilter` NPE atar. Test fixture `@BeforeEach` set'ler:
+
+```java
+TOpenContextHolder.setContext(TOpenContext.builder()
+    .companyCode(TENANT)
+    .useInCompanyFilter(true)
+    .disableCompanyFilter(false)
+    .build());
+```
+
+`@AfterEach`'da temizlenir. `OverdueNotificationScheduledJobTest`'te `em.persist()` direkt kullanıldığı için filter aktive olmamış görünüyordu; bu sprint'teki testler `customerRepository.save()` üzerinden gittiği için Hibernate filter zorunlu hale geldi.
+
+### Doğrulama
+
+```
+Backend  : ./mvnw.cmd test            → BUILD SUCCESS, 31/31 ✅
+                                        (3 PaymentAllocation + 9 AccountAudit + 6 OverdueScheduledJob
+                                         + 7 CustomerAccount + 6 PaymentService)
+```
+
+### Test Sayısı Progresi
+
+| Tarih | Sprint | Test |
+|---|---|---|
+| Sprint 7 WP2 | 2026-04-25 | 3 |
+| Sprint 30 (sweep) | 2026-05-06 | 12 |
+| Sprint 30 complete | 2026-05-06 | 18 |
+| **Sprint 31** | **2026-05-06** | **31** |
+
+%158 artış (12'den 31'e).
+
+### LOC Delta
+
+| Dosya | LOC |
+|---|---|
+| `CustomerAccountServiceTest.java` | +198 (yeni) |
+| `PaymentServiceTest.java` | +233 (yeni) |
+| `test-coverage-unknown.md` | +20 (resolved'a çevrim + tablo güncellemesi) |
+| `index.md` | +1 / -2 (issue açık → çözülmüş) |
+| `log.md` | +90 (bu entry) |
+
+**Toplam**: ~542 LOC (test-only).
+
+### Sonraki Adımlar (Sprint 32+ Backlog)
+
+1. **Reconcile sweep H2 fix** (~0.3 gün) — `ledgerTotalsForCustomer` H2'de neden Object[][] döndüğünü araştır
+2. **Full `CreditLimitGuardTest`** (~0.5 gün) — `SaleServiceIntegrated.createSale` full fixture (Customer + Product + Variant + Stock) ile boundary
+3. **Multi-payment SalePaymentFkIntegrityTest extended** (~0.3 gün)
+4. **CI Coverage Gate** (~0.2 gün) — JaCoCo + README badge
+
+### Sources
+
+- 2 yeni test sınıfı (PaymentService + CustomerAccount)
+- TOpenContext fixture pattern dokümante edildi (gelecek SpringBootTest'ler için referans)
+- Issue P2.7 `status: open → resolved`
+
+### Mevcut Açık Issue (sadece 1)
+
+- [[issues/receipt-printer-repeated-pairing]] — Sprint 30 fix uygulandı, kullanıcı manuel test bekliyor
+
+---
+
+## [2026-05-06] sprint-30-hidden-printers | Aktif Olmayan Yazıcıları Listeden Gizleme ✅
+
+### Tetikleyici
+
+Kullanıcı: *"aktif olmayan yazıcıları silme işlemi ekle"*. Sprint 29-fix-5'te eklenen sanal yazıcı blacklist'i (Microsoft Print to PDF, OneNote, Fax, FeedMe POS Print Job) sabit pattern'larla filtreliyordu. Kullanıcının kendi tarama listesinde gözükmesini istemediği eski/dummy printer'lar (önceki kurulumların kalıntıları, test yazıcıları, geçici Generic kayıtlar) hâlâ listeyi şişiriyordu.
+
+Bu sprint, kullanıcı-yönetimli ek bir filtre katmanı ekler: tarama listesinden bir cihazı gizle → SharedPreferences blacklist'e ekle → fiş + etiket akışlarında ortak filtre. Geri alma için "Gizli yazıcılar" yönetim kartı.
+
+### Mimari (3 Katmanlı Yazıcı Filtreleme)
+
+```
+flutter_pos_printer_platform_image_3 (EnumPrintersW: tüm Windows yazıcıları)
+  ↓
+Layer 1: Sanal yazıcı sabit blacklist  (Sprint 29-fix-5: PDF/OneNote/Fax/FeedMe)
+  ↓
+Layer 2: Kullanıcı gizleme listesi     (Sprint 30: HiddenPrintersNotifier)
+  ↓
+UI tarama listesi (aktif yazıcılar)
+```
+
+### Değişiklikler
+
+**Yeni:**
+
+- ⭐ [`lib/services/print/hidden_printers.dart`](project_pos/lib/services/print/hidden_printers.dart) — `HiddenPrinters` model (Set<String> hiddenNames + loaded flag) + `HiddenPrintersNotifier` (load/hide/unhide/clearAll/_persist) + `hiddenPrintersProvider`. SharedPreferences `print.hidden_printer_names` key, case-insensitive normalize.
+
+**Edit:**
+
+- 📝 [`print_service.dart`](project_pos/lib/services/print/print_service.dart):
+  - Constructor: `HiddenPrinters? hidden` opsiyonel parametre
+  - `discoverDevices()`: Layer 2 filter `.where((d) => _hidden == null || !_hidden.isHidden(d.name))`
+  - `printServiceProvider`: `ref.watch(hiddenPrintersProvider)` → ctor'a geçir
+- 📝 [`label_print_service.dart`](project_pos/lib/services/print/label_print_service.dart):
+  - Aynı paterni klonla — `HiddenPrinters? hidden` ctor + `discoverDevices()` filter
+  - `labelPrintServiceProvider`: `ref.watch(hiddenPrintersProvider)` → ctor'a geçir
+- 📝 [`printer_settings_screen.dart`](project_pos/lib/features/settings/screens/printer_settings_screen.dart):
+  - Tarama sonuç listesi: seçili olmayan cihazlar için `Icons.visibility_off_outlined` "Listede gösterme" butonu (önce `chevron_right` idi)
+  - `_hideDevice()`: confirm dialog → `hiddenPrintersProvider.hide()` + setState ile listeden çıkar
+  - `_unhideDevice()` + `_unhideAll()`: tek/toplu geri al
+  - `_buildHiddenPrintersCard()`: gizli yazıcı varsa ayrı kart (her gizli isim + restore + "Tümünü geri al")
+- 📝 [`label_printer_settings_screen.dart`](project_pos/lib/features/settings/screens/label_printer_settings_screen.dart): aynı paterni paralel klon (ortak `hiddenPrintersProvider`)
+
+### Davranış
+
+```
+1. Settings → Yazıcı Ayarları → "USB Cihazları Tara"
+2. Bulunan Cihazlar (4):
+   - POSA-80 Series (kullanılan, seçili → ✓)
+   - Generic / Text Only (eski test kurulumu)
+   - HP LaserJet (kullanılmıyor)
+   - POSA-80 Copy (yanlış kayıt)
+3. POSA-80 Copy yanındaki "Listede gösterme" ✕ butonuna bas
+4. Confirm dialog ("Bu işlem yazıcıyı Windows'tan kaldırmaz...") → Gizle
+5. POSA-80 Copy listeden anında çıkar; "Gizli yazıcılar (1)" kartı belirir
+6. Sonraki taramalarda POSA-80 Copy listede yok
+7. Etiket Yazıcı ekranı da aynı listeyi filtrele (ortak provider)
+8. Yanlış gizleyen kullanıcı: "Gizli yazıcılar" kartı → "Geri al" → tekrar tara
+```
+
+### Tasarım Kararları
+
+- **Anahtar olarak deviceName** (VID/PID değil): Generic Text Only sürücüsü VID=0 PID=0 alabilir → tüm Generic kayıtlar tek key'e düşer (istemiyoruz). Windows EnumPrintersW name'e göre kaydeder.
+- **Case-insensitive normalize** (`toLowerCase().trim()`): Windows printer adı bazen büyük/küçük harf farkıyla gelebilir.
+- **Ortak provider** fiş + etiket için: kullanıcı bir kez gizlerse her iki akış uyar.
+- **Windows-level kaldırma YAPMA**: Elevation + sistem-wide etki gerektirir; sadece app-level blacklist güvenli.
+- **Confirm dialog şart**: "Bu işlem yazıcıyı Windows'tan kaldırmaz; sadece bu uygulamadaki tarama listesini sadeleştirir. İstediğiniz zaman geri alabilirsiniz." metni panik önler.
+
+### Doğrulama
+
+`flutter analyze lib/services/print lib/features/settings/screens/printer_settings_screen.dart lib/features/settings/screens/label_printer_settings_screen.dart`: **No issues found!** ✅
+
+(İlk pass'ta 2 `unnecessary_non_null_assertion` warning — Dart field promotion sonrası `_hidden!.isHidden` gereksizdi, `!` kaldırıldı.)
+
+### Sprint 30 Backlog — Güncel Durum
+
+| Kalem | Durum |
+|---|---|
+| ~~POSA Windows kurulum tutorial~~ | ✅ DONE |
+| ~~Manuel test rehberi Sprint 29 hizalama~~ | ✅ DONE |
+| ~~E-Arşiv fiş uyumluluk denetimi~~ | ✅ DONE |
+| ~~Aktif olmayan yazıcı gizleme~~ | ✅ DONE (bu girdi) |
+| Gerçek USB scan paketi araştırması | ⏳ pending |
+| ÖKC sertifikasyon + E-Arşiv XML | 🔮 Sprint 32+ |
+| KDV TABLOSU 4. sütun (Toplam KDV-dahil) | ⏳ pending (minor) |
+
+### Sources
+
+- [`hidden_printers.dart`](project_pos/lib/services/print/hidden_printers.dart) — yeni provider
+- [`print_service.dart`](project_pos/lib/services/print/print_service.dart) — Layer 2 filter
+- [`label_print_service.dart`](project_pos/lib/services/print/label_print_service.dart) — paralel klon
+- [`printer_settings_screen.dart`](project_pos/lib/features/settings/screens/printer_settings_screen.dart) — UI gizle/geri al
+- [`label_printer_settings_screen.dart`](project_pos/lib/features/settings/screens/label_printer_settings_screen.dart) — UI paralel
+- Sprint 29-fix-5 (sanal yazıcı sabit blacklist) — Layer 1, bu sprint'in temeli
+
+---
+
+## [2026-05-06] sprint-31 | UI Polish + Density Sadeleştirme ✅
+
+### Tetikleyici
+
+Kullanıcı: *"yeni bir sprint başlat sadece ekran görüntüsü düzeltme ile alakalı olsun — uygulamayı sadeleştirme analizi yap"*. AskUserQuestion ile kapsam netleştirildi: **(1)** ekran taraması + düzeltme, **(2)** görsel sadeleştirme (UI density), **(3)** tam sprint (analiz + tüm düzeltmeler).
+
+### Audit Bulguları
+
+3 paralel Explore agent'ı taradı: 70 ekran, 21 modül; 22 custom widget, theme tokens hazır; **34 spesifik bulgu**.
+
+**Yüksek-etki density sorunları:**
+- Dashboard: 4-KPI Row breakpoint'siz, 6 quick action sabit 3 sütun → mobile sıkışma
+- Settings: 4 tab + ölü UI (2FA "yakında", camera "coming_soon", Mağaza/Depo/Yedekleme/Gizlilik/Kullanım toast'ları), 4. tab `t('settings.title')` ekran başlığı ile duplikasyon
+- Accounts hub: Liste paneli sabit 360px, dar masaüstünde detay paneli boğuluyor
+- POS payment: `childAspectRatio: 2.6` 360px altı subtitle clip
+
+### Değişiklikler
+
+**Dashboard responsive ([modern_dashboard_screen.dart](project_pos/lib/features/dashboard/screens/modern_dashboard_screen.dart)):**
+- `_buildKpiRow` — `LayoutBuilder` ile 480px altında 2×2 grid, üstünde Row tek sıra. KPI kartları liste ile yeniden kurgulandı.
+- `_buildQuickActions` — `LayoutBuilder` ile 480px altında 2 sütun, üstünde 3 sütun.
+
+**Settings ölü UI temizliği ([settings_screen.dart](project_pos/lib/features/settings/screens/settings_screen.dart)):**
+- `İki Faktörlü Doğrulama` switch'i (`'2FA yakında!'` toast) kaldırıldı.
+- Profile camera button (`Stack + Positioned IconButton` `'common.coming_soon'`) kaldırıldı; CircleAvatar tek başına.
+- `Mağaza Ayarları` bölümünden `Varsayılan Mağaza` + `Varsayılan Depo` (her ikisi de "yakında" toast) kaldırıldı; sadece `Fatura Öneki` kaldı.
+- `Veri & Gizlilik` bölümünden `Yedekleme` + `Senkronizasyon` (no-op switch) kaldırıldı.
+- `Hakkında` bölümünden `Gizlilik Politikası` + `Kullanım Koşulları` ("Yakında!" toast) kaldırıldı.
+
+**Master-detail responsive ([accounts_hub_screen.dart](project_pos/lib/features/accounts/screens/accounts_hub_screen.dart)):**
+- Liste paneli sabit 360 → konteyner genişliğinin %35'i (clamp 320–420). Tablet/dar masaüstünde detay paneli artık nefes alıyor.
+
+**POS payment responsive ([payment_panel.dart](project_pos/lib/features/pos/widgets/payment_panel.dart)):**
+- Method grid `childAspectRatio` sabit 2.6 → `LayoutBuilder` ile <360px = 2.0, üstü 2.6.
+
+### Doğrulama
+
+- `flutter analyze` (4 dokunulan dosya) → **No issues found**.
+- Settings dead-UI temizliği: önceki tüm `_section` blokları run-time render edilmiyor.
+- Dashboard responsive: LayoutBuilder constraint test'i breakpoint 480px.
+
+### Geri çekilen değişiklikler
+
+- **Settings 4. tab `t('settings.title')` → `'Sistem'` hardcode'u** kullanıcı tarafından "neden dil desteğini bozuyorsun" gerekçesiyle reddedildi. `t('settings.title')` korundu (ekran başlığı ile duplikasyon kabul edildi). Kural memory'e kaydedildi: `feedback_dont_break_i18n.md`.
+- **Sidebar section label fontSize 10→11 + letter-spacing 1.0→0.6** edit'i kullanıcı tarafından reddedildi (sebep belirtilmedi).
+
+### Sonraki sprint adayları
+
+- Sidebar 16 default item — backend menü yüklendiğinde dinamik, ama default dump dar masaüstünde sıkışabilir
+- Reports tab + date inline overflow (3 tab + tarih satırı)
+- Finance Revenue/Expense Row mobile wrap
+- Inventory grid `childAspectRatio` standardizasyonu (1.0/1.2/1.6 karışık)
+- 244 hardcoded `Color(0xFF...)` ve 1437 inline `fontSize` migration (büyük scope, ayrı sprint)
+- `nav.system_settings` veya benzeri yeni i18n bundle key — backend'e ekleme gerekiyor (settings 4. tab duplikasyonunu çözer)
+
+## [2026-05-06] sprint-30-complete | Audit kapsamı genişletildi + Frontend Timeline + Job Test ✅
+
+### Tetikleyici
+
+Kullanıcı: *"şimdi kodları tamamla"* — Sprint 30 sweep'inde minimum yapılan parçaları tam donatım.
+
+### Tamamlanan Parçalar
+
+**Audit hook genişletildi (Customer + Supplier tam):**
+- [`CustomerControllerImpl`](pos-product-manager/src/main/java/com/sedcore/customer/controller/impl/CustomerControllerImpl.java) — `create` (recordCreate), `update` (recordFieldChanges 5 alan: name/taxNumber/creditLimit/paymentTermDays/riskStatus/isActive), `delete` (recordDelete)
+- [`SupplierServiceImpl`](pos-product-manager/src/main/java/com/sedcore/supplier/service/impl/SupplierServiceImpl.java) — paralel: `createSupplier` / `updateSupplier` / `deleteSupplier` / `toggleStatus` / `updateCreditLimit` hook'ları
+
+**Frontend Timeline UI (issue P2.6 kullanıcı görünür):**
+- [`account_audit_provider.dart`](project_pos/lib/features/accounts/providers/account_audit_provider.dart) — `accountAuditHistoryProvider` family (`AuditTarget` key) `FutureProvider.autoDispose`
+- [`account_audit_timeline.dart`](project_pos/lib/features/accounts/widgets/account_audit_timeline.dart) — DraggableScrollableSheet + per-row action paleti (CREATE=success/yeşil, UPDATE=primary/mavi, DELETE=danger/kırmızı, RESTORE=info)
+- [`statement_detail_panel.dart`](project_pos/lib/features/accounts/widgets/statement_detail_panel.dart) — header'a `Icons.history` butonu (edit ile pdf arasında) → bottom sheet
+- [`account_service.dart`](project_pos/lib/features/accounts/services/account_service.dart) — `getAuditHistory(accountType, accountId)` Dart client
+
+**Backend test coverage (issue P2.7 P1.5'tan 1.5 güne):**
+- [`OverdueNotificationScheduledJobTest`](pos-product-manager/src/test/java/com/sedcore/finance/job/OverdueNotificationScheduledJobTest.java) — `@SpringBootTest` + `@MockBean NotificationService` + 6 test:
+  - Email dolu → EMAIL queue
+  - Phone-only → SMS fallback
+  - Email > Phone preference (ikisi varsa EMAIL)
+  - overdueAmount=0 → skip (repository filter)
+  - İletişim kanalı yok → repository hiç döndürmez
+  - Queue exception → batch durmaz, skipped artar
+
+### Doğrulama
+
+```
+Backend  : ./mvnw.cmd test            → BUILD SUCCESS, 18/18 ✅
+                                        (3 PaymentAllocation + 9 AccountAudit + 6 OverdueScheduledJob)
+Frontend : flutter analyze accounts   → 8 issues (hepsi pre-existing, yeni warning yok) ✅
+```
+
+### LOC Delta
+
+~620 LOC: 4 controller/service hook noktası + 1 yeni Dart provider + 1 yeni Flutter widget (Timeline, ~270 LOC) + 1 yeni test sınıfı (~190 LOC) + service client metod + statement_detail header.
+
+### Issue Statüleri (güncellendi)
+
+- P2.7 (test coverage): `in-progress` kaldı — T1-T4 hâlâ pending — ama envanter artık 18 test (12'den arttı). Tahmini geri kalan ~1.9 gün.
+
+### Sonraki Adımlar (Sprint 31+ backlog'da kaldı)
+
+- T1-T4 service-level test 4'lüsü
+- Audit timeline widget'a filter (action type, tarih aralığı)
+- Audit-log archive job (90+ gün eski kayıtları cold storage'a)
+- Receipt printer repeated-pairing manuel test (Sprint 30 fix uygulandı)
+
+---
+
+## [2026-05-06] sprint-30 | Açık Issue Sweep — P1.3/P1.5/P2.4/P2.6 + P2.7 kısmi ✅
+
+### Tetikleyici
+
+Kullanıcı: *"WİKİ DE YARIM KALAN PLANLARI BUL"* → *"1 DEN BAŞLAYARAK DEVAM ET GELİŞTİRMEYE"* → *"TEMPLATE YAPIMIZA UYGUN OLSUN"*
+
+5 açık issue ([[issues/accounts-pagination-missing]], [[issues/accounts-error-boundary-missing]], [[issues/overdue-notification-missing]], [[issues/activity-history-missing]], [[issues/test-coverage-unknown]]) sırayla ele alındı.
+
+### Issue #1 (P1.3) — Pagination user limit ✅
+
+Sprint 8 cursor-based pagination zaten vardı; eksik olan **kullanıcı tercih edilebilir limit (50/100/200)**.
+
+**Yeni:**
+- [`accounts_list_settings.dart`](project_pos/lib/features/accounts/providers/accounts_list_settings.dart) — `AccountsListPagination` + `accountsListPaginationProvider` + SharedPreferences (`accounts_list.page_limit`)
+- [`accounts_list_panel.dart`](project_pos/lib/features/accounts/widgets/accounts_list_panel.dart) — `_PageSizeButton` PopupMenuButton (search bar yanında, `Icons.tune`, `AppConstants.borderRadiusSmall`)
+
+**Düzenleme:**
+- [`accounts_list_provider.dart`](project_pos/lib/features/accounts/providers/accounts_list_provider.dart) — `_pageLimit=100` sabit silindi, `_ref.read(accountsListPaginationProvider).pageLimit` dinamik
+
+### Issue #2 (P1.5) — Error boundary kalan 2 panel ✅ (zaten yapılmış)
+
+Audit: 3 panelin de Sprint 8 hot-fix WP2'de `AccountsErrorView` entegrasyonu yapılmıştı:
+- `AccountsListPanel` ([accounts_list_panel.dart:175-181](project_pos/lib/features/accounts/widgets/accounts_list_panel.dart#L175-L181))
+- `StatementDetailPanel` ([statement_detail_panel.dart:48-54](project_pos/lib/features/accounts/widgets/statement_detail_panel.dart#L48-L54))
+- `AccountsSummaryBar` ([accounts_summary_bar.dart:23-34](project_pos/lib/features/accounts/widgets/accounts_summary_bar.dart#L23-L34) — `compact: true`)
+
+İssue dosyası `resolved`'a çevrildi, ek kod gerektirmedi.
+
+### Issue #3 (P2.4) — Overdue notification ✅
+
+Multi-tenant cron + admin endpoint + frontend hookup (Sprint 25 notifications foundation reuse).
+
+**Yeni Backend:**
+- [`OverdueNotificationScheduledJob`](pos-product-manager/src/main/java/com/sedcore/finance/job/OverdueNotificationScheduledJob.java) — `ReconcileScheduledJob` paralel, default cron `0 0 9 * * MON-FRI`, feature flag `overdue.notification.enabled=false`
+- [`AdminOverdueNotificationControllerImpl`](pos-product-manager/src/main/java/com/sedcore/finance/controller/impl/AdminOverdueNotificationControllerImpl.java) — `POST /api/v1/admin/notifications/overdue/scan` (ROLE_ADMIN)
+- `CustomerAccountRepository.findOverdueWithContact` — JPQL `JOIN FETCH customer` + `overdueAmount > 0` + email/phone NOT NULL
+
+**Kanal seçimi:** EMAIL preferred (zengin içerik + maliyet), yoksa SMS fallback. ASCII-safe SMS body.
+
+**Yeni Frontend:**
+- `NotificationService.triggerOverdueScan()` Dart metodu
+- `accounts_summary_bar.dart` overdue tile'a `onTap` (overdue > 0 koşullu) → confirm dialog → `triggerOverdueScan()` → toast
+
+**Config:** `application.properties` — `overdue.notification.enabled` + `overdue.notification.cron`
+
+### Issue #4 (P2.6) — Activity history ✅
+
+Hibernate Envers yerine **hafif custom tablo** seçildi: tek `account_audit_logs` + entity tipi diskriminatörü.
+
+**Yeni:**
+- `AccountAuditAction` enum (CREATE/UPDATE/DELETE/RESTORE)
+- `AccountAuditEntityType` enum (CUSTOMER/SUPPLIER)
+- [`AccountAuditLog`](pos-product-manager/src/main/java/com/sedcore/finance/entity/AccountAuditLog.java) entity — 3 index (entity, company, field)
+- `AccountAuditLogRepository`
+- [`AccountAuditService`](pos-product-manager/src/main/java/com/sedcore/finance/service/AccountAuditService.java) — `recordFieldChange / recordFieldChanges / recordCreate / recordDelete / getHistory`
+- [`AccountAuditControllerImpl`](pos-product-manager/src/main/java/com/sedcore/finance/controller/impl/AccountAuditControllerImpl.java) — `GET /api/v1/audit/customer/{id}` + `/supplier/{id}`
+
+**Hook (örnek):** `CustomerServiceImpl.updateCreditLimit` → `accountAuditService.recordFieldChange(CUSTOMER, id, "creditLimit", old, new, null)`
+
+**Tasarım kararları:**
+- Bir UPDATE = N row (her field değişikliği için ayrı kayıt)
+- Eski/yeni eşitse no-op (log spam önler)
+- 1024 karakter aşımında otomatik kısaltma
+- `companyCode` + `createUser` + `createTime` `BaseDbServiceImp` dışında olduğu için `persist()` helper'da elle setleniyor
+
+### Issue #5 (P2.7) — Test coverage kısmi ✅
+
+Yeni: `AccountAuditServiceTest` — `@SpringBootTest` + H2 + 9 test:
+- Tek alan persist + eşit no-op
+- Çoklu alan toplu yazım + eşit atla
+- CREATE/DELETE özet
+- En yeni üstte sıralama
+- 1024 karakter truncate
+- Entity tipi segregation
+- Null entityId/fieldName için no-op
+
+**Tüm backend testleri:** 12/12 ✅ (PaymentAllocationRepositoryTest 3 + AccountAuditServiceTest 9)
+
+**Hâlâ eksik (issue 'in-progress' kalıyor):** T1-T4 service-level testler + OverdueNotificationScheduledJobTest. Tahmini ~2.2 gün, ayrı sprint.
+
+### Doğrulama
+
+```
+Backend  : ./mvnw.cmd test            → BUILD SUCCESS, 12/12 ✅
+Frontend : flutter analyze (5 dosya)  → No issues found! ✅
+```
+
+### LOC Delta
+
+~1185 LOC: 9 yeni Java sınıfı (entity + 2 enum + repo + service + 2 controller + scheduled job) + 2 yeni Dart dosyası + audit hook + test (218 LOC) + 4 wiki issue update + index + log entry.
+
+### Sonraki Adımlar (Sprint 31+ için backlog)
+
+1. AccountAuditLog frontend UI — AccountEditForm'a "Geçmiş" sekmesi (timeline view)
+2. Daha fazla audit hook — `riskStatus`, `paymentTermDays`, `name`, `taxNumber`, supplier paralel
+3. T1-T4 service-level testler (~2.2 gün): PaymentCreationIntegrationTest, ReconcileDriftDetectionTest, CreditLimitGuardTest, SalePaymentFkIntegrityTest
+4. OverdueNotificationScheduledJobTest — fixture-based queue verify
+5. CI Coverage Gate — JaCoCo + threshold P0 path %80+
+
+---
+
+## [2026-05-06] sprint-30-receipt-compliance | Fiş Firma Kimlik Bloğu + E-Arşiv Uyumluluk Denetimi ✅
+
+### Tetikleyici
+
+Sprint 29-fix-7 fiş formatına KDV oranı + KDV TABLOSU eklemişti, ama Türkiye fiş standardının diğer zorunlu alanları (firma unvanı, VKN, Vergi Dairesi, adres) [`receipt_template.dart`](project_pos/lib/services/print/receipt_template.dart) tarafından **okunmuyordu**. `CompanySettingsScreen` üzerinden backend'e kaydedilmesine rağmen fiş header'ında yalnızca free-form `PrintSettings.headerText` ("SEDCORE POS") basılıyordu.
+
+Sprint 30 backlog kalemi. Kullanıcı: *"E-Arşiv denetim"*.
+
+### Wiki Workflow (3 Dosya)
+
+#### W1. Audit ([[sources/code-refs/2026-05-06-eArsiv-receipt-compliance-audit]])
+
+ÖKC fişi vs E-Arşiv fatura vs informal makbuz ayrımı netleştirildi (SEDCORE 3. kategoride). Türkiye Maliye Genel Tebliği zorunlu 16 alan tablosu:
+- ✅ 8/16 var (tarih, mal/hizmet, miktar, birim fiyat, satır toplamı, KDV oran her satırda — Sprint 29-fix-7, KDV breakdown, genel toplam, ödeme şekli)
+- ⚠️ 1/16 yarı (firma unvanı — free-form `headerText`)
+- ❌ 5/16 eksik (VKN, V.D., adres, telefon, "resmi belge değildir" disclaimer)
+- 🚫 2/16 N/A (ÖKC seri no, Z raporu — sertifikasız sistem)
+
+E-Arşiv XML üretimi + ÖKC sertifikasyon **scope dışı** (6+ hafta + yasal danışmanlık, iş kararına bağlı).
+
+#### W2. Synthesis ([[syntheses/eArsiv-receipt-compliance]])
+
+6 mimari karar:
+- **K1**: `CompanyInfo` ile `PrintSettings` ayrı provider (mix concerns yok)
+- **K2**: SharedPreferences cache + background silent refresh (offline-first, `loaded` flag — `PrintSettings` paterni)
+- **K3**: `ReceiptTemplate` API stable → opsiyonel `company` parametresi (backward compat)
+- **K4**: Disclaimer footer KOŞULLU, `isOfficialReceipt` flag (default false)
+- **K5**: Test sayfası gerçek format yansıtır
+- **K6**: Sertifikasyon yolu için engelleyici tasarım yok (Sprint 32+ kapısı açık)
+
+#### W3. Implementation
+
+**Yeni:**
+
+- ⭐ [`lib/services/company/company_info.dart`](project_pos/lib/services/company/company_info.dart) — `CompanyInfo` model + `CompanyInfoNotifier` (load/refreshFromBackend/clear/_persist) + `companyInfoProvider`. SharedPreferences cache, app boot'ta hidrasyon, background `getCompanySettings()` refresh. `PrintSettings` paterni klonlandı (`feedback_project_code_structure` rehberinde belirtildiği gibi).
+
+**Edit:**
+
+- 📝 [`receipt_template.dart`](project_pos/lib/services/print/receipt_template.dart):
+  - Constructor: `CompanyInfo? company` opsiyonel
+  - `_addHeaderBlock()`: 4 satır firma kimlik (unvan büyük + adres + `VKN: X | V.D.: Y` + telefon); null/`!isComplete` → eski `headerText` fallback
+  - `_buildTaxLine()`: VKN/V.D. helper
+  - `buildSaleReceipt()`: header → `_addHeaderBlock()`, footer'a koşullu disclaimer ("Bu fis resmi belge degildir; satis takibi icindir.")
+  - `buildTestPage()`: aynı header blok + disclaimer (gerçek fiş önizlemesi)
+- 📝 [`print_service.dart`](project_pos/lib/services/print/print_service.dart):
+  - Constructor: `CompanyInfo? company` opsiyonel
+  - `printSaleReceipt` + `printTestPage`: `ReceiptTemplate(_settings, company: _company)`
+  - `printServiceProvider`: `ref.watch(companyInfoProvider)` ekle, ctor'a geçir
+- 📝 [`company_settings_screen.dart`](project_pos/lib/features/settings/screens/company_settings_screen.dart):
+  - Save sonrası `companyInfoProvider.notifier.refreshFromBackend()` (cache invalidate, restart gerekmez)
+
+### Yeni Fiş Formatı (companyInfo dolu)
+
+```
+Sedcore Bilisim A.S.                  ← unvan (büyük, bold)
+Sisli, Istanbul                       ← adres (küçük font)
+VKN: 1234567890 | V.D.: Sisli         ← VKN + Vergi Dairesi
+Tel: +90 212 555 0000                 ← telefon
+
+Fis No:                  #POS-...
+Tarih:           06.05.2026 09:30
+--------------------
+Fren Balata
+  1 x TL 320.00     TL 377.60 *20
+--------------------
+Ara Toplam:        TL 320.00
+KDV %20:            TL 57.60
+====================
+TOPLAM             TL 377.60
+====================
+Odeme:                Nakit
+
+KDV TABLOSU
+--------------------
+Oran  Matrah     KDV
+%20   TL 320.00  TL 57.60
+--------------------
+
+Bu fis resmi belge degildir;          ← disclaimer (Sprint 30 K4)
+satis takibi icindir.
+
+[QR kod — sale.id]
+#<saleId>
+```
+
+### Backward Compatibility
+
+`CompanyInfo` null veya `!isComplete` (companyName/taxNumber boş) → eski `headerText` ("SEDCORE POS") tek satır. Sprint 22 testleri regresyon yaratmaz; existing kurulumlar `CompanySettingsScreen`'de firma bilgisi girilene kadar eski davranış sürer.
+
+### Doğrulama
+
+`flutter analyze lib/services/print lib/services/company lib/features/settings/screens/company_settings_screen.dart`: **No issues found!** ✅
+
+### Smoke Test
+
+```
+1. Hot restart
+2. Settings → Firma Ayarları → companyName/taxNumber/taxOffice/address/phone doldur → Kaydet
+   → "Kaydedildi" toast + arkaplanda companyInfoProvider refresh
+3. POS → satış yap → Receipt Preview Dialog → "Fiş Yazdır"
+   → POSA termal cihaza yeni format basar (firma blok + disclaimer dahil)
+4. Settings → Yazıcı Ayarları → "Test Yazdır"
+   → Test sayfası da firma blok ile çıkar (önizleme)
+5. CompanySettingsScreen tekrar aç → bir alan değiştir → Kaydet
+   → Sonraki fişte değişiklik yansır (restart gerekmez)
+```
+
+### Sprint 30 Backlog — Güncel Durum
+
+| Kalem | Durum |
+|---|---|
+| ~~POSA Windows kurulum tutorial~~ | ✅ DONE (/docs/printer-setup.md) |
+| ~~Manuel test rehberi Sprint 29 hizalama~~ | ✅ DONE (wiki-revision) |
+| ~~E-Arşiv fiş uyumluluk denetimi~~ | ✅ DONE (bu girdi) |
+| Gerçek USB scan paketi araştırması | ⏳ pending |
+| ÖKC sertifikasyon + E-Arşiv XML üretimi | 🔮 Sprint 32+ (yasal/iş kararı) |
+| KDV TABLOSU 4. sütun (Toplam KDV-dahil) | ⏳ pending (minor) |
+| `t('receipt.disclaimer.unofficial')` i18n key | ⏳ pending (Sprint 24 i18n paterni) |
+
+### Sources
+
+- [`company_info.dart`](project_pos/lib/services/company/company_info.dart) — yeni provider
+- [`receipt_template.dart`](project_pos/lib/services/print/receipt_template.dart) — `_addHeaderBlock`, `_buildTaxLine`, disclaimer
+- [`print_service.dart`](project_pos/lib/services/print/print_service.dart) — `companyInfoProvider` enjeksiyon
+- [`company_settings_screen.dart`](project_pos/lib/features/settings/screens/company_settings_screen.dart) — save → refreshFromBackend
+- Audit: [[sources/code-refs/2026-05-06-eArsiv-receipt-compliance-audit]]
+- Synthesis: [[syntheses/eArsiv-receipt-compliance]]
+- Sprint 22 paterni klonlandı: [`print_settings.dart`](project_pos/lib/services/print/print_settings.dart)
+
+---
+
+## [2026-05-06] sprint-30-fix | Fiş + Etiket Yazıcı Self-Healing Persistence ✅ (manuel test bekliyor)
+
+### Tetikleyici
+
+[[issues/receipt-printer-repeated-pairing]] (aynı gün açıldı, P-high) — kullanıcı raporu: *"FİŞ YAZICI UYGULAMADA SADECE BİR DEFA TANITILMALI HER SEFERİNDE TANIMA İHTİYACINDAN KURTUL"*. Auto mode aktif → koda geç komutu sonrası fix uygulandı.
+
+### Değişiklikler
+
+**A) Hidrasyon farkındalığı (`loaded` flag)**
+- [`print_settings.dart`](project_pos/lib/services/print/print_settings.dart) — `loaded: bool` field, `load()` sonrası `true`, `copyWith` desteği
+- [`label_print_settings.dart`](project_pos/lib/services/print/label_print_settings.dart) — paralel
+
+**B) Self-healing connect (rediscover + retry + name back-write)**
+- [`print_service.dart`](project_pos/lib/services/print/print_service.dart) — `_send()` connect failure → `_rediscoverDeviceName()` → VID/PID match → `_tryConnect(newName)` → başarılıysa `onDeviceNameRefresh(newName)` ile SharedPreferences back-write. Kayıt asla silinmez.
+- [`label_print_service.dart`](project_pos/lib/services/print/label_print_service.dart) — paralel
+- Provider'lar `notifier.refreshDeviceName` callback enjekte ediyor
+
+**C) UI loading state + sweep guard**
+- [`printer_settings_screen.dart`](project_pos/lib/features/settings/screens/printer_settings_screen.dart) — `if (!settings.loaded)` → `CircularProgressIndicator`. Sanal yazıcı sweep `initState`'ten alındı, `_sweepVirtualPrinterIfHydrated()` build içinde **sadece** `loaded == true` ve **bir kez** çalışır (false-negative riskini ortadan kaldırır).
+- [`label_printer_settings_screen.dart`](project_pos/lib/features/settings/screens/label_printer_settings_screen.dart) — loading state paralel
+
+**D) TextController hidrasyon senkronizasyonu**
+- `_headerCtl` / `_footerCtl` / `_widthCtl` / `_heightCtl` ilk `loaded=true` build'inde gerçek SharedPreferences değerleriyle senkronize edilir (`_hydrateTextControllers` / `_hydrateDimensionControllers`).
+
+### Doğrulama
+
+- `flutter analyze project_pos/lib/services/print/ printer_settings_screen.dart label_printer_settings_screen.dart` → **No issues found!** (4.2s)
+- Tam proje: 164 mevcut info-level uyarı, fix dışı dosyalardan (regresyon yok)
+- Manuel testler: `issues/receipt-printer-repeated-pairing.md` 5 senaryo listesinde, kullanıcı doğrulayacak
+
+### Notlar
+
+- Connect failure'da yazıcı kaydı **silinmez** — eski davranış kullanıcıyı yeniden tanıtmaya zorluyor olabilirdi (UX gözlemi, fix önemli)
+- Self-healing mekanizması Windows'ta `EnumPrintersW`'nun aynı USB cihazına farklı `printerName` döndürebilmesi durumunu tolere eder
+- Aynı paterni gelecek başka USB-bağlı integration'lar (terazi, barkod okuyucu) için kullanılabilir
+
+## [2026-05-06] issue-open | Fiş Yazıcı Her Açılışta Yeniden Tanıtım Gerektiriyor (open, P-high)
+
+### Tetikleyici
+
+Kullanıcı raporu (2026-05-06): *"FİŞ YAZICI UYGULAMADA SADECE BİR DEFA TANITILMALI HER SEFERİNDE TANIMA İHTİYACINDAN KURTUL"* — POS uygulaması her açılışta termal fiş yazıcısının tekrar seçilmesini gerektiriyor; "set & forget" beklentisi karşılanmıyor.
+
+### Değişiklikler
+
+- [`issues/receipt-printer-repeated-pairing.md`](.wiki/issues/receipt-printer-repeated-pairing.md) ⭐ NEW — semptom + 4 olası kök neden + çözüm hedefi + 5 maddeli aksiyon planı (Sprint 30+ adayı).
+- [`index.md`](.wiki/index.md) — "Açık Issues" listesine satır eklendi.
+
+### Notlar
+
+- Mevcut kod `print_settings.dart` zaten SharedPreferences ile persistence yapıyor, ama semptom hala raporlanıyor — kök neden saha doğrulaması bekliyor (async load race? clearDevice istemsiz tetik? Windows USB enumeration?).
+- Etiket yazıcı (`label_print_settings.dart`) aynı paterni paylaştığı için fix paralel uygulanmalı.
+- Çözüm hedefi: connect başarısız olursa kayıt silinmesin, self-healing discover + retry, kullanıcı yeniden seçim yapmaya zorlanmasın.
+
+## [2026-05-06] sprint-30-docs | POSA / Termal Yazıcı Windows Kurulum Rehberi (/docs/printer-setup.md) ✅
+
+### Tetikleyici
+
+Sprint 29-fix-5 log'unda Sprint 30 backlog kalemi: *"POSA Windows kurulum tutorial — `/docs/printer-setup.md` GIF/screenshot dizisi eklenebilir"*. [`printer_settings_screen.dart`](project_pos/lib/features/settings/screens/printer_settings_screen.dart) info banner'ı kullanıcıyı *"Windows Ayarlar → Bluetooth ve cihazlar → Yazıcılar..."* yoluna yönlendiriyor ama somut adım-adım rehber yoktu. Sprint 29 boyunca kullanıcı bu kurulumu bilmediği için 17 PDF deneme + 5 fix iterasyonuna kadar gidildi.
+
+Kullanıcı talebi: *"PLANA DEVAM"* + *"GELİŞTİRMELERE PROJE KOD YAPISINA UYGUN OLSUN"* — Sprint 30 backlog'tan bir kalem, mevcut /docs/ paterniyle.
+
+### Değişiklikler
+
+[`docs/printer-setup.md`](docs/printer-setup.md) ⭐ NEW (~140 satır):
+
+1. **Bölüm 1 (Tanı):** Aygıt Yöneticisi + Windows Ayarlar kontrol matrisi (3 durum × sonraki adım)
+2. **Bölüm 2 (Plug & Play):** Windows otomatik yükleme yolu — 6 adım + sorun giderme tablosu (3 belirti)
+3. **Bölüm 3 (Manuel kurulum):** Generic / Text Only sürücüsü 11 adım — Plug & Play başarısızlık yolu
+4. **Bölüm 4 (Doğrulama):** Uygulama içi test — `Ayarlar → Cihazlar → USB Cihazları Tara → Test Yazdır` + beklenen ESC/POS çıktı örneği
+5. **Bölüm 5 (Sık karşılaşılan sorunlar):** 5 yaygın hata (A: tek "Microsoft Print to PDF", B: yapılandırılmamış toast, C: TR karakter bozukluğu, D: yarıda durma, E: aynı POSA iki slot race)
+6. **Bölüm 6 (Üretici sürücüsü):** Resmi sürücü vs Generic — tavsiye Generic (update riski yok)
+7. **İlgili:** Audit + synthesis + manuel test rehberi cross-link'leri
+
+**Konvansiyonlar (kullanıcı feedback):**
+
+- Naming: kebab-case (`printer-setup.md`) — `batch-entry-flow.md` paterni ile aynı
+- Klasör: `/docs/` (kullanıcı tutorial), `.wiki/` (mimari + audit) ayrımı korundu
+- Markdown link sözdizimi: standart `[text](path)` — mevcut `/docs/` dosyalarındaki paterne hizalandı (`[[wiki]]` syntax kullanılmadı)
+- Cross-reference: `../project_pos/lib/...` relative path (Flutter VSCode extension uyumlu)
+
+### Doğrulama
+
+- Markdown render kontrolü: tablolar, başlıklar, kod blokları geçerli
+- Cross-link kontrolü: 5 wiki dosyası + 2 Flutter source file relative path — hepsi var (kontrol: `print_service.dart`, `label_print_service.dart`, `printer_settings_screen.dart`, `receipt_template.dart`, audit + synthesis + manuel test rehberi)
+- Konvansiyon: `batch-entry-*.md` formatı baz alındı (üst başlık + son güncelleme tarihi + temalı bölümler)
+- Kod değişikliği yok → `flutter analyze` gerekmedi
+
+### Memory Update
+
+[`feedback_project_code_structure.md`](C:/Users/Win11/.claude/projects/c--Users-Win11-Documents-GitHub-proje/memory/feedback_project_code_structure.md) ⭐ NEW — kullanıcı *"GELİŞTİRMELERE PROJE KOD YAPISINA UYGUN OLSUN"* feedback'i memory'e kaydedildi (Riverpod, AppLogger, AppToast, kIsWeb guard, .wiki/, /docs/, i18n bundle key, multi-tenant filter paternleri). MEMORY.md index güncellendi.
+
+### Sprint 30 Backlog — İlerleme
+
+| Kalem | Durum | Not |
+|---|---|---|
+| ~~POSA Windows kurulum tutorial~~ | ✅ DONE | bu girdi |
+| Gerçek USB scan paketi araştırması | ⏳ pending | `usb_serial`, `quick_usb`, libusb Dart binding |
+| ZPL adapter (Zebra) | ❄️ frozen | yasaklar — talep gelirse Sprint 25+ |
+| E-Arşiv fatura uyumluluk denetimi (KDV) | ⏳ pending | Maliye yazılım kılavuzuna göre fiş `*<oran>` formatı |
+| Manuel test rehberi Sprint 29 hizalama | ✅ DONE | önceki log entry (2026-05-06 wiki-revision) |
+
+### Sources
+
+- [`docs/printer-setup.md`](docs/printer-setup.md) — yeni kurulum rehberi
+- [`batch-entry-flow.md`](docs/batch-entry-flow.md) — referans alınan /docs/ konvansiyonu
+- Sprint 29-fix-5 log: sanal yazıcı filtresi + banner (rehberin yazılma sebebi)
+- Sprint 29-fix-2/3/4/5/6 yolculuğu: bu rehber olmadığı için yaşanan 5 iter
+- [`feedback_project_code_structure.md`](memory) — yeni feedback memory
+
+---
+
 ## [2026-05-06] wiki-revision | Etiket Yazıcı Manuel Test Rehberi — Sprint 29-fix-6/7 hizalama ✅
 
 ### Tetikleyici

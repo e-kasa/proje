@@ -186,13 +186,14 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 - [[issues/supplier-list-balance-zero]] · [[issues/supplier-list-balance-zero-from-claude-wiki]]
 - [[issues/n-plus-one-customer-account-fetch]]
 - [[issues/batch-entry-provider-truncated]]
+- [[issues/accounts-pagination-missing]] (P1.3, Sprint 30 — kullanıcı tercihi 50/100/200)
+- [[issues/accounts-error-boundary-missing]] (P1.5, Sprint 8 hot-fix WP2 — 3/3 panel)
+- [[issues/overdue-notification-missing]] (P2.4, Sprint 30 — scheduled job + admin endpoint + frontend tap)
+- [[issues/activity-history-missing]] (P2.6, Sprint 30 — AccountAuditLog + service + endpoint + 9 test)
+- [[issues/test-coverage-unknown]] (P2.7, Sprint 31 — 31 backend test çalışıyor; T3+T4 full kapsam Sprint 32+ backlog)
 
 ### Açık
-- [[issues/accounts-pagination-missing]] (P1.3)
-- [[issues/accounts-error-boundary-missing]] (P1.5)
-- [[issues/overdue-notification-missing]] (P2.4)
-- [[issues/activity-history-missing]] (P2.6)
-- [[issues/test-coverage-unknown]] (P2.7)
+- [[issues/receipt-printer-repeated-pairing]] — fiş yazıcı her açılışta yeniden tanıtım gerektiriyor (Sprint 30 fix uygulandı, manuel test bekliyor)
 
 > **Not (overlap):** `-from-claude-wiki` suffix'li dosyalar `.claude/wiki/` migration'ından geldi ve mevcut sayfa ile içerik farklılığı tespit edildi (MERGE_NEEDED). Manuel inceleme + birleştirme gelecek bir bakım iterasyonunda yapılacak.
 

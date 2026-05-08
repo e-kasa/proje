@@ -4,6 +4,7 @@ import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/services/service_locator.dart';
+import 'package:project_pos/services/company/company_info.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 
 class CompanySettingsScreen extends ConsumerStatefulWidget {
@@ -102,6 +103,10 @@ class _CompanySettingsScreenState extends ConsumerState<CompanySettingsScreen> {
         'defaultVatRate': double.tryParse(_defaultVatRateController.text.trim()) ?? 18,
         'currency': _selectedCurrency,
       });
+      // Sprint 30: Fiş başlığı için kullanılan CompanyInfo cache'ini güncelle.
+      // Backend save tamamlandı → cache invalidate + reload (bir sonraki fiş
+      // basımında yeni veri akar; restart gerekmez).
+      await ref.read(companyInfoProvider.notifier).refreshFromBackend();
       if (mounted) {
         AppToast.success(context, t('common.saved'));
       }

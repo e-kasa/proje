@@ -37,6 +37,21 @@ class LabelPrinterSettings {
   /// Etiket altına fiyat yazılsın mı.
   final bool showPrice;
 
+  /// Sprint 30 — Yazıcı protokolü. Cihaz ailesine göre seçilir:
+  /// - `escPos`: POSA / Zjiang ZJ-58/80 fiş termal (default — backward compat)
+  /// - `tspl`: Zjiang LABEL-9X10, Argox CP, TSC TX/TE etiket yazıcılar
+  ///
+  /// Hızlı Kurulum sihirbazı cihaz adında "label" / "9X10" varsa otomatik
+  /// `tspl` seçer. Manuel override label_printer_settings_screen üzerinden.
+  final LabelProtocol protocol;
+
+  /// SharedPreferences'tan hidrasyon tamamlandı mı.
+  ///
+  /// `false` iken UI "yapılandırılmamış" yerine loading göstermeli — aksi halde
+  /// ilk frame'de kayıtlı yazıcı varken bile "yazıcı yok" görünür ve kullanıcı
+  /// gereksiz yere yeniden seçim yapar (Sprint 30 receipt-printer-repeated-pairing fix).
+  final bool loaded;
+
   const LabelPrinterSettings({
     this.vendorId,
     this.productId,
@@ -48,6 +63,8 @@ class LabelPrinterSettings {
     this.showProductName = true,
     this.showSku = true,
     this.showPrice = false,
+    this.protocol = LabelProtocol.escPos,
+    this.loaded = false,
   });
 
   bool get isConfigured => vendorId != null && productId != null;
@@ -63,6 +80,8 @@ class LabelPrinterSettings {
     bool? showProductName,
     bool? showSku,
     bool? showPrice,
+    LabelProtocol? protocol,
+    bool? loaded,
     bool clearDevice = false,
   }) {
     return LabelPrinterSettings(
@@ -76,6 +95,8 @@ class LabelPrinterSettings {
       showProductName: showProductName ?? this.showProductName,
       showSku: showSku ?? this.showSku,
       showPrice: showPrice ?? this.showPrice,
+      protocol: protocol ?? this.protocol,
+      loaded: loaded ?? this.loaded,
     );
   }
 }
@@ -87,6 +108,16 @@ enum LabelCodeType {
 
   final String label;
   const LabelCodeType(this.label);
+}
+
+/// Sprint 30 — Etiket yazıcı protokolü.
+enum LabelProtocol {
+  escPos('ESC/POS', 'POSA / Zjiang fiş termal'),
+  tspl('TSPL', 'Zjiang LABEL / Argox / TSC etiket');
+
+  final String label;
+  final String description;
+  const LabelProtocol(this.label, this.description);
 }
 
 class LabelPrintSettingsNotifier extends StateNotifier<LabelPrinterSettings> {
@@ -102,6 +133,7 @@ class LabelPrintSettingsNotifier extends StateNotifier<LabelPrinterSettings> {
   static const _kShowName = 'label_print.show_name';
   static const _kShowSku = 'label_print.show_sku';
   static const _kShowPrice = 'label_print.show_price';
+  static const _kProtocol = 'label_print.protocol';
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -119,7 +151,23 @@ class LabelPrintSettingsNotifier extends StateNotifier<LabelPrinterSettings> {
       showProductName: prefs.getBool(_kShowName) ?? true,
       showSku: prefs.getBool(_kShowSku) ?? true,
       showPrice: prefs.getBool(_kShowPrice) ?? false,
+      protocol: LabelProtocol.values.firstWhere(
+        (p) => p.name == prefs.getString(_kProtocol),
+        orElse: () => LabelProtocol.escPos,
+      ),
+      loaded: true,
     );
+  }
+
+  /// Self-healing: VID/PID kayıtlı kalır, sadece Windows enumeration sırasında
+  /// değişen `deviceName` güncellenir. `LabelPrintService._send()` connect
+  /// failure → rediscover → match akışında çağrılır. Detay için bkz.
+  /// `PrintSettingsNotifier.refreshDeviceName`.
+  Future<void> refreshDeviceName(String newName) async {
+    if (state.vendorId == null || state.productId == null) return;
+    if (state.deviceName == newName) return;
+    state = state.copyWith(deviceName: newName);
+    await _persist();
   }
 
   Future<void> updateDevice({
@@ -171,6 +219,11 @@ class LabelPrintSettingsNotifier extends StateNotifier<LabelPrinterSettings> {
     await _persist();
   }
 
+  Future<void> updateProtocol(LabelProtocol protocol) async {
+    state = state.copyWith(protocol: protocol);
+    await _persist();
+  }
+
   Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
     if (state.vendorId != null) {
@@ -195,6 +248,7 @@ class LabelPrintSettingsNotifier extends StateNotifier<LabelPrinterSettings> {
     await prefs.setBool(_kShowName, state.showProductName);
     await prefs.setBool(_kShowSku, state.showSku);
     await prefs.setBool(_kShowPrice, state.showPrice);
+    await prefs.setString(_kProtocol, state.protocol.name);
   }
 }
 

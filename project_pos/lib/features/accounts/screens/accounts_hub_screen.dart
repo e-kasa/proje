@@ -100,7 +100,14 @@ class _AccountsHubScreenState extends ConsumerState<AccountsHubScreen> {
                     ? Row(
                         children: [
                           SizedBox(
-                            width: 360,
+                            // Sprint 31: Liste paneli sabit 360 yerine
+                            // konteyner genişliğinin %35'i (min 320, max 420).
+                            // Tablet/dar masaüstünde detay paneli boğulmuyor.
+                            width: c.maxWidth * 0.35 < 320
+                                ? 320
+                                : c.maxWidth * 0.35 > 420
+                                    ? 420
+                                    : c.maxWidth * 0.35,
                             child: AccountsListPanel(
                               selectedId: selectedId,
                               onSelect: (a) =>

@@ -152,6 +152,44 @@
                     </excludes>
                 </configuration>
             </plugin>
+
+            <!--
+              Sprint 32 — Issue P2.7 takip: JaCoCo coverage raporu.
+              Surefire test sonrası HTML raporu target/site/jacoco/ altına yazılır.
+              CI'da `mvn test` adımı sonrası badge generate edilebilir.
+              `mvn verify` veya `mvn jacoco:report` ile manuel.
+            -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.12</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <excludes>
+                        <!-- Generated DTO/model classes (Lombok) — coverage anlamsız -->
+                        <exclude>**/model/**</exclude>
+                        <exclude>**/dto/**</exclude>
+                        <exclude>**/entity/**</exclude>
+                        <exclude>**/config/**</exclude>
+                        <!-- Spring Boot main + auto-configurations -->
+                        <exclude>**/PosProductManagerApplication.class</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

@@ -1,23 +1,30 @@
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:intl/intl.dart';
 
+import '../company/company_info.dart';
 import 'print_settings.dart';
 
 /// Sprint 22 — POS satış fişi ESC/POS byte builder.
+/// Sprint 30 — `CompanyInfo` opsiyonel parametre: firma kimlik bloğu (unvan,
+/// adres, VKN, V.D., telefon) ve "resmi belge degildir" disclaimer eklendi.
+/// Audit: [[sources/code-refs/2026-05-06-eArsiv-receipt-compliance-audit]]
+/// Sentez: [[syntheses/eArsiv-receipt-compliance]] (K3, K4)
 ///
 /// `Sale` data → 80mm/58mm termal kağıda uygun fiş bytes.
 ///
 /// Kullanım:
 /// ```dart
-/// final bytes = await ReceiptTemplate(settings).buildSaleReceipt(saleData);
+/// final company = ref.watch(companyInfoProvider);
+/// final bytes = await ReceiptTemplate(settings, company: company).buildSaleReceipt(saleData);
 /// await usbPrintService.send(bytes);
 /// ```
 class ReceiptTemplate {
   final PrintSettings settings;
+  final CompanyInfo? company;
   final NumberFormat _money = NumberFormat.currency(locale: 'tr_TR', symbol: 'TL ');
   final DateFormat _dateFmt = DateFormat('dd.MM.yyyy HH:mm');
 
-  ReceiptTemplate(this.settings);
+  ReceiptTemplate(this.settings, {this.company});
 
   /// Sale verisi (`Map<String, dynamic>` — sale_list_screen formatıyla uyumlu).
   ///
@@ -35,16 +42,8 @@ class ReceiptTemplate {
     final gen = Generator(paperSize, profile);
     final List<int> bytes = [];
 
-    // ── HEADER ─────────────────────────────────────────────────────────────
-    bytes.addAll(gen.text(
-      settings.headerText,
-      styles: const PosStyles(
-        align: PosAlign.center,
-        bold: true,
-        height: PosTextSize.size2,
-        width: PosTextSize.size2,
-      ),
-    ));
+    // ── HEADER (Sprint 30: firma kimlik bloğu) ─────────────────────────────
+    _addHeaderBlock(bytes, gen);
     bytes.addAll(gen.feed(1));
 
     // ── Tarih + fiş no ─────────────────────────────────────────────────────
@@ -255,6 +254,19 @@ class ReceiptTemplate {
       bytes.addAll(gen.hr());
     }
 
+    // ── DISCLAIMER (Sprint 30: resmi belge değil) ──────────────────────────
+    if (company == null || !company!.isOfficialReceipt) {
+      bytes.addAll(gen.feed(1));
+      bytes.addAll(gen.text(
+        'Bu fis resmi belge degildir;',
+        styles: const PosStyles(align: PosAlign.center, fontType: PosFontType.fontB),
+      ));
+      bytes.addAll(gen.text(
+        'satis takibi icindir.',
+        styles: const PosStyles(align: PosAlign.center, fontType: PosFontType.fontB),
+      ));
+    }
+
     bytes.addAll(gen.feed(1));
 
     // ── QR kod (sale ID) ───────────────────────────────────────────────────
@@ -281,6 +293,8 @@ class ReceiptTemplate {
   }
 
   /// Yazıcı ayar ekranındaki "Test Yazdır" butonu için minimal fiş.
+  /// Sprint 30: Firma kimlik bloğu + örnek KDV satırı + disclaimer eklendi
+  /// (gerçek satış formatına yakın önizleme).
   Future<List<int>> buildTestPage() async {
     final profile = await CapabilityProfile.load();
     final paperSize = settings.paperWidth == PaperWidth.mm58
@@ -299,11 +313,11 @@ class ReceiptTemplate {
       ),
     ));
     bytes.addAll(gen.feed(1));
-    bytes.addAll(gen.text(
-      _ascii(settings.headerText),
-      styles: const PosStyles(align: PosAlign.center),
-    ));
+
+    // Firma kimlik bloğu (gerçek satışta da görünecek)
+    _addHeaderBlock(bytes, gen);
     bytes.addAll(gen.feed(1));
+
     bytes.addAll(gen.text(
       'Yazici baglantisi BASARILI.',
       styles: const PosStyles(align: PosAlign.center),
@@ -317,10 +331,86 @@ class ReceiptTemplate {
       _dateFmt.format(DateTime.now()),
       styles: const PosStyles(align: PosAlign.center),
     ));
+    bytes.addAll(gen.feed(1));
+
+    if (company == null || !company!.isOfficialReceipt) {
+      bytes.addAll(gen.text(
+        'Bu fis resmi belge degildir.',
+        styles: const PosStyles(align: PosAlign.center, fontType: PosFontType.fontB),
+      ));
+    }
+
     bytes.addAll(gen.feed(2));
     bytes.addAll(gen.cut());
 
     return bytes;
+  }
+
+  /// Sprint 30 — Firma kimlik bloğu (unvan + adres + VKN/V.D. + telefon).
+  ///
+  /// `company` null veya `isComplete=false` ise eski davranış: sadece
+  /// `settings.headerText` tek satır (backward compat — Sprint 22 davranışı).
+  ///
+  /// Sentez K3: API stable kalır, render mantığı koşullu.
+  void _addHeaderBlock(List<int> bytes, Generator gen) {
+    final c = company;
+    if (c == null || !c.isComplete) {
+      // Backward compat: free-form headerText
+      bytes.addAll(gen.text(
+        _ascii(settings.headerText),
+        styles: const PosStyles(
+          align: PosAlign.center,
+          bold: true,
+          height: PosTextSize.size2,
+          width: PosTextSize.size2,
+        ),
+      ));
+      return;
+    }
+
+    // 1. Firma unvanı (büyük punto + bold)
+    bytes.addAll(gen.text(
+      _ascii(c.companyName),
+      styles: const PosStyles(
+        align: PosAlign.center,
+        bold: true,
+        height: PosTextSize.size2,
+        width: PosTextSize.size2,
+      ),
+    ));
+
+    // 2. Adres (küçük font; uzunsa esc_pos otomatik wrap eder)
+    if (c.address.isNotEmpty) {
+      bytes.addAll(gen.text(
+        _ascii(c.address),
+        styles: const PosStyles(align: PosAlign.center, fontType: PosFontType.fontB),
+      ));
+    }
+
+    // 3. VKN + Vergi Dairesi tek satırda (varsa)
+    final taxLine = _buildTaxLine(c);
+    if (taxLine.isNotEmpty) {
+      bytes.addAll(gen.text(
+        taxLine,
+        styles: const PosStyles(align: PosAlign.center, fontType: PosFontType.fontB),
+      ));
+    }
+
+    // 4. Telefon (varsa)
+    if (c.phone.isNotEmpty) {
+      bytes.addAll(gen.text(
+        'Tel: ${_ascii(c.phone)}',
+        styles: const PosStyles(align: PosAlign.center, fontType: PosFontType.fontB),
+      ));
+    }
+  }
+
+  /// "VKN: 1234567890 | V.D.: Sisli" formatı. Boş alanlar atlanır.
+  String _buildTaxLine(CompanyInfo c) {
+    final parts = <String>[];
+    if (c.taxNumber.isNotEmpty) parts.add('VKN: ${c.taxNumber}');
+    if (c.taxOffice.isNotEmpty) parts.add('V.D.: ${_ascii(c.taxOffice)}');
+    return parts.join(' | ');
   }
 
   String _formatDate(String iso) {

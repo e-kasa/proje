@@ -1,5 +1,6 @@
 package com.sedcore.customer.service.impl;
 
+import com.sedcore.common.enums.AccountAuditEntityType;
 import com.sedcore.common.enums.CustomerType;
 import com.sedcore.finance.entity.AccountTransaction;
 import com.sedcore.customer.entity.Customer;
@@ -11,6 +12,7 @@ import com.sedcore.finance.model.AccountTransactionResponse;
 import com.sedcore.customer.model.CustomerAccountResponse;
 import com.sedcore.customer.model.CustomerPaymentDto;
 import com.sedcore.customer.repository.CustomerRepository;
+import com.sedcore.finance.service.AccountAuditService;
 import com.sedcore.finance.service.AccountTransactionService;
 import com.sedcore.customer.service.CustomerAccountService;
 import com.sedcore.customer.service.CustomerService;
@@ -45,6 +47,9 @@ public class CustomerServiceImpl
     @Autowired
     @Lazy
     private PaymentService paymentService;
+
+    @Autowired
+    private AccountAuditService accountAuditService;
 
     @Override
     public Class<?> getDTOClassForService() {
@@ -149,8 +154,14 @@ public class CustomerServiceImpl
 
         Customer customer = findById(customerId)
                 .orElseThrow(() -> new RuntimeException("Musteri bulunamadi: " + customerId));
+        BigDecimal oldLimit = customer.getCreditLimit();
         customer.setCreditLimit(newLimit);
         save(customer);
+
+        // Sprint 30 — issue P2.6: kredi limiti değişikliği audit kaydı
+        accountAuditService.recordFieldChange(
+                AccountAuditEntityType.CUSTOMER, customerId, "creditLimit",
+                oldLimit, newLimit, null);
 
         return customerAccountService.recalculate(customerId);
     }

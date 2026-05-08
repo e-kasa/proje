@@ -266,59 +266,79 @@ class _ModernDashboardScreenState
   }
 
   // ── KPI ROW ─────────────────────────────────────────────────────────────────
+  // Sprint 31: 4 KPI'yı dar ekranda (≤ 480px) 2×2 grid'e indir, geniş ekranda
+  // tek sıra Row. Sebep: mobile'da 4 kart yan yana sıkışıyordu.
   Widget _buildKpiRow() {
     final revenue = (_stats['totalRevenue'] as num?)?.toDouble() ?? 0;
     final sales = (_stats['totalSales'] as num?)?.toInt() ?? 0;
     final customers = (_stats['totalCustomers'] as num?)?.toInt() ?? 0;
     final lowStock = (_stats['lowStockProducts'] as num?)?.toInt() ?? 0;
 
+    final cards = [
+      _kpiCard(
+        label: t('dashboard.sales_today'),
+        value: '₺${_fmt(revenue)}',
+        icon: Icons.payments_outlined,
+        color: AppColors.success,
+        gradient: AppGradients.successGradient,
+      ),
+      _kpiCard(
+        label: 'Satış Adedi',
+        value: sales.toString(),
+        icon: Icons.shopping_cart_outlined,
+        color: AppColors.primary,
+        gradient: AppGradients.primaryGradient,
+      ),
+      _kpiCard(
+        label: 'Müşteriler',
+        value: customers.toString(),
+        icon: Icons.people_outline,
+        color: AppColors.info,
+        gradient: AppGradients.infoGradient,
+      ),
+      _kpiCard(
+        label: 'Düşük Stok',
+        value: lowStock.toString(),
+        icon: Icons.warning_amber_outlined,
+        color: lowStock > 0 ? AppColors.danger : AppColors.success,
+        gradient: lowStock > 0
+            ? AppGradients.dangerGradient
+            : AppGradients.successGradient,
+        onTap: () => context.go('/stock/alerts'),
+      ),
+    ];
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      child: Row(
-        children: [
-          Expanded(
-            child: _kpiCard(
-              label: t('dashboard.sales_today'),
-              value: '₺${_fmt(revenue)}',
-              icon: Icons.payments_outlined,
-              color: AppColors.success,
-              gradient: AppGradients.successGradient,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _kpiCard(
-              label: 'Satış Adedi', // TODO: i18n
-              value: sales.toString(),
-              icon: Icons.shopping_cart_outlined,
-              color: AppColors.primary,
-              gradient: AppGradients.primaryGradient,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _kpiCard(
-              label: 'Müşteriler', // TODO: i18n
-              value: customers.toString(),
-              icon: Icons.people_outline,
-              color: AppColors.info,
-              gradient: AppGradients.infoGradient,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _kpiCard(
-              label: 'Düşük Stok', // TODO: i18n
-              value: lowStock.toString(),
-              icon: Icons.warning_amber_outlined,
-              color: lowStock > 0 ? AppColors.danger : AppColors.success,
-              gradient: lowStock > 0
-                  ? AppGradients.dangerGradient
-                  : AppGradients.successGradient,
-              onTap: () => context.go('/stock/alerts'),
-            ),
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < 480;
+          if (!isNarrow) {
+            return Row(
+              children: [
+                for (var i = 0; i < cards.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 10),
+                  Expanded(child: cards[i]),
+                ],
+              ],
+            );
+          }
+          return Column(
+            children: [
+              Row(children: [
+                Expanded(child: cards[0]),
+                const SizedBox(width: 10),
+                Expanded(child: cards[1]),
+              ]),
+              const SizedBox(height: 10),
+              Row(children: [
+                Expanded(child: cards[2]),
+                const SizedBox(width: 10),
+                Expanded(child: cards[3]),
+              ]),
+            ],
+          );
+        },
       ),
     );
   }
@@ -396,29 +416,36 @@ class _ModernDashboardScreenState
   }
 
   // ── QUICK ACTIONS ────────────────────────────────────────────────────────────
+  // Sprint 31: Dar ekranda 2 sütun, geniş ekranda 3 sütun. Önceden sabit 3
+  // sütundu — mobile'da 6 küçük tile sıkışıyordu.
   Widget _buildQuickActions() {
     final actions = [
-      _Action('POS Satış', Icons.point_of_sale, AppGradients.successGradient, '/pos'), // TODO: i18n
-      _Action('Barkod Tara', Icons.qr_code_scanner, AppGradients.primaryGradient, '/scanner'), // TODO: i18n
-      _Action('Satış Geçmişi', Icons.receipt_long_outlined, AppGradients.infoGradient, '/sales'), // TODO: i18n
-      _Action('Stok Durumu', Icons.inventory_2_outlined, AppGradients.mintGradient, '/stock'), // TODO: i18n
-      _Action('Yeni Ürün', Icons.add_box_outlined, AppGradients.purpleGradient, '/inventory/add-product'), // TODO: i18n
-      _Action('Raporlar', Icons.bar_chart_rounded, AppGradients.sunsetGradient, '/reports'), // TODO: i18n
+      _Action('POS Satış', Icons.point_of_sale, AppGradients.successGradient, '/pos'),
+      _Action('Barkod Tara', Icons.qr_code_scanner, AppGradients.primaryGradient, '/scanner'),
+      _Action('Satış Geçmişi', Icons.receipt_long_outlined, AppGradients.infoGradient, '/sales'),
+      _Action('Stok Durumu', Icons.inventory_2_outlined, AppGradients.mintGradient, '/stock'),
+      _Action('Yeni Ürün', Icons.add_box_outlined, AppGradients.purpleGradient, '/inventory/add-product'),
+      _Action('Raporlar', Icons.bar_chart_rounded, AppGradients.sunsetGradient, '/reports'),
     ];
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: actions.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-          childAspectRatio: 1.1,
-        ),
-        itemBuilder: (_, i) => _quickActionTile(actions[i]),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final cols = constraints.maxWidth < 480 ? 2 : 3;
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: actions.length,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: cols,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 1.1,
+            ),
+            itemBuilder: (_, i) => _quickActionTile(actions[i]),
+          );
+        },
       ),
     );
   }

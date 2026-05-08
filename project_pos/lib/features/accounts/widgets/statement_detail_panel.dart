@@ -13,6 +13,7 @@ import 'package:project_pos/features/accounts/providers/accounts_notifiers.dart'
 import 'package:project_pos/features/accounts/providers/selected_account_provider.dart';
 import 'package:project_pos/features/accounts/screens/payment_record_modal.dart';
 import 'package:project_pos/features/accounts/services/statement_pdf_service.dart';
+import 'package:project_pos/features/accounts/widgets/account_audit_timeline.dart';
 import 'package:project_pos/features/accounts/widgets/account_edit_form.dart';
 import 'package:project_pos/features/accounts/widgets/accounts_error_view.dart';
 import 'package:project_pos/features/finance/di/finance_di.dart';
@@ -91,6 +92,12 @@ class StatementDetailPanel extends ConsumerWidget {
                   onPickRange: () => _pickDateRange(context, ref, dateRange),
                   onEdit: () => _handleEdit(context, ref, selected),
                   onPayment: () => _handlePayment(context, ref, selected),
+                  onHistory: () => AccountAuditTimeline.show(
+                    context,
+                    accountType: selected.accountType,
+                    accountId: selected.accountId,
+                    accountName: selected.accountName,
+                  ),
                   onPdf: () => StatementPdfService.show(
                     accountName: selected.accountName,
                     accountType: selected.accountType,
@@ -294,6 +301,7 @@ class _Header extends ConsumerWidget {
   final VoidCallback onPdf;
   final VoidCallback onEdit;
   final VoidCallback onPayment;
+  final VoidCallback onHistory;
 
   const _Header({
     required this.account,
@@ -304,6 +312,7 @@ class _Header extends ConsumerWidget {
     required this.onPdf,
     required this.onEdit,
     required this.onPayment,
+    required this.onHistory,
   });
 
   @override
@@ -385,6 +394,12 @@ class _Header extends ConsumerWidget {
                     color: AppColors.textPrimary),
                 tooltip: t('accounts.edit_info'),
                 onPressed: onEdit,
+              ),
+              IconButton(
+                icon: const Icon(Icons.history,
+                    color: AppColors.textPrimary),
+                tooltip: 'Değişiklik geçmişi',
+                onPressed: onHistory,
               ),
               IconButton(
                 icon: const Icon(Icons.picture_as_pdf_outlined,

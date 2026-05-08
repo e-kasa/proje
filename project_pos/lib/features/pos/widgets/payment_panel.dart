@@ -317,21 +317,28 @@ class _PaymentPanelState extends ConsumerState<PaymentPanel>
       ),
     ];
 
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 8,
-      mainAxisSpacing: 8,
-      childAspectRatio: 2.6,
-      children: methods.map((cfg) {
-        final isSelected = posState.paymentMethod == cfg.method;
-        return _MethodCard(
-          config: cfg,
-          isSelected: isSelected,
-          onTap: () => notifier.setPaymentMethod(cfg.method),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Sprint 31: Dar ekranda (<360px) kart genişliği daralırken 2.6
+        // oranı subtitle'ı sıkıştırıyordu — oranı içeriğe göre uyarla.
+        final ratio = constraints.maxWidth < 360 ? 2.0 : 2.6;
+        return GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
+          childAspectRatio: ratio,
+          children: methods.map((cfg) {
+            final isSelected = posState.paymentMethod == cfg.method;
+            return _MethodCard(
+              config: cfg,
+              isSelected: isSelected,
+              onTap: () => notifier.setPaymentMethod(cfg.method),
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
     );
   }
 

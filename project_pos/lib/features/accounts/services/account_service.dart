@@ -98,6 +98,32 @@ class AccountService {
     }
   }
 
+  // ─── Audit Geçmişi (Sprint 30 — issue P2.6) ─────────────────────
+
+  /// Müşteri veya tedarikçi için kronolojik (en yeni üstte) audit-log listesi.
+  /// `accountType` 'CUSTOMER' veya 'SUPPLIER'.
+  Future<List<Map<String, dynamic>>> getAuditHistory({
+    required String accountType,
+    required String accountId,
+  }) async {
+    try {
+      final segment = accountType.toUpperCase() == 'SUPPLIER'
+          ? 'supplier'
+          : 'customer';
+      final resp = await _apiClient.get(
+        'product/api/v1/audit/$segment/$accountId',
+      );
+      final data = resp.data['data'];
+      if (data is Map<String, dynamic> && data['items'] is List) {
+        return List<Map<String, dynamic>>.from(data['items'] as List);
+      }
+      return const [];
+    } catch (e) {
+      debugPrint('getAuditHistory hata: $e');
+      rethrow;
+    }
+  }
+
   // ─── Hesap Özeti ────────────────────────────────────────────────
 
   Future<Map<String, dynamic>?> getAccountSummary({String? accountType}) async {

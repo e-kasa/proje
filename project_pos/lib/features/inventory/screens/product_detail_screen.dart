@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 // Sprint 29-fix-6: PDF print akışı sistemde kullanılmıyor → pdf/printing
 // import'ları kaldırıldı. Statement export PDF'i ayrı service'ta yaşıyor.
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/utils/app_logger.dart';
 import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/services/print/label_print_service.dart';
@@ -508,6 +509,43 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
     );
   }
 
+  /// Sprint 30 — Backend'den gelen variant barkodunu dayanıklı şekilde çöz.
+  ///
+  /// Backend `ProductVariantResponse.barcodes: List<BarcodeResponse>` döndürür;
+  /// her item: `{ barcodeCode, barcodeType, isPrimary }`. Dayanıklılık için:
+  ///
+  /// 1. `barcodes[]` listesinde `isPrimary == true` olan ilk öğenin
+  ///    `barcodeCode`'u — Maliye uyumlu primary barkod
+  /// 2. Liste varsa ama isPrimary işaretli yoksa **ilk öğe**
+  /// 3. Legacy/alternatif tek-alanlar: `variant['barcode']` veya
+  ///    `variant['barcodeCode']` (başka endpoint'ler eski şema dönerse)
+  /// 4. Hiçbiri yoksa `null` döner; çağıran SKU fallback yapabilir.
+  ///
+  /// AppLogger ile çözünürlük yolu kayda geçer (debug console).
+  String? _resolveVariantBarcode(Map<String, dynamic> variant) {
+    String? primary;
+    final list = (variant['barcodes'] as List?)?.cast<Map<String, dynamic>>();
+    if (list != null && list.isNotEmpty) {
+      // isPrimary key alternatifleri (Jackson/Lombok bazen "primary" şeklinde döner)
+      final picked = list.firstWhere(
+        (b) => b['isPrimary'] == true || b['primary'] == true,
+        orElse: () => list.first,
+      );
+      primary = picked['barcodeCode']?.toString() ??
+          picked['code']?.toString() ??
+          picked['barcode']?.toString();
+    }
+    final legacy = variant['barcode']?.toString() ??
+        variant['barcodeCode']?.toString();
+    final result = primary ?? legacy;
+    AppLogger.info(
+      'Barcode resolve: barcodes.len=${list?.length ?? 0} primary="$primary" '
+      'legacy="$legacy" → final="$result" (sku=${variant['sku']})',
+      tag: 'BarcodePrint',
+    );
+    return (result != null && result.isNotEmpty) ? result : null;
+  }
+
   Widget _buildVariantRow(
     Map<String, dynamic> variant,
     SectorConfig cfg,
@@ -516,19 +554,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
     final vStock    = (variant['stock'] as num?)?.toInt() ?? 0;
     final stockColor = vStock == 0 ? AppColors.danger : AppColors.success;
 
-    // Varyantın barkodunu bul (barcode alanı yoksa SKU fallback)
-    // Backend: variant.barcodes[].barcodeCode  (primary öncelikli)
-    final barcodeList = (variant['barcodes'] as List?)
-        ?.cast<Map<String, dynamic>>();
-    String? primaryBarcode;
-    if (barcodeList != null && barcodeList.isNotEmpty) {
-      final picked = barcodeList.firstWhere(
-        (b) => b['isPrimary'] == true,
-        orElse: () => barcodeList.first,
-      );
-      primaryBarcode = picked['barcodeCode']?.toString();
-    }
-    final rawBarcode = variant['barcode']?.toString() ?? primaryBarcode;
+    // Sprint 30 — Backend ProductVariantResponse: `barcodes: List<BarcodeResponse>`
+    // BarcodeResponse: { barcodeCode, barcodeType, isPrimary }
+    // Yedek alanlar (legacy / alternative casing) için dayanıklı parse:
+    final rawBarcode = _resolveVariantBarcode(variant);
     final vp = _VariantPrint(
       variantId:      variant['id']?.toString() ?? '',
       variantName:    variant['name']?.toString() ?? '',

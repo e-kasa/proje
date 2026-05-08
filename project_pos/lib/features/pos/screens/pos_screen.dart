@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -11,6 +12,7 @@ import 'package:project_pos/services/print/print_settings.dart';
 import 'package:project_pos/services/notification/notification_models.dart';
 import 'package:project_pos/services/notification/notification_service.dart';
 import 'package:project_pos/services/notification/notification_settings.dart';
+import 'package:project_pos/services/scanner/barcode_scanner_listener.dart';
 import '../providers/pos_provider.dart';
 import '../widgets/product_grid_item.dart';
 import '../widgets/cart_panel.dart';
@@ -103,7 +105,20 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     final posState = ref.watch(posProvider);
 
     // Sprint 19-C: Scaffold → BaseScaffold (cart-aware split layout, custom gradient AppBar).
-    return KeyboardListener(
+    // Sprint 30: BarcodeScannerListener — USB HID barkod okuyucu global dinleyici.
+    // Klavye girişlerinden 100ms+10char/Enter paterniyle ayırt edilen kod
+    // posProvider.addToCartByBarcode'a iletilir; başarı/hata posState ile yansır.
+    return BarcodeScannerListener(
+      enabled: !kIsWeb,
+      onScan: (code) {
+        // Sprint 30 görsel debug — kullanıcı listener'ın tetiklendiğini
+        // ekrandan görsün. posState'in success/error toast'ı sonrasında ayrıca düşer.
+        if (mounted) {
+          AppToast.info(context, '🔍 Barkod algılandı: $code');
+        }
+        ref.read(posProvider.notifier).addToCartByBarcode(code);
+      },
+      child: KeyboardListener(
       focusNode: _focusNode,
       autofocus: true,
       onKeyEvent: _handleKeyEvent,
@@ -124,6 +139,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               )
             : null,
       ),
+    ),
     );
   }
 

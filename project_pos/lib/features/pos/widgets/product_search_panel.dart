@@ -40,9 +40,26 @@ class _ProductSearchPanelState extends ConsumerState<ProductSearchPanel> {
               Expanded(
                 child: TextField(
                   controller: _searchController,
+                  focusNode: _barcodeFocusNode,
+                  // Sprint 30: POS açılınca search kutusu autofocus → cihaz
+                  // doğrudan buraya yazar, kullanıcı tıklamak zorunda kalmaz.
+                  autofocus: true,
                   onChanged: notifier.setSearchQuery,
+                  // Enter → tam barkod/SKU eşleşmesi varsa otomatik sepete +
+                  // kutu temizle + tekrar focus al (sıralı taramalar için).
+                  onSubmitted: (val) async {
+                    final code = val.trim();
+                    if (code.length < 3) return;
+                    await notifier.addToCartByBarcode(code);
+                    if (mounted) {
+                      _searchController.clear();
+                      notifier.setSearchQuery('');
+                      // Bir sonraki scan için tekrar focus al
+                      _barcodeFocusNode.requestFocus();
+                    }
+                  },
                   decoration: InputDecoration(
-                    hintText: t('pos.search_product'),
+                    hintText: 'Ürün ara veya barkod oku/yaz...',
                     prefixIcon: const Icon(Icons.search, size: 20),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(

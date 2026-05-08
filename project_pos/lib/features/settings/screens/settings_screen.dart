@@ -70,36 +70,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           AppCard(
             child: Column(
               children: [
-                Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: primary.withValues(alpha: 0.15),
-                      child: Text(
-                        initials,
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: primary,
-                        ),
-                      ),
+                CircleAvatar(
+                  radius: 50,
+                  backgroundColor: primary.withValues(alpha: 0.15),
+                  child: Text(
+                    initials,
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: primary,
                     ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: primary,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                        child: IconButton(
-                          icon: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
-                          onPressed: () => AppToast.info(context, t('common.coming_soon')), // TODO: i18n
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Text(displayName,
@@ -137,12 +118,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               _item(Icons.store_outlined, 'Mağaza ID', user!.storeId!), // TODO: i18n
           ]),
           const SizedBox(height: 16),
-          _section('Güvenlik', [ // TODO: i18n
-            _item(Icons.lock_outline, 'Şifre Değiştir', 'Son değiştirme: 30 gün önce', // TODO: i18n
+          _section('Güvenlik', [
+            _item(Icons.lock_outline, 'Şifre Değiştir', 'Son değiştirme: 30 gün önce',
                 onTap: _showPasswordDialog),
-            _item(Icons.security, 'İki Faktörlü Doğrulama', 'Kapalı', // TODO: i18n
-                trailing: Switch(value: false, onChanged: (v) =>
-                    AppToast.info(context, '2FA yakında!'))), // TODO: i18n
           ]),
         ],
       ),
@@ -772,14 +750,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onTap: () => _showEditDialog('Adres', 'İstanbul, Türkiye')),
           ]),
           const SizedBox(height: 16),
-          _section('Mağaza Ayarları', [ // TODO: i18n
-            _item(Icons.store, 'Varsayılan Mağaza', 'Merkez Mağaza', // TODO: i18n
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => AppToast.info(context, 'Mağaza seçimi yakında!')),
-            _item(Icons.warehouse, 'Varsayılan Depo', 'Ana Depo', // TODO: i18n
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => AppToast.info(context, 'Depo seçimi yakında!')),
-            _item(Icons.receipt_long, 'Fatura Öneki', 'INV-', // TODO: i18n
+          _section('Mağaza Ayarları', [
+            _item(Icons.receipt_long, 'Fatura Öneki', 'INV-',
                 onTap: () => _showEditDialog('Fatura Öneki', 'INV-')),
           ]),
           const SizedBox(height: 16),
@@ -823,11 +795,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ]),
           const SizedBox(height: 16),
           _section('Veri & Gizlilik', [
-            _item(Icons.backup_outlined, 'Yedekleme', 'Son: Bugün 03:00',
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => AppToast.info(context, 'Yedekleme ayarları yakında!')),
-            _item(Icons.sync, 'Senkronizasyon', 'Otomatik açık',
-                trailing: Switch(value: true, onChanged: (v) {})),
             _item(Icons.delete_outline, 'Önbelleği Temizle', '128 MB',
                 onTap: () async {
               final ok = await AppConfirmationDialog.showWarning(
@@ -839,14 +806,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             }),
           ]),
           const SizedBox(height: 16),
-          _section('Hakkında', [ // TODO: i18n
-            _item(Icons.info_outline, 'Versiyon', '1.0.0 (Build 100)'), // TODO: i18n
-            _item(Icons.description_outlined, 'Gizlilik Politikası', '', // TODO: i18n
-                trailing: const Icon(Icons.open_in_new),
-                onTap: () => AppToast.info(context, 'Yakında!')), // TODO: i18n
-            _item(Icons.article_outlined, 'Kullanım Koşulları', '', // TODO: i18n
-                trailing: const Icon(Icons.open_in_new),
-                onTap: () => AppToast.info(context, 'Yakında!')), // TODO: i18n
+          _section('Hakkında', [
+            _item(Icons.info_outline, 'Versiyon', '1.0.0 (Build 100)'),
           ]),
           const SizedBox(height: 16),
           AppCard(

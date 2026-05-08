@@ -27,6 +27,13 @@ class PrintSettings {
   /// Fiş alt yazısı (teşekkürler vb).
   final String footerText;
 
+  /// SharedPreferences'tan hidrasyon tamamlandı mı.
+  ///
+  /// `false` iken UI "yapılandırılmamış" yerine loading göstermeli — aksi halde
+  /// ilk frame'de kayıtlı yazıcı varken bile "yazıcı yok" görünür ve kullanıcı
+  /// gereksiz yere yeniden seçim yapar (Sprint 30 receipt-printer-repeated-pairing fix).
+  final bool loaded;
+
   const PrintSettings({
     this.vendorId,
     this.productId,
@@ -35,6 +42,7 @@ class PrintSettings {
     this.autoPrintOnSale = false,
     this.headerText = 'SEDCORE POS',
     this.footerText = 'Tesekkurler! Iyi gunler...',
+    this.loaded = false,
   });
 
   bool get isConfigured => vendorId != null && productId != null;
@@ -47,6 +55,7 @@ class PrintSettings {
     bool? autoPrintOnSale,
     String? headerText,
     String? footerText,
+    bool? loaded,
     bool clearDevice = false,
   }) {
     return PrintSettings(
@@ -57,6 +66,7 @@ class PrintSettings {
       autoPrintOnSale: autoPrintOnSale ?? this.autoPrintOnSale,
       headerText: headerText ?? this.headerText,
       footerText: footerText ?? this.footerText,
+      loaded: loaded ?? this.loaded,
     );
   }
 }
@@ -97,7 +107,22 @@ class PrintSettingsNotifier extends StateNotifier<PrintSettings> {
       autoPrintOnSale: prefs.getBool(_kAutoPrint) ?? false,
       headerText: prefs.getString(_kHeader) ?? 'SEDCORE POS',
       footerText: prefs.getString(_kFooter) ?? 'Tesekkurler! Iyi gunler...',
+      loaded: true,
     );
+  }
+
+  /// Self-healing: yazıcı VID/PID kayıtlı kalır, sadece Windows enumeration
+  /// sırasında değişen `deviceName`'i günceller. `clearDevice` çağırmadan
+  /// SharedPreferences'a back-write yapar.
+  ///
+  /// `PrintService._send()` connect failure → rediscover → match akışında
+  /// kullanılır. Kullanıcının her açılışta yazıcıyı yeniden seçmek zorunda
+  /// kalmaması için kritik.
+  Future<void> refreshDeviceName(String newName) async {
+    if (state.vendorId == null || state.productId == null) return;
+    if (state.deviceName == newName) return;
+    state = state.copyWith(deviceName: newName);
+    await _persist();
   }
 
   Future<void> updateDevice({

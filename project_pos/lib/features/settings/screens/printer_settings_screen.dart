@@ -6,6 +6,8 @@ import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/utils/app_logger.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
+import 'package:project_pos/services/print/hidden_printers.dart';
+import 'package:project_pos/services/print/label_print_settings.dart';
 import 'package:project_pos/services/print/print_service.dart';
 import 'package:project_pos/services/print/print_settings.dart';
 
@@ -35,23 +37,41 @@ class _PrinterSettingsScreenState
     final s = ref.read(printSettingsProvider);
     _headerCtl = TextEditingController(text: s.headerText);
     _footerCtl = TextEditingController(text: s.footerText);
+    // Sprint 29-fix-5 sanal yazıcı temizliği build()'e taşındı — initState'te
+    // SharedPreferences hidrasyonu henüz tamamlanmamış olabilir, gerçek cihaz
+    // adı boş gelir, yanlış pozitif olmaz (Sprint 30 receipt-printer-repeated-pairing).
+  }
 
-    // Sprint 29-fix-5: Önceden kayıtlı sanal yazıcıyı (Microsoft Print to PDF
-    // gibi) otomatik temizle — kullanıcı yanlışlıkla seçmiş olabilir, fiş
-    // basamayacağı için silinmeli.
-    final name = s.deviceName ?? '';
-    if (name.isNotEmpty && PrintService.isVirtualPrinterName(name)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(printSettingsProvider.notifier).clearDevice();
-        if (mounted) {
-          AppToast.warning(
-            context,
-            'Önceki seçim "$name" sanal bir yazıcıydı (PDF/OneNote/Fax) — '
-            'temizlendi. Lütfen gerçek termal cihaz seçin.',
-          );
-        }
-      });
-    }
+  /// Sprint 29-fix-5 → Sprint 30: Önceden kayıtlı sanal yazıcıyı (PDF/OneNote/Fax)
+  /// hidrasyon tamamlandıktan sonra **bir kez** temizle. Hidrasyondan önce
+  /// çalıştırılırsa `deviceName` boş gelip false-negative üretir; daha kötüsü
+  /// gerçek yazıcı kaydını silebilir.
+  bool _virtualSweepDone = false;
+  void _sweepVirtualPrinterIfHydrated(PrintSettings settings) {
+    if (_virtualSweepDone || !settings.loaded) return;
+    _virtualSweepDone = true;
+    final name = settings.deviceName ?? '';
+    if (name.isEmpty || !PrintService.isVirtualPrinterName(name)) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(printSettingsProvider.notifier).clearDevice();
+      if (mounted) {
+        AppToast.warning(
+          context,
+          'Önceki seçim "$name" sanal bir yazıcıydı (PDF/OneNote/Fax) — '
+          'temizlendi. Lütfen gerçek termal cihaz seçin.',
+        );
+      }
+    });
+  }
+
+  /// Hidrasyon `initState` sonrası tamamlandığı için controller'lar default
+  /// değerlerle doldu — ilk `loaded=true` build'inde gerçek değerlerle senkronize et.
+  bool _textControllersHydrated = false;
+  void _hydrateTextControllers(PrintSettings settings) {
+    if (_textControllersHydrated || !settings.loaded) return;
+    _textControllersHydrated = true;
+    _headerCtl.text = settings.headerText;
+    _footerCtl.text = settings.footerText;
   }
 
   @override
@@ -104,6 +124,91 @@ class _PrinterSettingsScreenState
     }
   }
 
+  /// Sprint 30 — Tarama listesindeki cihazı kullanıcı blacklist'ine ekler.
+  /// Sonraki taramalarda gösterilmez. Geri almak için "Gizli yazıcılar" kartı.
+  Future<void> _hideDevice(UsbDeviceInfo device) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Yazıcıyı listeden gizle'),
+        content: Text(
+          '"${device.displayName}" cihazı tarama listesinde gösterilmesin mi? '
+          'Bu işlem yazıcıyı Windows\'tan kaldırmaz; sadece bu uygulamadaki '
+          'tarama listesini sadeleştirir. İstediğiniz zaman geri alabilirsiniz.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Vazgeç'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Gizle'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(hiddenPrintersProvider.notifier).hide(device.displayName);
+    if (!mounted) return;
+    setState(() {
+      _devices.removeWhere((d) =>
+          d.displayName.toLowerCase().trim() ==
+          device.displayName.toLowerCase().trim());
+    });
+    AppToast.info(
+      context,
+      '"${device.displayName}" listeden gizlendi.',
+    );
+  }
+
+  Future<void> _unhideDevice(String name) async {
+    await ref.read(hiddenPrintersProvider.notifier).unhide(name);
+    if (mounted) {
+      AppToast.info(context, '"$name" geri yüklendi. Tekrar tara.');
+    }
+  }
+
+  Future<void> _unhideAll() async {
+    await ref.read(hiddenPrintersProvider.notifier).clearAll();
+    if (mounted) {
+      AppToast.info(context, 'Tüm gizli yazıcılar geri yüklendi. Tekrar tara.');
+    }
+  }
+
+  /// Sprint 30 — Gizli yazıcıların yönetim kartı. Boşsa kart hiç render edilmez.
+  Widget _buildHiddenPrintersCard() {
+    final hidden = ref.watch(hiddenPrintersProvider);
+    if (hidden.hiddenNames.isEmpty) return const SizedBox.shrink();
+    final names = hidden.hiddenNames.toList()..sort();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: AppSectionCard(
+        title: 'Gizli yazıcılar (${names.length})',
+        icon: Icons.visibility_off,
+        children: [
+          for (final name in names)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.print_disabled, color: AppColors.textMuted),
+              title: Text(name),
+              trailing: IconButton(
+                icon: const Icon(Icons.restore, color: AppColors.primary),
+                tooltip: 'Geri al',
+                onPressed: () => _unhideDevice(name),
+              ),
+            ),
+          const SizedBox(height: 8),
+          AppButton.outline(
+            text: 'Tümünü geri al',
+            icon: Icons.restore_page,
+            onPressed: _unhideAll,
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _testPrint() async {
     if (kIsWeb) {
       AppToast.error(context, t('printer.web_unsupported_test'));
@@ -121,10 +226,172 @@ class _PrinterSettingsScreenState
     }
   }
 
+  /// Sprint 30 — Tek tıkla yazıcı kurulum sihirbazı.
+  ///
+  /// Akış:
+  /// 1. USB tara
+  /// 2. "Generic / Text Only (Kopya N)" duplikasyonlarını otomatik gizle
+  /// 3. POSA / thermal / fiş gibi adlardan en uygununu seç (yoksa ilk gerçek cihaz)
+  /// 4. Kağıt 80mm + autoPrintOnSale aç
+  /// 5. Kullanıcıyı bilgilendir — test fiş ayrı buton, otomatik basmaz
+  ///   (kağıt israfı + sürpriz davranış olmasın)
+  Future<void> _quickSetup() async {
+    if (kIsWeb) {
+      AppToast.error(
+        context,
+        'Hızlı kurulum tarayıcıda kullanılamaz. Masaüstü uygulamasını açın.',
+      );
+      return;
+    }
+    setState(() => _isScanning = true);
+    try {
+      final service = ref.read(printServiceProvider);
+      final hiddenN = ref.read(hiddenPrintersProvider.notifier);
+      final settingsN = ref.read(printSettingsProvider.notifier);
+
+      // 1) Tarama
+      final initial = await service.discoverDevices();
+      if (initial.isEmpty) {
+        if (mounted) {
+          AppToast.error(
+            context,
+            'USB cihaz bulunamadı. POSA bağlı/açık mı kontrol edin '
+            '(rehber: docs/printer-setup.md).',
+          );
+        }
+        return;
+      }
+
+      // 2) Generic / Text Only (Kopya N) duplikasyonlarını otomatik gizle
+      int hiddenCount = 0;
+      for (final d in initial) {
+        final n = d.displayName.toLowerCase();
+        if (n.contains('kopya') &&
+            (n.contains('generic') || n.contains('text only'))) {
+          await hiddenN.hide(d.displayName);
+          hiddenCount++;
+        }
+      }
+
+      // 3) Filtre sonrası tekrar tara
+      final visible = await service.discoverDevices();
+
+      // 4) Fiş yazıcı için en uygunu seç — POSA / thermal / fiş öncelikli
+      UsbDeviceInfo? receipt;
+      const receiptPreferred = ['posa', 'thermal', 'escpos', 'fiş', 'fis', '80mm', '80'];
+      for (final keyword in receiptPreferred) {
+        for (final d in visible) {
+          if (d.displayName.toLowerCase().contains(keyword)) {
+            receipt = d;
+            break;
+          }
+        }
+        if (receipt != null) break;
+      }
+      receipt ??= visible.isNotEmpty ? visible.first : null;
+
+      if (receipt == null) {
+        if (mounted) {
+          AppToast.error(
+            context,
+            'Gizleme sonrası uygun yazıcı kalmadı. "Tümünü geri al" deneyin.',
+          );
+        }
+        return;
+      }
+
+      // 5) Etiket yazıcı için (Senaryo B): kalanlar arasından zebra/label/etiket/
+      // barkod öncelikli; yoksa kalan ilk cihaz. Tek cihaz varsa Case 1.5 reuse
+      // devreye girer — etiket slotu boş bırakılır.
+      UsbDeviceInfo? label;
+      final remaining = visible.where((d) =>
+          d.displayName.toLowerCase().trim() !=
+          receipt!.displayName.toLowerCase().trim()).toList();
+      if (remaining.isNotEmpty) {
+        const labelPreferred = ['barkod', 'barcode', 'etiket', 'label', 'zebra', 'zpl'];
+        for (final keyword in labelPreferred) {
+          for (final d in remaining) {
+            if (d.displayName.toLowerCase().contains(keyword)) {
+              label = d;
+              break;
+            }
+          }
+          if (label != null) break;
+        }
+        // Etiket için preferred bulunamadıysa kalan ilk cihaz (Senaryo B)
+        label ??= remaining.first;
+      }
+
+      // 6) Fiş yazıcı slotunu yapılandır
+      await settingsN.updateDevice(
+        vendorId: receipt.vendorId,
+        productId: receipt.productId,
+        deviceName: receipt.displayName,
+      );
+      await settingsN.updatePaperWidth(PaperWidth.mm80);
+      await settingsN.updateAutoPrint(true);
+
+      // 7) Etiket yazıcı slotunu yapılandır (varsa — Senaryo B)
+      if (label != null) {
+        final labelN = ref.read(labelPrintSettingsProvider.notifier);
+        await labelN.updateDevice(
+          vendorId: label.vendorId,
+          productId: label.productId,
+          deviceName: label.displayName,
+        );
+        // Sprint 30 — Cihaz adına göre otomatik protokol seç:
+        //   "label", "9x10", "tspl" → TSPL (Zjiang LABEL / Argox / TSC)
+        //   diğer → ESC/POS (POSA / Zjiang ZJ-58/80 fiş termal)
+        final ln = label.displayName.toLowerCase();
+        final isTspl = ln.contains('label') ||
+            ln.contains('9x10') ||
+            ln.contains('9-10') ||
+            ln.contains('tspl') ||
+            ln.contains('argox') ||
+            ln.contains('tsc');
+        await labelN
+            .updateProtocol(isTspl ? LabelProtocol.tspl : LabelProtocol.escPos);
+      }
+
+      if (!mounted) return;
+      setState(() => _devices = visible);
+
+      final hiddenSuffix = hiddenCount > 0
+          ? ' ($hiddenCount duplikasyon gizlendi)'
+          : '';
+      final scenario = label != null
+          ? 'Senaryo B (2 yazıcı): Fiş = "${receipt.displayName}", '
+              'Etiket = "${label.displayName}"'
+          : 'Senaryo A (tek yazıcı): "${receipt.displayName}" '
+              '(etiket için Case 1.5 reuse)';
+      AppToast.success(
+        context,
+        '$scenario · 80mm · otomatik yazdırma açık$hiddenSuffix. '
+        'Şimdi "Test Yazdır" ile doğrulayın.',
+      );
+    } catch (e, st) {
+      AppLogger.error('Hızlı kurulum hatası', error: e, stackTrace: st);
+      if (mounted) {
+        AppToast.error(context, 'Hızlı kurulum başarısız: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _isScanning = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(printSettingsProvider);
     final notifier = ref.read(printSettingsProvider.notifier);
+    _sweepVirtualPrinterIfHydrated(settings);
+    _hydrateTextControllers(settings);
+
+    if (!settings.loaded) {
+      return BaseScaffold(
+        appBar: AppAppBar.standard(title: t('printer.title')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return BaseScaffold(
       appBar: AppAppBar.standard(title: t('printer.title')),
@@ -155,6 +422,15 @@ class _PrinterSettingsScreenState
                   ),
                 ),
               ],
+            ),
+          ),
+          // ── Sprint 30: Hızlı Kurulum (tek tıkla otomatik yapılandırma) ──────
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: AppButton.primary(
+              text: _isScanning ? 'Yapılandırılıyor...' : 'Hızlı Kurulum (Sihirbaz)',
+              icon: Icons.auto_awesome,
+              onPressed: _isScanning ? null : _quickSetup,
             ),
           ),
           // ── Bağlı yazıcı durumu ────────────────────────────────────────────
@@ -215,8 +491,13 @@ class _PrinterSettingsScreenState
                   .replaceAll('{0}', '${_devices.length}'),
               icon: Icons.list,
               children: _devices.map((d) {
+                // Sprint 30 fix — Generic / Text Only sürücüsü VID=0 PID=0
+                // verir; sadece VID/PID match'i tüm Generic kayıtları "seçili"
+                // gösteriyor. Cihaz adını da match'e dahil et.
                 final isSelected = settings.vendorId == d.vendorId &&
-                    settings.productId == d.productId;
+                    settings.productId == d.productId &&
+                    (settings.deviceName ?? '').toLowerCase().trim() ==
+                        d.displayName.toLowerCase().trim();
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: Icon(
@@ -225,14 +506,24 @@ class _PrinterSettingsScreenState
                   ),
                   title: Text(d.displayName),
                   subtitle: Text('VID: ${d.vendorId}  PID: ${d.productId}'),
+                  // Sprint 30: Seçili olmayan cihazlar için "gizle" butonu;
+                  // seçili cihaz check icon. Gizle → confirm dialog → SharedPrefs.
+                  // "Bağlı Yazıcı" kartındaki kırmızı ✕ paterni ile aynı (UX tutarlılığı).
                   trailing: isSelected
                       ? const Icon(Icons.check_circle, color: AppColors.success)
-                      : const Icon(Icons.chevron_right),
+                      : IconButton(
+                          icon: const Icon(Icons.close, color: AppColors.danger),
+                          tooltip: 'Listede gösterme',
+                          onPressed: () => _hideDevice(d),
+                        ),
                   onTap: () => _selectDevice(d),
                 );
               }).toList(),
             ),
           if (_devices.isNotEmpty) const SizedBox(height: 16),
+
+          // ── Gizli yazıcılar (Sprint 30 — aktif olmayan yazıcı yönetimi) ─────
+          _buildHiddenPrintersCard(),
 
           // ── Kağıt genişliği ────────────────────────────────────────────────
           AppSectionCard(

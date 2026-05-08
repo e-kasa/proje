@@ -1,7 +1,10 @@
 package com.sedcore.supplier.service.impl;
 
+import com.sedcore.common.enums.AccountAuditEntityType;
 import com.sedcore.finance.entity.AccountTransaction;
 import com.sedcore.finance.entity.Payment;
+import com.sedcore.finance.service.AccountAuditService;
+import com.sedcore.finance.service.AccountAuditService.FieldChange;
 import com.sedcore.supplier.entity.Supplier;
 import com.sedcore.supplier.entity.SupplierAccount;
 import com.sedcore.common.enums.PaymentType;
@@ -30,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -61,6 +65,9 @@ public class SupplierServiceImpl
     @Autowired
     @Lazy
     private PaymentService paymentService;
+
+    @Autowired
+    private AccountAuditService accountAuditService;
 
     @Override
     public Class<?> getDTOClassForService() {
@@ -104,7 +111,7 @@ public class SupplierServiceImpl
     @Override
     public Supplier createSupplier(SupplierDto dto) {
         log.info("Tedarikci olusturuluyor: name={}", dto.getName());
-        return save(Supplier.builder()
+        Supplier saved = save(Supplier.builder()
                 .name(dto.getName())
                 .contactName(dto.getContactName())
                 .phone(dto.getPhone())
@@ -120,6 +127,10 @@ public class SupplierServiceImpl
                 .isActive(dto.getIsActive() != null ? dto.getIsActive() : true)
                 .isDeleted(dto.getIsDeleted() != null ? dto.getIsDeleted() : false)
                 .build());
+        accountAuditService.recordCreate(
+                AccountAuditEntityType.SUPPLIER, saved.getId(),
+                "createSupplier endpoint");
+        return saved;
     }
 
     @Override
@@ -144,18 +155,38 @@ public class SupplierServiceImpl
         Supplier supplier = findById(id)
                 .orElseThrow(() -> new RuntimeException("Tedarikci bulunamadi: " + id));
 
-        if (dto.getName() != null) supplier.setName(dto.getName());
+        // Sprint 30 — issue P2.6: önemli alan değişikliklerini topla, save sonrası audit yaz
+        List<FieldChange> changes = new ArrayList<>();
+        if (dto.getName() != null) {
+            changes.add(FieldChange.of("name", supplier.getName(), dto.getName()));
+            supplier.setName(dto.getName());
+        }
         if (dto.getContactName() != null) supplier.setContactName(dto.getContactName());
         if (dto.getPhone() != null) supplier.setPhone(dto.getPhone());
         if (dto.getEmail() != null) supplier.setEmail(dto.getEmail());
         if (dto.getAddress() != null) supplier.setAddress(dto.getAddress());
         if (dto.getNotes() != null) supplier.setNotes(dto.getNotes());
-        if (dto.getCreditLimit() != null) supplier.setCreditLimit(dto.getCreditLimit());
-        if (dto.getPaymentTermDays() != null) supplier.setPaymentTermDays(dto.getPaymentTermDays());
-        if (dto.getRiskStatus() != null) supplier.setRiskStatus(dto.getRiskStatus());
-        if (dto.getIsActive() != null) supplier.setIsActive(dto.getIsActive());
+        if (dto.getCreditLimit() != null) {
+            changes.add(FieldChange.of("creditLimit", supplier.getCreditLimit(), dto.getCreditLimit()));
+            supplier.setCreditLimit(dto.getCreditLimit());
+        }
+        if (dto.getPaymentTermDays() != null) {
+            changes.add(FieldChange.of("paymentTermDays", supplier.getPaymentTermDays(), dto.getPaymentTermDays()));
+            supplier.setPaymentTermDays(dto.getPaymentTermDays());
+        }
+        if (dto.getRiskStatus() != null) {
+            changes.add(FieldChange.of("riskStatus", supplier.getRiskStatus(), dto.getRiskStatus()));
+            supplier.setRiskStatus(dto.getRiskStatus());
+        }
+        if (dto.getIsActive() != null) {
+            changes.add(FieldChange.of("isActive", supplier.getIsActive(), dto.getIsActive()));
+            supplier.setIsActive(dto.getIsActive());
+        }
 
-        return mapToResponse(save(supplier));
+        SupplierResponse resp = mapToResponse(save(supplier));
+        accountAuditService.recordFieldChanges(
+                AccountAuditEntityType.SUPPLIER, id, changes, "updateSupplier endpoint");
+        return resp;
     }
 
     @Override
@@ -165,14 +196,22 @@ public class SupplierServiceImpl
         supplier.setIsDeleted(true);
         supplier.setIsActive(false);
         save(supplier);
+        accountAuditService.recordDelete(
+                AccountAuditEntityType.SUPPLIER, id, "soft delete via deleteSupplier");
     }
 
     @Override
     public SupplierResponse toggleStatus(String id) {
         Supplier supplier = findById(id)
                 .orElseThrow(() -> new RuntimeException("Tedarikci bulunamadi: " + id));
-        supplier.setIsActive(supplier.getIsActive() == null || !supplier.getIsActive());
-        return mapToResponse(save(supplier));
+        Boolean oldActive = supplier.getIsActive();
+        Boolean newActive = oldActive == null || !oldActive;
+        supplier.setIsActive(newActive);
+        SupplierResponse resp = mapToResponse(save(supplier));
+        accountAuditService.recordFieldChange(
+                AccountAuditEntityType.SUPPLIER, id, "isActive",
+                oldActive, newActive, "toggleStatus");
+        return resp;
     }
 
     // =========================================================================
@@ -270,8 +309,14 @@ public class SupplierServiceImpl
 
         Supplier supplier = findById(supplierId)
                 .orElseThrow(() -> new RuntimeException("Tedarikci bulunamadi: " + supplierId));
+        BigDecimal oldLimit = supplier.getCreditLimit();
         supplier.setCreditLimit(newLimit);
         save(supplier);
+
+        // Sprint 30 — issue P2.6: kredi limiti değişikliği audit kaydı
+        accountAuditService.recordFieldChange(
+                AccountAuditEntityType.SUPPLIER, supplierId, "creditLimit",
+                oldLimit, newLimit, null);
 
         // SupplierAccountService üzerinden hesaplanan alanları yenile
         return supplierAccountService.recalculate(supplierId);

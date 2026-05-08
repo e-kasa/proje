@@ -53,6 +53,41 @@ class NotificationService {
     }
   }
 
+  /// Sprint 30 — Vadesi geçen müşterilere bildirim taraması manuel tetikle.
+  ///
+  /// Backend: `POST /api/v1/admin/notifications/overdue/scan` (ROLE_ADMIN).
+  /// Sadece çağıranın aktif tenant'ı taranır (`X-Company-Code` header).
+  /// Multi-tenant batch için backend scheduled job otomatik tetiklenir
+  /// (`overdue.notification.enabled=true` + cron).
+  Future<({int queued, int skipped, String? error})>
+      triggerOverdueScan() async {
+    try {
+      final res = await _apiClient.post(
+        'product/api/v1/admin/notifications/overdue/scan',
+      );
+      final body = res.data;
+      Map<String, dynamic>? data;
+      if (body is Map<String, dynamic>) {
+        final inner = body['data'];
+        if (inner is Map<String, dynamic>) {
+          data = inner;
+        } else {
+          data = body;
+        }
+      }
+      final queued = (data?['queued'] as num?)?.toInt() ?? 0;
+      final skipped = (data?['skipped'] as num?)?.toInt() ?? 0;
+      return (queued: queued, skipped: skipped, error: null);
+    } on DioException catch (e) {
+      final msg = _extractError(e);
+      AppLogger.warning('Overdue scan başarısız: $msg');
+      return (queued: 0, skipped: 0, error: msg);
+    } catch (e) {
+      AppLogger.error('Overdue scan beklenmeyen hata', error: e);
+      return (queued: 0, skipped: 0, error: e.toString());
+    }
+  }
+
   /// GET /api/v1/notifications?status=...&page=...&size=...
   Future<List<NotificationDto>> list({
     NotificationStatus? status,

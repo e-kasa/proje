@@ -1,11 +1,14 @@
 package com.sedcore.customer.controller.impl;
 
+import com.sedcore.common.enums.AccountAuditEntityType;
 import com.sedcore.common.enums.CustomerType;
 import com.sedcore.customer.entity.Customer;
 import com.sedcore.finance.model.AccountTransactionResponse;
 import com.sedcore.customer.model.CustomerAccountResponse;
 import com.sedcore.customer.model.CustomerDto;
 import com.sedcore.customer.model.CustomerPaymentDto;
+import com.sedcore.finance.service.AccountAuditService;
+import com.sedcore.finance.service.AccountAuditService.FieldChange;
 import org.springframework.transaction.annotation.Transactional;
 import com.towpen.base.exceptions.ApiResponse;
 import com.sedcore.customer.service.CustomerService;
@@ -21,6 +24,7 @@ import com.sedcore.common.util.ExceptionMapper;
 import jakarta.validation.Valid;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +38,7 @@ public class CustomerControllerImpl {
 
     private final CustomerService customerService;
     private final EntityAuditHelper entityAuditHelper;
+    private final AccountAuditService accountAuditService;
 
     // GET /product/api/v1/customers
     // DB-side search + active filter (LOWER/LIKE on name+phone+email).
@@ -92,6 +97,9 @@ public class CustomerControllerImpl {
             entityAuditHelper.prepare(customer);
             customer = customerService.save(customer);
             log.info("Müşteri oluşturuldu: {}", customer.getName());
+            accountAuditService.recordCreate(
+                    AccountAuditEntityType.CUSTOMER, customer.getId(),
+                    "createCustomer endpoint");
             return ResponseEntity.ok(ApiResponse.success(toMap(customer)));
         } catch (TOpenException e) {
 
@@ -109,20 +117,42 @@ public class CustomerControllerImpl {
         try {
             Customer customer = customerService.findById(id)
                 .orElseThrow(() -> new RuntimeException("Müşteri bulunamadı: " + id));
-            if (dto.getName() != null) customer.setName(dto.getName());
+            // Sprint 30 — issue P2.6: önemli alan değişikliklerini topla
+            List<FieldChange> changes = new ArrayList<>();
+            if (dto.getName() != null) {
+                changes.add(FieldChange.of("name", customer.getName(), dto.getName()));
+                customer.setName(dto.getName());
+            }
             if (dto.getPhone() != null) customer.setPhone(dto.getPhone());
             if (dto.getEmail() != null) customer.setEmail(dto.getEmail());
             if (dto.getAddress() != null) customer.setAddress(dto.getAddress());
             if (dto.getNotes() != null) customer.setNotes(dto.getNotes());
             if (dto.getCustomerType() != null) customer.setCustomerType(dto.getCustomerType());
-            if (dto.getTaxNumber() != null) customer.setTaxNumber(dto.getTaxNumber());
+            if (dto.getTaxNumber() != null) {
+                changes.add(FieldChange.of("taxNumber", customer.getTaxNumber(), dto.getTaxNumber()));
+                customer.setTaxNumber(dto.getTaxNumber());
+            }
             if (dto.getTaxOffice() != null) customer.setTaxOffice(dto.getTaxOffice());
-            if (dto.getCreditLimit() != null) customer.setCreditLimit(dto.getCreditLimit());
-            if (dto.getPaymentTermDays() != null) customer.setPaymentTermDays(dto.getPaymentTermDays());
-            if (dto.getRiskStatus() != null) customer.setRiskStatus(dto.getRiskStatus());
-            if (dto.getIsActive() != null) customer.setIsActive(dto.getIsActive());
+            if (dto.getCreditLimit() != null) {
+                changes.add(FieldChange.of("creditLimit", customer.getCreditLimit(), dto.getCreditLimit()));
+                customer.setCreditLimit(dto.getCreditLimit());
+            }
+            if (dto.getPaymentTermDays() != null) {
+                changes.add(FieldChange.of("paymentTermDays", customer.getPaymentTermDays(), dto.getPaymentTermDays()));
+                customer.setPaymentTermDays(dto.getPaymentTermDays());
+            }
+            if (dto.getRiskStatus() != null) {
+                changes.add(FieldChange.of("riskStatus", customer.getRiskStatus(), dto.getRiskStatus()));
+                customer.setRiskStatus(dto.getRiskStatus());
+            }
+            if (dto.getIsActive() != null) {
+                changes.add(FieldChange.of("isActive", customer.getIsActive(), dto.getIsActive()));
+                customer.setIsActive(dto.getIsActive());
+            }
             entityAuditHelper.prepare(customer);
             customer = customerService.save(customer);
+            accountAuditService.recordFieldChanges(
+                    AccountAuditEntityType.CUSTOMER, id, changes, "updateCustomer endpoint");
             return ResponseEntity.ok(ApiResponse.success(toMap(customer)));
         } catch (TOpenException e) {
 
@@ -143,6 +173,9 @@ public class CustomerControllerImpl {
             customer.setIsActive(false); // soft delete
             entityAuditHelper.prepare(customer);
             customerService.save(customer);
+            accountAuditService.recordDelete(
+                    AccountAuditEntityType.CUSTOMER, id,
+                    "soft delete via deleteCustomer");
             return ResponseEntity.ok(ApiResponse.success(null));
         } catch (TOpenException e) {
 

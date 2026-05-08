@@ -586,42 +586,129 @@ class PosNotifier extends StateNotifier<PosState> {
   }
 
   Future<void> addToCartByBarcode(String barcode) async {
-    final products = state.products;
-    final found = products.firstWhere(
-      (p) => p['barcode']?.toString() == barcode || p['sku']?.toString() == barcode,
-      orElse: () => {},
-    );
-    if (found.isNotEmpty) {
-      final variants = found['variants'] as List? ?? [];
-      if (variants.length > 1) {
-        // Multiple variants - cannot auto-add by barcode
-        state = state.copyWith(error: 'Ürün birden fazla varyanta sahip. Lütfen manuel olarak seçin.');
-      } else if (variants.length == 1) {
-        addToCart(found, variant: variants[0]);
+    // Sprint 30 — Variant-level barkod arama. Backend ProductVariantResponse:
+    //   variant.barcodes[].barcodeCode  (primary öncelikli)
+    // Önceki implementasyon yanlış katmandan (product-level) arıyordu.
+    final hit = _findByBarcode(state.products, barcode);
+    if (hit != null) {
+      _addByBarcodeResult(hit.product, hit.variant, barcode);
+      return;
+    }
+    // Cache'te yok → API ara (mevcut search endpoint variant'ları da döner)
+    try {
+      final apiProducts =
+          await _ref.read(productServiceProvider).getProducts(search: barcode);
+      if (apiProducts.isEmpty) {
+        state = state.copyWith(error: 'Barkod bulunamadı: $barcode');
+        return;
+      }
+      // Cache'e ekle + tekrar resolve dene
+      final merged = [...state.products, ...apiProducts];
+      state = state.copyWith(products: merged);
+      final apiHit = _findByBarcode(apiProducts, barcode);
+      if (apiHit != null) {
+        _addByBarcodeResult(apiHit.product, apiHit.variant, barcode);
       } else {
-        addToCart(found);
+        state = state.copyWith(error: 'Barkod bulunamadı: $barcode');
       }
-    } else {
-      // Barcode ile ürün bulunamadı — API'den ara
-      try {
-        final product = await _ref.read(productServiceProvider).getProducts(search: barcode);
-        if (product.isNotEmpty) {
-          final variants = product.first['variants'] as List? ?? [];
-          if (variants.length > 1) {
-            state = state.copyWith(error: 'Ürün birden fazla varyanta sahip. Lütfen manuel olarak seçin.');
-          } else if (variants.length == 1) {
-            addToCart(product.first, variant: variants[0]);
-          } else {
-            addToCart(product.first);
-          }
-          // Cache ürünü listeye ekle
-          state = state.copyWith(products: [...state.products, product.first]);
-        } else {
-          state = state.copyWith(error: 'Barkod bulunamadı: $barcode');
+    } catch (e) {
+      state = state.copyWith(error: 'Barkod arama hatası: $e');
+    }
+  }
+
+  /// Sprint 30 — Variant-level barkod resolve.
+  ///
+  /// Öncelik:
+  /// 1. variant.barcodes[].barcodeCode (primary öncelikli)
+  /// 2. Legacy variant.barcode / variant.sku (eski şema)
+  /// 3. Product-level p.barcode / p.sku → ilk **stoklu** variant'a düş
+  ///
+  /// Returns: eşleşen product + variant ya da null.
+  _BarcodeHit? _findByBarcode(
+      List<Map<String, dynamic>> products, String barcode) {
+    for (final p in products) {
+      final variants =
+          (p['variants'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+      // 1. Variant-level barcodes[]
+      for (final v in variants) {
+        final list = (v['barcodes'] as List?)?.cast<Map<String, dynamic>>();
+        if (list != null && list.isNotEmpty) {
+          final match = list.any((b) =>
+              b['barcodeCode']?.toString() == barcode ||
+              b['code']?.toString() == barcode ||
+              b['barcode']?.toString() == barcode);
+          if (match) return _BarcodeHit(p, v);
         }
-      } catch (e) {
-        state = state.copyWith(error: 'Barkod arama hatası: $e');
+        // 2. Legacy variant fields
+        if (v['barcode']?.toString() == barcode ||
+            v['sku']?.toString() == barcode) {
+          return _BarcodeHit(p, v);
+        }
       }
+      // 3. Product-level fallback (eski şema) → stoklu ilk variant
+      if (p['barcode']?.toString() == barcode ||
+          p['sku']?.toString() == barcode) {
+        Map<String, dynamic>? chosen;
+        for (final v in variants) {
+          final s = (v['myStoreStock'] as num?)?.toInt() ?? _variantStock(v);
+          if (s > 0) {
+            chosen = v;
+            break;
+          }
+        }
+        chosen ??= variants.isNotEmpty ? variants.first : null;
+        return _BarcodeHit(p, chosen);
+      }
+    }
+    return null;
+  }
+
+  /// Sprint 30 — Barkod sonucunu sepete ekle + stok kontrolü + toast feedback.
+  ///
+  /// `addToCart` zaten stok kontrolü yapıyor ama burada **erken** kontrol:
+  /// - myStoreStock <= 0 → açıklayıcı error toast (ürün adı + variant adı)
+  /// - >0 → addToCart çağır + success toast
+  ///
+  /// Multi-variant ürünlerde otomatik stoklu variant seçimi `_findByBarcode`
+  /// içinde yapılır (product-level barkod fallback durumu).
+  void _addByBarcodeResult(
+    Map<String, dynamic> product,
+    Map<String, dynamic>? variant,
+    String barcode,
+  ) {
+    final productName = product['name']?.toString() ?? barcode;
+    final variantName = variant?['name']?.toString();
+    final fullName = (variantName != null && variantName.isNotEmpty &&
+            variantName != productName)
+        ? '$productName · $variantName'
+        : productName;
+
+    // Mevcut mağaza stok kontrolü (variant > product fallback)
+    int myStoreStock = 0;
+    if (variant != null) {
+      myStoreStock =
+          (variant['myStoreStock'] as num?)?.toInt() ?? _variantStock(variant);
+    } else {
+      myStoreStock = (product['myStoreStock'] as num?)?.toInt() ??
+          (product['stock'] as num?)?.toInt() ??
+          0;
+    }
+
+    if (myStoreStock <= 0) {
+      state = state.copyWith(
+        error: 'Stokta yok: $fullName (mağazanızda 0 adet)',
+      );
+      return;
+    }
+
+    if (variant != null) {
+      addToCart(product, variant: variant);
+    } else {
+      addToCart(product);
+    }
+    // addToCart hata set ettiyse override etme
+    if (state.error == null || state.error!.isEmpty) {
+      state = state.copyWith(successMessage: 'Eklendi: $fullName');
     }
   }
 
@@ -984,3 +1071,10 @@ class PosNotifier extends StateNotifier<PosState> {
 }
 
 final posProvider = StateNotifierProvider.autoDispose<PosNotifier, PosState>((ref) => PosNotifier(ref));
+
+/// Sprint 30 — Variant-level barkod arama sonucu.
+class _BarcodeHit {
+  final Map<String, dynamic> product;
+  final Map<String, dynamic>? variant;
+  const _BarcodeHit(this.product, this.variant);
+}

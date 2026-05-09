@@ -144,73 +144,74 @@ class _DetailScreenTemplateState extends ConsumerState<DetailScreenTemplate>
     );
   }
 
-  /// Sprint 11l/m — gri arka planlı, üst+alt border, chip-style selected tab,
-  /// belirgin hover. Gradient AppBar ve beyaz body içeriği arasında net bir
-  /// "bant" olarak görünür.
+  /// Sprint 11o P1 — beyaz arka planlı (scaffold bgLight'tan ayrı), alt soft
+  /// shadow ile gradient AppBar'dan net "ayrı bant" + chip-button selected
+  /// indicator. Önceki Sprint 11l/m bgLight aynı renk olduğundan kayboluyordu.
   Widget _buildTabStrip(Color primary) {
-    return Material(
-      color: AppColors.bgLight,
-      child: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.bgLight,
-          border: Border(
-            top: BorderSide(color: AppColors.border, width: 1),
-            bottom: BorderSide(color: AppColors.border, width: 1.5),
-          ),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: const Border(
+          bottom: BorderSide(color: AppColors.border, width: 1),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        child: TabBar(
-          controller: _tabController,
-          isScrollable: widget.tabs.length > 4,
-          tabAlignment: widget.tabs.length > 4
-              ? TabAlignment.start
-              : TabAlignment.fill,
-          // Chip-style selected tab: tinted bg kapsül + alt accent çizgisi.
-          indicator: BoxDecoration(
-            color: primary.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(10),
-            border: Border(
-              bottom: BorderSide(color: primary, width: 3),
-            ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
-          indicatorSize: TabBarIndicatorSize.tab,
-          dividerColor: Colors.transparent,
-          labelColor: primary,
-          unselectedLabelColor: AppColors.textSecondary,
-          labelPadding: const EdgeInsets.symmetric(horizontal: 6),
-          labelStyle: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.1,
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            letterSpacing: -0.1,
-          ),
-          splashBorderRadius: BorderRadius.circular(10),
-          overlayColor: WidgetStateProperty.resolveWith(
-            (states) {
-              if (states.contains(WidgetState.pressed)) {
-                return primary.withValues(alpha: 0.18);
-              }
-              if (states.contains(WidgetState.hovered)) {
-                return primary.withValues(alpha: 0.08);
-              }
-              return null;
-            },
-          ),
-          tabs: [
-            for (final t in widget.tabs)
-              Tab(
-                height: 44,
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      child: TabBar(
+        controller: _tabController,
+        isScrollable: true,
+        tabAlignment: TabAlignment.start,
+        // Chip-button selected: tinted bg kapsül + 1.5px primary border + 8px
+        // radius. Buton gibi görünür, kullanıcı "tıklanabilir tab" anlar.
+        indicator: BoxDecoration(
+          color: primary.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: primary, width: 1.5),
+        ),
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: Colors.transparent,
+        labelColor: primary,
+        unselectedLabelColor: AppColors.textSecondary,
+        labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+        labelStyle: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        splashBorderRadius: BorderRadius.circular(8),
+        overlayColor: WidgetStateProperty.resolveWith(
+          (states) {
+            if (states.contains(WidgetState.pressed)) {
+              return primary.withValues(alpha: 0.18);
+            }
+            if (states.contains(WidgetState.hovered)) {
+              return primary.withValues(alpha: 0.08);
+            }
+            return null;
+          },
+        ),
+        tabs: [
+          for (final t in widget.tabs)
+            Tab(
+              height: 48,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     if (t.icon != null) ...[
-                      Icon(t.icon, size: 16),
-                      const SizedBox(width: 6),
+                      Icon(t.icon, size: 18),
+                      const SizedBox(width: 8),
                     ],
                     Flexible(
                       child: Text(
@@ -222,8 +223,8 @@ class _DetailScreenTemplateState extends ConsumerState<DetailScreenTemplate>
                   ],
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }

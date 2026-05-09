@@ -98,6 +98,9 @@ class AppAppBar extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final gradient = ref.watch(resolvedGradientProvider);
+    // Sprint 11o P2 — gradient AppBar altında ince halo gölge: AppBar ve
+    // içerik arasında profesyonel "tabakalanma" hissi (CSS box-shadow gibi).
+    final primary = ref.watch(themeProvider).resolvedPrimary;
 
     return AppBar(
       title: Text(
@@ -123,7 +126,16 @@ class AppAppBar extends ConsumerWidget implements PreferredSizeWidget {
         statusBarIconBrightness: Brightness.light,
       ),
       flexibleSpace: Container(
-        decoration: BoxDecoration(gradient: gradient),
+        decoration: BoxDecoration(
+          gradient: gradient,
+          boxShadow: [
+            BoxShadow(
+              color: primary.withValues(alpha: 0.18),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
       ),
     );
   }

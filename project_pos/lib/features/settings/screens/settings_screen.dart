@@ -888,47 +888,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     VoidCallback? onTap,
     Color? textColor,
   }) {
-    final primary = Theme.of(context).colorScheme.primary;
-    return InkWell(
+    // Sprint 11n — sidebar/menu paterniyle uyumlu hover + tap state'i için
+    // ayrı _SettingsItem widget'ına delege ediyoruz. Tema primary reactive
+    // (ref.watch(themeProvider).resolvedPrimary) — kullanıcı tema rengini
+    // değiştirdiğinde tüm settings item'ları anında güncellenir.
+    return _SettingsItem(
+      icon: icon,
+      title: title,
+      subtitle: subtitle,
+      trailing: trailing,
       onTap: onTap,
-      borderRadius: AppConstants.borderRadiusMedium,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: (textColor ?? primary).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon,
-                  color: textColor ?? primary, size: 18),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title,
-                      style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                          color: textColor ?? AppColors.textPrimary,
-                          fontSize: 14)),
-                  if (subtitle.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(subtitle,
-                        style: const TextStyle(
-                            fontSize: 12, color: AppColors.textMuted)),
-                  ],
-                ],
-              ),
-            ),
-            ?trailing,
-          ],
-        ),
-      ),
+      textColor: textColor,
     );
   }
 
@@ -984,6 +954,172 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 AppToast.success(context, 'Şifre değiştirildi');
               }),
         ],
+      ),
+    );
+  }
+}
+
+/// Sprint 11n — Ayarlar tab'ları için belirgin hover + tap pressed state'li
+/// liste item'ı. Tema primary reactive (themeProvider.resolvedPrimary).
+/// Sidebar/menu kart paterniyle aynı dil:
+///   normal  → şeffaf bg, primary tonlu icon container
+///   hover   → primary @8% bg + 3px sol primary accent + cursor pointer
+///   pressed → primary @14% bg + scale 0.98 (mobile/touch geri bildirim)
+class _SettingsItem extends ConsumerStatefulWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+  final Color? textColor;
+
+  const _SettingsItem({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.trailing,
+    this.onTap,
+    this.textColor,
+  });
+
+  @override
+  ConsumerState<_SettingsItem> createState() => _SettingsItemState();
+}
+
+class _SettingsItemState extends ConsumerState<_SettingsItem> {
+  bool _hovered = false;
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = widget.textColor ?? ref.watch(themeProvider).resolvedPrimary;
+    final tappable = widget.onTap != null;
+    final active = (_hovered || _pressed) && tappable;
+
+    final Color bgColor;
+    if (_pressed && tappable) {
+      bgColor = accent.withValues(alpha: 0.14);
+    } else if (_hovered && tappable) {
+      bgColor = accent.withValues(alpha: 0.08);
+    } else {
+      bgColor = Colors.transparent;
+    }
+
+    return MouseRegion(
+      cursor: tappable ? SystemMouseCursors.click : MouseCursor.defer,
+      onEnter: (_) {
+        if (tappable) setState(() => _hovered = true);
+      },
+      onExit: (_) {
+        if (tappable) setState(() => _hovered = false);
+      },
+      child: Listener(
+        onPointerDown: tappable
+            ? (_) => setState(() => _pressed = true)
+            : null,
+        onPointerUp: tappable
+            ? (_) => setState(() => _pressed = false)
+            : null,
+        onPointerCancel: tappable
+            ? (_) => setState(() => _pressed = false)
+            : null,
+        child: AnimatedScale(
+          scale: _pressed && tappable ? 0.98 : 1.0,
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOut,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            curve: Curves.easeOut,
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+              child: InkWell(
+                onTap: widget.onTap,
+                borderRadius: BorderRadius.circular(10),
+                splashColor: accent.withValues(alpha: 0.10),
+                highlightColor: Colors.transparent,
+                child: Stack(
+                  children: [
+                    if (active)
+                      Positioned(
+                        left: 0,
+                        top: 8,
+                        bottom: 8,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 160),
+                          width: 3,
+                          decoration: BoxDecoration(
+                            color: accent,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 10, horizontal: 8),
+                      child: Row(
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 160),
+                            curve: Curves.easeOut,
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: active
+                                  ? accent
+                                  : accent.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              widget.icon,
+                              color: active
+                                  ? Colors.white
+                                  : (widget.textColor ?? accent),
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                AnimatedDefaultTextStyle(
+                                  duration: const Duration(milliseconds: 160),
+                                  style: TextStyle(
+                                    fontWeight:
+                                        active ? FontWeight.w600 : FontWeight.w500,
+                                    color: active
+                                        ? accent
+                                        : (widget.textColor ??
+                                            AppColors.textPrimary),
+                                    fontSize: 14,
+                                  ),
+                                  child: Text(widget.title),
+                                ),
+                                if (widget.subtitle.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(widget.subtitle,
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.textMuted)),
+                                ],
+                              ],
+                            ),
+                          ),
+                          if (widget.trailing != null) widget.trailing!,
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

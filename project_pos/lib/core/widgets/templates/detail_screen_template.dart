@@ -144,63 +144,86 @@ class _DetailScreenTemplateState extends ConsumerState<DetailScreenTemplate>
     );
   }
 
-  /// Sprint 11l — beyaz arka planlı, alt border + hafif shadow ile gradient
-  /// AppBar'dan ayrı duran tab şeridi.
+  /// Sprint 11l/m — gri arka planlı, üst+alt border, chip-style selected tab,
+  /// belirgin hover. Gradient AppBar ve beyaz body içeriği arasında net bir
+  /// "bant" olarak görünür.
   Widget _buildTabStrip(Color primary) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: const Border(
-          bottom: BorderSide(color: AppColors.border, width: 1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+    return Material(
+      color: AppColors.bgLight,
+      child: Container(
+        decoration: const BoxDecoration(
+          color: AppColors.bgLight,
+          border: Border(
+            top: BorderSide(color: AppColors.border, width: 1),
+            bottom: BorderSide(color: AppColors.border, width: 1.5),
           ),
-        ],
-      ),
-      child: TabBar(
-        controller: _tabController,
-        isScrollable: widget.tabs.length > 4,
-        tabAlignment: widget.tabs.length > 4
-            ? TabAlignment.start
-            : TabAlignment.fill,
-        indicatorColor: primary,
-        indicatorWeight: 3,
-        indicatorSize: TabBarIndicatorSize.label,
-        labelColor: primary,
-        unselectedLabelColor: AppColors.textSecondary,
-        labelStyle: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.1,
         ),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-          letterSpacing: -0.1,
-        ),
-        overlayColor: WidgetStateProperty.resolveWith(
-          (states) {
-            if (states.contains(WidgetState.hovered)) {
-              return primary.withValues(alpha: 0.06);
-            }
-            if (states.contains(WidgetState.pressed)) {
-              return primary.withValues(alpha: 0.10);
-            }
-            return null;
-          },
-        ),
-        tabs: [
-          for (final t in widget.tabs)
-            Tab(
-              text: t.label,
-              icon: t.icon != null ? Icon(t.icon, size: 18) : null,
-              iconMargin: const EdgeInsets.only(bottom: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: TabBar(
+          controller: _tabController,
+          isScrollable: widget.tabs.length > 4,
+          tabAlignment: widget.tabs.length > 4
+              ? TabAlignment.start
+              : TabAlignment.fill,
+          // Chip-style selected tab: tinted bg kapsül + alt accent çizgisi.
+          indicator: BoxDecoration(
+            color: primary.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(10),
+            border: Border(
+              bottom: BorderSide(color: primary, width: 3),
             ),
-        ],
+          ),
+          indicatorSize: TabBarIndicatorSize.tab,
+          dividerColor: Colors.transparent,
+          labelColor: primary,
+          unselectedLabelColor: AppColors.textSecondary,
+          labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+          labelStyle: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.1,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            letterSpacing: -0.1,
+          ),
+          splashBorderRadius: BorderRadius.circular(10),
+          overlayColor: WidgetStateProperty.resolveWith(
+            (states) {
+              if (states.contains(WidgetState.pressed)) {
+                return primary.withValues(alpha: 0.18);
+              }
+              if (states.contains(WidgetState.hovered)) {
+                return primary.withValues(alpha: 0.08);
+              }
+              return null;
+            },
+          ),
+          tabs: [
+            for (final t in widget.tabs)
+              Tab(
+                height: 44,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (t.icon != null) ...[
+                      Icon(t.icon, size: 16),
+                      const SizedBox(width: 6),
+                    ],
+                    Flexible(
+                      child: Text(
+                        t.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

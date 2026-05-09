@@ -11,6 +11,68 @@ Append-only olay kaydı. **En yeni üste**.
 
 ## Olaylar
 
+## [2026-05-09] sprint-30-category-audit | Kategori Sistemi Sağlık Denetimi (Audit-Only) 📋
+
+### Tetikleyici
+
+Kullanıcı: *"şimdi ürün kategorileri hakkında ekran ve backendden bilgi toplap analiz et"* + takip sorusu *"peki pos ekranındaki kategori ile uyumlumu yapı tam anlamıyıla?"*
+
+`AskUserQuestion` ile niyet netleştirildi:
+- **Yön:** Sadece analiz raporu — kod değişikliği yok
+- **Bağlam:** Genel sağlık check (Sprint 30 yazıcı/barkod işi bitti, başka modülün durumunu anlamak)
+
+### Yapılan İş
+
+3 paralel Explore agent ile envanter:
+1. Frontend catalog scan ([catalog/screens/](project_pos/lib/features/catalog/screens/), [inventory/services/](project_pos/lib/features/inventory/services/), [pos/widgets/](project_pos/lib/features/pos/widgets/))
+2. Backend catalog+product scan ([catalog/](pos-product-manager/src/main/java/com/sedcore/catalog/), [product/](pos-product-manager/src/main/java/com/sedcore/product/))
+3. POS-Category integration deep-dive (10 kontrol maddesi)
+
+Audit dosyası: [[sources/code-refs/2026-05-09-category-system-health-audit]]
+
+### Bulgular
+
+**Genel modül olgunluğu: %85** — CRUD tam, hierarchy + multi-tenant solid
+**POS entegrasyonu olgunluğu: %50** — temel düzey çalışıyor, backend'de tasarlanan ileri özellikler frontend'e taşınmamış
+
+**14 eksik tespit edildi:**
+
+A. **Genel kategori modülü (9 madde):**
+- 5 backend: soft-delete bug (yorum satırında P0), product cascade (P0), validation (P2), pagination (P3), audit trail (P3)
+- 4 frontend: type class yok (P1), `/categories/company-setup` menüde link yok (P2), i18n `bnd-cat-*` patern uyumsuz (P2), iki paralel servis sınırı net değil (P3 doc-only)
+
+B. **POS-Category uyumu (5 madde):**
+- Status filter eksik — DRAFT/INACTIVE/ARCHIVED chip'te görünebilir (**P0**)
+- Multi-kategori `ProductResponse.categories[]` API'de yok (entity'de tasarım var) (**P1**)
+- Hierarchy render düz chip — root seçince child'lar dahil değil (**P2**)
+- Sort order `displayOrder` apply'lenmiyor (P3)
+- `isPrimary` kullanılamıyor — #11 ile bağlı (P3)
+
+### Kritik Gözlem
+
+Backend'de `ProductCategory` Amazon-style multi-kategori tablosu **tasarlanmış** (entity, FK, isPrimary, isFeatured, customName, customDescription) ama `ProductResponse` DTO'sunda `categories[]` döndürülmediği için frontend bu altyapıyı kullanamıyor. **Yarısı yapılmış feature.**
+
+### Tavsiye Edilen Sprint Sırası
+
+- **Sprint 31** — P0 Bug-Fix: soft-delete (#1), product cascade (#2), status filter POS (#10)
+- **Sprint 32** — P1 Feature: multi-kategori API (#11), frontend Category data class (#6)
+- **Sprint 33** — P2 UX/Polish: hierarchy render (#12), menü link (#7), validation (#4), i18n (#8)
+- **Sprint 34+ Backlog** — P3: audit, pagination, sort, isPrimary, doc
+
+### Kapsam
+
+- **Kod değişikliği YAPILMADI** — kullanıcı talebi: ileride iş listesi olarak kalsın
+- Wiki: audit dosyası + log entry + index referansı (3 dosya)
+- Her gap için ayrı sprint planı, talep geldiğinde yazılır
+
+### Cross-Links
+
+- [[sources/code-refs/2026-05-09-category-system-health-audit]] — ana audit dosyası
+- [[concepts/multi-tenant]] — `TOpenSimpleCompanyEntity` paterni
+- [[syntheses/integrations-hub-architecture]] — 3-katman extension paterni (benzer global+tenant ayrımı)
+
+---
+
 ## [2026-05-06] sprint-30-barcode-variant-resolve | Variant-Level Barkod Eşleşmesi + Stok Kontrolü ✅
 
 ### Tetikleyici

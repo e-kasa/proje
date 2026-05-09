@@ -29,6 +29,12 @@ class CompanyCategoryService {
 
   // -------------------------------------------------------------------------
   // Düz liste (ağaç değil) — sadece ID ve isimler
+  //
+  // Defensive filter (Sprint 31 #10): backend `getMyCategoryList()` zaten
+  // ACTIVE + isSoftDeleted=false satırlarını döner. Yine de network'ten gelen
+  // veriye güvenmemek için DRAFT/INACTIVE/ARCHIVED ya da soft-delete edilmiş
+  // kategorileri burada da elemiyoruz. `status` alanı yoksa (eski API)
+  // backward-compat için kayıt geçer.
   // -------------------------------------------------------------------------
   Future<List<Map<String, dynamic>>> getMyCategoryList() async {
     try {
@@ -36,20 +42,30 @@ class CompanyCategoryService {
       final data = response.data['data'] as List<dynamic>? ?? [];
       // 'id' / 'name' key'lerini normalize et — wizard ve batch her ikisi de
       // bu key'leri bekler. Backend 'categoryId' / 'categoryName' dönebilir.
-      return data.map((raw) {
-        final m = raw as Map<String, dynamic>;
-        return <String, dynamic>{
-          'id': m['categoryId'] ?? m['id'] ?? '',
-          'name': m['categoryName'] ?? m['name'] ?? '',
-          'parentId': m['categoryParentId'] ?? m['parentId'],
-          'level': m['categoryLevel'] ?? m['level'],
-          'sortOrder': m['displayOrder'] ?? m['sortOrder'] ?? 0,
-          'icon': m['categoryIcon'] ?? m['icon'],
-        };
-      }).toList();
+      return data
+          .cast<Map<String, dynamic>>()
+          .where(_isCategoryPubliclyVisible)
+          .map((m) => <String, dynamic>{
+                'id': m['categoryId'] ?? m['id'] ?? '',
+                'name': m['categoryName'] ?? m['name'] ?? '',
+                'parentId': m['categoryParentId'] ?? m['parentId'],
+                'level': m['categoryLevel'] ?? m['level'],
+                'sortOrder': m['displayOrder'] ?? m['sortOrder'] ?? 0,
+                'icon': m['categoryIcon'] ?? m['icon'],
+                'status': m['categoryStatus'] ?? m['status'],
+              })
+          .toList();
     } catch (e) {
       throw Exception('Kategori listesi getirilemedi: $e');
     }
+  }
+
+  bool _isCategoryPubliclyVisible(Map<String, dynamic> raw) {
+    final softDeleted = raw['isSoftDeleted'] ?? raw['isDeleted'];
+    if (softDeleted == true) return false;
+    final status = (raw['categoryStatus'] ?? raw['status'])?.toString();
+    if (status == null || status.isEmpty) return true; // eski API → geçir
+    return status.toUpperCase() == 'ACTIVE';
   }
 
   // -------------------------------------------------------------------------

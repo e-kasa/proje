@@ -5,6 +5,7 @@ import com.sedcore.common.enums.AttributeType;
 import com.sedcore.catalog.model.DtoCategory;
 import com.sedcore.catalog.model.DtoCategoryUI;
 import com.towpen.base.exceptions.ApiResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
@@ -12,9 +13,9 @@ import java.util.List;
 public interface CategoryController {
 
     // CRUD Operasyonları
-    ResponseEntity<ApiResponse<DtoCategory>> createCategory(DtoCategoryUI dtoCategoryUI);
+    ResponseEntity<ApiResponse<DtoCategory>> createCategory(@Valid DtoCategoryUI dtoCategoryUI);
 
-    ResponseEntity<ApiResponse<DtoCategory>> updateCategory(String id, DtoCategoryUI dtoCategoryUI);
+    ResponseEntity<ApiResponse<DtoCategory>> updateCategory(String id, @Valid DtoCategoryUI dtoCategoryUI);
 
     ResponseEntity<ApiResponse<Void>> deleteCategory(String id);
 

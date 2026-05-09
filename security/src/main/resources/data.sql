@@ -2772,7 +2772,9 @@ INSERT INTO ext_bundles (id, create_time, create_user, last_modified_time, updat
     ('bnd-acpa06-0000-0000-0000-000000000006', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'accounts.add_another_sale',       'Başka satış ekle (yakında)',                            'Add another sale (coming soon)'),
     ('bnd-acpa07-0000-0000-0000-000000000007', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'accounts.allocation_sum_mismatch','Toplam tutarlar eşleşmiyor',                            'Allocation totals don''t match')
+     'accounts.allocation_sum_mismatch','Toplam tutarlar eşleşmiyor',                            'Allocation totals don''t match'),
+    ('bnd-acpa08-0000-0000-0000-000000000008', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'accounts.open_sales',             'açık satış',                                            'open sales')
     ON CONFLICT DO NOTHING;
 
 -- ============================================================

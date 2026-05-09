@@ -186,7 +186,7 @@ class _CategoryListScreenState extends ConsumerState<CategoryListScreen> {
         if (errors.isEmpty) {
           AppToast.success(context, t('common.deleted'));
         } else {
-          AppToast.warning(context, '${errors.length} ${t('categories.title')} ${t('common.error')}'); // TODO: i18n full message
+          AppToast.warning(context, '${errors.length} ${t('categories.title')} ${t('common.error')}');
         }
       }
     }

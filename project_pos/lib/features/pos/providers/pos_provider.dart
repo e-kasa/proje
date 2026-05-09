@@ -262,10 +262,46 @@ class PosState {
     return true;
   }
 
+  /// Sprint 33 #12: hierarchy-aware filter.
+  /// Verilen kategori için kendisi + tüm alt-altları (DFS) içeren ID seti.
+  /// Düz `categories` listesinden `parentId` zinciri takip edilerek inşa edilir.
+  Set<String> _descendantCategoryIds(String rootId) {
+    final result = <String>{rootId};
+    bool added = true;
+    while (added) {
+      added = false;
+      for (final c in categories) {
+        final id = c['id']?.toString();
+        final parent = c['parentId']?.toString();
+        if (id == null || id.isEmpty) continue;
+        if (parent != null && result.contains(parent) && result.add(id)) {
+          added = true;
+        }
+      }
+    }
+    return result;
+  }
+
   List<Map<String, dynamic>> get filteredProducts {
     var filtered = List<Map<String, dynamic>>.from(products);
     if (selectedCategoryId != null) {
-      filtered = filtered.where((p) => p['categoryId']?.toString() == selectedCategoryId.toString()).toList();
+      final allowed = _descendantCategoryIds(selectedCategoryId.toString());
+      filtered = filtered.where((p) {
+        // Legacy tek-kategori (eski API) eşleşmesi
+        final legacyId = p['categoryId']?.toString();
+        if (legacyId != null && allowed.contains(legacyId)) return true;
+        // Sprint 32 #11: çoklu kategori (categories[]) eşleşmesi
+        final cats = p['categories'];
+        if (cats is List) {
+          for (final raw in cats) {
+            if (raw is Map && raw['isActive'] != false) {
+              final cid = raw['categoryId']?.toString();
+              if (cid != null && allowed.contains(cid)) return true;
+            }
+          }
+        }
+        return false;
+      }).toList();
     }
     if (searchQuery.isNotEmpty) {
       final q = searchQuery.toLowerCase();
@@ -365,13 +401,30 @@ class PosNotifier extends StateNotifier<PosState> {
     try {
       final products = await _ref.read(productServiceProvider).getProducts(size: 100);
       final rawCats = await _ref.read(companyCategoryServiceProvider).getMyCategoryList();
-      // Firma kategorilerini id/name formatına normalize et
-      final categories = rawCats.map((c) => <String, dynamic>{
-        'id': c['categoryId']?.toString() ?? '',
-        'name': c['categoryName']?.toString() ?? '',
-        'level': c['categoryLevel'] ?? 0,
-        'parentId': c['categoryParentId']?.toString(),
-      }).toList();
+      // companyCategoryService zaten {id, name, parentId, level, sortOrder, ...}
+      // anahtarlarına normalize ediyor. Geriye dönük uyum için ham
+      // `categoryId`/`categoryName` anahtarlarını da fallback olarak okuyoruz.
+      final categories = rawCats.map((c) {
+        final id = (c['id'] ?? c['categoryId'] ?? '').toString();
+        final name = (c['name'] ?? c['categoryName'] ?? '').toString();
+        final parent = c['parentId'] ?? c['categoryParentId'];
+        final level = c['level'] ?? c['categoryLevel'] ?? 0;
+        final sortOrder = c['sortOrder'] ?? c['displayOrder'] ?? 0;
+        return <String, dynamic>{
+          'id': id,
+          'name': name,
+          'level': level is int ? level : int.tryParse(level.toString()) ?? 0,
+          'parentId': parent?.toString(),
+          'sortOrder':
+              sortOrder is int ? sortOrder : int.tryParse(sortOrder.toString()) ?? 0,
+        };
+      }).toList()
+        // Sprint 34 #13: backend `displayOrder` sırasını UI'a yansıt.
+        ..sort((a, b) {
+          final ao = (a['sortOrder'] as int?) ?? 0;
+          final bo = (b['sortOrder'] as int?) ?? 0;
+          return ao.compareTo(bo);
+        });
 
       // Ürünlerin inventories'inden benzersiz lokasyon ID'lerini çıkar
       final locationIdSet = <String>{};

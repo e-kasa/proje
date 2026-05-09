@@ -86,7 +86,7 @@ class _CompanyCategoryScreenState extends ConsumerState<CompanyCategoryScreen> {
           TextButton.icon(
             onPressed: () => notifier.toggleAll(false),
             icon: const Icon(Icons.deselect, color: Colors.white70, size: 18),
-            label: const Text('Temizle', style: TextStyle(color: Colors.white70, fontSize: 12)), // TODO: i18n
+            label: Text(t('common.clear'), style: const TextStyle(color: Colors.white70, fontSize: 12)),
           ),
           const SizedBox(width: 8),
         ],
@@ -157,9 +157,9 @@ class _CompanyCategoryScreenState extends ConsumerState<CompanyCategoryScreen> {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Row(
         children: [
-          _statChip(Icons.category_outlined, 'Toplam', '$totalCount', Colors.white70), // TODO: i18n
+          _statChip(Icons.category_outlined, t('common.total'), '$totalCount', Colors.white70),
           const SizedBox(width: 12),
-          _statChip(Icons.check_circle_outline, 'Seçili', '$selectedCount', Colors.white), // TODO: i18n
+          _statChip(Icons.check_circle_outline, t('common.selected'), '$selectedCount', Colors.white),
           const Spacer(),
           if (totalCount > 0)
             Text(

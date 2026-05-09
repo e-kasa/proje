@@ -68,8 +68,11 @@ public interface AccountTransactionRepository extends BaseDaoRepository<AccountT
     /**
      * Müşteri ekstresi — DB-side filter + sort.
      * Index: idx_customer_cancel_date
+     * Sprint 11d — LEFT JOIN FETCH t.sale: plaka chip için Sale.vehiclePlateSnapshot
+     * okunduğundan N+1'i önlemek üzere eager fetch.
      */
     @Query("SELECT t FROM AccountTransaction t " +
+        "LEFT JOIN FETCH t.sale " +
         "WHERE t.isCancelled = false AND t.customer.id = :id " +
         "AND t.transactionDate >= :start AND t.transactionDate <= :end " +
         "ORDER BY t.transactionDate ASC")
@@ -81,8 +84,11 @@ public interface AccountTransactionRepository extends BaseDaoRepository<AccountT
     /**
      * Tedarikçi ekstresi — DB-side filter + sort.
      * Index: idx_supplier_date (prefix)
+     * Sprint 11d — LEFT JOIN FETCH t.sale (sembolik; tedarikçi tarafında plaka yok
+     * ama DTO ortak, yan etki yok).
      */
     @Query("SELECT t FROM AccountTransaction t " +
+        "LEFT JOIN FETCH t.sale " +
         "WHERE t.isCancelled = false AND t.supplier.id = :id " +
         "AND t.transactionDate >= :start AND t.transactionDate <= :end " +
         "ORDER BY t.transactionDate ASC")

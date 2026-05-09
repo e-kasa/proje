@@ -124,6 +124,28 @@ class AccountService {
     }
   }
 
+  // ─── Reconcile (Admin) ──────────────────────────────────────────
+
+  /// Drift varsa denormalize bakiyeyi ledger'a göre düzeltir.
+  /// Backend RBAC: ADMIN role gerekir; 403 frontend'de yetki hatası mesajına döner.
+  /// Cevap: { drift: BigDecimal, corrected: bool }
+  Future<Map<String, dynamic>> reconcileAccount({
+    required String accountType,
+    required String accountId,
+  }) async {
+    final segment =
+        accountType.toUpperCase() == 'SUPPLIER' ? 'supplier' : 'customer';
+    try {
+      final resp = await _apiClient
+          .post('product/api/v1/admin/accounts/reconcile/$segment/$accountId');
+      final data = resp.data['data'];
+      return data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{};
+    } catch (e) {
+      debugPrint('reconcileAccount hata: $e');
+      rethrow;
+    }
+  }
+
   // ─── Hesap Özeti ────────────────────────────────────────────────
 
   Future<Map<String, dynamic>?> getAccountSummary({String? accountType}) async {

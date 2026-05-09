@@ -65,10 +65,16 @@ public class AccountStatementControllerImpl {
             BigDecimal totalCredit = BigDecimal.ZERO;
             List<AccountStatementEntry.TransactionLine> lines = new ArrayList<>();
 
+            // ASC iterate ederek runningBalance kümülatif hesaplanır; response'a
+            // koyarken Collections.reverse ile DESC (yakın tarih üstte) döndürülür.
             for (AccountTransaction t : filtered) {
                 runningBalance = runningBalance.add(t.getDebitAmount()).subtract(t.getCreditAmount());
                 totalDebit = totalDebit.add(t.getDebitAmount());
                 totalCredit = totalCredit.add(t.getCreditAmount());
+
+                String vehiclePlate = (t.getSale() != null)
+                        ? t.getSale().getVehiclePlateSnapshot()
+                        : null;
 
                 lines.add(AccountStatementEntry.TransactionLine.builder()
                         .id(t.getId())
@@ -79,32 +85,48 @@ public class AccountStatementControllerImpl {
                         .debitAmount(t.getDebitAmount())
                         .creditAmount(t.getCreditAmount())
                         .runningBalance(runningBalance)
+                        .vehiclePlate(vehiclePlate)
                         .build());
             }
+            // Sprint 11d — UI için yakın tarihten geçmişe sıralama.
+            Collections.reverse(lines);
 
             // Sprint 8 hot-fix (Bug B): denormalize currentBalance ekle.
             // Frontend bu değeri primer bakiye olarak gösterir; closingBalance
             // transaction toplamı, currentBalance ise CustomerAccount/SupplierAccount
             // denormalize değeri (write-through cache). İkisi farklıysa drift uyarısı.
+            // UX paketi (Adım 1): creditLimit / availableCreditLimit / isCreditLimitExceeded
+            // de DTO'ya konur — frontend "Güncel Durum" bloğunda gösterir.
             BigDecimal currentBalance = BigDecimal.ZERO;
+            BigDecimal creditLimit = null;
+            BigDecimal availableCreditLimit = null;
+            Boolean isCreditLimitExceeded = null;
             try {
                 if (isCustomer) {
-                    var acct = customerAccountService.getOrCreate(customerService.getEntity(accountId));
-                    if (acct != null && acct.getCurrentBalance() != null) {
-                        currentBalance = acct.getCurrentBalance();
+                    var customer = customerService.getEntity(accountId);
+                    var acct = customerAccountService.getOrCreate(customer);
+                    if (acct != null) {
+                        if (acct.getCurrentBalance() != null) currentBalance = acct.getCurrentBalance();
+                        availableCreditLimit = acct.getAvailableCreditLimit();
+                        isCreditLimitExceeded = acct.getIsCreditLimitExceeded();
                     }
+                    if (customer != null) creditLimit = customer.getCreditLimit();
                 } else {
                     var supplier = supplierService.findById(accountId).orElse(null);
                     if (supplier != null) {
                         var acct = supplierAccountService.getOrCreate(supplier);
-                        if (acct != null && acct.getCurrentBalance() != null) {
-                            currentBalance = acct.getCurrentBalance();
+                        if (acct != null) {
+                            if (acct.getCurrentBalance() != null) currentBalance = acct.getCurrentBalance();
+                            availableCreditLimit = acct.getAvailableCreditLimit();
+                            isCreditLimitExceeded = acct.getIsCreditLimitExceeded();
                         }
+                        creditLimit = supplier.getCreditLimit();
                     }
                 }
             } catch (Exception ex) {
                 log.warn("currentBalance fetch failed for {}/{}: {}", accountType, accountId, ex.getMessage());
                 currentBalance = runningBalance; // fallback: closingBalance
+                // creditLimit / availableCreditLimit / isCreditLimitExceeded null kalır
             }
 
             AccountStatementEntry entry = AccountStatementEntry.builder()
@@ -113,6 +135,9 @@ public class AccountStatementControllerImpl {
                     .currentBalance(currentBalance)
                     .totalDebit(totalDebit)
                     .totalCredit(totalCredit)
+                    .creditLimit(creditLimit)
+                    .availableCreditLimit(availableCreditLimit)
+                    .isCreditLimitExceeded(isCreditLimitExceeded)
                     .transactions(lines)
                     .build();
 

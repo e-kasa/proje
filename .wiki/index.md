@@ -56,6 +56,7 @@ Proje genelinde Claude Code tarafından otomatik yüklenen CLAUDE.md'lerin içer
 - [[sources/code-refs/2026-04-27-product-screens-audit]] — ürün menüsü kartları + ürün detay ekranları envanter (Sprint 12 öncesi)
 - [[sources/code-refs/2026-04-27-design-system-template-audit]] — design system + 64+ ekran envanter (Sprint 15 öncesi)
 - [[sources/code-refs/2026-05-01-label-printer-implementation-audit]] — etiket yazıcı L1→L3 implementation (Sprint 24 öncesi audit)
+- [[sources/code-refs/2026-05-09-category-system-health-audit]] — kategori modülü genel sağlık check (modül %85, POS uyum %50, 14 gap; Sprint 31+ önceliklendirme)
 
 ### Code-refs — migration (eski tarihli code snapshots)
 - [[sources/code-refs/2026-04-17-units-employee-modern]]

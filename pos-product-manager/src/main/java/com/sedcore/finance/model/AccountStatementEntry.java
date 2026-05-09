@@ -26,6 +26,12 @@ public class AccountStatementEntry {
     private BigDecimal currentBalance;
     private BigDecimal totalDebit;
     private BigDecimal totalCredit;
+    /** Customer.creditLimit veya Supplier.creditLimit. Null ise frontend gizler. */
+    private BigDecimal creditLimit;
+    /** CustomerAccount/SupplierAccount.availableCreditLimit (creditLimit - currentBalance). */
+    private BigDecimal availableCreditLimit;
+    /** Limit aşıldı mı (availableCreditLimit < 0). */
+    private Boolean isCreditLimitExceeded;
     private List<TransactionLine> transactions;
 
     @Data
@@ -41,5 +47,11 @@ public class AccountStatementEntry {
         private BigDecimal debitAmount;
         private BigDecimal creditAmount;
         private BigDecimal runningBalance;
+        /**
+         * Sprint 11d — bağlı satışın plaka snapshot'ı (Sale.vehiclePlateSnapshot).
+         * Sale FK yoksa veya plaka atanmamışsa null. Frontend ekstre kartında chip
+         * + plaka filtresi olarak kullanır.
+         */
+        private String vehiclePlate;
     }
 }

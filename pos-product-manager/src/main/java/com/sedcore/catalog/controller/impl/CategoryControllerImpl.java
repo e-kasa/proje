@@ -11,11 +11,15 @@ import com.towpen.base.exceptions.ApiResponse;
 import com.sedcore.catalog.service.CategoryService;
 import com.sedcore.catalog.service.CategoryVariantService;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.validation.annotation.Validated;
 import com.towpen.base.enums.model.TMessageType;
 import com.towpen.base.exceptions.TOpenException;
 import com.towpen.base.restservice.model.TOpenMessage;
@@ -27,6 +31,7 @@ import java.util.List;
 @RequestMapping("/api/category")
 @RequiredArgsConstructor
 @Slf4j
+@Validated
 public class CategoryControllerImpl implements CategoryController {
 
     private final CategoryService categoryService;
@@ -34,7 +39,7 @@ public class CategoryControllerImpl implements CategoryController {
 
     @Override
     @PostMapping
-    public ResponseEntity<ApiResponse<DtoCategory>> createCategory(@RequestBody DtoCategoryUI dtoCategoryUI) {
+    public ResponseEntity<ApiResponse<DtoCategory>> createCategory(@Valid @RequestBody DtoCategoryUI dtoCategoryUI) {
         try {
             log.info("Kategori oluşturma isteği alındı: {}", dtoCategoryUI.getName());
             DtoCategory category = categoryService.createCategory(dtoCategoryUI);
@@ -53,7 +58,7 @@ public class CategoryControllerImpl implements CategoryController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<DtoCategory>> updateCategory(
             @PathVariable String id,
-            @RequestBody DtoCategoryUI dtoCategoryUI) {
+            @Valid @RequestBody DtoCategoryUI dtoCategoryUI) {
         try {
             log.info("Kategori güncelleme isteği alındı: {}", id);
             DtoCategory category = categoryService.updateCategory(id, dtoCategoryUI);
@@ -205,7 +210,7 @@ public class CategoryControllerImpl implements CategoryController {
 
     @Override
     @GetMapping("/generate-slug")
-    public ResponseEntity<ApiResponse<String>> generateSlug(@RequestParam String name) {
+    public ResponseEntity<ApiResponse<String>> generateSlug(@RequestParam @NotBlank(message = "İsim boş olamaz") String name) {
         try {
             log.info("Slug oluşturma isteği alındı: {}", name);
             String slug = categoryService.generateSlug(name);
@@ -222,7 +227,7 @@ public class CategoryControllerImpl implements CategoryController {
     @PutMapping("/{categoryId}/sort-order")
     public ResponseEntity<ApiResponse<Void>> updateSortOrder(
             @PathVariable String categoryId,
-            @RequestParam Integer newOrder) {
+            @RequestParam @PositiveOrZero(message = "Sıralama negatif olamaz") Integer newOrder) {
         try {
             log.info("Sıralama güncelleme isteği alındı: {} -> {}", categoryId, newOrder);
             categoryService.updateSortOrder(categoryId, newOrder);

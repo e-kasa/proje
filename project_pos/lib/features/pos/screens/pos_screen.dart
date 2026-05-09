@@ -4,7 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
+import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
+import 'package:project_pos/core/utils/responsive_helper.dart';
 import 'package:project_pos/core/widgets/base_scaffold.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/services/print/print_service.dart';
@@ -43,7 +45,11 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     super.dispose();
   }
 
-  bool _isDesktop(BuildContext context) => MediaQuery.of(context).size.width > 900;
+  /// Responsive breakpoint kontrolü
+  /// Desktop: 1200px+ | Tablet: 768-1199px | Mobile: <768px
+  bool _isDesktop(BuildContext context) => context.isDesktop;
+  bool _isTablet(BuildContext context) => context.isTablet;
+  bool _isMobile(BuildContext context) => context.isMobile;
 
   void _handleKeyEvent(KeyEvent event) {
     if (event is! KeyDownEvent) return;
@@ -126,11 +132,18 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         appBar: _buildAppBar(posState),
         body: LayoutBuilder(
           builder: (context, constraints) {
-            if (constraints.maxWidth > 900) return _buildDesktopLayout(posState);
-            return _buildMobileLayout(posState);
+            // Responsive layout seçimi
+            if (context.isDesktop) {
+              return _buildDesktopLayout(posState);
+            } else if (context.isTablet) {
+              return _buildTabletLayout(posState);
+            } else {
+              return _buildMobileLayout(posState);
+            }
           },
         ),
-        floatingActionButton: !_isDesktop(context) && posState.totalItems > 0
+        // FAB: Mobil ve tablet'te sepeti göster
+        floatingActionButton: !context.isDesktop && posState.totalItems > 0
             ? FloatingActionButton.extended(
                 onPressed: () => _showMobileCart(context),
                 backgroundColor: AppColors.primary,
@@ -268,16 +281,51 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     }
   }
 
+  /// Desktop Layout: 70/30 Master-Detail Panel
+  /// - Sol: Ürünler (70%)
+  /// - Sağ: Sepet Panel (30%) - Sticky
   Widget _buildDesktopLayout(PosState posState) {
     return Row(
       children: [
-        Expanded(flex: 7, child: _buildProductPanel(posState)),
+        Expanded(
+          flex: 70,
+          child: _buildProductPanel(posState),
+        ),
         const VerticalDivider(width: 1),
-        Expanded(flex: 3, child: CartPanel(onPaymentPressed: () => _showPaymentDialog(context), currencyFormat: _currencyFormat)),
+        Expanded(
+          flex: 30,
+          child: CartPanel(
+            onPaymentPressed: () => _showPaymentDialog(context),
+            currencyFormat: _currencyFormat,
+          ),
+        ),
       ],
     );
   }
 
+  /// Tablet Layout: Vertical Stack
+  /// - Üst: Ürünler
+  /// - Alt: Sepet Panel (Scrollable)
+  Widget _buildTabletLayout(PosState posState) {
+    return Column(
+      children: [
+        Expanded(
+          child: _buildProductPanel(posState),
+        ),
+        const Divider(height: 1),
+        SizedBox(
+          height: 250,
+          child: CartPanel(
+            onPaymentPressed: () => _showPaymentDialog(context),
+            currencyFormat: _currencyFormat,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Mobile Layout: Ürünler + FAB
+  /// - FAB ile sepet erişimi (bottom sheet)
   Widget _buildMobileLayout(PosState posState) => _buildProductPanel(posState);
 
   Widget _buildProductPanel(PosState posState) {
@@ -297,8 +345,12 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     );
   }
 
+  /// Responsive Product Grid
+  /// Desktop: 4 kolon | Tablet: 3 kolon | Mobile: 2 kolon
   Widget _buildProductGrid(PosState posState) {
-    final crossAxis = _isDesktop(context) ? 4 : 2;
+    // Responsive kolon sayısı
+    final crossAxis = context.gridColumns;
+    final gridGap = context.gridGap;
 
     if (posState.isLoadingProducts) {
       return Padding(
@@ -322,11 +374,11 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     }
 
     return GridView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(context.horizontalPadding),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxis,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 16,
+        mainAxisSpacing: gridGap,
+        crossAxisSpacing: gridGap,
         mainAxisExtent: 160,
       ),
       itemCount: posState.filteredProducts.length,

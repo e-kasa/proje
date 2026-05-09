@@ -49,6 +49,16 @@ public class ProductResponse extends DtoBaseModel {
     // Varyantlar
     private List<ProductVariantResponse> variants;
 
+    /**
+     * Çoklu kategori listesi (Amazon-style).
+     *
+     * Eski tek-kategori alanı `categoryId`/`categoryName` legacy kalıyor —
+     * yeni istemciler `categories[]` üzerinden tüm bağlı kategorileri görür.
+     * Liste, primary kategori başta olmak üzere `displayOrder` sırasıyla döner.
+     * `ProductCategory` tablosundan `isActive=true` filtresiyle derlenir.
+     */
+    private List<ProductCategoryResponse> categories;
+
 
     // ---- İç sınıflar ---- //
 

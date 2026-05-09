@@ -12,6 +12,7 @@ import com.sedcore.catalog.repository.CategoryRepository;
 import com.sedcore.catalog.service.CategoryAttributeService;
 import com.sedcore.catalog.service.CategoryService;
 import com.sedcore.catalog.service.CategoryVariantService;
+import com.sedcore.product.service.ProductCategoryService;
 import com.towpen.base.security.BaseDbServiceImp;
 import lombok.extern.slf4j.Slf4j;
 import com.towpen.base.enums.model.TMessageType;
@@ -42,6 +43,10 @@ public class CategoryServiceImpl extends BaseDbServiceImp<CategoryRepository, Ca
     @Autowired(required = false)
     @org.springframework.context.annotation.Lazy
     private CategoryAttributeService categoryAttributeService;
+
+    @Autowired(required = false)
+    @org.springframework.context.annotation.Lazy
+    private ProductCategoryService productCategoryService;
 
     @Override
     public Class<?> getDTOClassForService() {
@@ -195,8 +200,17 @@ public class CategoryServiceImpl extends BaseDbServiceImp<CategoryRepository, Ca
             throw new TOpenException(new TOpenMessage(TMessageType.UNEXPECTED_ERROR_9999));
         }
 
+        // Cascade: ProductCategory satırlarını pasifleştir (orphan koruması)
+        if (productCategoryService != null) {
+            int deactivated = productCategoryService.deactivateAllForCategory(id);
+            if (deactivated > 0) {
+                log.info("Kategori silinmeden önce {} ürün-kategori bağı pasifleştirildi (categoryId={})",
+                        deactivated, id);
+            }
+        }
+
         // Soft delete
-      //  category.setIsDeleted(true);
+        category.setIsSoftDeleted(true);
         save(category);
         log.info("Kategori silindi: {} (ID: {})", category.getName(), category.getId());
     }

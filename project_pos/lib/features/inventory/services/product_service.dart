@@ -65,6 +65,10 @@ class ProductService {
       'brand': raw['brand'],
       'categoryId': raw['categoryId'],
       'categoryName': raw['categoryName'],
+      // Sprint 32 #11: çoklu kategori (Amazon-style). Backend
+      // ProductCategoryResponse listesi döner — UI bu listeyi
+      // chip filter ve "etiketler" alanında kullanır.
+      'categories': (raw['categories'] as List?) ?? const [],
 
       // Varyant bilgileri -- satis/stok islemleri icin gerekli
       'variantId': firstVariant['id'],          // backend variantId (tek varyantlı için)

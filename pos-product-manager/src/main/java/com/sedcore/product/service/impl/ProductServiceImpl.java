@@ -2,7 +2,11 @@ package com.sedcore.product.service.impl;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,10 +43,13 @@ import com.sedcore.autoparts.model.CrossReferenceRequest;
 import com.sedcore.inventory.model.InitialStocksRequest;
 import com.sedcore.inventory.model.InventoryResponse;
 import com.sedcore.autoparts.model.OemNumberRequest;
+import com.sedcore.product.entity.ProductCategory;
+import com.sedcore.product.model.ProductCategoryResponse;
 import com.sedcore.product.model.ProductRequest;
 import com.sedcore.product.model.ProductResponse;
 import com.sedcore.product.model.ProductVariantRequest;
 import com.sedcore.product.model.ProductVariantResponse;
+import com.sedcore.product.service.ProductCategoryService;
 import com.sedcore.product.repository.BarcodeRepository;
 import com.sedcore.catalog.repository.CategoryRepository;
 import com.sedcore.product.repository.ProductRepository;
@@ -106,6 +113,8 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
     private final SupplierClaimService supplierClaimService;
     private final SupplierAccountService supplierAccountService;
     private final AccountTransactionService accountTransactionService;
+    private final ProductCategoryService productCategoryService;
+    private final CategoryRepository categoryRepository;
 
     /**
      * Ürün Oluştur (Tüm Detaylarıyla)
@@ -869,7 +878,72 @@ public class ProductServiceImpl extends BaseDbServiceImp<ProductRepository, Prod
         dto.setCategoryName(categoryName);
         dto.setBasePrice(basePrice);
         dto.setVariants(variantResponses);
+        dto.setCategories(buildProductCategoryList(product.getId()));
         return dto;
+    }
+
+    /**
+     * Çoklu kategori bağlarını ProductCategoryResponse listesine çevir.
+     * Sprint 32 #11: ProductCategory tablosundaki aktif satırlar primary
+     * + displayOrder sırasıyla frontend'e taşınır.
+     *
+     * Wiki [[concepts/pattern-entity-graph-n-plus-one]] uyumu: kategori adı
+     * için tek `findAllById` batch query — her satır için ayrı SELECT yok.
+     */
+    private List<ProductCategoryResponse> buildProductCategoryList(String productId) {
+        if (productId == null || productCategoryService == null) {
+            return List.of();
+        }
+        try {
+            List<ProductCategory> rows = productCategoryService.getProductCategories(productId);
+            if (rows.isEmpty()) {
+                return List.of();
+            }
+
+            // Tek query'de tüm kategorileri çek (N+1 önleme)
+            List<String> categoryIds = rows.stream()
+                    .map(ProductCategory::getCategoryId)
+                    .filter(id -> id != null && !id.isEmpty())
+                    .distinct()
+                    .toList();
+            Map<String, Category> categoryById = categoryIds.isEmpty()
+                    ? Map.of()
+                    : StreamSupport.stream(
+                            categoryRepository.findAllById(categoryIds).spliterator(), false)
+                            .collect(Collectors.toMap(Category::getId, c -> c, (a, b) -> a, HashMap::new));
+
+            // primary kategoriler önce, sonra displayOrder
+            return rows.stream()
+                    .sorted((a, b) -> {
+                        boolean ap = Boolean.TRUE.equals(a.getIsPrimary());
+                        boolean bp = Boolean.TRUE.equals(b.getIsPrimary());
+                        if (ap != bp) return ap ? -1 : 1;
+                        int ao = a.getDisplayOrder() != null ? a.getDisplayOrder() : 0;
+                        int bo = b.getDisplayOrder() != null ? b.getDisplayOrder() : 0;
+                        return Integer.compare(ao, bo);
+                    })
+                    .map(pc -> toProductCategoryResponse(pc, categoryById.get(pc.getCategoryId())))
+                    .toList();
+        } catch (Exception e) {
+            log.warn("Çoklu kategori bilgisi alınamadı productId={}: {}", productId, e.getMessage());
+            return List.of();
+        }
+    }
+
+    private ProductCategoryResponse toProductCategoryResponse(ProductCategory pc, Category cat) {
+        return ProductCategoryResponse.builder()
+                .id(pc.getId())
+                .productId(pc.getProductId())
+                .categoryId(pc.getCategoryId())
+                .categoryName(cat != null ? cat.getName() : null)
+                .categoryPath(cat != null ? cat.getPath() : null)
+                .isPrimary(pc.getIsPrimary())
+                .isFeatured(pc.getIsFeatured())
+                .displayOrder(pc.getDisplayOrder())
+                .customName(pc.getCustomName())
+                .customDescription(pc.getCustomDescription())
+                .isActive(pc.getIsActive())
+                .build();
     }
 
     /**

@@ -1,37 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:project_pos/core/config/sector_config.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
-import 'package:project_pos/features/accounts/providers/customer_open_sales_provider.dart';
-import 'package:project_pos/features/customers/widgets/vehicle_search_field.dart';
-import 'package:project_pos/shared/providers/sector_provider.dart';
 
 /// Yeniden kullanilabilir odeme/tahsilat kayit dialog'u.
 /// Hem musteri tahsilati hem tedarikci odemesi icin kullanilir.
 ///
-/// Sprint 7: alisveris bazli odeme — `customerId` doluysa modal acik
-/// satislari listeler, kullanici belirli bir satisa odeme yapabilir.
-/// Tedarikci tarafinda (`!isCustomer`) picker gosterilmez (B3 sonrasi
-/// PurchaseAllocation icin acilabilir).
-///
-/// Sprint 11c: plaka filtresi modal içine taşındı. SPECIFIC modu seçildiğinde
-/// (parçacı sektör + müşteri) picker'ın üstünde plaka dropdown belirir;
-/// seçim açık satışları daraltır ve payload'a `customerVehicleId` iliştirir.
+/// Sprint 11d: plaka filtresi modal'dan kaldırıldı (ekstrede transaction
+/// kartlarına chip + filter olarak taşındı).
 class PaymentRecordModal {
   static Future<Map<String, dynamic>?> show(
     BuildContext context, {
     required bool isCustomer,
     String? accountName,
-    String? customerId,
   }) async {
     return showDialog<Map<String, dynamic>?>(
       context: context,
       builder: (ctx) => _PaymentRecordContent(
         isCustomer: isCustomer,
         accountName: accountName,
-        customerId: customerId,
       ),
     );
   }
@@ -40,12 +28,10 @@ class PaymentRecordModal {
 class _PaymentRecordContent extends ConsumerStatefulWidget {
   final bool isCustomer;
   final String? accountName;
-  final String? customerId;
 
   const _PaymentRecordContent({
     required this.isCustomer,
     this.accountName,
-    this.customerId,
   });
 
   @override
@@ -62,15 +48,6 @@ class _PaymentRecordContentState extends ConsumerState<_PaymentRecordContent> {
   final _bankCtrl = TextEditingController();
   String _paymentType = 'CASH';
 
-  // Sprint 7 — Sale-Payment allocation
-  String _allocationMode = 'GENERAL'; // 'GENERAL' | 'SPECIFIC'
-  String? _selectedSaleId;
-
-  // Sprint 11c — modal içinde plaka filtresi (SPECIFIC modunda görünür)
-  // Sprint 11d — VehicleSearchField tek Map state ile çalışır;
-  // id ve plateNormalized buradan derive edilir.
-  Map<String, dynamic>? _selectedVehicle;
-
   @override
   void dispose() {
     _amountCtrl.dispose();
@@ -78,106 +55,6 @@ class _PaymentRecordContentState extends ConsumerState<_PaymentRecordContent> {
     _refCtrl.dispose();
     _bankCtrl.dispose();
     super.dispose();
-  }
-
-  /// Sprint 11d — Parçacı sektörde SPECIFIC modunda plaka arama (autocomplete).
-  /// Boş input = "tüm plakalar"; seçim `_selectedVehicle`'ı set eder, picker
-  /// CustomerOpenSalesKey üzerinden filtreli açık satışları getirir.
-  Widget _buildVehicleFilter() {
-    return VehicleSearchField(
-      customerId: widget.customerId!,
-      selectedVehicle: _selectedVehicle,
-      labelText: t('vehicle.plate'),
-      hintText: t('vehicle.search_placeholder'),
-      allowClear: true,
-      dense: true,
-      onSelected: (v) {
-        setState(() {
-          _selectedVehicle = v;
-          // Plaka değişince sale seçimi + tutar reset
-          _selectedSaleId = null;
-          _amountCtrl.clear();
-        });
-      },
-    );
-  }
-
-  /// Sprint 7 — Açık satışlar listesi (SPECIFIC modunda gösterilir).
-  /// Kullanıcı bir satış seçince tutar otomatik dolar (kalan bakiye).
-  /// Sprint 11d — `_selectedVehicle.plateNormalized` ile filtre.
-  Widget _buildOpenSalesPicker() {
-    final salesAsync = ref.watch(customerOpenSalesProvider(
-      CustomerOpenSalesKey(
-        widget.customerId!,
-        vehiclePlate: _selectedVehicle?['plateNormalized']?.toString(),
-      ),
-    ));
-    return salesAsync.when(
-      data: (sales) {
-        if (sales.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-            child: Text(
-              t('accounts.no_open_sales'),
-              style: const TextStyle(
-                  color: AppColors.textMuted, fontSize: 12),
-            ),
-          );
-        }
-        return ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: 180),
-          child: SingleChildScrollView(
-            child: Column(
-              children: sales.map((s) {
-                final saleId = s['id']?.toString() ?? '';
-                final saleNumber = s['saleNumber']?.toString() ?? '';
-                final remaining =
-                    (s['remainingAmount'] as num?)?.toDouble() ?? 0.0;
-                final dateRaw = s['saleDate']?.toString() ?? '';
-                final dateShort =
-                    dateRaw.length >= 10 ? dateRaw.substring(0, 10) : dateRaw;
-                return RadioListTile<String>(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  value: saleId,
-                  groupValue: _selectedSaleId,
-                  title: Text(
-                    '#$saleNumber',
-                    style: const TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w500),
-                  ),
-                  subtitle: Text(
-                    '$dateShort · ${remaining.toStringAsFixed(2)} ${t('accounts.sale_remaining')}',
-                    style: const TextStyle(
-                        fontSize: 11, color: AppColors.textMuted),
-                  ),
-                  onChanged: (v) => setState(() {
-                    _selectedSaleId = v;
-                    _amountCtrl.text = remaining.toStringAsFixed(2);
-                  }),
-                );
-              }).toList(),
-            ),
-          ),
-        );
-      },
-      loading: () => const Padding(
-        padding: EdgeInsets.all(12),
-        child: Center(
-          child: SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2)),
-        ),
-      ),
-      error: (e, _) => Padding(
-        padding: const EdgeInsets.all(8),
-        child: Text(
-          'Hata: $e',
-          style: const TextStyle(color: AppColors.danger, fontSize: 11),
-        ),
-      ),
-    );
   }
 
   void _submit() {
@@ -192,36 +69,12 @@ class _PaymentRecordContentState extends ConsumerState<_PaymentRecordContent> {
       return;
     }
 
-    // Sprint 7: Belirli alışverişe seçildi ama satış henüz seçilmediyse uyar
-    if (_allocationMode == 'SPECIFIC' && _selectedSaleId == null) {
-      AppToast.warning(context, t('accounts.specific_sale_payment'));
-      return;
-    }
-
-    final desc = _descCtrl.text.isNotEmpty ? _descCtrl.text : null;
-
-    // Sprint 7 — allocations: tek-allocation (Sale ↔ Payment many-to-many baştan).
-    // SPECIFIC + saleId → tek allocation (saleId, amount)
-    // GENERAL → tek allocation (saleId=null, amount) — backend "genel ödeme" olarak işler
-    final effectiveSaleId =
-        (_allocationMode == 'SPECIFIC') ? _selectedSaleId : null;
-    final allocations = [
-      {'saleId': effectiveSaleId, 'amount': amount}
-    ];
-
     Navigator.pop(context, {
       'amount': amount,
       'paymentType': _paymentType,
-      'bankName': _bankCtrl.text.isNotEmpty ? _bankCtrl.text : null,
-      'referenceNo': _refCtrl.text.isNotEmpty ? _refCtrl.text : null,
-      'description': desc,
-      'allocations': allocations,
-      // Geriye uyum: backend deprecated saleId field'ı hâlâ kabul ediyor
-      'saleId': effectiveSaleId,
-      // Sprint 11c — modal local state plaka SPECIFIC + seçili ise iliştirilir.
-      // GENERAL modunda plaka iliştirilmez (genel ödemeyi belirli araca atmak yanlış).
-      if (_allocationMode == 'SPECIFIC' && _selectedVehicle?['id'] != null)
-        'customerVehicleId': _selectedVehicle!['id'].toString(),
+      if (_bankCtrl.text.isNotEmpty) 'bankName': _bankCtrl.text,
+      if (_refCtrl.text.isNotEmpty) 'referenceNo': _refCtrl.text,
+      if (_descCtrl.text.isNotEmpty) 'description': _descCtrl.text,
     });
   }
 
@@ -355,49 +208,6 @@ class _PaymentRecordContentState extends ConsumerState<_PaymentRecordContent> {
                     borderRadius: BorderRadius.circular(10)),
               ),
             ),
-            // Sprint 7 — Alışveriş bazlı ödeme picker (sadece müşteri + customerId varsa)
-            if (widget.isCustomer && widget.customerId != null) ...[
-              const SizedBox(height: 14),
-              const Divider(height: 1),
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  t('accounts.payment_target'),
-                  style: const TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w600),
-                ),
-              ),
-              RadioListTile<String>(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                value: 'GENERAL',
-                groupValue: _allocationMode,
-                title: Text(t('accounts.general_payment'),
-                    style: const TextStyle(fontSize: 13)),
-                onChanged: (v) => setState(() {
-                  _allocationMode = v ?? 'GENERAL';
-                  _selectedSaleId = null;
-                }),
-              ),
-              RadioListTile<String>(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                value: 'SPECIFIC',
-                groupValue: _allocationMode,
-                title: Text(t('accounts.specific_sale_payment'),
-                    style: const TextStyle(fontSize: 13)),
-                onChanged: (v) => setState(() => _allocationMode = v ?? 'GENERAL'),
-              ),
-              if (_allocationMode == 'SPECIFIC') ...[
-                // Sprint 11c — sadece parçacı sektörde plaka filtresi göster
-                if (ref.watch(sectorTypeProvider) == SectorType.autoParts) ...[
-                  const SizedBox(height: 8),
-                  _buildVehicleFilter(),
-                ],
-                _buildOpenSalesPicker(),
-              ],
-            ],
             const SizedBox(height: 14),
             TextField(
               controller: _descCtrl,

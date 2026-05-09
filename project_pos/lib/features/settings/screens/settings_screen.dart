@@ -768,6 +768,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 'Ürün formu alanlarını özelleştirin', // TODO: i18n
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push('/settings/sector')),
+            // Sprint 33 #7: Firma kategori seçimi — global havuzdan firmanın
+            // kullandığı kategorileri belirler. Daha önce route vardı ama
+            // menüde link yoktu (audit gap).
+            _item(Icons.account_tree_outlined, t('categories.title'),
+                t('categories.company_setup_subtitle'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/categories/company-setup')),
           ]),
           // Sprint 23: Bildirimler section'ı (dummy switch'ler) Cihazlar &
           // Entegrasyonlar hub'ına taşındı. Hub: System tab > Cihazlar.

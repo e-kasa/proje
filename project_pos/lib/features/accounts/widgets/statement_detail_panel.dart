@@ -10,6 +10,7 @@ import 'package:project_pos/features/accounts/di/accounts_di.dart';
 import 'package:project_pos/features/accounts/models/statement_args.dart';
 import 'package:project_pos/features/accounts/providers/accounts_list_provider.dart';
 import 'package:project_pos/features/accounts/providers/accounts_notifiers.dart';
+import 'package:project_pos/features/accounts/providers/customer_open_sales_provider.dart';
 import 'package:project_pos/features/accounts/providers/selected_account_provider.dart';
 import 'package:project_pos/features/accounts/screens/payment_record_modal.dart';
 import 'package:project_pos/features/accounts/services/statement_pdf_service.dart';
@@ -69,6 +70,9 @@ class StatementDetailPanel extends ConsumerWidget {
         List<Map<String, dynamic>>.from(s['transactions'] ?? []);
     final visible = st.visibleTransactions;
     final groups = _groupTransactions(visible, t);
+    // Sprint 11d — ekstrede görünen distinct plakalar; boşsa plaka filter bar
+    // gizlenir (parçacı sektörü dışı veya hiç plaka atanmamış).
+    final plates = st.availablePlates;
     final dateRange = DateTimeRange(start: st.startDate, end: st.endDate);
     final padding = AppConstants.pagePadding;
 
@@ -111,13 +115,23 @@ class StatementDetailPanel extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                _SummaryGrid(
+                _PeriodActivityBlock(
                   opening: opening,
                   debit: debit,
                   credit: credit,
                   closing: closing,
+                  accountType: selected.accountType,
+                ),
+                const SizedBox(height: 12),
+                _CurrentStatusBlock(
                   currentBalance: currentBalance,
+                  closing: closing,
                   hasDrift: hasDrift,
+                  creditLimit: (s['creditLimit'] ?? 0).toDouble(),
+                  availableCredit: (s['availableCreditLimit'] ?? 0).toDouble(),
+                  exceeded: s['isCreditLimitExceeded'] == true,
+                  onReconcile: () =>
+                      _handleReconcile(context, ref, selected),
                 ),
                 const SizedBox(height: 12),
                 _TxFilterBar(
@@ -125,6 +139,24 @@ class StatementDetailPanel extends ConsumerWidget {
                   onSelect: (f) =>
                       ref.read(accountStatementProvider.notifier).setFilter(f),
                 ),
+                if (plates.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _TxVehiclePlateBar(
+                    plates: plates,
+                    selected: st.vehiclePlate,
+                    onSelect: (p) => ref
+                        .read(accountStatementProvider.notifier)
+                        .setVehiclePlate(p),
+                  ),
+                  if (st.vehiclePlate != null &&
+                      selected.accountType == 'CUSTOMER') ...[
+                    const SizedBox(height: 8),
+                    _VehiclePlateSummaryBand(
+                      customerId: selected.accountId,
+                      plate: st.vehiclePlate!,
+                    ),
+                  ],
+                ],
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -192,14 +224,10 @@ class StatementDetailPanel extends ConsumerWidget {
   Future<void> _handlePayment(
       BuildContext context, WidgetRef ref, StatementArgs account) async {
     final isCustomer = account.accountType == 'CUSTOMER';
-    // Sprint 11c — plaka filtresi modal içinde SPECIFIC modunda seçilir;
-    // header artık plaka taşımaz.
     final result = await PaymentRecordModal.show(
       context,
       isCustomer: isCustomer,
       accountName: account.accountName,
-      // Sprint 7 — alışveriş bazlı ödeme picker'ı için (sadece müşteri tarafı)
-      customerId: isCustomer ? account.accountId : null,
     );
     if (result == null || !context.mounted) return;
 
@@ -214,10 +242,6 @@ class StatementDetailPanel extends ConsumerWidget {
       if (result['referenceNo'] != null)
         'referenceNumber': result['referenceNo'],
       if (result['description'] != null) 'description': result['description'],
-      // Sprint 7 — backend Sale-Payment many-to-many allocation
-      if (result['allocations'] != null) 'allocations': result['allocations'],
-      // Geriye uyum: backend deprecated saleId field'ı hâlâ kabul ediyor
-      if (result['saleId'] != null) 'saleId': result['saleId'],
     };
 
     try {
@@ -237,6 +261,50 @@ class StatementDetailPanel extends ConsumerWidget {
     } catch (e) {
       if (!context.mounted) return;
       AppToast.error(context, '${i18nOf(ref)('common.error')}: $e');
+    }
+  }
+
+  Future<void> _handleReconcile(
+      BuildContext context, WidgetRef ref, StatementArgs account) async {
+    final t = i18nOf(ref);
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t('accounts.reconcile_action')),
+        content: Text('${account.accountName}\n\n${t('accounts.reconcile_confirm')}'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(t('common.cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(t('accounts.reconcile_action')),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !context.mounted) return;
+    try {
+      final result = await ref.read(accountServiceProvider).reconcileAccount(
+            accountType: account.accountType,
+            accountId: account.accountId,
+          );
+      if (!context.mounted) return;
+      final drift = (result['drift'] ?? 0).toDouble();
+      AppToast.success(
+        context,
+        '${t('accounts.reconcile_success')} (Δ ${appCurrencyFmt.format(drift)})',
+      );
+      // _handlePayment ile aynı refresh stratejisi: invalidate + paralel reload
+      ref.invalidate(accountsListProvider);
+      await Future.wait([
+        ref.read(accountStatementProvider.notifier).load(),
+        ref.read(accountSummaryProvider.notifier).load(),
+      ]);
+    } catch (e) {
+      if (!context.mounted) return;
+      AppToast.error(context, '${t('common.error')}: $e');
     }
   }
 
@@ -443,82 +511,220 @@ class _Header extends ConsumerWidget {
   }
 }
 
-class _SummaryGrid extends ConsumerWidget {
+/// "Dönem Hareketi" bloğu — seçili tarih aralığına göre 4 değer.
+/// 3. kart accountType'a göre i18n: CUSTOMER → "Toplam Tahsilat",
+/// SUPPLIER → "Yapılan Ödeme".
+class _PeriodActivityBlock extends ConsumerWidget {
   final double opening, debit, credit, closing;
-  // Sprint 8 hot-fix D3 — denormalize CustomerAccount.currentBalance.
-  // hasDrift true ise closing != currentBalance → reconcile bekleniyor.
-  final double currentBalance;
-  final bool hasDrift;
-  const _SummaryGrid({
+  final String accountType;
+  const _PeriodActivityBlock({
     required this.opening,
     required this.debit,
     required this.credit,
     required this.closing,
-    required this.currentBalance,
-    required this.hasDrift,
+    required this.accountType,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = i18nOf(ref);
-    final tiles = [
+    final isCustomer = accountType == 'CUSTOMER';
+    return _SectionShell(
+      title: t('accounts.section_period'),
+      tileHeight: 92,
+      children: [
+        _StatTile(
+          label: t('accounts.opening_balance'),
+          value: appCurrencyFmt.format(opening),
+          icon: Icons.flag_outlined,
+          color: AppColors.info,
+        ),
+        _StatTile(
+          label: t('accounts.total_debt'),
+          value: appCurrencyFmt.format(debit),
+          icon: Icons.arrow_upward,
+          color: AppColors.danger,
+        ),
+        _StatTile(
+          label: isCustomer
+              ? t('accounts.total_collection')
+              : t('accounts.total_payment_made'),
+          value: appCurrencyFmt.format(credit),
+          icon: Icons.arrow_downward,
+          color: AppColors.success,
+        ),
+        _StatTile(
+          label: t('accounts.statement_closing'),
+          value: appCurrencyFmt.format(closing),
+          icon: Icons.assessment_outlined,
+          color: AppColors.primary,
+        ),
+      ],
+    );
+  }
+}
+
+/// "Güncel Durum" bloğu — tarih bağımsız: denormalize bakiye + kredi limiti +
+/// drift varsa senkronize butonu. creditLimit==0 ise sadece bakiye gösterilir.
+class _CurrentStatusBlock extends ConsumerWidget {
+  final double currentBalance, closing, creditLimit, availableCredit;
+  final bool hasDrift, exceeded;
+  final VoidCallback onReconcile;
+  const _CurrentStatusBlock({
+    required this.currentBalance,
+    required this.closing,
+    required this.hasDrift,
+    required this.creditLimit,
+    required this.availableCredit,
+    required this.exceeded,
+    required this.onReconcile,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
+    final tiles = <Widget>[
       _StatTile(
-        label: t('accounts.opening_balance'),
-        value: appCurrencyFmt.format(opening),
-        icon: Icons.flag_outlined,
-        color: AppColors.info,
-      ),
-      _StatTile(
-        label: t('accounts.total_debt'),
-        value: appCurrencyFmt.format(debit),
-        icon: Icons.arrow_upward,
-        color: AppColors.danger,
-      ),
-      _StatTile(
-        label: t('accounts.total_collection'),
-        value: appCurrencyFmt.format(credit),
-        icon: Icons.arrow_downward,
-        color: AppColors.success,
-      ),
-      // Sprint 8 hot-fix D3 — primer bakiye olarak currentBalance gösterilir
-      // (denormalize gerçek değer); closing tx toplamı bilgi amaçlı altında.
-      _StatTile(
-        label: t('accounts.closing_balance'),
+        label: t('accounts.current_balance'),
         value: appCurrencyFmt.format(currentBalance),
         secondaryValue: hasDrift
             ? '⚠ ${t('accounts.statement_calc')}: ${appCurrencyFmt.format(closing)}'
-            : null,
-        icon: hasDrift ? Icons.warning_amber_rounded : Icons.assessment_outlined,
+            : '${t('accounts.statement_closing')}: ${appCurrencyFmt.format(closing)}',
+        secondaryValueWarning: hasDrift,
+        icon: hasDrift
+            ? Icons.warning_amber_rounded
+            : Icons.account_balance_outlined,
         color: hasDrift ? AppColors.warning : AppColors.primary,
       ),
+      if (creditLimit > 0) ...[
+        _StatTile(
+          label: t('accounts.credit_limit'),
+          value: appCurrencyFmt.format(creditLimit),
+          icon: Icons.credit_score,
+          color: AppColors.info,
+        ),
+        _StatTile(
+          label: exceeded
+              ? t('accounts.credit_limit_exceeded')
+              : t('accounts.available_credit'),
+          value: appCurrencyFmt.format(availableCredit),
+          icon: Icons.account_balance_wallet_outlined,
+          color: exceeded ? AppColors.danger : AppColors.success,
+        ),
+      ],
     ];
-    return LayoutBuilder(
-      builder: (ctx, c) {
-        final isWide = c.maxWidth >= 600;
-        final cols = isWide ? 4 : 2;
-        const sp = 10.0;
-        final w = (c.maxWidth - sp * (cols - 1)) / cols;
-        return Wrap(
-          spacing: sp,
-          runSpacing: sp,
-          children: tiles
-              .map((t) => SizedBox(width: w, height: hasDrift ? 110 : 92, child: t))
-              .toList(),
-        );
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionShell(
+          title: t('accounts.section_current'),
+          tileHeight: 110,
+          children: tiles,
+        ),
+        if (hasDrift) ...[
+          const SizedBox(height: 8),
+          AppCard(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded,
+                    size: 16, color: AppColors.warning),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    t('accounts.drift_explain'),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.warning,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  icon: const Icon(Icons.sync, size: 14),
+                  label: Text(t('accounts.reconcile_action')),
+                  onPressed: onReconcile,
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Section shell — küçük başlık + responsive Wrap. Dönem ve Güncel Durum
+/// bloklarının ortak iskeleti.
+class _SectionShell extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+  final double tileHeight;
+  const _SectionShell({
+    required this.title,
+    required this.children,
+    required this.tileHeight,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 2, bottom: 6),
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textSecondary,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        LayoutBuilder(
+          builder: (ctx, c) {
+            final n = children.length;
+            if (n == 0) return const SizedBox.shrink();
+            final isWide = c.maxWidth >= 600;
+            final cols = isWide ? (n >= 4 ? 4 : n) : (n == 1 ? 1 : 2);
+            const sp = 10.0;
+            final w = (c.maxWidth - sp * (cols - 1)) / cols;
+            return Wrap(
+              spacing: sp,
+              runSpacing: sp,
+              children: children
+                  .map((c) =>
+                      SizedBox(width: w, height: tileHeight, child: c))
+                  .toList(),
+            );
+          },
+        ),
+      ],
     );
   }
 }
 
 class _StatTile extends StatelessWidget {
   final String label, value;
-  final String? secondaryValue;  // Sprint 8 D3 — drift göstergesi (closing tx toplamı)
+  /// Bilgi amaçlı alt metin. Drift olduğunda kapanış uyarısı, normal durumda
+  /// "Ekstre Kapanışı: ..." bilgi satırı gibi kullanılır.
+  final String? secondaryValue;
+  /// true → secondaryValue warning rengiyle (drift uyarısı); false → muted.
+  final bool secondaryValueWarning;
   final IconData icon;
   final Color color;
   const _StatTile({
     required this.label,
     required this.value,
     this.secondaryValue,
+    this.secondaryValueWarning = false,
     required this.icon,
     required this.color,
   });
@@ -562,9 +768,11 @@ class _StatTile extends StatelessWidget {
               if (secondaryValue != null) ...[
                 const SizedBox(height: 2),
                 Text(secondaryValue!,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 9,
-                        color: AppColors.warning,
+                        color: secondaryValueWarning
+                            ? AppColors.warning
+                            : AppColors.textMuted,
                         fontWeight: FontWeight.w500),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis),
@@ -649,6 +857,9 @@ class _TxRow extends ConsumerWidget {
     final amountColor = isDebit ? AppColors.danger : AppColors.success;
     final meta = _txTypeMeta(typeStr);
     final hasRef = refNo != null && refNo.isNotEmpty;
+    // Sprint 11d — Sale.vehiclePlateSnapshot (parçacı sektör + müşteri satışı).
+    final plate = tx['vehiclePlate']?.toString();
+    final hasPlate = plate != null && plate.isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -695,6 +906,9 @@ class _TxRow extends ConsumerWidget {
                                 color: meta.color,
                                 fontWeight: FontWeight.w600)),
                       ),
+                      if (hasPlate)
+                        AppBadge.info(plate,
+                            icon: Icons.directions_car_outlined),
                       Text(date,
                           style: const TextStyle(
                               fontSize: 11, color: AppColors.textMuted)),
@@ -772,6 +986,154 @@ class _TxFilterBar extends ConsumerWidget {
           );
         }).toList(),
       ),
+    );
+  }
+}
+
+// ─── Sprint 11d: Plaka Filter Bar ───────────────────────────────────────────
+
+/// Ekstre içinde transaction'lara atanmış plakalar üzerinden filtre.
+/// Sadece `availablePlates` non-empty olduğunda görünür (parçacı sektörü +
+/// en az 1 satışta plaka snapshot var). null seçim = "tümü".
+class _TxVehiclePlateBar extends ConsumerWidget {
+  final List<String> plates;
+  final String? selected;
+  final ValueChanged<String?> onSelect;
+  const _TxVehiclePlateBar({
+    required this.plates,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
+    return SizedBox(
+      height: 36,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Text(
+                t('common.all'),
+                style: TextStyle(
+                  fontSize: 12,
+                  color:
+                      selected == null ? Colors.white : AppColors.textPrimary,
+                ),
+              ),
+              selected: selected == null,
+              backgroundColor: Colors.white,
+              selectedColor: AppColors.info,
+              side: BorderSide(
+                color: selected == null ? AppColors.info : AppColors.border,
+              ),
+              showCheckmark: false,
+              onSelected: (_) => onSelect(null),
+            ),
+          ),
+          for (final p in plates)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(
+                avatar: Icon(
+                  Icons.directions_car_outlined,
+                  size: 14,
+                  color: selected == p ? Colors.white : AppColors.info,
+                ),
+                label: Text(
+                  p,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color:
+                        selected == p ? Colors.white : AppColors.textPrimary,
+                  ),
+                ),
+                selected: selected == p,
+                backgroundColor: Colors.white,
+                selectedColor: AppColors.info,
+                side: BorderSide(
+                  color: selected == p ? AppColors.info : AppColors.border,
+                ),
+                showCheckmark: false,
+                onSelected: (_) => onSelect(p),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Sprint 11d — seçili plaka için açık satış özeti bandı.
+/// AccountsHub ekstresinde plaka chip'inin altında görünür: "X açık satış · Y ₺ kalan".
+/// `customerOpenSalesProvider` üzerinden plaka filtreli açık satışları çeker;
+/// boşsa kendini gizler. Sadece müşteri tarafında çağırılır.
+class _VehiclePlateSummaryBand extends ConsumerWidget {
+  final String customerId;
+  final String plate;
+  const _VehiclePlateSummaryBand({
+    required this.customerId,
+    required this.plate,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
+    final salesAsync = ref.watch(customerOpenSalesProvider(
+      CustomerOpenSalesKey(customerId, vehiclePlate: plate),
+    ));
+    return salesAsync.when(
+      loading: () => const SizedBox(
+        height: 32,
+        child: Center(
+          child: SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      ),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (sales) {
+        if (sales.isEmpty) return const SizedBox.shrink();
+        final remaining = sales.fold<double>(
+          0,
+          (a, s) =>
+              a + ((s['remainingAmount'] as num?)?.toDouble() ?? 0.0),
+        );
+        return AppCard(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            children: [
+              const Icon(Icons.directions_car_outlined,
+                  size: 16, color: AppColors.info),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '${sales.length} ${t('accounts.open_sales')}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              Text(
+                '${appCurrencyFmt.format(remaining)} ${t('accounts.sale_remaining')}',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.danger,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

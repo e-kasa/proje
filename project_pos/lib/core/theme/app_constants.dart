@@ -100,4 +100,84 @@ class AppConstants {
   static const double formFieldSpacing = spacing16;
   static const double sectionSpacing = spacing24;
   static const double listItemSpacing = spacing8;
+
+  // === RESPONSIVE BREAKPOINTS ===
+  static const double breakpointMobile = 0;
+  static const double breakpointTablet = 768;
+  static const double breakpointDesktop = 1200;
+  static const double breakpointDesktopLarge = 1600;
+
+  // === RESPONSIVE LAYOUT HELPERS ===
+  static bool isMobile(double width) => width < breakpointTablet;
+
+  static bool isTablet(double width) =>
+      width >= breakpointTablet && width < breakpointDesktop;
+
+  static bool isDesktop(double width) => width >= breakpointDesktop;
+
+  /// Ürün grid'i için kolon sayısını döndür
+  /// Desktop: 4 kolon | Tablet: 3 kolon | Mobile: 2 kolon
+  static int getProductGridColumns(double width) {
+    if (isDesktop(width)) return 4;
+    if (isTablet(width)) return 3;
+    return 2;
+  }
+
+  /// Grid gap'ini cihaza göre döndür
+  /// Desktop: 16px | Tablet: 12px | Mobile: 8px
+  static double getGridGap(double width) {
+    if (isDesktop(width)) return spacing16;
+    if (isTablet(width)) return spacing12;
+    return spacing8;
+  }
+
+  /// Sepet panel genişliğini döndür
+  /// Desktop: 30% | Tablet: 40% | Mobile: 100%
+  static double getCartPanelFlex(double width) {
+    if (isDesktop(width)) return 30;
+    if (isTablet(width)) return 40;
+    return 100;
+  }
+
+  /// Ürün panel genişliğini döndür
+  /// Desktop: 70% | Tablet: 60% | Mobile: 100%
+  static double getProductPanelFlex(double width) {
+    if (isDesktop(width)) return 70;
+    if (isTablet(width)) return 60;
+    return 100;
+  }
+
+  /// Horizontal padding'i cihaza göre döndür
+  /// Desktop: 24px | Tablet: 16px | Mobile: 16px
+  static double getHorizontalPadding(double width) {
+    if (isDesktop(width)) return spacing24;
+    return spacing16;
+  }
+
+  /// Body text boyutunu cihaza göre döndür
+  static double getBodyTextSize(double width) {
+    if (isDesktop(width)) return 14;
+    if (isTablet(width)) return 13;
+    return 12;
+  }
+
+  /// Title text boyutunu cihaza göre döndür
+  static double getTitleTextSize(double width) {
+    if (isDesktop(width)) return 24;
+    if (isTablet(width)) return 20;
+    return 18;
+  }
+
+  /// Responsive değer getter - Generic kullanım
+  /// Example: getResponsiveValue(width: 1920, desktop: 24, tablet: 16, mobile: 12)
+  static T getResponsiveValue<T>({
+    required double width,
+    required T desktop,
+    required T tablet,
+    required T mobile,
+  }) {
+    if (isDesktop(width)) return desktop;
+    if (isTablet(width)) return tablet;
+    return mobile;
+  }
 }

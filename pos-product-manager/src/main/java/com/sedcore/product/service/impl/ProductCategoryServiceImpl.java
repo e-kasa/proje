@@ -212,5 +212,23 @@ public class ProductCategoryServiceImpl extends BaseDbServiceImp<ProductCategory
                 });
     }
 
-    
+    @Override
+    public int deactivateAllForCategory(String categoryId) {
+        List<ProductCategory> rows = dao
+                .findByCategoryIdAndIsActiveOrderByDisplayOrderAsc(categoryId, true);
+
+        if (rows.isEmpty()) {
+            return 0;
+        }
+
+        for (ProductCategory pc : rows) {
+            pc.setIsActive(false);
+            save(pc);
+        }
+
+        log.info("Kategori soft-delete cascade: {} ProductCategory satırı pasifleştirildi (categoryId={})",
+                rows.size(), categoryId);
+        return rows.size();
+    }
+
 }

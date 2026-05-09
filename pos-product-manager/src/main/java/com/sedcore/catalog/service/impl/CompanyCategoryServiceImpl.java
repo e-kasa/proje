@@ -2,6 +2,7 @@ package com.sedcore.catalog.service.impl;
 
 import com.sedcore.catalog.entity.Category;
 import com.sedcore.catalog.entity.CompanyCategory;
+import com.sedcore.common.enums.ProductStatus;
 import com.sedcore.product.entity.Product;
 import com.sedcore.catalog.model.DtoCategory;
 import com.sedcore.catalog.model.CompanyCategoryRequest;
@@ -97,6 +98,8 @@ public class CompanyCategoryServiceImpl extends BaseDbServiceImp<CompanyCategory
 
     // -----------------------------------------------------------------------
     // Düz liste (ağaç değil)
+    // POS chip-bar bu listeyi tüketir → DRAFT/INACTIVE/ARCHIVED ve soft-deleted
+    // kategoriler frontend'e sızmamalı (Sprint 31 #10).
     // -----------------------------------------------------------------------
     @Override
     @Transactional(readOnly = true)
@@ -104,8 +107,22 @@ public class CompanyCategoryServiceImpl extends BaseDbServiceImp<CompanyCategory
         List<CompanyCategory> entries = dao.findByIsActiveTrueOrderByDisplayOrderAsc();
 
         return entries.stream()
+                .filter(this::isCategoryPubliclyVisible)
                 .map(this::toResponse)
                 .toList();
+    }
+
+    // Yalnızca Category.status=ACTIVE ve isSoftDeleted=false olanları geçir.
+    // Eager-fetch (EntityGraph) sayesinde lazy proxy değil — ek query yok.
+    private boolean isCategoryPubliclyVisible(CompanyCategory entry) {
+        Category cat = entry.getCategory();
+        if (cat == null) {
+            return false;
+        }
+        if (Boolean.TRUE.equals(cat.getIsSoftDeleted())) {
+            return false;
+        }
+        return cat.getStatus() == ProductStatus.ACTIVE;
     }
 
     // -----------------------------------------------------------------------

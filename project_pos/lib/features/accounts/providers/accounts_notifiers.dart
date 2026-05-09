@@ -174,6 +174,9 @@ class AccountStatementState {
   final bool isLoading;
   final String? error;
   final TxFilter filter;
+  /// Sprint 11d — ekstre içinde plaka filtresi (parçacı sektör + müşteri).
+  /// null veya boş = tüm plakalar; doluysa sadece o plakaya bağlı transaction'lar.
+  final String? vehiclePlate;
 
   const AccountStatementState({
     this.accountType,
@@ -185,6 +188,7 @@ class AccountStatementState {
     this.isLoading = false,
     this.error,
     this.filter = TxFilter.all,
+    this.vehiclePlate,
   });
 
   bool get hasAccount => accountId != null && accountId!.isNotEmpty;
@@ -192,12 +196,31 @@ class AccountStatementState {
   List<Map<String, dynamic>> get visibleTransactions {
     final raw = statement?['transactions'];
     if (raw is! List) return const [];
-    final all = List<Map<String, dynamic>>.from(raw);
-    if (filter == TxFilter.all) return all;
-    final allowed = _kTxFilterTypes[filter] ?? const <String>{};
-    return all
-        .where((tx) => allowed.contains(tx['transactionType']?.toString()))
-        .toList();
+    Iterable<Map<String, dynamic>> seq =
+        List<Map<String, dynamic>>.from(raw);
+    if (filter != TxFilter.all) {
+      final allowed = _kTxFilterTypes[filter] ?? const <String>{};
+      seq = seq.where(
+          (tx) => allowed.contains(tx['transactionType']?.toString()));
+    }
+    if (vehiclePlate != null && vehiclePlate!.isNotEmpty) {
+      seq = seq.where((tx) => tx['vehiclePlate']?.toString() == vehiclePlate);
+    }
+    return seq.toList();
+  }
+
+  /// Sprint 11d — ekstredeki transaction'larda görünen distinct plakalar.
+  /// Filter chip kümesi için kullanılır; null/boş plaka atlanır.
+  List<String> get availablePlates {
+    final raw = statement?['transactions'];
+    if (raw is! List) return const [];
+    final set = <String>{};
+    for (final tx in raw) {
+      final p = (tx as Map)['vehiclePlate']?.toString();
+      if (p != null && p.isNotEmpty) set.add(p);
+    }
+    final list = set.toList()..sort();
+    return list;
   }
 
   AccountStatementState copyWith({
@@ -210,6 +233,7 @@ class AccountStatementState {
     bool? isLoading,
     Object? error = _sentinel,
     TxFilter? filter,
+    Object? vehiclePlate = _sentinel,
   }) {
     return AccountStatementState(
       accountType: accountType == _sentinel
@@ -228,6 +252,9 @@ class AccountStatementState {
       isLoading: isLoading ?? this.isLoading,
       error: error == _sentinel ? this.error : error as String?,
       filter: filter ?? this.filter,
+      vehiclePlate: vehiclePlate == _sentinel
+          ? this.vehiclePlate
+          : vehiclePlate as String?,
     );
   }
 }
@@ -292,6 +319,14 @@ class AccountStatementNotifier extends StateNotifier<AccountStatementState> {
   void setFilter(TxFilter f) {
     if (state.filter == f) return;
     state = state.copyWith(filter: f);
+  }
+
+  /// Sprint 11d — ekstre transaction'larında plaka filtresi.
+  /// null/boş = "tüm plakalar"; aynı değer tekrar verilirse no-op.
+  void setVehiclePlate(String? plate) {
+    final normalized = (plate == null || plate.isEmpty) ? null : plate;
+    if (state.vehiclePlate == normalized) return;
+    state = state.copyWith(vehiclePlate: normalized);
   }
 }
 

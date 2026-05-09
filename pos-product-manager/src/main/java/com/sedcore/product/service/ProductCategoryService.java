@@ -75,4 +75,14 @@ public interface ProductCategoryService extends BaseDbService<ProductCategory> {
      * Ürün-kategori ilişkisini kontrol et
      */
     boolean isProductInCategory(String productId, String categoryId);
+
+    /**
+     * Bir kategoriye bağlı tüm aktif ürün-kategori ilişkilerini pasifleştirir.
+     * Kategori soft-delete edildiğinde orphan ProductCategory satırlarını
+     * temizlemek için kullanılır.
+     *
+     * @param categoryId Soft-delete edilen kategori ID
+     * @return Pasifleştirilen kayıt sayısı
+     */
+    int deactivateAllForCategory(String categoryId);
 }

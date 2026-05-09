@@ -57,7 +57,28 @@ class StatementDetailPanel extends ConsumerWidget {
     }
 
     final s = st.statement;
-    if (s == null) return const SizedBox.shrink();
+    // Sprint 11h — selected var ama statement henüz null = yüklenme bekleniyor.
+    // Eski davranış SizedBox.shrink() boş sayfa gösteriyordu (autoDispose race:
+    // selectedAccountProvider kalıcı, accountStatementProvider re-mount'ta fresh).
+    // Tetikleyici durum: hub'a remount + selected stale + statement henüz fetch olmadı.
+    if (s == null) {
+      // Lazy load: hasAccount false ise notifier'a yeniden setAccount uygula.
+      if (!st.hasAccount) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ref.read(accountStatementProvider.notifier).setAccount(
+                accountType: selected.accountType,
+                accountId: selected.accountId,
+                accountName: selected.accountName,
+              );
+        });
+      } else if (st.error == null) {
+        // hasAccount true ama statement henüz yüklenmemiş → ilk fetch tetikle.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ref.read(accountStatementProvider.notifier).load();
+        });
+      }
+      return const Center(child: CircularProgressIndicator());
+    }
 
     final opening = (s['openingBalance'] ?? 0).toDouble();
     final closing = (s['closingBalance'] ?? 0).toDouble();

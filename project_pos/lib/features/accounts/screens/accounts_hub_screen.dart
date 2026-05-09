@@ -33,6 +33,26 @@ class _AccountsHubScreenState extends ConsumerState<AccountsHubScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Sprint 11h — hub yeniden açılırken stale state temizliği:
+      // selectedSaleProvider (kalıcı StateProvider) önceki turdan saleId tutmuş
+      // olabilir; sale ödendi/iptal edildi → SaleDetailPanel açılır gözükür.
+      // Yeni oturuma temiz ekstre görünümüyle başla.
+      ref.read(selectedSaleProvider.notifier).state = null;
+
+      // selectedAccount kalıcıysa accountStatementProvider (autoDispose,
+      // re-mount fresh) ile sync ol → ilk render'da boş sayfa olmasın.
+      final stalAccount = ref.read(selectedAccountProvider);
+      if (stalAccount != null) {
+        final stmt = ref.read(accountStatementProvider.notifier);
+        if (!ref.read(accountStatementProvider).hasAccount) {
+          stmt.setAccount(
+            accountType: stalAccount.accountType,
+            accountId: stalAccount.accountId,
+            accountName: stalAccount.accountName,
+          );
+        }
+      }
+
       await ref.read(accountSummaryProvider.notifier).load();
       ref.read(paymentListProvider.notifier).load();
       // Liste, summary'den overdue ID'leri okur, sonra yüklenir

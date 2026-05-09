@@ -99,19 +99,26 @@ class MenuNotifier extends StateNotifier<MenuState> {
 
   /// Backend menu verilerini sidebar NavigationItem listesine dönüştürür.
   /// Label'lar bundle kodu olarak gelir, i18n ile çevrilir.
+  ///
+  /// Sprint 11i — flatten: her menu'nun **her alt item'ı** ayrı satır olur.
+  /// Section label sadece kategorinin ilk item'ında görünür → menu launcher
+  /// ekranıyla (`/menu`) sidebar tutarlı; kullanıcı tüm modülleri sidebar'dan
+  /// tek tıkla erişir.
   List<NavigationItem> toSidebarItems({I18nState? i18n}) {
     final items = <NavigationItem>[];
     for (final cat in state.categories) {
-      for (int i = 0; i < cat.menus.length; i++) {
-        final menu = cat.menus[i];
-        final primaryLink =
-            menu.items.isNotEmpty ? menu.items.first.link : '/dashboard';
-        items.add(NavigationItem(
-          icon: menuIconMap[menu.icon] ?? Icons.circle_outlined,
-          label: _t(menu.label, i18n),
-          route: primaryLink,
-          sectionLabel: i == 0 ? _t(cat.label, i18n) : null,
-        ));
+      bool firstInCategory = true;
+      for (final menu in cat.menus) {
+        for (final item in menu.items) {
+          items.add(NavigationItem(
+            icon: menuIconMap[menu.icon] ?? Icons.circle_outlined,
+            label: _t(item.label, i18n),
+            route: item.link,
+            sectionLabel:
+                firstInCategory ? _t(cat.label, i18n) : null,
+          ));
+          firstInCategory = false;
+        }
       }
     }
     return items;

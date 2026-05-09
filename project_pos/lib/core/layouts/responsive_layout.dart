@@ -120,24 +120,59 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout> {
   bool _isSidebarExpanded = true;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  // Fallback menü — backend'den veri gelene kadar gösterilir
+  // Fallback menü — backend'den veri gelene kadar gösterilir.
+  // Sprint 11i — `/menu` launcher ekranındaki defaultCategories ile birebir
+  // aynı yapı: 6 kategori, ~40 modül. Section label sadece her kategorinin
+  // ilk item'ında.
   static final List<NavigationItem> _defaultWebNavItems = [
     NavigationItem(icon: Icons.dashboard_outlined, label: 'Ana Sayfa', route: '/dashboard', sectionLabel: 'GENEL'),
     NavigationItem(icon: Icons.grid_view_outlined, label: 'Menü Listesi', route: '/menu'),
-    NavigationItem(icon: Icons.search_outlined, label: 'Parça Ara', route: '/part-search'),
-    NavigationItem(icon: Icons.point_of_sale_outlined, label: 'Satış / POS', route: '/pos', sectionLabel: 'SATIŞ'),
-    NavigationItem(icon: Icons.history_outlined, label: 'Satış Geçmişi', route: '/sales'),
-    NavigationItem(icon: Icons.list_alt_outlined, label: 'Ürünler', route: '/inventory/products', sectionLabel: 'ÜRÜN KATALOĞU'),
-    NavigationItem(icon: Icons.category_outlined, label: 'Kategoriler', route: '/inventory/categories'),
-    NavigationItem(icon: Icons.inventory_2_outlined, label: 'Stok Durumu', route: '/stock', sectionLabel: 'STOK YÖNETİMİ'),
-    NavigationItem(icon: Icons.warehouse_outlined, label: 'Depolar', route: '/warehouses'),
-    NavigationItem(icon: Icons.shopping_cart_outlined, label: 'Satın Alma', route: '/purchases', sectionLabel: 'TEDARİK'),
-    NavigationItem(icon: Icons.business_outlined, label: 'Tedarikçiler', route: '/suppliers'),
-    NavigationItem(icon: Icons.people_outlined, label: 'Müşteriler', route: '/customers', sectionLabel: 'CARİ HESAPLAR'),
-    NavigationItem(icon: Icons.account_balance_wallet_outlined, label: 'Cari Hesaplar', route: '/accounts'),
-    NavigationItem(icon: Icons.account_balance_outlined, label: 'Finans', route: '/finance', sectionLabel: 'FİNANS'),
-    NavigationItem(icon: Icons.analytics_outlined, label: 'Raporlar', route: '/reports'),
-    NavigationItem(icon: Icons.settings_outlined, label: 'Ayarlar', route: '/settings', sectionLabel: 'YÖNETİM'),
+
+    NavigationItem(icon: Icons.shopping_cart, label: 'POS Satış', route: '/pos', sectionLabel: 'SATIŞ & OPERASYON'),
+    NavigationItem(icon: Icons.history, label: 'Satış Geçmişi', route: '/sales'),
+    NavigationItem(icon: Icons.shopping_bag_outlined, label: 'Satın Almalar', route: '/purchases'),
+    NavigationItem(icon: Icons.qr_code_scanner, label: 'Barkod Okuyucu', route: '/scanner'),
+    NavigationItem(icon: Icons.search, label: 'Parça Ara', route: '/part-search'),
+    NavigationItem(icon: Icons.directions_car, label: 'Araç Listesi', route: '/vehicles'),
+
+    NavigationItem(icon: Icons.list_alt, label: 'Tüm Ürünler', route: '/inventory/products', sectionLabel: 'ÜRÜN KATALOĞU'),
+    NavigationItem(icon: Icons.add_box, label: 'Yeni Ürün Ekle', route: '/inventory/add-product'),
+    NavigationItem(icon: Icons.playlist_add, label: 'Toplu Ürün Girişi', route: '/inventory/batch-entry'),
+    NavigationItem(icon: Icons.category, label: 'Kategoriler', route: '/inventory/categories'),
+    NavigationItem(icon: Icons.tune, label: 'Firma Kategorileri', route: '/categories/company-setup'),
+    NavigationItem(icon: Icons.barcode_reader, label: 'Barkod Yönetimi', route: '/inventory/barcodes'),
+    NavigationItem(icon: Icons.branding_watermark, label: 'Marka Yönetimi', route: '/inventory/brands'),
+    NavigationItem(icon: Icons.straighten, label: 'Birimler', route: '/inventory/units'),
+
+    NavigationItem(icon: Icons.warehouse, label: 'Stok Durumu', route: '/stock', sectionLabel: 'STOK & DEPO'),
+    NavigationItem(icon: Icons.compare_arrows, label: 'Stok Hareketleri', route: '/stock/movements'),
+    NavigationItem(icon: Icons.domain, label: 'Çok Depo Stok', route: '/stock/multi-warehouse'),
+    NavigationItem(icon: Icons.price_check, label: 'Stok Değer Raporu', route: '/stock/value-report'),
+    NavigationItem(icon: Icons.notifications_active, label: 'Stok Alarmları', route: '/stock/alerts'),
+    NavigationItem(icon: Icons.swap_horiz, label: 'Transferler', route: '/stock/transfer'),
+    NavigationItem(icon: Icons.store, label: 'Depolar', route: '/warehouses'),
+    NavigationItem(icon: Icons.storefront_outlined, label: 'Mağazalar', route: '/stores'),
+
+    NavigationItem(icon: Icons.dashboard_outlined, label: 'Finans Paneli', route: '/finance', sectionLabel: 'FİNANS & CARİ'),
+    NavigationItem(icon: Icons.account_balance_wallet, label: 'Cari Hesaplar', route: '/accounts'),
+    NavigationItem(icon: Icons.warning_amber_outlined, label: 'Gecikmiş Takip', route: '/accounts/overdue'),
+    NavigationItem(icon: Icons.person, label: 'Müşteriler', route: '/customers'),
+    NavigationItem(icon: Icons.business, label: 'Tedarikçiler', route: '/suppliers'),
+    NavigationItem(icon: Icons.arrow_downward, label: 'Giderler', route: '/finance/expenses'),
+    NavigationItem(icon: Icons.arrow_upward, label: 'Gelir Ekle', route: '/finance/add-income'),
+    NavigationItem(icon: Icons.payments_outlined, label: 'Ödemeler', route: '/finance/payments'),
+    NavigationItem(icon: Icons.currency_lira, label: 'Nakit Akışı', route: '/finance/cash-flow'),
+
+    NavigationItem(icon: Icons.analytics, label: 'Raporlar', route: '/reports', sectionLabel: 'ANALİZ & SİSTEM'),
+    NavigationItem(icon: Icons.show_chart, label: 'Satış Analizi', route: '/reports/sales-summary'),
+    NavigationItem(icon: Icons.inventory_2_outlined, label: 'Ürün Analizi', route: '/reports/product-analysis'),
+    NavigationItem(icon: Icons.people_outline, label: 'Müşteri Analizi', route: '/reports/customer-analysis'),
+    NavigationItem(icon: Icons.balance, label: 'Kâr/Zarar', route: '/reports/profit-overview'),
+    NavigationItem(icon: Icons.today, label: 'Günlük Özet', route: '/reports/daily-summary'),
+    NavigationItem(icon: Icons.cloud_upload, label: 'Toplu Aktarım', route: '/bulk-import'),
+    NavigationItem(icon: Icons.settings, label: 'Ayarlar', route: '/settings'),
+
+    NavigationItem(icon: Icons.badge_outlined, label: 'Çalışanlar', route: '/hrm/employees', sectionLabel: 'İNSAN KAYNAKLARI'),
   ];
 
   static final List<NavigationItem> _defaultMobileNavItems = [

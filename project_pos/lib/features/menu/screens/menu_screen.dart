@@ -297,60 +297,153 @@ class _MenuCard extends StatefulWidget {
 
 class _MenuCardState extends State<_MenuCard> {
   bool _isHovered = false;
+  bool _isPressed = false;
 
   @override
   Widget build(BuildContext context) {
+    final accent = widget.accentColor;
+    // Sprint 11k — sidebar hover paterniyle uyumlu, mobile tap feedback'li
+    // menu kartı:
+    //   normal: white bg, faint border, hafif shadow
+    //   hovered (desktop/web): accent @8% bg + 3px sol accent bar + accent
+    //                          tonlu border + accent shadow (alpha 0.14) +
+    //                          ikon container accent dolu + translate -3px
+    //   pressed (mobile/tap): scale 0.97 + accent @14% bg (anlık touch hint)
+    final bool active = _isHovered || _isPressed;
+    final double translateY = _isHovered && !_isPressed ? -3 : 0;
+    final double scale = _isPressed ? 0.97 : 1.0;
+    final Color bgColor = _isPressed
+        ? accent.withValues(alpha: 0.14)
+        : _isHovered
+            ? accent.withValues(alpha: 0.08)
+            : Colors.white;
+
     return MouseRegion(
+      cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeInOut,
-        transform: _isHovered ? (Matrix4.identity()..translateByDouble(0, -4, 0, 1)) : Matrix4.identity(),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _isHovered ? widget.accentColor : AppColors.border.withValues(alpha:0.5), width: _isHovered ? 1.5 : 1),
-          boxShadow: [
-            BoxShadow(
-              color: _isHovered ? widget.accentColor.withValues(alpha:0.12) : Colors.black.withValues(alpha:0.02),
-              blurRadius: _isHovered ? 20 : 10,
-              offset: Offset(0, _isHovered ? 10 : 4),
-            ),
-          ],
-        ),
-        child: InkWell(
-          onTap: () => context.push(widget.action.route),
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: _isHovered ? widget.accentColor : widget.accentColor.withValues(alpha:0.1),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(widget.action.icon, size: 24, color: _isHovered ? Colors.white : widget.accentColor),
+      child: Listener(
+        onPointerDown: (_) => setState(() => _isPressed = true),
+        onPointerUp: (_) => setState(() => _isPressed = false),
+        onPointerCancel: (_) => setState(() => _isPressed = false),
+        child: AnimatedScale(
+          scale: scale,
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOut,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            transform: Matrix4.identity()..translateByDouble(0, translateY, 0, 1),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: active
+                    ? accent
+                    : AppColors.border.withValues(alpha: 0.5),
+                width: active ? 1.5 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: active
+                      ? accent.withValues(alpha: 0.18)
+                      : Colors.black.withValues(alpha: 0.02),
+                  blurRadius: active ? 20 : 10,
+                  offset: Offset(0, active ? 10 : 4),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(widget.action.title, 
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary, letterSpacing: -0.2)),
-                      const SizedBox(height: 2),
-                      Text(widget.action.subtitle, 
-                        style: const TextStyle(fontSize: 11, color: AppColors.textMuted), maxLines: 1, overflow: TextOverflow.ellipsis),
-                    ],
-                  ),
-                ),
-                Icon(Icons.arrow_forward_ios_rounded, size: 14, color: _isHovered ? widget.accentColor : AppColors.border),
               ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(20),
+              child: InkWell(
+                onTap: () => context.push(widget.action.route),
+                borderRadius: BorderRadius.circular(20),
+                splashColor: accent.withValues(alpha: 0.12),
+                highlightColor: accent.withValues(alpha: 0.06),
+                child: Stack(
+                  children: [
+                    // Sol accent bar — sidebar item paterniyle aynı
+                    if (active)
+                      Positioned(
+                        left: 0,
+                        top: 12,
+                        bottom: 12,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 3,
+                          decoration: BoxDecoration(
+                            color: accent,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOut,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: active
+                                  ? accent
+                                  : accent.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Icon(
+                              widget.action.icon,
+                              size: 24,
+                              color: active ? Colors.white : accent,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                AnimatedDefaultTextStyle(
+                                  duration: const Duration(milliseconds: 200),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: active
+                                        ? accent
+                                        : AppColors.textPrimary,
+                                    letterSpacing: -0.2,
+                                  ),
+                                  child: Text(widget.action.title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  widget.action.subtitle,
+                                  style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.textMuted),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            child: Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 14,
+                              color: active ? accent : AppColors.border,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

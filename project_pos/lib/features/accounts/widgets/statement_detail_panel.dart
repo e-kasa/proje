@@ -228,6 +228,8 @@ class StatementDetailPanel extends ConsumerWidget {
       context,
       isCustomer: isCustomer,
       accountName: account.accountName,
+      // Sprint 7 — alışveriş bazlı ödeme picker'ı için (sadece müşteri tarafı)
+      customerId: isCustomer ? account.accountId : null,
     );
     if (result == null || !context.mounted) return;
 
@@ -242,6 +244,10 @@ class StatementDetailPanel extends ConsumerWidget {
       if (result['referenceNo'] != null)
         'referenceNumber': result['referenceNo'],
       if (result['description'] != null) 'description': result['description'],
+      // Sprint 7 — backend Sale-Payment many-to-many allocation
+      if (result['allocations'] != null) 'allocations': result['allocations'],
+      // Geriye uyum: backend deprecated saleId field'ı hâlâ kabul ediyor
+      if (result['saleId'] != null) 'saleId': result['saleId'],
     };
 
     try {

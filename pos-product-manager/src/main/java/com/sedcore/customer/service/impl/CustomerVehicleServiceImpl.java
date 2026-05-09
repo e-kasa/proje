@@ -6,15 +6,18 @@ import com.sedcore.customer.entity.Customer;
 import com.sedcore.customer.entity.CustomerVehicle;
 import com.sedcore.customer.model.CustomerVehicleDto;
 import com.sedcore.customer.model.CustomerVehicleResponse;
+import com.sedcore.customer.model.VehicleSearchResponse;
 import com.sedcore.customer.repository.CustomerVehicleRepository;
 import com.sedcore.customer.service.CustomerService;
 import com.sedcore.customer.service.CustomerVehicleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -128,6 +131,16 @@ public class CustomerVehicleServiceImpl implements CustomerVehicleService {
         CustomerVehicle cv = getEntity(id);
         cv.setIsActive(false);
         return toResponse(repo.save(cv));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<VehicleSearchResponse> searchAcrossTenant(String q, int limit) {
+        if (q == null || q.isBlank()) return Collections.emptyList();
+        String normalized = CustomerVehicle.normalize(q);
+        if (normalized == null || normalized.isBlank()) return Collections.emptyList();
+        int safeLimit = (limit <= 0 || limit > 100) ? 20 : limit;
+        return repo.searchByPlate(normalized, PageRequest.of(0, safeLimit));
     }
 
     private CustomerVehicleResponse toResponse(CustomerVehicle cv) {

@@ -3,6 +3,7 @@ package com.sedcore.customer.service;
 import com.sedcore.customer.entity.CustomerVehicle;
 import com.sedcore.customer.model.CustomerVehicleDto;
 import com.sedcore.customer.model.CustomerVehicleResponse;
+import com.sedcore.customer.model.VehicleSearchResponse;
 
 import java.util.List;
 import java.util.Optional;
@@ -34,4 +35,11 @@ public interface CustomerVehicleService {
 
     /** Soft-delete (isActive=false). */
     CustomerVehicleResponse deactivate(String id);
+
+    /**
+     * Sprint 11e — Tenant-wide plaka prefix arama (customerId yok).
+     * Her sonuç müşteri ismi + açık satış count + açık tutar içerir.
+     * Limit varsayılan 20.
+     */
+    List<VehicleSearchResponse> searchAcrossTenant(String q, int limit);
 }

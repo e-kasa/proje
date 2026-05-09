@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:project_pos/core/config/sector_config.dart';
 import 'package:project_pos/core/theme/app_colors.dart';
 import 'package:project_pos/core/theme/app_constants.dart';
 import 'package:project_pos/core/utils/formatters.dart';
@@ -8,8 +9,11 @@ import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/features/accounts/models/statement_args.dart';
 import 'package:project_pos/features/accounts/providers/accounts_list_provider.dart';
 import 'package:project_pos/features/accounts/providers/accounts_list_settings.dart';
+import 'package:project_pos/features/accounts/providers/global_vehicle_search_provider.dart';
 import 'package:project_pos/features/accounts/widgets/account_edit_form.dart';
+import 'package:project_pos/features/accounts/widgets/account_search_mode_toggle.dart';
 import 'package:project_pos/features/accounts/widgets/accounts_error_view.dart';
+import 'package:project_pos/shared/providers/sector_provider.dart';
 
 /// Cari listesi paneli — search + filter chips + scrollable liste.
 /// `onSelect` ile bir cari seçilince üst (hub) tarafından detail tarafı yüklenir.
@@ -30,6 +34,9 @@ class AccountsListPanel extends ConsumerStatefulWidget {
 class _AccountsListPanelState extends ConsumerState<AccountsListPanel> {
   final _searchCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
+  /// Sprint 11e — 'name' (cari adı) | 'plate' (plaka). autoParts dışı
+  /// sektörlerde toggle hiç render edilmediği için daima 'name' kalır.
+  String _searchMode = 'name';
 
   @override
   void initState() {
@@ -80,11 +87,34 @@ class _AccountsListPanelState extends ConsumerState<AccountsListPanel> {
     final t = i18nOf(ref);
     final st = ref.watch(accountsListProvider);
     final notifier = ref.read(accountsListProvider.notifier);
+    // Sprint 11e — sektör autoParts ise plaka modu toggle'ı görünür.
+    final showPlateToggle =
+        ref.watch(sectorTypeProvider) == SectorType.autoParts;
+    final isPlateMode = _searchMode == 'plate';
 
     return Container(
       color: Colors.white,
       child: Column(
         children: [
+          if (showPlateToggle)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              child: Row(
+                children: [
+                  AccountSearchModeToggle(
+                    current: _searchMode,
+                    onChange: (m) {
+                      if (m == _searchMode) return;
+                      setState(() => _searchMode = m);
+                      // Mod değişince input temizlenir; kullanıcı bekledigi mod
+                      // için fresh sorgu yazar.
+                      _searchCtrl.clear();
+                      ref.read(accountsListProvider.notifier).setQuery('');
+                    },
+                  ),
+                ],
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
             child: Row(
@@ -92,11 +122,25 @@ class _AccountsListPanelState extends ConsumerState<AccountsListPanel> {
                 Expanded(
                   child: AppSearchInput(
                     controller: _searchCtrl,
-                    hint: t('accounts.search_account'),
-                    onChanged: notifier.setQuery,
+                    hint: isPlateMode
+                        ? t('accounts.search_by_plate_hint')
+                        : t('accounts.search_account'),
+                    onChanged: (v) {
+                      if (isPlateMode) {
+                        // Plaka modunda accountsListProvider tetiklenmez;
+                        // setState ile globalVehicleSearchProvider yeniden izlenir.
+                        setState(() {});
+                      } else {
+                        notifier.setQuery(v);
+                      }
+                    },
                     onClear: () {
                       _searchCtrl.clear();
-                      notifier.setQuery('');
+                      if (isPlateMode) {
+                        setState(() {});
+                      } else {
+                        notifier.setQuery('');
+                      }
                     },
                   ),
                 ),
@@ -118,28 +162,78 @@ class _AccountsListPanelState extends ConsumerState<AccountsListPanel> {
               ],
             ),
           ),
-          SizedBox(
-            height: 36,
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              scrollDirection: Axis.horizontal,
-              children: [
-                _chip(t('common.all'), AccountsFilter.all, st.filter),
-                _chip(t('accounts.overdue'), AccountsFilter.overdue, st.filter,
-                    color: AppColors.danger),
-                _chip(t('accounts.customer_label'),
-                    AccountsFilter.customer, st.filter,
-                    color: AppColors.info),
-                _chip(t('accounts.supplier_label'),
-                    AccountsFilter.supplier, st.filter,
-                    color: AppColors.orange),
-              ],
+          if (!isPlateMode)
+            SizedBox(
+              height: 36,
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                scrollDirection: Axis.horizontal,
+                children: [
+                  _chip(t('common.all'), AccountsFilter.all, st.filter),
+                  _chip(t('accounts.overdue'), AccountsFilter.overdue,
+                      st.filter,
+                      color: AppColors.danger),
+                  _chip(t('accounts.customer_label'),
+                      AccountsFilter.customer, st.filter,
+                      color: AppColors.info),
+                  _chip(t('accounts.supplier_label'),
+                      AccountsFilter.supplier, st.filter,
+                      color: AppColors.orange),
+                ],
+              ),
             ),
-          ),
           const Divider(height: 1, color: AppColors.border),
-          Expanded(child: _buildList(st)),
+          Expanded(
+            child: isPlateMode ? _buildPlateList() : _buildList(st),
+          ),
         ],
       ),
+    );
+  }
+
+  /// Sprint 11e — Plaka modu listesi.
+  /// Boş query → prompt; sonuç boş → no_plate_results; data → kart listesi.
+  Widget _buildPlateList() {
+    final t = i18nOf(ref);
+    final query = _searchCtrl.text.trim();
+    if (query.isEmpty) {
+      return AppEmptyState.noData(
+        title: t('accounts.search_by_plate_prompt'),
+        description: '',
+      );
+    }
+    final async = ref.watch(globalVehicleSearchProvider(query));
+    return async.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => AccountsErrorView(
+        error: e,
+        message: t('common.error'),
+        onRetry: () => ref.invalidate(globalVehicleSearchProvider(query)),
+      ),
+      data: (rows) {
+        if (rows.isEmpty) {
+          return AppEmptyState.noData(
+            title: t('accounts.no_plate_results'),
+            description: '',
+          );
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
+          itemCount: rows.length,
+          itemBuilder: (_, i) {
+            final r = rows[i];
+            return _PlateResultRow(
+              row: r,
+              onTap: () => widget.onSelect(StatementArgs(
+                accountType: 'CUSTOMER',
+                accountId: r['customerId']?.toString() ?? '',
+                accountName: r['customerName']?.toString() ?? '',
+                initialVehiclePlate: r['plateNormalized']?.toString(),
+              )),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -319,6 +413,122 @@ class _NewAccountButton extends StatelessWidget {
             Icons.person_add_alt_1_outlined,
             color: Colors.white,
             size: 20,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Sprint 11e — Plaka modu sonuç kartı.
+/// Müşteri ismi (büyük) + plaka chip (AppBadge.info) + açık satış özeti.
+class _PlateResultRow extends ConsumerWidget {
+  final Map<String, dynamic> row;
+  final VoidCallback onTap;
+  const _PlateResultRow({required this.row, required this.onTap});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = i18nOf(ref);
+    final customerName = row['customerName']?.toString() ?? '-';
+    final plate = row['plateDisplay']?.toString() ??
+        row['plateNormalized']?.toString() ??
+        '';
+    final makeModel = [row['make'], row['model']]
+        .where((e) => e != null && e.toString().isNotEmpty)
+        .join(' ');
+    final openCount = (row['openSalesCount'] as num?)?.toInt() ?? 0;
+    final openAmount = (row['openSalesAmount'] as num?)?.toDouble() ?? 0.0;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Material(
+        color: Colors.white,
+        borderRadius: AppConstants.borderRadiusSmall,
+        child: InkWell(
+          borderRadius: AppConstants.borderRadiusSmall,
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: AppConstants.borderRadiusSmall,
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.info.withValues(alpha: 0.1),
+                    borderRadius: AppConstants.borderRadiusSmall,
+                  ),
+                  child: const Icon(Icons.directions_car_outlined,
+                      color: AppColors.info, size: 18),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              customerName,
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          AppBadge.info(plate,
+                              icon: Icons.directions_car_outlined),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          if (makeModel.isNotEmpty) ...[
+                            Flexible(
+                              child: Text(
+                                makeModel,
+                                style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textMuted),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          if (openCount > 0)
+                            Text(
+                              '$openCount ${t('accounts.open_sales')} · ${appCurrencyFmt.format(openAmount)}',
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.danger),
+                            )
+                          else
+                            Text(
+                              t('accounts.no_open_sales'),
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textMuted),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right,
+                    size: 18, color: AppColors.textMuted),
+              ],
+            ),
           ),
         ),
       ),

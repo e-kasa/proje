@@ -2774,7 +2774,17 @@ INSERT INTO ext_bundles (id, create_time, create_user, last_modified_time, updat
     ('bnd-acpa07-0000-0000-0000-000000000007', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'accounts.allocation_sum_mismatch','Toplam tutarlar eşleşmiyor',                            'Allocation totals don''t match'),
     ('bnd-acpa08-0000-0000-0000-000000000008', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'accounts.open_sales',             'açık satış',                                            'open sales')
+     'accounts.open_sales',             'açık satış',                                            'open sales'),
+    ('bnd-acpa09-0000-0000-0000-000000000009', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'accounts.search_mode_name',       'Cari adı',                                              'Customer name'),
+    ('bnd-acpa10-0000-0000-0000-000000000010', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'accounts.search_mode_plate',      'Plaka',                                                 'Plate'),
+    ('bnd-acpa11-0000-0000-0000-000000000011', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'accounts.search_by_plate_hint',   'Plaka ara (ör. 34A)',                                   'Search plate (e.g. 34A)'),
+    ('bnd-acpa12-0000-0000-0000-000000000012', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'accounts.no_plate_results',       'Bu plaka için kayıt yok',                               'No matches for this plate'),
+    ('bnd-acpa13-0000-0000-0000-000000000013', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'accounts.search_by_plate_prompt', 'Plaka yazarak müşteri ve açık satışları arayın',        'Type a plate to find customer and open sales')
     ON CONFLICT DO NOTHING;
 
 -- ============================================================

@@ -51,11 +51,21 @@ class _AccountsHubScreenState extends ConsumerState<AccountsHubScreen> {
 
   void _selectFromList(StatementArgs args, {required bool isWide}) {
     ref.read(selectedAccountProvider.notifier).state = args;
-    ref.read(accountStatementProvider.notifier).setAccount(
-          accountType: args.accountType,
-          accountId: args.accountId,
-          accountName: args.accountName,
-        );
+    final stmt = ref.read(accountStatementProvider.notifier);
+    stmt.setAccount(
+      accountType: args.accountType,
+      accountId: args.accountId,
+      accountName: args.accountName,
+    );
+    // Sprint 11e — AccountsList plaka modundan deep-link gelince ekstre
+    // açılır açılmaz plaka filter aktif olur. setAccount load() tetikler;
+    // setVehiclePlate sadece state'i set eder (load gerektirmez), bu yüzden
+    // sıralama sorun değil.
+    if (args.initialVehiclePlate != null) {
+      stmt.setVehiclePlate(args.initialVehiclePlate);
+    } else {
+      stmt.setVehiclePlate(null);
+    }
     if (!isWide) {
       Navigator.of(context).push(
         MaterialPageRoute(

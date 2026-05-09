@@ -13,11 +13,11 @@ class AppConstants {
   static const double spacing40 = 40.0;
   static const double spacing48 = 48.0;
 
-  // === BORDER RADIUS ===
-  static const double radiusSmall = 8.0;
-  static const double radiusMedium = 12.0;
-  static const double radiusLarge = 16.0;
-  static const double radiusXLarge = 20.0;
+  // === BORDER RADIUS === (Modern Classic — keskin köşe)
+  static const double radiusSmall = 2.0;
+  static const double radiusMedium = 2.0;
+  static const double radiusLarge = 4.0;
+  static const double radiusXLarge = 6.0;
   static const double radiusFull = 999.0;
 
   static BorderRadius get borderRadiusSmall => BorderRadius.circular(radiusSmall);
@@ -29,25 +29,25 @@ class AppConstants {
   // === ELEVATION & SHADOWS ===
   static List<BoxShadow> get shadowSmall => [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.04),
-          blurRadius: 4,
-          offset: const Offset(0, 2),
+          color: Colors.black.withValues(alpha: 0.02),
+          blurRadius: 3,
+          offset: const Offset(0, 1),
         ),
       ];
 
   static List<BoxShadow> get shadowMedium => [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.08),
-          blurRadius: 8,
-          offset: const Offset(0, 4),
+          color: Colors.black.withValues(alpha: 0.04),
+          blurRadius: 5,
+          offset: const Offset(0, 2),
         ),
       ];
 
   static List<BoxShadow> get shadowLarge => [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.12),
-          blurRadius: 16,
-          offset: const Offset(0, 8),
+          color: Colors.black.withValues(alpha: 0.06),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
         ),
       ];
 
@@ -66,9 +66,9 @@ class AppConstants {
   static const double iconXLarge = 32.0;
 
   // === BUTTON SIZES ===
-  static const double buttonHeightSmall = 36.0;
-  static const double buttonHeightMedium = 44.0;
-  static const double buttonHeightLarge = 52.0;
+  static const double buttonHeightSmall = 32.0;
+  static const double buttonHeightMedium = 36.0;
+  static const double buttonHeightLarge = 40.0;
 
   // === ANIMATIONS ===
   static const Duration animationFast = Duration(milliseconds: 150);
@@ -76,17 +76,18 @@ class AppConstants {
   static const Duration animationSlow = Duration(milliseconds: 500);
 
   // === PADDING PRESETS ===
+  // Industrial Dense: paddingMedium 16→10, paddingLarge 24→16
   static const EdgeInsets paddingSmall = EdgeInsets.all(spacing8);
-  static const EdgeInsets paddingMedium = EdgeInsets.all(spacing16);
-  static const EdgeInsets paddingLarge = EdgeInsets.all(spacing24);
+  static const EdgeInsets paddingMedium = EdgeInsets.all(10);
+  static const EdgeInsets paddingLarge = EdgeInsets.all(spacing16);
 
   static const EdgeInsets paddingHorizontalSmall = EdgeInsets.symmetric(horizontal: spacing8);
-  static const EdgeInsets paddingHorizontalMedium = EdgeInsets.symmetric(horizontal: spacing16);
-  static const EdgeInsets paddingHorizontalLarge = EdgeInsets.symmetric(horizontal: spacing24);
+  static const EdgeInsets paddingHorizontalMedium = EdgeInsets.symmetric(horizontal: 10);
+  static const EdgeInsets paddingHorizontalLarge = EdgeInsets.symmetric(horizontal: spacing16);
 
   static const EdgeInsets paddingVerticalSmall = EdgeInsets.symmetric(vertical: spacing8);
-  static const EdgeInsets paddingVerticalMedium = EdgeInsets.symmetric(vertical: spacing16);
-  static const EdgeInsets paddingVerticalLarge = EdgeInsets.symmetric(vertical: spacing24);
+  static const EdgeInsets paddingVerticalMedium = EdgeInsets.symmetric(vertical: 10);
+  static const EdgeInsets paddingVerticalLarge = EdgeInsets.symmetric(vertical: spacing16);
 
   // === BORDER WIDTH ===
   static const double borderThin = 1.0;
@@ -94,12 +95,13 @@ class AppConstants {
   static const double borderThick = 2.0;
 
   // === PAGE & SECTION SPACING ===
-  static const EdgeInsets pagePadding = EdgeInsets.all(spacing16);
-  static const EdgeInsets pagePaddingHorizontal = EdgeInsets.symmetric(horizontal: spacing16);
-  static const EdgeInsets cardPadding = EdgeInsets.all(spacing16);
-  static const double formFieldSpacing = spacing16;
-  static const double sectionSpacing = spacing24;
-  static const double listItemSpacing = spacing8;
+  // Industrial Dense: pagePadding 16→12, cardPadding 16→10, formField 16→10, section 24→16, listItem 8→6
+  static const EdgeInsets pagePadding = EdgeInsets.all(spacing12);
+  static const EdgeInsets pagePaddingHorizontal = EdgeInsets.symmetric(horizontal: spacing12);
+  static const EdgeInsets cardPadding = EdgeInsets.all(10);
+  static const double formFieldSpacing = 10;
+  static const double sectionSpacing = spacing16;
+  static const double listItemSpacing = 6;
 
   // === RESPONSIVE BREAKPOINTS ===
   static const double breakpointMobile = 0;

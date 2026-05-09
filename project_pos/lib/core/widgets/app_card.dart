@@ -24,7 +24,7 @@ class AppCard extends ConsumerWidget {
     this.color,
     this.onTap,
     this.onLongPress,
-    this.hasShadow = true,
+    this.hasShadow = false,
     this.hasBorder = true,
     this.borderRadius,
     this.borderColor,
@@ -99,24 +99,24 @@ class AppStatCard extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: color.withValues(alpha: isDark ? 0.15 : 0.1),
               borderRadius: AppConstants.borderRadiusMedium,
             ),
-            child: Icon(icon, color: color, size: AppConstants.iconLarge),
+            child: Icon(icon, color: color, size: AppConstants.iconMedium),
           ),
-          const SizedBox(height: AppConstants.spacing8),
+          const SizedBox(height: 6),
           Text(
             value,
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: color,
             ),
           ),
-          const SizedBox(height: AppConstants.spacing4),
+          const SizedBox(height: 3),
           Text(
             title,
             style: TextStyle(
@@ -171,14 +171,14 @@ class AppSectionCard extends ConsumerWidget {
             child: Row(
               children: [
                 if (icon != null) ...[
-                  Icon(icon, color: primary, size: 20),
+                  Icon(icon, color: primary, size: 18),
                   const SizedBox(width: AppConstants.spacing8),
                 ],
                 Expanded(
                   child: Text(
                     title,
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: titleColor,
                     ),

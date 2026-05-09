@@ -3,11 +3,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppTheme {
-  // Border Radius Constants
-  static const double radiusSmall = 8.0;
-  static const double radiusMedium = 12.0;
-  static const double radiusLarge = 16.0;
-  static const double radiusExtraLarge = 24.0;
+  // Border Radius Constants — Modern Classic (keskin köşe)
+  static const double radiusSmall = 2.0;
+  static const double radiusMedium = 2.0;
+  static const double radiusLarge = 4.0;
+  static const double radiusExtraLarge = 6.0;
 
   // Backward Compatibility / Aliases for existing screens
   static const Color primaryColor = AppColors.primary;
@@ -55,18 +55,18 @@ class AppTheme {
         foregroundColor: AppColors.textPrimary,
         surfaceTintColor: Colors.transparent,
         titleTextStyle: GoogleFonts.inter(
-          fontSize: 18,
+          fontSize: 16,
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
-          letterSpacing: -0.5,
+          letterSpacing: -0.3,
         ),
-        iconTheme: const IconThemeData(color: AppColors.textPrimary, size: 22),
+        iconTheme: const IconThemeData(color: AppColors.textPrimary, size: 20),
       ),
 
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(radiusLarge),
+          borderRadius: BorderRadius.circular(radiusMedium),
           side: const BorderSide(color: AppColors.border, width: 1),
         ),
         color: AppColors.bgWhite,
@@ -78,13 +78,13 @@ class AppTheme {
           elevation: 0,
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, 52),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          minimumSize: const Size(double.infinity, 40),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radiusMedium),
           ),
           textStyle: GoogleFonts.inter(
-            fontSize: 15,
+            fontSize: 14,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.2,
           ),
@@ -99,14 +99,14 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.primary,
-          minimumSize: const Size(double.infinity, 52),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          minimumSize: const Size(double.infinity, 40),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radiusMedium),
           ),
           side: const BorderSide(color: AppColors.border, width: 1.5),
           textStyle: GoogleFonts.inter(
-            fontSize: 15,
+            fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -115,7 +115,7 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.bgWhite,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
           borderSide: const BorderSide(color: AppColors.border, width: 1),
@@ -133,12 +133,12 @@ class AppTheme {
           borderSide: const BorderSide(color: AppColors.danger, width: 1),
         ),
         labelStyle: GoogleFonts.inter(
-          fontSize: 14,
+          fontSize: 13,
           fontWeight: FontWeight.w500,
           color: AppColors.textSecondary,
         ),
         hintStyle: GoogleFonts.inter(
-          fontSize: 14,
+          fontSize: 13,
           fontWeight: FontWeight.w400,
           color: AppColors.textMuted,
         ),
@@ -156,7 +156,7 @@ class AppTheme {
 
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.bgLight,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radiusSmall),
           side: const BorderSide(color: AppColors.border, width: 1),
@@ -175,12 +175,12 @@ class AppTheme {
           borderRadius: BorderRadius.circular(radiusExtraLarge),
         ),
         titleTextStyle: GoogleFonts.inter(
-          fontSize: 20,
+          fontSize: 18,
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
         ),
         contentTextStyle: GoogleFonts.inter(
-          fontSize: 15,
+          fontSize: 14,
           color: AppColors.textSecondary,
         ),
       ),
@@ -210,39 +210,39 @@ class AppTheme {
 
     return TextTheme(
       headlineLarge: GoogleFonts.inter(
-        fontSize: 32,
+        fontSize: 28,
         fontWeight: FontWeight.w800,
         color: color,
-        letterSpacing: -1,
+        letterSpacing: -0.8,
       ),
       headlineMedium: GoogleFonts.inter(
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: FontWeight.w700,
         color: color,
-        letterSpacing: -0.5,
+        letterSpacing: -0.4,
       ),
       titleLarge: GoogleFonts.inter(
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: FontWeight.w700,
         color: color,
       ),
       titleMedium: GoogleFonts.inter(
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: FontWeight.w600,
         color: color,
       ),
       bodyLarge: GoogleFonts.inter(
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: FontWeight.w400,
         color: color,
       ),
       bodyMedium: GoogleFonts.inter(
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: FontWeight.w400,
         color: color,
       ),
       labelLarge: GoogleFonts.inter(
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: FontWeight.w600,
         color: color,
       ),

@@ -228,17 +228,17 @@ class AppButton extends ConsumerWidget {
 
   EdgeInsets _getPadding() {
     switch (size) {
-      case ButtonSize.small:  return const EdgeInsets.symmetric(horizontal: 12, vertical: 6);
-      case ButtonSize.medium: return const EdgeInsets.symmetric(horizontal: 16, vertical: 10);
-      case ButtonSize.large:  return const EdgeInsets.symmetric(horizontal: 24, vertical: 14);
+      case ButtonSize.small:  return const EdgeInsets.symmetric(horizontal: 10, vertical: 4);
+      case ButtonSize.medium: return const EdgeInsets.symmetric(horizontal: 12, vertical: 6);
+      case ButtonSize.large:  return const EdgeInsets.symmetric(horizontal: 16, vertical: 8);
     }
   }
 
   double _getFontSize() {
     switch (size) {
       case ButtonSize.small:  return 12;
-      case ButtonSize.medium: return 14;
-      case ButtonSize.large:  return 16;
+      case ButtonSize.medium: return 13;
+      case ButtonSize.large:  return 14;
     }
   }
 
@@ -309,9 +309,9 @@ class AppIconButton extends ConsumerWidget {
 
   double _getSize() {
     switch (size) {
-      case ButtonSize.small:  return 32;
-      case ButtonSize.medium: return 40;
-      case ButtonSize.large:  return 48;
+      case ButtonSize.small:  return 28;
+      case ButtonSize.medium: return 36;
+      case ButtonSize.large:  return 40;
     }
   }
 }

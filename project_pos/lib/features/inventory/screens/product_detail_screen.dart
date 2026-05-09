@@ -15,6 +15,7 @@ import 'package:project_pos/services/print/label_print_settings.dart';
 import 'package:project_pos/services/print/print_settings.dart';
 import 'package:project_pos/services/service_locator.dart';
 import 'package:project_pos/providers/sector_provider.dart';
+import 'package:project_pos/providers/theme_provider.dart';
 import 'package:project_pos/core/config/sector_config.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/features/settings/screens/admin/product_relationship_management_panel.dart';
@@ -219,6 +220,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
     }
 
     final product = _product!;
+    // Sprint 11o P1 — TabBar AppBar.bottom'dan cikarildi, body ustune
+    // beyaz arka planli + soft shadow + chip-button indicator ile
+    // belirgin bir bant olarak yerlestirildi (DetailScreenTemplate paterniyle ayni).
+    final primary = ref.watch(themeProvider).resolvedPrimary;
     return BaseScaffold(
       appBar: AppAppBar.standard(
         leading: IconButton(
@@ -243,27 +248,105 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
           ),
           const SizedBox(width: 12),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textMuted,
-          indicatorColor: AppColors.primary,
-          isScrollable: true,
-          tabs: _tabs.map((tab) => Tab(text: tab.label)).toList(),
-        ),
       ),
-      body: TabBarView(
+      body: Column(
+        children: [
+          _buildTabStrip(primary),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: _tabs.map((tab) {
+                switch (tab.type) {
+                  case _TabType.general: return _buildGeneralInfoTab(product, cfg);
+                  case _TabType.oem: return _buildOemTab();
+                  case _TabType.crossRef: return _buildCrossRefTab();
+                  case _TabType.vehicleCompat: return _buildVehicleCompatTab();
+                  case _TabType.history: return _buildHistoryTab();
+                  case _TabType.relationships: return _buildRelationshipsTab(product);
+                }
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Sprint 11o P1 — DetailScreenTemplate._buildTabStrip ile ayni pattern.
+  /// Beyaz bg + alt soft shadow + chip-button selected indicator + tema reactive.
+  Widget _buildTabStrip(Color primary) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: const Border(
+          bottom: BorderSide(color: AppColors.border, width: 1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      child: TabBar(
         controller: _tabController,
-        children: _tabs.map((tab) {
-          switch (tab.type) {
-            case _TabType.general: return _buildGeneralInfoTab(product, cfg);
-            case _TabType.oem: return _buildOemTab();
-            case _TabType.crossRef: return _buildCrossRefTab();
-            case _TabType.vehicleCompat: return _buildVehicleCompatTab();
-            case _TabType.history: return _buildHistoryTab();
-            case _TabType.relationships: return _buildRelationshipsTab(product);
-          }
-        }).toList(),
+        isScrollable: true,
+        tabAlignment: TabAlignment.start,
+        indicator: BoxDecoration(
+          color: primary.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: primary, width: 1.5),
+        ),
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: Colors.transparent,
+        labelColor: primary,
+        unselectedLabelColor: AppColors.textSecondary,
+        labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+        labelStyle: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        splashBorderRadius: BorderRadius.circular(8),
+        overlayColor: WidgetStateProperty.resolveWith(
+          (states) {
+            if (states.contains(WidgetState.pressed)) {
+              return primary.withValues(alpha: 0.18);
+            }
+            if (states.contains(WidgetState.hovered)) {
+              return primary.withValues(alpha: 0.08);
+            }
+            return null;
+          },
+        ),
+        tabs: _tabs
+            .map((tab) => Tab(
+                  height: 48,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(tab.icon, size: 18),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            tab.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ))
+            .toList(),
       ),
     );
   }

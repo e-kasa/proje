@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../providers/theme_provider.dart';
 import '../../theme/app_colors.dart';
 import '../app_app_bar.dart';
 import '../app_empty_state.dart';
@@ -121,29 +122,86 @@ class _DetailScreenTemplateState extends ConsumerState<DetailScreenTemplate>
 
   @override
   Widget build(BuildContext context) {
+    // Sprint 11l — tema primary reactive: TabBar indicator/label rengi kullanıcının
+    // seçtiği tema rengiyle senkron.
+    final primary = ref.watch(themeProvider).resolvedPrimary;
     return BaseScaffold(
+      // TabBar artık AppBar.bottom'a değil, body üstüne kendi beyaz konteynerine
+      // koyuluyor — gradient AppBar'dan net ayrı bir şerit, kullanıcı tab
+      // olduğunu hemen anlar.
       appBar: AppAppBar.standard(
         title: widget.title,
         actions: widget.appBarActions,
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: widget.tabs.length > 4,
-          indicatorColor: AppColors.primary,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textMuted,
-          tabs: [
-            for (final t in widget.tabs)
-              Tab(
-                text: t.label,
-                icon: t.icon != null ? Icon(t.icon, size: 18) : null,
-                iconMargin: const EdgeInsets.only(bottom: 2),
-              ),
-          ],
-        ),
       ),
       floatingActionButton: widget.floatingActionButton,
       floatingActionButtonLocation: widget.floatingActionButtonLocation,
-      body: _buildBody(),
+      body: Column(
+        children: [
+          _buildTabStrip(primary),
+          Expanded(child: _buildBody()),
+        ],
+      ),
+    );
+  }
+
+  /// Sprint 11l — beyaz arka planlı, alt border + hafif shadow ile gradient
+  /// AppBar'dan ayrı duran tab şeridi.
+  Widget _buildTabStrip(Color primary) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: const Border(
+          bottom: BorderSide(color: AppColors.border, width: 1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TabBar(
+        controller: _tabController,
+        isScrollable: widget.tabs.length > 4,
+        tabAlignment: widget.tabs.length > 4
+            ? TabAlignment.start
+            : TabAlignment.fill,
+        indicatorColor: primary,
+        indicatorWeight: 3,
+        indicatorSize: TabBarIndicatorSize.label,
+        labelColor: primary,
+        unselectedLabelColor: AppColors.textSecondary,
+        labelStyle: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.1,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          letterSpacing: -0.1,
+        ),
+        overlayColor: WidgetStateProperty.resolveWith(
+          (states) {
+            if (states.contains(WidgetState.hovered)) {
+              return primary.withValues(alpha: 0.06);
+            }
+            if (states.contains(WidgetState.pressed)) {
+              return primary.withValues(alpha: 0.10);
+            }
+            return null;
+          },
+        ),
+        tabs: [
+          for (final t in widget.tabs)
+            Tab(
+              text: t.label,
+              icon: t.icon != null ? Icon(t.icon, size: 18) : null,
+              iconMargin: const EdgeInsets.only(bottom: 2),
+            ),
+        ],
+      ),
     );
   }
 

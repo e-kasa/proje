@@ -53,5 +53,12 @@ public class AccountStatementEntry {
          * + plaka filtresi olarak kullanır.
          */
         private String vehiclePlate;
+        /**
+         * Sprint 11f — bağlı Sale.id (deep-link sale detail panel için).
+         * AccountTransaction.sale FK varsa doldurulur; SALE/COLLECTION tipindeki
+         * tx kartına tıklayınca StatementDetailPanel sağ panele SaleDetailPanel
+         * geçer.
+         */
+        private String saleId;
     }
 }

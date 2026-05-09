@@ -8,8 +8,10 @@ import 'package:project_pos/features/accounts/di/accounts_di.dart';
 import 'package:project_pos/features/accounts/models/statement_args.dart';
 import 'package:project_pos/features/accounts/providers/accounts_list_provider.dart';
 import 'package:project_pos/features/accounts/providers/selected_account_provider.dart';
+import 'package:project_pos/features/accounts/providers/selected_sale_provider.dart';
 import 'package:project_pos/features/accounts/widgets/accounts_list_panel.dart';
 import 'package:project_pos/features/accounts/widgets/accounts_summary_bar.dart';
+import 'package:project_pos/features/accounts/widgets/sale_detail_panel.dart';
 import 'package:project_pos/features/accounts/widgets/statement_detail_panel.dart';
 import 'package:project_pos/features/finance/di/finance_di.dart';
 
@@ -51,6 +53,8 @@ class _AccountsHubScreenState extends ConsumerState<AccountsHubScreen> {
 
   void _selectFromList(StatementArgs args, {required bool isWide}) {
     ref.read(selectedAccountProvider.notifier).state = args;
+    // Sprint 11f — yeni cari seçimi sale detail mode'unu kapatır.
+    ref.read(selectedSaleProvider.notifier).state = null;
     final stmt = ref.read(accountStatementProvider.notifier);
     stmt.setAccount(
       accountType: args.accountType,
@@ -82,6 +86,9 @@ class _AccountsHubScreenState extends ConsumerState<AccountsHubScreen> {
   Widget build(BuildContext context) {
     final t = i18nOf(ref);
     final selectedId = ref.watch(selectedAccountProvider)?.accountId;
+    // Sprint 11f — sale seçili ise sağ panel SaleDetailPanel'e geçer;
+    // aksi halde varsayılan StatementDetailPanel render edilir.
+    final selectedSaleId = ref.watch(selectedSaleProvider);
 
     return BaseScaffold(
       appBar: AppAppBar.standard(
@@ -125,7 +132,11 @@ class _AccountsHubScreenState extends ConsumerState<AccountsHubScreen> {
                             ),
                           ),
                           Container(width: 1, color: AppColors.border),
-                          const Expanded(child: StatementDetailPanel()),
+                          Expanded(
+                            child: selectedSaleId != null
+                                ? SaleDetailPanel(saleId: selectedSaleId)
+                                : const StatementDetailPanel(),
+                          ),
                         ],
                       )
                     : AccountsListPanel(
@@ -142,14 +153,18 @@ class _AccountsHubScreenState extends ConsumerState<AccountsHubScreen> {
 }
 
 /// Mobile push edilen detay sayfası (dar ekran için).
-class _AccountDetailPage extends StatelessWidget {
+/// Sprint 11f — sale seçili ise SaleDetailPanel, aksi halde StatementDetailPanel.
+class _AccountDetailPage extends ConsumerWidget {
   const _AccountDetailPage();
 
   @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedSaleId = ref.watch(selectedSaleProvider);
+    return Scaffold(
       body: SafeArea(
-        child: StatementDetailPanel(showBackButton: true),
+        child: selectedSaleId != null
+            ? SaleDetailPanel(saleId: selectedSaleId)
+            : const StatementDetailPanel(showBackButton: true),
       ),
     );
   }

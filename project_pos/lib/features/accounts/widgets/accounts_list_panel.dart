@@ -7,9 +7,12 @@ import 'package:project_pos/core/utils/formatters.dart';
 import 'package:project_pos/core/utils/i18n_helper.dart';
 import 'package:project_pos/core/widgets/widgets.dart';
 import 'package:project_pos/features/accounts/models/statement_args.dart';
+import 'package:intl/intl.dart';
 import 'package:project_pos/features/accounts/providers/accounts_list_provider.dart';
 import 'package:project_pos/features/accounts/providers/accounts_list_settings.dart';
 import 'package:project_pos/features/accounts/providers/global_vehicle_search_provider.dart';
+import 'package:project_pos/features/accounts/providers/open_plated_sales_provider.dart';
+import 'package:project_pos/features/accounts/providers/selected_sale_provider.dart';
 import 'package:project_pos/features/accounts/widgets/account_edit_form.dart';
 import 'package:project_pos/features/accounts/widgets/account_search_mode_toggle.dart';
 import 'package:project_pos/features/accounts/widgets/accounts_error_view.dart';
@@ -191,16 +194,17 @@ class _AccountsListPanelState extends ConsumerState<AccountsListPanel> {
     );
   }
 
-  /// Sprint 11e — Plaka modu listesi.
-  /// Boş query → prompt; sonuç boş → no_plate_results; data → kart listesi.
+  /// Sprint 11e/11f — Plaka modu listesi.
+  /// - Boş query: tüm ödenmemiş plakalı satışlar (Sprint 11f)
+  /// - Query var: tenant-wide plaka prefix arama (Sprint 11e)
+  /// Sonuçta plaka kartına tıklayınca cari + plaka filter deep-link;
+  /// satış kartına tıklayınca cari seçilir + selectedSaleProvider set edilir
+  /// → sağ panelde SaleDetailPanel açılır.
   Widget _buildPlateList() {
     final t = i18nOf(ref);
     final query = _searchCtrl.text.trim();
     if (query.isEmpty) {
-      return AppEmptyState.noData(
-        title: t('accounts.search_by_plate_prompt'),
-        description: '',
-      );
+      return _buildOpenPlatedSalesList(t);
     }
     final async = ref.watch(globalVehicleSearchProvider(query));
     return async.when(
@@ -232,6 +236,59 @@ class _AccountsListPanelState extends ConsumerState<AccountsListPanel> {
               )),
             );
           },
+        );
+      },
+    );
+  }
+
+  /// Sprint 11f — Boş query'de tüm ödenmemiş plakalı satışlar.
+  /// Tıklama: cari seçilir + selectedSaleProvider set → sağda SaleDetailPanel.
+  Widget _buildOpenPlatedSalesList(String Function(String) t) {
+    final async = ref.watch(openPlatedSalesProvider);
+    return async.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => AccountsErrorView(
+        error: e,
+        message: t('common.error'),
+        onRetry: () => ref.invalidate(openPlatedSalesProvider),
+      ),
+      data: (sales) {
+        if (sales.isEmpty) {
+          return AppEmptyState.noData(
+            title: t('accounts.no_open_plated_sales'),
+            description: '',
+          );
+        }
+        return RefreshIndicator(
+          onRefresh: () async => ref.invalidate(openPlatedSalesProvider),
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
+            itemCount: sales.length,
+            itemBuilder: (_, i) {
+              final s = sales[i];
+              return _OpenSaleRow(
+                sale: s,
+                onTap: () {
+                  // Cariyi de set ediyoruz ki ödeme ve refresh akışları
+                  // bağlam bulsun. selectedSaleProvider ile sağ panel
+                  // SaleDetailPanel'e geçer.
+                  widget.onSelect(StatementArgs(
+                    accountType: 'CUSTOMER',
+                    accountId: s['customerId']?.toString() ?? '',
+                    accountName: s['customerName']?.toString() ?? '',
+                    initialVehiclePlate: s['vehiclePlate']?.toString(),
+                  ));
+                  // _selectFromList selectedSaleProvider'ı temizliyor;
+                  // bunun ardından çağrılınca seçili kalır (microtask).
+                  Future.microtask(() {
+                    if (!mounted) return;
+                    ref.read(selectedSaleProvider.notifier).state =
+                        s['id']?.toString();
+                  });
+                },
+              );
+            },
+          ),
         );
       },
     );
@@ -525,6 +582,116 @@ class _PlateResultRow extends ConsumerWidget {
                     ],
                   ),
                 ),
+                const Icon(Icons.chevron_right,
+                    size: 18, color: AppColors.textMuted),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Sprint 11f — Boş plaka modu listesinde ödenmemiş satış kartı.
+/// Müşteri ismi + plaka chip + sale# + kalan tutar.
+class _OpenSaleRow extends ConsumerWidget {
+  final Map<String, dynamic> sale;
+  final VoidCallback onTap;
+  const _OpenSaleRow({required this.sale, required this.onTap});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final customerName = sale['customerName']?.toString() ?? '-';
+    final plate = sale['vehiclePlate']?.toString();
+    final hasPlate = plate != null && plate.isNotEmpty;
+    final saleNumber = sale['saleNumber']?.toString() ?? '';
+    final remaining = (sale['remainingAmount'] as num?)?.toDouble() ?? 0.0;
+    final dateRaw = sale['saleDate']?.toString();
+    final dateText = dateRaw != null
+        ? DateFormat('dd.MM.yyyy').format(
+            DateTime.tryParse(dateRaw) ?? DateTime.now())
+        : '';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Material(
+        color: Colors.white,
+        borderRadius: AppConstants.borderRadiusSmall,
+        child: InkWell(
+          borderRadius: AppConstants.borderRadiusSmall,
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: AppConstants.borderRadiusSmall,
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.danger.withValues(alpha: 0.1),
+                    borderRadius: AppConstants.borderRadiusSmall,
+                  ),
+                  child: const Icon(Icons.receipt_long,
+                      color: AppColors.danger, size: 18),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              customerName,
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          if (hasPlate)
+                            AppBadge.info(plate,
+                                icon: Icons.directions_car_outlined),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Text('#$saleNumber',
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textMuted,
+                                  fontWeight: FontWeight.w500)),
+                          if (dateText.isNotEmpty) ...[
+                            const SizedBox(width: 6),
+                            Text('· $dateText',
+                                style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textMuted)),
+                          ],
+                          const Spacer(),
+                          Text(
+                            appCurrencyFmt.format(remaining),
+                            style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.danger),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
                 const Icon(Icons.chevron_right,
                     size: 18, color: AppColors.textMuted),
               ],

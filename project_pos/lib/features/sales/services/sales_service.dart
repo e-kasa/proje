@@ -81,6 +81,23 @@ class SalesService {
     }
   }
 
+  /// Sprint 11f — Tenant-wide odenmemis plakali satislar.
+  /// AccountsList plaka modu input bosken bu liste yuklenir.
+  Future<List<Map<String, dynamic>>> getOpenWithPlate({int limit = 50}) async {
+    try {
+      final response = await _apiClient.get(
+        '$_base/open-with-plate',
+        queryParameters: {'limit': limit},
+      );
+      final data = response.data['data'];
+      if (data is List) return data.cast<Map<String, dynamic>>();
+      return const [];
+    } catch (e) {
+      debugPrint('getOpenWithPlate hata: $e');
+      rethrow;
+    }
+  }
+
   /// Tek bir satisi ID ile getirir.
   Future<Map<String, dynamic>> getSaleById(String id) async {
     try {

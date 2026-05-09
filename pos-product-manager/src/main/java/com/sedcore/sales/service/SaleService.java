@@ -2,6 +2,7 @@ package com.sedcore.sales.service;
 
 import com.sedcore.sales.entity.Sale;
 import com.towpen.base.security.BaseDbService;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,4 +15,10 @@ public interface SaleService extends BaseDbService<Sale> {
     List<Sale> findByCustomerId(String customerId);
 
     Optional<Sale> findBySaleNumber(String saleNumber);
+
+    /**
+     * Sprint 11f — Tenant-wide ödenmemiş plakalı satışlar.
+     * AccountsList plaka modu input boşken bu listeyi gösterir.
+     */
+    List<Sale> findOpenWithPlate(Pageable pageable);
 }

@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import com.towpen.base.enums.model.TMessageType;
 import com.towpen.base.exceptions.TOpenException;
 import com.towpen.base.restservice.model.TOpenMessage;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,5 +42,11 @@ public class SaleServiceImpl
     @Override
     public Optional<Sale> findBySaleNumber(String saleNumber) {
         return dao.findBySaleNumber(saleNumber);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Sale> findOpenWithPlate(Pageable pageable) {
+        return dao.findOpenWithPlate(pageable);
     }
 }

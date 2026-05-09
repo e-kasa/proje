@@ -75,6 +75,7 @@ public class AccountStatementControllerImpl {
                 String vehiclePlate = (t.getSale() != null)
                         ? t.getSale().getVehiclePlateSnapshot()
                         : null;
+                String saleId = (t.getSale() != null) ? t.getSale().getId() : null;
 
                 lines.add(AccountStatementEntry.TransactionLine.builder()
                         .id(t.getId())
@@ -86,6 +87,7 @@ public class AccountStatementControllerImpl {
                         .creditAmount(t.getCreditAmount())
                         .runningBalance(runningBalance)
                         .vehiclePlate(vehiclePlate)
+                        .saleId(saleId)
                         .build());
             }
             // Sprint 11d — UI için yakın tarihten geçmişe sıralama.

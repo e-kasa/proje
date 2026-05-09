@@ -87,6 +87,30 @@ public class SaleControllerImpl {
         }
     }
 
+    /**
+     * Sprint 11f — Tenant-wide ödenmemiş plakalı satışlar.
+     * AccountsList plaka modu input boşken bu liste gösterilir.
+     * GET /product/api/v1/sales/open-with-plate?limit=N (default 50, max 200)
+     */
+    @GetMapping("/open-with-plate")
+    @Transactional(readOnly = true)
+    @Operation(summary = "Tenant-wide ödenmemiş plakalı satışlar (Sprint 11f)")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> openWithPlate(
+            @RequestParam(required = false, defaultValue = "50") int limit) {
+        try {
+            int safe = (limit <= 0 || limit > 200) ? 50 : limit;
+            var sales = saleService.findOpenWithPlate(
+                    org.springframework.data.domain.PageRequest.of(0, safe));
+            var rows = sales.stream().map(this::toMap).collect(Collectors.toList());
+            return ResponseEntity.ok(ApiResponse.success(rows));
+        } catch (TOpenException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("openWithPlate hatası", e);
+            throw ExceptionMapper.map(e);
+        }
+    }
+
     // GET /product/api/v1/sales/{id}
     @GetMapping("/{id}")
     @Transactional(readOnly = true)
@@ -245,6 +269,10 @@ public class SaleControllerImpl {
             m.put("customerId",   null);
             m.put("customerName", null);
         }
+
+        // Sprint 11f — plaka snapshot (Sale.vehiclePlateSnapshot); ödenmemiş plakalı
+        // satış listesi ve sale detail panel'in plaka chip'i için.
+        m.put("vehiclePlate", s.getVehiclePlateSnapshot());
 
         // Satış kalemleri — SALE_OUT hareketlerinden üret
         List<Map<String, Object>> items = new ArrayList<>();

@@ -16,12 +16,19 @@ import 'package:project_pos/features/accounts/providers/customer_open_sales_prov
 /// kartlarına chip + filter olarak taşındı). Modal artık sadece allocation
 /// modu (GENERAL/SPECIFIC) ile çalışır; SPECIFIC seçildiğinde tüm açık
 /// satışlar listelenir.
+///
+/// Sprint 11f: `saleId` parametresi geçirildiğinde (SaleDetailPanel'den
+/// çağrı) allocation toggle/picker tamamen gizlenir, modal sadece tutar +
+/// ödeme tipi alır. `prefillAmount` set edilmişse amount controller'ı
+/// otomatik dolar (kalan tutar).
 class PaymentRecordModal {
   static Future<Map<String, dynamic>?> show(
     BuildContext context, {
     required bool isCustomer,
     String? accountName,
     String? customerId,
+    String? saleId,
+    double? prefillAmount,
   }) async {
     return showDialog<Map<String, dynamic>?>(
       context: context,
@@ -29,6 +36,8 @@ class PaymentRecordModal {
         isCustomer: isCustomer,
         accountName: accountName,
         customerId: customerId,
+        saleId: saleId,
+        prefillAmount: prefillAmount,
       ),
     );
   }
@@ -38,11 +47,15 @@ class _PaymentRecordContent extends ConsumerStatefulWidget {
   final bool isCustomer;
   final String? accountName;
   final String? customerId;
+  final String? saleId;
+  final double? prefillAmount;
 
   const _PaymentRecordContent({
     required this.isCustomer,
     this.accountName,
     this.customerId,
+    this.saleId,
+    this.prefillAmount,
   });
 
   @override
@@ -62,6 +75,21 @@ class _PaymentRecordContentState extends ConsumerState<_PaymentRecordContent> {
   // Sprint 7 — Sale-Payment allocation
   String _allocationMode = 'GENERAL'; // 'GENERAL' | 'SPECIFIC'
   String? _selectedSaleId;
+
+  @override
+  void initState() {
+    super.initState();
+    // Sprint 11f — SaleDetailPanel'den çağrıldığında satış zaten dışarıda
+    // seçili; modal'a saleId iletilince allocation otomatik SPECIFIC + amount
+    // pre-fill (kalan tutar). Toggle/picker gizli kalır.
+    if (widget.saleId != null) {
+      _allocationMode = 'SPECIFIC';
+      _selectedSaleId = widget.saleId;
+    }
+    if (widget.prefillAmount != null && widget.prefillAmount! > 0) {
+      _amountCtrl.text = widget.prefillAmount!.toStringAsFixed(2);
+    }
+  }
 
   @override
   void dispose() {
@@ -316,7 +344,11 @@ class _PaymentRecordContentState extends ConsumerState<_PaymentRecordContent> {
               ),
             ),
             // Sprint 7 — Alışveriş bazlı ödeme picker (sadece müşteri + customerId varsa)
-            if (widget.isCustomer && widget.customerId != null) ...[
+            // Sprint 11f — saleId varsa satış zaten dışarıda seçili, allocation
+            // toggle/picker tamamen gizlenir; modal sadece tutar + ödeme tipi alır.
+            if (widget.isCustomer &&
+                widget.customerId != null &&
+                widget.saleId == null) ...[
               const SizedBox(height: 14),
               const Divider(height: 1),
               const SizedBox(height: 8),

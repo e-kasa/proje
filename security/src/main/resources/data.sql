@@ -2784,7 +2784,17 @@ INSERT INTO ext_bundles (id, create_time, create_user, last_modified_time, updat
     ('bnd-acpa12-0000-0000-0000-000000000012', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
      'accounts.no_plate_results',       'Bu plaka için kayıt yok',                               'No matches for this plate'),
     ('bnd-acpa13-0000-0000-0000-000000000013', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
-     'accounts.search_by_plate_prompt', 'Plaka yazarak müşteri ve açık satışları arayın',        'Type a plate to find customer and open sales')
+     'accounts.search_by_plate_prompt', 'Plaka yazarak müşteri ve açık satışları arayın',        'Type a plate to find customer and open sales'),
+    ('bnd-acpa14-0000-0000-0000-000000000014', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'accounts.sale_detail',            'Satış Detayı',                                          'Sale Detail'),
+    ('bnd-acpa15-0000-0000-0000-000000000015', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'accounts.pay_this_sale',          'Bu satışa öde',                                         'Pay this sale'),
+    ('bnd-acpa16-0000-0000-0000-000000000016', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'accounts.no_open_plated_sales',   'Ödenmemiş plakalı satış yok',                           'No open plated sales'),
+    ('bnd-acpa17-0000-0000-0000-000000000017', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'accounts.sale_items',             'Satış Kalemleri',                                       'Sale Items'),
+    ('bnd-acpa18-0000-0000-0000-000000000018', CURRENT_TIMESTAMP, 'SYSTEM', CURRENT_TIMESTAMP, NULL,
+     'accounts.back_to_statement',      'Ekstreye dön',                                          'Back to statement')
     ON CONFLICT DO NOTHING;
 
 -- ============================================================

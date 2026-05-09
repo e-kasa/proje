@@ -12,6 +12,7 @@ import 'package:project_pos/features/accounts/providers/accounts_list_provider.d
 import 'package:project_pos/features/accounts/providers/accounts_notifiers.dart';
 import 'package:project_pos/features/accounts/providers/customer_open_sales_provider.dart';
 import 'package:project_pos/features/accounts/providers/selected_account_provider.dart';
+import 'package:project_pos/features/accounts/providers/selected_sale_provider.dart';
 import 'package:project_pos/features/accounts/screens/payment_record_modal.dart';
 import 'package:project_pos/features/accounts/services/statement_pdf_service.dart';
 import 'package:project_pos/features/accounts/widgets/account_audit_timeline.dart';
@@ -866,90 +867,107 @@ class _TxRow extends ConsumerWidget {
     // Sprint 11d — Sale.vehiclePlateSnapshot (parçacı sektör + müşteri satışı).
     final plate = tx['vehiclePlate']?.toString();
     final hasPlate = plate != null && plate.isNotEmpty;
+    // Sprint 11f — bağlı Sale.id; varsa tx kart tıklanır → SaleDetailPanel.
+    final saleId = tx['saleId']?.toString();
+    final isClickable = saleId != null && saleId.isNotEmpty;
+
+    final card = AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: meta.color.withValues(alpha: 0.1),
+              borderRadius: AppConstants.borderRadiusSmall,
+            ),
+            child: Icon(meta.icon, color: meta.color, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(desc,
+                    style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w600),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 2,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: meta.color.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(t(meta.i18nKey),
+                          style: TextStyle(
+                              fontSize: 10,
+                              color: meta.color,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                    if (hasPlate)
+                      AppBadge.info(plate,
+                          icon: Icons.directions_car_outlined),
+                    Text(date,
+                        style: const TextStyle(
+                            fontSize: 11, color: AppColors.textMuted)),
+                    if (hasRef)
+                      Text('• ${t('ac.tx_ref')}: $refNo',
+                          style: const TextStyle(
+                              fontSize: 11, color: AppColors.textMuted)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                isDebit
+                    ? '-${appCurrencyFmt.format(debit)}'
+                    : '+${appCurrencyFmt.format(credit)}',
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: amountColor),
+              ),
+              Text(appCurrencyFmt.format(balance),
+                  style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ],
+      ),
+    );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: AppCard(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: meta.color.withValues(alpha: 0.1),
+      child: isClickable
+          ? Material(
+              color: Colors.transparent,
+              borderRadius: AppConstants.borderRadiusSmall,
+              child: InkWell(
                 borderRadius: AppConstants.borderRadiusSmall,
+                onTap: () {
+                  ref.read(selectedSaleProvider.notifier).state = saleId;
+                },
+                child: card,
               ),
-              child: Icon(meta.icon, color: meta.color, size: 18),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(desc,
-                      style: const TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w600),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 4),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 2,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: meta.color.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(t(meta.i18nKey),
-                            style: TextStyle(
-                                fontSize: 10,
-                                color: meta.color,
-                                fontWeight: FontWeight.w600)),
-                      ),
-                      if (hasPlate)
-                        AppBadge.info(plate,
-                            icon: Icons.directions_car_outlined),
-                      Text(date,
-                          style: const TextStyle(
-                              fontSize: 11, color: AppColors.textMuted)),
-                      if (hasRef)
-                        Text('• ${t('ac.tx_ref')}: $refNo',
-                            style: const TextStyle(
-                                fontSize: 11, color: AppColors.textMuted)),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  isDebit
-                      ? '-${appCurrencyFmt.format(debit)}'
-                      : '+${appCurrencyFmt.format(credit)}',
-                  style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: amountColor),
-                ),
-                Text(appCurrencyFmt.format(balance),
-                    style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500)),
-              ],
-            ),
-          ],
-        ),
-      ),
+            )
+          : card,
     );
   }
 }

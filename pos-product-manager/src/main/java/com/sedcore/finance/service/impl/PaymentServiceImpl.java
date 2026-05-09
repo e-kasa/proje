@@ -253,6 +253,17 @@ public class PaymentServiceImpl
             pa.setCreateTime(java.util.Calendar.getInstance().getTime());
 
             paymentAllocationRepository.save(pa);
+
+            // Sprint 11g hot-fix — Sale.paidAmount denormalize alanını güncelle.
+            // Bu olmadan Sale.remainingAmount değişmiyor, status "pending" kalıyor,
+            // "ödenmemiş plakalı satışlar" listesi aynı satışı tekrar gösteriyor.
+            // İptal/iade akışında sale.paidAmount geri yazımı ileri sprint kapsamı.
+            if (sale != null && a.getAmount() != null) {
+                BigDecimal current = sale.getPaidAmount() != null
+                        ? sale.getPaidAmount() : BigDecimal.ZERO;
+                sale.setPaidAmount(current.add(a.getAmount()));
+                saleService.save(sale);
+            }
         }
 
         log.info("PaymentAllocation oluşturuldu: paymentId={}, allocationCount={}",

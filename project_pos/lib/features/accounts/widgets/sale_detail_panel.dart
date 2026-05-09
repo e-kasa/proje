@@ -391,7 +391,7 @@ class _AmountGrid extends ConsumerWidget {
           spacing: sp,
           runSpacing: sp,
           children: tiles
-              .map((tile) => SizedBox(width: w, height: 88, child: tile))
+              .map((tile) => SizedBox(width: w, height: 96, child: tile))
               .toList(),
         );
       },

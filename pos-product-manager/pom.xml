@@ -15,7 +15,18 @@
     <description>pos-product-manager</description>
     <properties>
         <java.version>17</java.version>
+        <github.owner>GITHUB_ORG</github.owner>
     </properties>
+
+    <!-- core kütüphanesi GitHub Packages'tan çekilir (ayrı repoya geçince aktif olur) -->
+    <repositories>
+        <repository>
+            <id>github-core</id>
+            <url>https://maven.pkg.github.com/${github.owner}/sedcore-core</url>
+            <snapshots><enabled>true</enabled></snapshots>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>

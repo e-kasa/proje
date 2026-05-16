@@ -1,0 +1,280 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}
+
+jobs:
+
+  # ── Core: paylaşılan kütüphane, diğer Java servisler buna bağımlı ──
+  install-core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Install core to local Maven repo
+        run: mvn install -DskipTests -f core/pom.xml -q
+      - name: Cache core artifact
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.m2/repository/com/towpen/core
+          key: core-${{ hashFiles('core/pom.xml', 'core/src/**') }}
+
+  # ── Config Server ───────────────────────────────────────────────
+  build-config-server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+      - run: mvn test -f config-server/pom.xml
+
+  # ── API Manager ─────────────────────────────────────────────────
+  build-api-manager:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+      - run: mvn test -f api-manager/pom.xml
+
+  # ── Security (core'a bağımlı) ───────────────────────────────────
+  build-security:
+    needs: install-core
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Restore core cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.m2/repository/com/towpen/core
+          key: core-${{ hashFiles('core/pom.xml', 'core/src/**') }}
+      - run: mvn test -Dspring-boot.repackage.skip=false -f security/pom.xml
+
+  # ── POS Product Manager (core'a bağımlı) ────────────────────────
+  build-pos-product-manager:
+    needs: install-core
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Restore core cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.m2/repository/com/towpen/core
+          key: core-${{ hashFiles('core/pom.xml', 'core/src/**') }}
+      - run: mvn test -f pos-product-manager/pom.xml
+
+  # ── Docker: Image Build & Push (sadece main branch) ─────────────
+  docker-build-push:
+    needs:
+      - build-config-server
+      - build-security
+      - build-pos-product-manager
+      - build-api-manager
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build & push config-server
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: config-server/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/sedcore-config-server:latest
+            ${{ env.IMAGE_PREFIX }}/sedcore-config-server:${{ github.sha }}
+          cache-from: type=gha,scope=config-server
+          cache-to: type=gha,mode=max,scope=config-server
+
+      - name: Build & push security
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: security/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/sedcore-security:latest
+            ${{ env.IMAGE_PREFIX }}/sedcore-security:${{ github.sha }}
+          cache-from: type=gha,scope=security
+          cache-to: type=gha,mode=max,scope=security
+
+      - name: Build & push pos-product-manager
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: pos-product-manager/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/sedcore-pos-product-manager:latest
+            ${{ env.IMAGE_PREFIX }}/sedcore-pos-product-manager:${{ github.sha }}
+          cache-from: type=gha,scope=pos-product-manager
+          cache-to: type=gha,mode=max,scope=pos-product-manager
+
+      - name: Build & push api-manager
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: api-manager/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/sedcore-api-manager:latest
+            ${{ env.IMAGE_PREFIX }}/sedcore-api-manager:${{ github.sha }}
+          cache-from: type=gha,scope=api-manager
+          cache-to: type=gha,mode=max,scope=api-manager
+
+      - name: Build & push ocr-service
+        uses: docker/build-push-action@v5
+        with:
+          context: ocr-service
+          file: ocr-service/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/sedcore-ocr-service:latest
+            ${{ env.IMAGE_PREFIX }}/sedcore-ocr-service:${{ github.sha }}
+          cache-from: type=gha,scope=ocr-service
+          cache-to: type=gha,mode=max,scope=ocr-service
+
+  # ── Flutter: Web + Android APK + AAB (Linux runner) ────────────
+  build-flutter-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+      - name: Flutter pub get
+        run: flutter pub get
+        working-directory: project_pos
+      - name: Flutter test
+        run: flutter test
+        working-directory: project_pos
+      - name: Build Flutter Web
+        run: flutter build web --release --base-href /
+        working-directory: project_pos
+      - name: Upload Flutter Web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-web
+          path: project_pos/build/web/
+      - name: Build APK
+        run: flutter build apk --release
+        working-directory: project_pos
+      - name: Build AAB
+        run: flutter build appbundle --release
+        working-directory: project_pos
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-apk
+          path: project_pos/build/app/outputs/flutter-apk/app-release.apk
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-aab
+          path: project_pos/build/app/outputs/bundle/release/app-release.aab
+
+  # ── Flutter: Windows Desktop (Windows runner zorunlu) ───────────
+  build-flutter-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+      - name: Enable Windows Desktop
+        run: flutter config --enable-windows-desktop
+        working-directory: project_pos
+      - name: Flutter pub get
+        run: flutter pub get
+        working-directory: project_pos
+      - name: Build Windows
+        run: flutter build windows --release
+        working-directory: project_pos
+      - name: Zip Windows build
+        run: Compress-Archive -Path project_pos/build/windows/x64/runner/Release/* -DestinationPath sedcore-pos-windows.zip
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-windows
+          path: sedcore-pos-windows.zip
+
+  # ── GitHub Release (sadece main branch) ─────────────────────────
+  create-release:
+    needs: [build-flutter-android, build-flutter-windows]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: flutter-apk
+          path: release-files/
+      - name: Download AAB
+        uses: actions/download-artifact@v4
+        with:
+          name: flutter-aab
+          path: release-files/
+      - name: Download Windows
+        uses: actions/download-artifact@v4
+        with:
+          name: flutter-windows
+          path: release-files/
+      - name: Rename artifacts
+        run: |
+          mv release-files/app-release.apk  release-files/sedcore-pos.apk
+          mv release-files/app-release.aab  release-files/sedcore-pos.aab
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: "SEDCORE POS — Build #${{ github.run_number }}"
+          body: |
+            Otomatik build — commit: ${{ github.sha }}
+
+            **İndir:**
+            - `sedcore-pos.apk` → Android telefon/tablet
+            - `sedcore-pos.aab` → Google Play Store yüklemesi için
+            - `sedcore-pos-windows.zip` → Windows masaüstü
+          files: |
+            release-files/sedcore-pos.apk
+            release-files/sedcore-pos.aab
+            release-files/sedcore-pos-windows.zip

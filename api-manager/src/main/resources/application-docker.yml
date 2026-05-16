@@ -1,0 +1,24 @@
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: security-service
+              uri: http://security:8002
+              predicates:
+                - Path=/security/**
+
+            - id: product-service-public
+              uri: http://pos-product-manager:8001
+              predicates:
+                - Path=/product/api/v1/public/**
+
+            - id: product-service-private
+              uri: http://pos-product-manager:8001
+              predicates:
+                - Path=/product/**
+
+company:
+  resolution:
+    security-url: http://security:8002

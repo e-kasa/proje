@@ -1,5 +1,7 @@
 package com.sedcore.company.entity;
 
+import java.math.BigDecimal;
+
 import com.towpen.base.db.model.TOpenSimpleCompanyEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -47,4 +49,23 @@ public class CompanySetting extends TOpenSimpleCompanyEntity {
 
     @Column(name = "sector_type", length = 50)
     private String sectorType;
+
+    // ===== VERGİ DEFAULT'LARI (Sprint 2026-05-25) =====
+    // Ürün/varyantta override yoksa kaskad: SaleItemRequest → VariantPricing → CompanySetting.
+
+    /** Sektörün varsayılan KDV oranı (%). AUTO_PARTS=20, FOOTWEAR=10 önerisi. */
+    @Column(name = "default_vat_rate", precision = 5, scale = 2)
+    private BigDecimal defaultVatRate;
+
+    /** Sektörün varsayılan ÖTV oranı (%). FOOTWEAR=0, AUTO_PARTS ürüne göre değişir (default 0). */
+    @Column(name = "default_otv_rate", precision = 5, scale = 2)
+    private BigDecimal defaultOtvRate;
+
+    /**
+     * Bu sektörde ÖTV aktif mi? UI'da ÖTV alanlarının görünürlüğünü branşlandırır.
+     * AUTO_PARTS → true; FOOTWEAR, GENERAL → false. Boolean false default columnDefinition ile garanti.
+     */
+    @Column(name = "otv_enabled", nullable = false, columnDefinition = "boolean DEFAULT false")
+    @Builder.Default
+    private Boolean otvEnabled = false;
 }

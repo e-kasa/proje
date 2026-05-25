@@ -79,6 +79,13 @@ public class StockMovement extends TOpenSimpleCompanyEntity {
     @Column(name = "tax_rate", precision = 5, scale = 2)
     private java.math.BigDecimal taxRate;
 
+    /**
+     * Satır ÖTV oranı (yüzde) — Sprint 2026-05-25.
+     * AUTO_PARTS sektöründe yaygın; FOOTWEAR'da null/0. Audit amaçlı tutulur.
+     */
+    @Column(name = "otv_rate", precision = 5, scale = 2)
+    private java.math.BigDecimal otvRate;
+
     // 🔗 KAYNAK BELGELER
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "purchase_id")

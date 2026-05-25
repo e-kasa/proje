@@ -1,6 +1,7 @@
 package com.sedcore.sales.service.impl;
 
 import com.sedcore.common.context.CompanyContext;
+import com.sedcore.common.util.PricingCalculator;
 import com.sedcore.product.entity.ProductVariant;
 import com.sedcore.sales.entity.Sale;
 import com.sedcore.sales.entity.SaleItem;
@@ -87,45 +88,49 @@ public class SaleServiceIntegrated
                 request.getCustomerId(), request.getSaleNumber(), request.getLocationId());
 
         // 1. KALEMLERİ HESAPLA (mem'de; henüz save edilmez)
+        // Hesap formülü: PricingCalculator (iskonto → ÖTV → KDV, vatIncluded ayrıştırma)
         List<SaleItem> items = new ArrayList<>();
         BigDecimal subtotal = BigDecimal.ZERO;
         BigDecimal totalDiscount = BigDecimal.ZERO;
         BigDecimal totalTax = BigDecimal.ZERO;
+        BigDecimal totalOtv = BigDecimal.ZERO;
         BigDecimal grandTotal = BigDecimal.ZERO;
 
         for (SaleItemRequest req : request.getItems()) {
             ProductVariant variant = variantRepository.findById(req.getVariantId())
                     .orElseThrow(() -> new RuntimeException("Varyant bulunamadı: " + req.getVariantId()));
 
-            BigDecimal qty = BigDecimal.valueOf(req.getQuantity());
-            BigDecimal gross = req.getUnitPrice().multiply(qty);
-            BigDecimal discRate = req.getDiscountRate() != null ? req.getDiscountRate() : BigDecimal.ZERO;
-            BigDecimal discAmt = gross.multiply(discRate)
-                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-            BigDecimal net = gross.subtract(discAmt);
-            BigDecimal taxRate = req.getTaxRate() != null ? req.getTaxRate() : BigDecimal.ZERO;
-            BigDecimal taxAmt = net.multiply(taxRate)
-                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-            BigDecimal lineTotal = net.add(taxAmt);
+            PricingCalculator.LineCalculation calc = PricingCalculator.calculate(
+                    PricingCalculator.LineInput.builder()
+                            .unitPrice(req.getUnitPrice())
+                            .quantity(req.getQuantity())
+                            .discountRate(req.getDiscountRate())
+                            .otvRate(req.getOtvRate())
+                            .vatRate(req.getTaxRate())
+                            .vatIncluded(req.getVatIncluded())
+                            .build());
 
             SaleItem item = SaleItem.builder()
                     .variant(variant)
                     .quantity(req.getQuantity())
                     .unitPrice(req.getUnitPrice())
-                    .discountRate(discRate)
-                    .discountAmount(discAmt)
-                    .taxRate(taxRate)
-                    .taxAmount(taxAmt)
-                    .lineTotal(lineTotal)
+                    .discountRate(req.getDiscountRate() != null ? req.getDiscountRate() : BigDecimal.ZERO)
+                    .discountAmount(calc.getDiscountAmount())
+                    .taxRate(req.getTaxRate() != null ? req.getTaxRate() : BigDecimal.ZERO)
+                    .taxAmount(calc.getVatAmount())
+                    .otvRate(req.getOtvRate() != null ? req.getOtvRate() : BigDecimal.ZERO)
+                    .otvAmount(calc.getOtvAmount())
+                    .lineTotal(calc.getLineTotal())
                     .returnedQuantity(0)
                     .notes(req.getNotes())
                     .build();
             items.add(item);
 
-            subtotal = subtotal.add(gross);
-            totalDiscount = totalDiscount.add(discAmt);
-            totalTax = totalTax.add(taxAmt);
-            grandTotal = grandTotal.add(lineTotal);
+            subtotal = subtotal.add(calc.getGross());
+            totalDiscount = totalDiscount.add(calc.getDiscountAmount());
+            totalTax = totalTax.add(calc.getVatAmount());
+            totalOtv = totalOtv.add(calc.getOtvAmount());
+            grandTotal = grandTotal.add(calc.getLineTotal());
         }
 
         // 2. Defansif guard: vadeli satışta müşteri zorunlu.
@@ -167,6 +172,7 @@ public class SaleServiceIntegrated
                 .subtotalAmount(subtotal)
                 .totalDiscount(totalDiscount)
                 .totalTax(totalTax)
+                .totalOtv(totalOtv)
                 .totalAmount(grandTotal)
                 .paidAmount(paid)
                 .locationId(request.getLocationId())

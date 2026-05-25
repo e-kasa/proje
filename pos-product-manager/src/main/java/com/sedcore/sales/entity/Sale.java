@@ -57,8 +57,13 @@ public class Sale extends TOpenSimpleCompanyEntity {
     @Builder.Default
     private BigDecimal totalTax = BigDecimal.ZERO;
 
+    /** Toplam ÖTV tutarı — Sprint 2026-05-25. Σ(SaleItem.otvAmount). */
+    @Column(name = "total_otv", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal totalOtv = BigDecimal.ZERO;
+
     @Column(name = "total_amount", precision = 15, scale = 2, nullable = false)
-    private BigDecimal totalAmount; // Nihai ödenecek tutar (subtotal - discount + tax)
+    private BigDecimal totalAmount; // Nihai ödenecek tutar (subtotal - discount + otv + tax)
 
     @Column(name = "paid_amount", precision = 15, scale = 2)
     @Builder.Default

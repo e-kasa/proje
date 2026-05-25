@@ -701,20 +701,37 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 -- =====================================================================
--- 31. COMPANY_SETTINGS (1 per company — sektor + genel bilgi)
+-- 31. COMPANY_SETTINGS (1 per company — sektor + genel bilgi + vergi default)
 -- =====================================================================
+-- Sprint 2026-05-25: defaultVatRate / defaultOtvRate / otvEnabled eklendi.
+-- AUTO_PARTS  → vat=20, otv=18, otvEnabled=true
+-- FOOTWEAR    → vat=10, otv=0,  otvEnabled=false
 INSERT INTO company_settings
 (id, create_user, company_code, create_time, last_modified_time,
  company_name, tax_number, tax_office, phone, email, address, city, country,
- currency, sector_type)
+ currency, sector_type, default_vat_rate, default_otv_rate, otv_enabled)
 VALUES
     ('cst-oto1-0000-0000-0000-000000000001','SYSTEM','SEDCORE', CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
      'Sedcore Oto Parca A.S.','1111222233','Perpa','0212 000 00 01','info@sedcore.com',
-     'Perpa Ticaret Merkezi, Okmeydani','Istanbul','Turkiye','TRY','AUTO_PARTS'),
+     'Perpa Ticaret Merkezi, Okmeydani','Istanbul','Turkiye','TRY','AUTO_PARTS',
+     20.00, 18.00, true),
     ('cst-elb1-0000-0000-0000-000000000001','SYSTEM','SEDCORE1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,
      'Sedcore Giyim Magazasi','2222333344','Zincirlikuyu','0212 000 00 02','info@sedcore1.com',
-     'Zorlu AVM, Levazim','Istanbul','Turkiye','TRY','FOOTWEAR')
+     'Zorlu AVM, Levazim','Istanbul','Turkiye','TRY','FOOTWEAR',
+     10.00, 0.00, false)
 ON CONFLICT DO NOTHING;
+
+-- Backfill: mevcut DB'lerde (ON CONFLICT skip eden satırlar) vergi default'larını seed et.
+-- Idempotent — her boot'ta zararsız.
+UPDATE company_settings
+   SET default_vat_rate = 20.00, default_otv_rate = 18.00, otv_enabled = true
+ WHERE id = 'cst-oto1-0000-0000-0000-000000000001'
+   AND (default_vat_rate IS NULL OR default_otv_rate IS NULL);
+
+UPDATE company_settings
+   SET default_vat_rate = 10.00, default_otv_rate = 0.00, otv_enabled = false
+ WHERE id = 'cst-elb1-0000-0000-0000-000000000001'
+   AND (default_vat_rate IS NULL OR default_otv_rate IS NULL);
 
 -- =====================================================================
 -- 32. PRODUCT_RELATIONSHIP (her firma icin 2 oneri baglantisi)

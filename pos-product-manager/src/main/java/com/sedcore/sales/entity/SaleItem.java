@@ -63,6 +63,16 @@ public class SaleItem extends TOpenSimpleCompanyEntity {
     @Builder.Default
     private BigDecimal taxAmount = BigDecimal.ZERO;
 
+    /** ÖTV oranı (%) — Sprint 2026-05-25. Sektör default'tan veya VariantPricing'ten gelir. */
+    @Column(name = "otv_rate", precision = 5, scale = 2)
+    @Builder.Default
+    private BigDecimal otvRate = BigDecimal.ZERO;
+
+    /** ÖTV tutarı — net × otvRate / 100. KDV matrahına dahildir. */
+    @Column(name = "otv_amount", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal otvAmount = BigDecimal.ZERO;
+
     @Column(name = "line_total", precision = 15, scale = 2, nullable = false)
     private BigDecimal lineTotal;
 

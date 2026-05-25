@@ -7,6 +7,7 @@ import com.sedcore.common.enums.StockMovementType;
 import com.sedcore.common.enums.TransactionType;
 import com.sedcore.common.exception.BusinessException;
 import com.sedcore.common.exception.NotFoundException;
+import com.sedcore.common.util.PricingCalculator;
 import com.sedcore.finance.entity.AccountTransaction;
 import com.sedcore.finance.service.AccountTransactionService;
 import com.sedcore.inventory.entity.StockMovement;
@@ -87,9 +88,13 @@ public class PurchaseServiceImpl
                 .orElseThrow(() -> new NotFoundException(
                         "Tedarikci bulunamadi: " + request.getSupplierId()));
 
-        // 2. Tutar hesapla: invoiceAmount (brüt), totalAmount (gelen)
-        BigDecimal invoiceAmount = calculateInvoiceTotal(request.getItems());
-        BigDecimal totalAmount   = calculateReceivedTotal(request.getItems());
+        // 2. Tutar hesapla: PricingCalculator ile vergi/iskonto dahil aggregate.
+        //    invoiceAmount   = Σ(lineTotal × invoiceQty)   — fatura brüt (vergi dahil)
+        //    receivedAmount  = Σ(lineTotal × receivedQty)  — gelen mal (vergi dahil, cariye yansır)
+        //    totalVat/totalOtv/totalItemDiscount = received bazlı özet
+        PurchaseAggregate agg = aggregatePurchase(request.getItems());
+        BigDecimal invoiceAmount = agg.invoiceAmount();
+        BigDecimal totalAmount   = agg.receivedAmount();
         BigDecimal shortageAmount = invoiceAmount.subtract(totalAmount);
 
         PurchaseStatus status = shortageAmount.compareTo(BigDecimal.ZERO) > 0
@@ -107,6 +112,9 @@ public class PurchaseServiceImpl
                 .totalAmount(totalAmount)
                 .shortageAmount(shortageAmount)
                 .discountAmount(BigDecimal.ZERO)
+                .totalVat(agg.totalVat())
+                .totalOtv(agg.totalOtv())
+                .totalItemDiscount(agg.totalItemDiscount())
                 .paidAmount(BigDecimal.ZERO)
                 .purchaseStatus(status)
                 .isCancelled(false)
@@ -137,6 +145,8 @@ public class PurchaseServiceImpl
                         .movementType(StockMovementType.PURCHASE_IN)
                         .quantity(receivedQty)
                         .unitPrice(item.getUnitPrice())
+                        .taxRate(item.getTaxRate())
+                        .otvRate(item.getOtvRate())
                         .purchase(purchase)
                         .build();
                 stockMovementService.saveMovement(movement);
@@ -568,19 +578,73 @@ public class PurchaseServiceImpl
         return dto;
     }
 
-    /** Fatura toplam = her kalem invoiceQty × birimFiyat */
-    private BigDecimal calculateInvoiceTotal(List<PurchaseItemRequest> items) {
-        return items.stream()
-                .map(i -> i.getUnitPrice().multiply(BigDecimal.valueOf(i.resolvedInvoiceQty())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    /**
+     * Alış faturası özet hesabı — Sprint 2026-05-25.
+     *
+     * <p>Her kalem için {@link PricingCalculator} ile lineTotal (KDV+ÖTV dahil) hesaplanır.
+     * Tedarikçi cari borcuna **gelen mal tutarı kadar** lineTotal yansır
+     * (eksik teslimat varsa fatura tutarından az).
+     *
+     * <p>Mevcut alanlar:
+     * <ul>
+     *   <li>{@code invoiceAmount} = Σ(lineTotal × invoiceQty/qty) — fatura brüt (vergi dahil)
+     *   <li>{@code receivedAmount} = Σ(lineTotal × receivedQty/qty) — gelen mal (vergi dahil)
+     *   <li>{@code totalVat/totalOtv/totalItemDiscount} = received bazlı vergi/iskonto özeti
+     * </ul>
+     */
+    private PurchaseAggregate aggregatePurchase(List<PurchaseItemRequest> items) {
+        BigDecimal invoiceAmount = BigDecimal.ZERO;
+        BigDecimal receivedAmount = BigDecimal.ZERO;
+        BigDecimal totalVat = BigDecimal.ZERO;
+        BigDecimal totalOtv = BigDecimal.ZERO;
+        BigDecimal totalItemDiscount = BigDecimal.ZERO;
+
+        for (PurchaseItemRequest i : items) {
+            int invoiceQty = i.resolvedInvoiceQty();
+            int receivedQty = i.resolvedReceivedQty();
+
+            // Fatura tutarı (vergi dahil) — invoiceQty bazında
+            if (invoiceQty > 0) {
+                PricingCalculator.LineCalculation invCalc = PricingCalculator.calculate(
+                        PricingCalculator.LineInput.builder()
+                                .unitPrice(i.getUnitPrice())
+                                .quantity(invoiceQty)
+                                .discountRate(i.getDiscountRate())
+                                .otvRate(i.getOtvRate())
+                                .vatRate(i.getTaxRate())
+                                .vatIncluded(i.getVatIncluded())
+                                .build());
+                invoiceAmount = invoiceAmount.add(invCalc.getLineTotal());
+            }
+
+            // Gelen mal tutarı + vergi/iskonto özeti — receivedQty bazında
+            if (receivedQty > 0) {
+                PricingCalculator.LineCalculation rcvCalc = PricingCalculator.calculate(
+                        PricingCalculator.LineInput.builder()
+                                .unitPrice(i.getUnitPrice())
+                                .quantity(receivedQty)
+                                .discountRate(i.getDiscountRate())
+                                .otvRate(i.getOtvRate())
+                                .vatRate(i.getTaxRate())
+                                .vatIncluded(i.getVatIncluded())
+                                .build());
+                receivedAmount = receivedAmount.add(rcvCalc.getLineTotal());
+                totalVat = totalVat.add(rcvCalc.getVatAmount());
+                totalOtv = totalOtv.add(rcvCalc.getOtvAmount());
+                totalItemDiscount = totalItemDiscount.add(rcvCalc.getDiscountAmount());
+            }
+        }
+
+        return new PurchaseAggregate(invoiceAmount, receivedAmount, totalVat, totalOtv, totalItemDiscount);
     }
 
-    /** Gelen mal toplam = her kalem receivedQty × birimFiyat */
-    private BigDecimal calculateReceivedTotal(List<PurchaseItemRequest> items) {
-        return items.stream()
-                .map(i -> i.getUnitPrice().multiply(BigDecimal.valueOf(i.resolvedReceivedQty())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
+    /** Alış kalemlerinin vergi/iskonto özeti. */
+    private record PurchaseAggregate(
+            BigDecimal invoiceAmount,
+            BigDecimal receivedAmount,
+            BigDecimal totalVat,
+            BigDecimal totalOtv,
+            BigDecimal totalItemDiscount) {}
 
     private LocalDate dueDateFor(LocalDate base, Integer termDays) {
         return base.plusDays(termDays != null ? termDays : 30);

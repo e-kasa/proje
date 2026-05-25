@@ -54,6 +54,17 @@ public class SalesReportServiceImpl implements SalesReportService {
                 .map(s -> s.getPaidAmount() != null ? s.getPaidAmount() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        // Vergi/iskonto ayrımı (Sprint 2026-05-25)
+        var totalVat = filtered.stream()
+                .map(s -> s.getTotalTax() != null ? s.getTotalTax() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        var totalOtv = filtered.stream()
+                .map(s -> s.getTotalOtv() != null ? s.getTotalOtv() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        var totalDiscount = filtered.stream()
+                .map(s -> s.getTotalDiscount() != null ? s.getTotalDiscount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         var avgOrder = !filtered.isEmpty()
                 ? totalRevenue.divide(BigDecimal.valueOf(filtered.size()), 2, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
@@ -76,6 +87,12 @@ public class SalesReportServiceImpl implements SalesReportService {
                         .paidAmount(e.getValue().stream()
                                 .map(s -> s.getPaidAmount() != null ? s.getPaidAmount() : BigDecimal.ZERO)
                                 .reduce(BigDecimal.ZERO, BigDecimal::add))
+                        .vat(e.getValue().stream()
+                                .map(s -> s.getTotalTax() != null ? s.getTotalTax() : BigDecimal.ZERO)
+                                .reduce(BigDecimal.ZERO, BigDecimal::add))
+                        .otv(e.getValue().stream()
+                                .map(s -> s.getTotalOtv() != null ? s.getTotalOtv() : BigDecimal.ZERO)
+                                .reduce(BigDecimal.ZERO, BigDecimal::add))
                         .build())
                 .toList();
 
@@ -85,6 +102,9 @@ public class SalesReportServiceImpl implements SalesReportService {
                 .averageOrderValue(avgOrder)
                 .totalPaidAmount(totalPaid)
                 .totalDebtAmount(totalRevenue.subtract(totalPaid))
+                .totalVat(totalVat)
+                .totalOtv(totalOtv)
+                .totalDiscount(totalDiscount)
                 .periodData(periodData)
                 .build();
     }

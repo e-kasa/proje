@@ -1,5 +1,7 @@
 package com.sedcore.purchase.model;
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -42,7 +44,25 @@ public class PurchaseItemRequest {
     @Positive(message = "Birim fiyat pozitif olmalıdır")
     private BigDecimal unitPrice;
 
+    @DecimalMin(value = "0.00", message = "KDV oranı 0'dan küçük olamaz")
+    @DecimalMax(value = "100.00", message = "KDV oranı 100'den büyük olamaz")
     private BigDecimal taxRate;
+
+    /** İskonto oranı (%) — Sprint 2026-05-25. Kalem bazlı; null = 0. */
+    @DecimalMin(value = "0.00", message = "İskonto oranı 0'dan küçük olamaz")
+    @DecimalMax(value = "100.00", message = "İskonto oranı 100'den büyük olamaz")
+    private BigDecimal discountRate;
+
+    /** ÖTV oranı (%) — Sprint 2026-05-25. AUTO_PARTS'ta dolu; FOOTWEAR'da null/0. */
+    @DecimalMin(value = "0.00", message = "ÖTV oranı 0'dan küçük olamaz")
+    @DecimalMax(value = "100.00", message = "ÖTV oranı 100'den büyük olamaz")
+    private BigDecimal otvRate;
+
+    /**
+     * true ise {@code unitPrice} KDV+ÖTV dahil etiket fiyatıdır;
+     * backend PricingCalculator ile tersine ayrıştırır. Null/false → KDV hariç.
+     */
+    private Boolean vatIncluded;
 
     private String notes;
 

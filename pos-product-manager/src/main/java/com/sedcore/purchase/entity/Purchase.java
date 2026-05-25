@@ -78,6 +78,24 @@ public class Purchase extends TOpenSimpleCompanyEntity {
     @Builder.Default
     private BigDecimal discountAmount = BigDecimal.ZERO;
 
+    // ===== VERGİ ÖZETİ (Sprint 2026-05-25) =====
+    // Kalem bazında PricingCalculator ile hesaplanır; özet Purchase üzerinde tutulur.
+
+    /** Toplam KDV tutarı — Σ(kalem.vatAmount × receivedQty/invoiceQty). */
+    @Column(name = "total_vat", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal totalVat = BigDecimal.ZERO;
+
+    /** Toplam ÖTV tutarı — AUTO_PARTS sektöründe yaygın; FOOTWEAR'da 0. */
+    @Column(name = "total_otv", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal totalOtv = BigDecimal.ZERO;
+
+    /** Kalem bazlı iskonto toplamı (Σ kalem.discountAmount). Purchase.discountAmount (tedarikçi kredi notu) ile **karıştırılmamalı**. */
+    @Column(name = "total_item_discount", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal totalItemDiscount = BigDecimal.ZERO;
+
     /**
      * Henüz çözüme kavuşturulmamış eksik teslimat tutarı.
      * invoiceAmount - totalAmount ile başlar; iskonto/teslimat ile azalır, 0'da kapanır.

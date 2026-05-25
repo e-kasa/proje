@@ -42,6 +42,9 @@ class ParkedOrder {
 }
 
 // ─── Cart Item Model ───────────────────────────────────────────────
+// Sprint 2026-05-25 — KDV/ÖTV/iskonto formülü backend PricingCalculator ile
+// birebir paralel: gross → -disc → +ÖTV → +KDV → lineTotal. Hardcoded %18 default
+// kaldırıldı; oran ürün payload'undan gelir (VariantPricing veya CompanySetting kaskadı).
 class CartItem {
   final Map<String, dynamic> product;
   int quantity;
@@ -61,16 +64,54 @@ class CartItem {
       (product['basePrice'] as num?)?.toDouble() ??
       (product['price'] as num?)?.toDouble() ??
       0;
-  double get taxRate => (product['taxRate'] as num?)?.toDouble() ?? 18.0;
+  /// KDV oranı (%) — ürün payload'undan; backend göndermezse 0.
+  double get taxRate =>
+      (product['taxRate'] as num?)?.toDouble() ??
+      (product['vatRate'] as num?)?.toDouble() ??
+      0.0;
+  /// ÖTV oranı (%) — AUTO_PARTS sektöründe dolu, FOOTWEAR'da 0.
+  double get otvRate =>
+      (product['otvRate'] as num?)?.toDouble() ??
+      (product['specialTaxRate'] as num?)?.toDouble() ??
+      0.0;
+  /// Etiket fiyatı KDV+ÖTV dahil mi? Backend `VariantPricing.vatIncluded`.
+  bool get vatIncluded => (product['vatIncluded'] as bool?) ?? false;
+
   int get stock => (product['stock'] as num?)?.toInt() ?? 0;
   String? get barcode => product['barcode']?.toString();
   String? get sku => product['sku']?.toString();
 
-  double get lineTotal => unitPrice * quantity;
-  double get discountAmount => lineTotal * discount / 100;
-  double get afterDiscount => lineTotal - discountAmount;
-  double get taxAmount => afterDiscount * taxRate / 100;
-  double get totalWithTax => afterDiscount + taxAmount;
+  // ─── Hesap (PricingCalculator paralel) ──────────────────────────────
+  /// Brüt = unitPrice × quantity.
+  double get gross => unitPrice * quantity;
+
+  /// İskonto tutarı — brüt üzerinden (vatIncluded'da da etiket bazlı, kullanıcı algısı).
+  double get discountAmount => gross * discount / 100;
+
+  /// Net (KDV+ÖTV hariç matrah). vatIncluded=true ise etiketten ayrıştırır.
+  double get _net {
+    final brutNet = gross - discountAmount;
+    if (!vatIncluded) return brutNet;
+    final divisor = (1 + otvRate / 100) * (1 + taxRate / 100);
+    return divisor == 0 ? brutNet : brutNet / divisor;
+  }
+
+  /// Backward-compat alias — eski kod `afterDiscount` bekliyorsa.
+  double get afterDiscount => _net;
+
+  double get otvAmount => _net * otvRate / 100;
+  double get vatBase => _net + otvAmount;
+  double get taxAmount => vatBase * taxRate / 100;
+
+  /// Satır toplam — kullanıcının ödeyeceği.
+  /// vatIncluded=true ise etiket fiyatı eksi iskonto; aksi halde formül toplamı.
+  double get totalWithTax {
+    if (vatIncluded) return gross - discountAmount;
+    return vatBase + taxAmount;
+  }
+
+  /// Backward-compat — eski koda `lineTotal` lazım olursa.
+  double get lineTotal => gross;
 
   CartItem copyWith({int? quantity, double? discount}) {
     return CartItem(
@@ -189,8 +230,11 @@ class PosState {
   });
 
   int get totalItems => cartItems.fold(0, (s, i) => s + i.quantity);
+  /// Net (KDV+ÖTV hariç) toplam — vatIncluded'lı ürünlerde ayrıştırılmış net.
   double get subtotal => cartItems.fold(0.0, (s, i) => s + i.afterDiscount);
   double get totalTax => cartItems.fold(0.0, (s, i) => s + i.taxAmount);
+  /// Toplam ÖTV — Sprint 2026-05-25.
+  double get totalOtv => cartItems.fold(0.0, (s, i) => s + i.otvAmount);
   double get totalDiscount => cartItems.fold(0.0, (s, i) => s + i.discountAmount);
   double get grandTotal => cartItems.fold(0.0, (s, i) => s + i.totalWithTax);
 
@@ -925,6 +969,8 @@ class PosNotifier extends StateNotifier<PosState> {
           'unitPrice': item.unitPrice,
           'discountRate': item.discount,
           'taxRate': item.taxRate,
+          'otvRate': item.otvRate,
+          'vatIncluded': item.vatIncluded,
         }).toList(),
       };
       final result = await _ref.read(salesServiceProvider).createSale(saleData);

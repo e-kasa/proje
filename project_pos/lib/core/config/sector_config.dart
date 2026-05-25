@@ -93,6 +93,7 @@ class SectorFields {
   final bool brandRequired;
   final bool showDescription;   // Açıklama
   final bool showMinStock;      // Minimum stok seviyesi
+  final bool showOtv;           // ÖTV alanı (Sprint 2026-05-25 — AUTO_PARTS yaygın)
 
   const SectorFields({
     this.showOem = false,
@@ -110,6 +111,7 @@ class SectorFields {
     this.brandRequired = false,
     this.showDescription = true,
     this.showMinStock = true,
+    this.showOtv = false,
   });
 }
 
@@ -163,6 +165,7 @@ class SectorConfig {
           showBrand:        true,
           brandRequired:    true,
           showMinStock:     true,
+          showOtv:          true, // AUTO_PARTS: ÖTV genellikle aktif
         ),
       );
 

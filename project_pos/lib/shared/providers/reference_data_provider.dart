@@ -30,6 +30,24 @@ class VatRate {
   int get hashCode => rate.hashCode;
 }
 
+/// ÖTV oranı — Sprint 2026-05-25. AUTO_PARTS sektöründe yaygın.
+/// Türkiye ÖTV oranları sektör ve ürün grubuna göre değişir (otomotiv: 1-220%);
+/// burada sık kullanılan oranlar listelenir, ürün bazında VariantPricing override eder.
+class OtvRate {
+  final double rate;
+  final String displayLabel;
+
+  const OtvRate(this.rate, this.displayLabel);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is OtvRate && other.rate == rate;
+
+  @override
+  int get hashCode => rate.hashCode;
+}
+
 /// Birim kodu — sektör-aware filtreleme için.
 class UnitCode {
   final String code; // "ADET", "KG", "LT", "MT", "CIFT"
@@ -54,12 +72,14 @@ class ProductStatus {
 /// Tüm referans verisi tek struct.
 class ReferenceData {
   final List<VatRate> vatRates;
+  final List<OtvRate> otvRates;
   final List<UnitCode> units;
   final List<ProductStatus> productStatuses;
   final DateTime fetchedAt;
 
   const ReferenceData({
     required this.vatRates,
+    required this.otvRates,
     required this.units,
     required this.productStatuses,
     required this.fetchedAt,
@@ -95,6 +115,18 @@ ReferenceData _staticFallback() {
       VatRate(18, '%18'),
       VatRate(20, '%20'),
     ],
+    // ÖTV — Türkiye otomotiv yaygın oranları + opt-out 0.
+    // Ürün-bazlı override için VariantPricing.specialTaxRate, default için CompanySetting.
+    otvRates: const [
+      OtvRate(0, '%0'),
+      OtvRate(6.7, '%6.7'),
+      OtvRate(15, '%15'),
+      OtvRate(18, '%18'),
+      OtvRate(40, '%40'),
+      OtvRate(60, '%60'),
+      OtvRate(80, '%80'),
+      OtvRate(130, '%130'),
+    ],
     units: const [
       UnitCode(code: 'ADET', displayLabel: 'Adet'),
       UnitCode(
@@ -129,6 +161,12 @@ ReferenceData _staticFallback() {
 final vatRatesProvider = FutureProvider<List<VatRate>>((ref) async {
   final data = await ref.watch(referenceDataProvider.future);
   return data.vatRates;
+});
+
+/// ÖTV oran listesi — Sprint 2026-05-25.
+final otvRatesProvider = FutureProvider<List<OtvRate>>((ref) async {
+  final data = await ref.watch(referenceDataProvider.future);
+  return data.otvRates;
 });
 
 final productStatusesProvider =
